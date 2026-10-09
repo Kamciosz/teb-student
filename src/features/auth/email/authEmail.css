@@ -1,0 +1,228 @@
+/**
+ * PL: Style ekranów logowania kodem z maila (1.1 i 1.2). Kolory, rozmiary tekstu i zaokrąglenia pochodzą ze zmiennych w tokens.css, więc ekran zmienia się razem z paletą ucznia. Układ działa od 320 px szerokości.
+ * EN: Styles of the e-mail code sign-in screens (1.1 and 1.2). Colors, text sizes and radii come from the variables in tokens.css, so the screen changes together with the student's palette. The layout works from 320 px width.
+ *
+ * @author Szymon
+ * @since 2026-10-09
+ * @uses src/shared/styles/tokens.css::var(--...)
+ * @used_by src/features/auth/email/AuthEmailScreen.tsx::import
+ */
+
+/* PL: Kolumna ekranu: do 430 px szerokości, na całą wysokość, z bezpiecznym marginesem na dole telefonu.
+   EN: The screen column: up to 430 px wide, full height, with the phone's safe margin at the bottom. */
+.auth-email {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 24px 16px calc(16px + var(--safe-bottom));
+  background: var(--bg);
+}
+
+/* PL: Formularz rozciąga się na całą kolumnę, żeby przyciski były przy dolnej krawędzi.
+   EN: The form stretches over the whole column, so the buttons sit at the bottom edge. */
+.auth-email__form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* PL: Znak marki: kwadrat 56 px w kolorze akcentu z literą T.
+   EN: The brand mark: a 56 px square in the accent color with the letter T. */
+.auth-email__mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-top: 32px;
+  border-radius: 16px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--t-num-sm);
+  font-weight: 800;
+}
+
+.auth-email__title {
+  margin-top: 24px;
+}
+
+/* PL: Zdanie pod nagłówkiem w kolorze drugorzędnym.
+   EN: The sentence under the heading in the secondary color. */
+.auth-email__lead {
+  margin-top: 8px;
+  color: var(--ink-2);
+}
+
+.auth-email__label {
+  margin-top: 40px;
+  margin-bottom: 8px;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+/* PL: Pole adresu: 56 px wysokości i 16 px tekstu, żeby iPhone nie powiększał strony po dotknięciu.
+   EN: The address field: 56 px tall and 16 px text, so the iPhone does not zoom the page on touch. */
+.auth-email__input {
+  width: 100%;
+  height: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+  font-size: var(--t-md);
+}
+
+.auth-email__input::placeholder {
+  color: var(--ink-2);
+}
+
+/* PL: Pole z błędem ma wyraźniejszą ramkę. Sam kolor nie niesie informacji: obok jest tekst błędu.
+   EN: A field with an error has a stronger border. Color alone carries no information: the error text is next to it. */
+.auth-email__input[aria-invalid='true'],
+.auth-email__digit[aria-invalid='true'] {
+  border-color: var(--ink);
+}
+
+.auth-email__error {
+  margin-top: 8px;
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+/* PL: Notatka z ikoną: ikona i tekst w jednym rzędzie.
+   EN: A note with an icon: the icon and the text in one row. */
+.auth-email__note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
+.auth-email__hint {
+  margin-top: 16px;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
+/* PL: Przyciski przy dolnej krawędzi kolumny.
+   EN: The buttons at the bottom edge of the column. */
+.auth-email__actions {
+  display: grid;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+/* PL: Przycisk główny: 48 px wysokości, szeroki na całą kolumnę. Dotyk ma więcej niż 44 px.
+   EN: The main button: 48 px tall, as wide as the column. The touch target is over 44 px. */
+.auth-email__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 0;
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.auth-email__button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+/* PL: Przycisk nieaktywny jest szary, dopóki kod nie jest pełny.
+   EN: The inactive button is gray until the code is complete. */
+.auth-email__button:disabled {
+  background: var(--tile-2);
+  color: var(--ink-2);
+  cursor: default;
+}
+
+/* PL: Przycisk z obrysem: druga ścieżka, mniej ważna niż główna.
+   EN: The outline button: the second path, less important than the main one. */
+.auth-email__button--outline {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+}
+
+.auth-email__button--outline:hover {
+  background: var(--tile);
+}
+
+/* PL: Strzałka wstecz: pole dotyku 44 × 44 px.
+   EN: The back arrow: a 44 × 44 px touch target. */
+.auth-email__back {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
+  cursor: pointer;
+}
+
+.auth-email__back + .auth-email__title {
+  margin-top: 24px;
+}
+
+/* PL: Sześć pól na cyfry w jednym rzędzie.
+   EN: The six digit fields in one row. */
+.auth-email__code {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-top: 32px;
+}
+
+/* PL: Pole cyfry: 64 px wysokości, cyfra duża i na środku.
+   EN: A digit field: 64 px tall, the digit large and centered. */
+.auth-email__digit {
+  min-width: 0;
+  height: 64px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+  font-size: var(--t-num-sm);
+  font-weight: 800;
+  text-align: center;
+}
+
+/* PL: Przycisk wyglądający jak tekst: „Wyślij kod ponownie”. Wysokość 44 px daje wygodny dotyk.
+   EN: A button that looks like text: "Wyślij kod ponownie" (resend the code). The 44 px height gives a comfortable touch. */
+.auth-email__link {
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* PL: Na telefonach 320 px szerokości węższy margines i odstęp, żeby sześć pól miało po co najmniej 44 px.
+   EN: On 320 px wide phones a narrower margin and gap, so the six fields are at least 44 px each. */
+@media (max-width: 359px) {
+  .auth-email {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .auth-email__code {
+    gap: 6px;
+  }
+}
