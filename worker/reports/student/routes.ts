@@ -7,7 +7,7 @@
  * @uses worker/reports/student/validation.ts::parseReportInput
  * @uses worker/reports/student/reportsRepository.ts::createReport
  * @uses worker/reports/student/reportsRepository.ts::listReportsByAuthor
- * @uses worker/reports/student/currentStudent.ts::getCurrentStudentId
+ * @uses worker/auth/index.ts::requireStudent
  * @used_by worker/reports/student/index.ts::reportsStudentApp
  * @used_by worker/reports/student/routes.test.ts::reportsStudentApp
  */
@@ -16,12 +16,9 @@
 // EN: Hono is the server router. bodyLimit rejects oversized requests before we read them.
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-// PL: Typ środowiska Workera (binding DB).
-// EN: The Worker environment type (the DB binding).
-import type { Env } from '../../shared';
-// PL: Numer ucznia (na razie tymczasowy).
-// EN: The student id (temporary for now).
-import { getCurrentStudentId } from './currentStudent';
+// PL: Sprawdzanie sesji ucznia, przez drzwi modułu auth (worker/auth/index.ts).
+// EN: The student session check, through the door of the auth module (worker/auth/index.ts).
+import { requireStudent, type StudentEnv } from '../../auth';
 // PL: Zapis i odczyt zgłoszeń.
 // EN: Saving and reading reports.
 import { createReport, listReportsByAuthor } from './reportsRepository';
@@ -36,10 +33,10 @@ import { parseReportInput } from './validation';
 const MAX_BODY_BYTES = 8 * 1024;
 
 /**
- * PL: Router podtoru 4a. Bazę D1 bierze z `context.env.DB`, bo Env (worker/shared) ma binding DB.
- * EN: The router of subtrack 4a. It takes the D1 database from `context.env.DB`, because Env (worker/shared) has the DB binding.
+ * PL: Router podtoru 4a. Wymaga zalogowanego ucznia (bez sesji odpowiada 401), numer ucznia bierze z sesji, a bazę D1 z `context.env.DB`.
+ * EN: The router of subtrack 4a. It requires a signed-in student (without a session it answers 401), takes the student id from the session and the D1 database from `context.env.DB`.
  */
-export const reportsStudentApp = new Hono<{ Bindings: Env }>();
+export const reportsStudentApp = new Hono<StudentEnv>().use(requireStudent);
 
 // PL: POST / zapisuje nowe zgłoszenie. Zwraca 201 z numerem albo 400 przy złych danych.
 // EN: POST / saves a new report. Returns 201 with the id or 400 for bad data.
@@ -53,9 +50,9 @@ reportsStudentApp.post('/', bodyLimit({ maxSize: MAX_BODY_BYTES, onError: (conte
   const parsed = parseReportInput(body);
   if (!parsed.ok) return context.json({ error: 'invalid_report', fields: parsed.fields }, 400);
 
-  // PL: Zapisz zgłoszenie dla ucznia z serwera, a nie z treści zapytania.
-  // EN: Save the report for the student known to the server, not the one from the request body.
-  const id = await createReport(context.env.DB, getCurrentStudentId(), parsed.value);
+  // PL: Zapisz zgłoszenie dla ucznia z sesji, a nie z treści zapytania.
+  // EN: Save the report for the student from the session, not the one from the request body.
+  const id = await createReport(context.env.DB, context.get('student').id, parsed.value);
   return context.json({ id }, 201);
 });
 
@@ -64,6 +61,6 @@ reportsStudentApp.post('/', bodyLimit({ maxSize: MAX_BODY_BYTES, onError: (conte
 reportsStudentApp.get('/', async (context) => {
   // PL: Odczytaj tylko zgłoszenia tego ucznia.
   // EN: Read only this student's reports.
-  const items = await listReportsByAuthor(context.env.DB, getCurrentStudentId());
+  const items = await listReportsByAuthor(context.env.DB, context.get('student').id);
   return context.json({ reports: items });
 });

@@ -17,7 +17,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { deleteReportsStudentData } from './deleteStudentData';
 // PL: Numer ucznia testowego i baza testowa.
 // EN: The test student id and the test database.
-import { TEMPORARY_STUDENT_ID } from './currentStudent';
+import { SEED_STUDENT_ID } from '../../db/seed/reports';
 import { resetDatabase } from './testDatabase';
 
 /** PL: Baza użyta w bieżącym teście. EN: The database used in the current test. */
@@ -37,7 +37,7 @@ describe('deleteReportsStudentData', () => {
   it('zeruje autora zgłoszeń ucznia i nie rusza cudzych / clears the author of the student reports and leaves others', async () => {
     // PL: Usuń dane ucznia testowego i zignoruj wynik, bo funkcja nic nie zwraca.
     // EN: Delete the test student's data and ignore the result, because the function returns nothing.
-    const result = await deleteReportsStudentData({ userId: TEMPORARY_STUDENT_ID, db });
+    const result = await deleteReportsStudentData({ userId: SEED_STUDENT_ID, db });
 
     // PL: Odczytaj autorów wszystkich zgłoszeń.
     // EN: Read the authors of all reports.
@@ -47,7 +47,7 @@ describe('deleteReportsStudentData', () => {
     // EN: The student's reports have null, the foreign one still has its author, and nothing disappeared.
     expect(result).toBeUndefined();
     expect(rows.results).toEqual([
-      { id: 'seed-cudze', author_id: 'inny-uczen' },
+      { id: 'seed-cudze', author_id: 'seed-user-2' },
       { id: 'seed-okno', author_id: null },
       { id: 'seed-projektor', author_id: null },
     ]);

@@ -7,7 +7,7 @@
 - Serwer zgłoszeń ucznia: zapis nowego zgłoszenia (`POST /api/reports/student`) z pierwszym etapem w historii i odczyt własnych zgłoszeń (`GET /api/reports/student`). Serwer sprawdza kategorię, miejsce i długość pól, a numeru autora nie bierze z telefonu.
 - Tabele `reports` i `report_stage_changes` oraz dane testowe. Zgłoszenie zapisuje autora także przy opcji „anonimowo” (uczeń widzi je w „Moje zgłoszenia”); widok Samorządu ma ukrywać autora anonimowych zgłoszeń.
 - Przy usunięciu konta zgłoszenia ucznia zostają bez autora.
-- Do czasu scalenia logowania moduł używa jednego tymczasowego numeru ucznia (`worker/reports/student/currentStudent.ts`). Potem przejdzie na `requireStudent`.
+- Router wymaga zalogowanego ucznia (`requireStudent` z `worker/auth`): bez sesji oba adresy odpowiadają 401, a numer autora pochodzi z sesji. Dane testowe używają uczniów z seedu auth (`seed-user-1`, `seed-user-2`).
 - Zestaw `REPORTS_SEED_SETS` w `worker/db/seed/reports.ts` dla `npm run db:seed`. Testy serwera idą na prawdziwej bazie D1 z tabelami ze schematu.
 
 ## Log AI

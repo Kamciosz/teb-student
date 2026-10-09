@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżki ucznia w podtorze 4a: zgłoszenie w trzech krokach, potwierdzenie i „Moje zgłoszenia” z etapem. Do tego blokady przycisków, szerokość 320 px, brak internetu i błąd serwera. Główna ścieżka używa prawdziwego API i bazy D1.
- * EN: Test of the student path in subtrack 4a: a report in three steps, the confirmation and "Moje zgłoszenia" with the stage. Plus the button guards, 320 px width, no internet and a server error. The main path uses the real API and the D1 database.
+ * PL: Test ścieżki ucznia w podtorze 4a: zgłoszenie w trzech krokach, potwierdzenie i „Moje zgłoszenia” z etapem. Do tego blokady przycisków, szerokość 320 px, brak internetu i błąd serwera. Główna ścieżka używa podstawionego API z pamięcią (prawdziwe wymaga logowania).
+ * EN: Test of the student path in subtrack 4a: a report in three steps, the confirmation and "Moje zgłoszenia" with the stage. Plus the button guards, 320 px width, no internet and a server error. The main path uses a stubbed API with memory (the real one requires sign-in).
  *
  * @author Szymon
  * @since 2026-10-09
@@ -37,10 +37,35 @@ async function fillToDescription(page: Page, description: string): Promise<void>
 
 // PL: Cała ścieżka: formularz, potwierdzenie, lista z etapem „Przyjęte”.
 // EN: The whole path: the form, the confirmation, the list with the "Przyjęte" stage.
+/**
+ * PL: Podstawia API zgłoszeń z pamięcią: POST dopisuje zgłoszenie do listy, GET ją oddaje (najnowsze pierwsze). Prawdziwy serwer wymaga zalogowanego ucznia, a kod logowania trafia tylko do terminala serwera deweloperskiego, więc test ekranu go nie użyje. Serwer sprawdzają testy Vitest (worker/reports/student/routes.test.ts).
+ * EN: Stubs the reports API with memory: POST appends a report to the list, GET returns it (newest first). The real server requires a signed-in student, and the sign-in code goes only to the dev server terminal, so the screen test cannot use it. The server is covered by the Vitest tests (worker/reports/student/routes.test.ts).
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ */
+async function stubReportsApi(page: Page): Promise<void> {
+  // PL: Zgłoszenia „zapisane” do tej pory, najnowsze pierwsze.
+  // EN: The reports "saved" so far, newest first.
+  const saved: Record<string, unknown>[] = [];
+  await page.route('**/api/reports/student', (route) => {
+    // PL: GET oddaje listę.
+    // EN: GET returns the list.
+    if (route.request().method() === 'GET') return route.fulfill({ json: { reports: saved } });
+
+    // PL: POST dopisuje zgłoszenie z etapem „przyjęte” i oddaje numer.
+    // EN: POST appends a report at the "received" stage and returns the id.
+    const body = route.request().postDataJSON() as { category: string; place: string; placeDetail?: string; description: string };
+    const now = Date.now();
+    saved.unshift({ id: `e2e-${now}`, category: body.category, place: body.place, placeDetail: body.placeDetail ?? null, description: body.description, stage: 'received', createdAt: now, updatedAt: now });
+    return route.fulfill({ status: 201, json: { id: `e2e-${now}` } });
+  });
+}
+
 test('uczeń wysyła zgłoszenie i widzi je w „Moich zgłoszeniach” / student sends a report and sees it in "Moje zgłoszenia"', async ({ page }) => {
   // PL: Unikalny opis, żeby odróżnić zgłoszenie od danych z poprzednich uruchomień.
   // EN: A unique description, to tell the report from data of earlier runs.
   const description = `Okno się nie domyka ${Date.now()}`;
+  await stubReportsApi(page);
   await fillToDescription(page, description);
 
   // PL: Przełącznik anonimowości jest domyślnie włączony.

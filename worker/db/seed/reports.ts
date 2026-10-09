@@ -5,7 +5,7 @@
  * @author Szymon
  * @since 2026-10-09
  * @uses worker/db/schema/reports.ts::reports
- * @uses worker/reports/student/currentStudent.ts::TEMPORARY_STUDENT_ID
+ * @uses worker/db/seed/auth.ts::AUTH_SEED_USERS
  * @uses worker/shared/seed.ts::SeedSet
  * @used_by worker/db/seed/index.ts::*
  * @used_by scripts/db.ts::REPORTS_SEED_SETS
@@ -18,12 +18,11 @@ import { reportStageChanges, reports } from '../schema/reports';
 // PL: Typ zestawu danych testowych, wspólny dla modułów.
 // EN: The test data set type shared by the modules.
 import type { SeedSet } from '../../shared';
-// PL: Numer ucznia, do którego należą dwa pierwsze zgłoszenia.
-// EN: The student id the first two reports belong to.
-import { TEMPORARY_STUDENT_ID } from '../../reports/student/currentStudent';
+/** PL: Numer ucznia z danych testowych auth (`seed-user-1`), do którego należą dwa pierwsze zgłoszenia. EN: The id of the student from the auth test data (`seed-user-1`) that the first two reports belong to. */
+export const SEED_STUDENT_ID = 'seed-user-1';
 
-/** PL: Numer innego, wymyślonego ucznia. EN: The id of another, invented student. */
-export const OTHER_STUDENT_ID = 'inny-uczen';
+/** PL: Numer innego ucznia z danych testowych auth (`seed-user-2`). EN: The id of another student from the auth test data (`seed-user-2`). */
+export const OTHER_STUDENT_ID = 'seed-user-2';
 
 /**
  * PL: Zgłoszenia testowe: „W trakcie” i „Załatwione” ucznia oraz jedno cudze.
@@ -32,7 +31,7 @@ export const OTHER_STUDENT_ID = 'inny-uczen';
 export const REPORTS_SEED: (typeof reports.$inferInsert)[] = [
   {
     id: 'seed-projektor',
-    authorId: TEMPORARY_STUDENT_ID,
+    authorId: SEED_STUDENT_ID,
     isAnonymous: true,
     category: 'room_equipment',
     place: 'classroom',
@@ -44,7 +43,7 @@ export const REPORTS_SEED: (typeof reports.$inferInsert)[] = [
   },
   {
     id: 'seed-okno',
-    authorId: TEMPORARY_STUDENT_ID,
+    authorId: SEED_STUDENT_ID,
     isAnonymous: true,
     category: 'room_equipment',
     place: 'classroom',
