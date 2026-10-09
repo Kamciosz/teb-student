@@ -30,7 +30,7 @@ Stan na 9.10.2026: kodu jeszcze nie ma. Ten plik opisuje układ wynikający z te
 | Profil i ustawienia | Jakub | |
 | Panel Samorządu | do ustalenia | |
 
-Katalogi i nazwy modułów w kodzie ustali projekt techniczny.
+Katalogi i nazwy modułów w kodzie ustali projekt techniczny. Propozycję nazw i podział plików między agentów opisuje `docs/PODZIAL_PRACY.md`.
 
 ## Najważniejsze przepływy
 

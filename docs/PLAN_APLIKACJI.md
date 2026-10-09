@@ -205,6 +205,7 @@ Dotyczy aktualności i Re-Wear. Cel: jak najmniejsza waga pliku, bez różnicy w
 4. Zadanie jest gotowe, gdy działa i przechodzą testy. Sam napisany kod tego nie oznacza.
 5. Każde zadanie ma właściciela z zespołu. Właściciel czyta wynik, poprawia go i umie go wyjaśnić.
 6. Kod do repozytorium wrzuca Adam: zatwierdza i scala pull requesty. Nikt nie wrzuca zmian prosto do `main`.
+7. Podział na tory, pliki każdego toru i postępowanie przy konflikcie są w `docs/PODZIAL_PRACY.md`.
 
 ### Wymogi PZO
 
@@ -334,12 +335,12 @@ Ten tekst wklejacie agentowi uruchomionemu w tym repozytorium.
 > Jesteś agentem orkiestrującym budowę aplikacji TEB Student. Pracujesz w tym repozytorium. Plan zespołu jest w `docs/PLAN_APLIKACJI.md`, a technologie w `docs/TECHNOLOGIE.md`. Zasady pracy są w `AGENTS.md`. Piszemy od zera. Starą aplikację `Kamciosz/teb-app-production` możesz czytać jako inspirację, ale nie kopiuj z niej kodu.
 >
 > 1. Przeczytaj plan, założenia techniczne Bohdana i starą aplikację. Nie zmieniaj jeszcze niczego.
-> 2. Przygotuj projekt techniczny zgodny z założeniami Bohdana: strukturę aplikacji, dane, sposób wymiany danych między ekranami a serwerem i wspólne ustalenia dla agentów. Przygotuj też listę zadań z kolejnością, właścicielem z części 4 i sprawdzeniem z części 7.
+> 2. Przygotuj projekt techniczny zgodny z założeniami Bohdana: strukturę aplikacji, dane, sposób wymiany danych między ekranami a serwerem i wspólne ustalenia dla agentów. Przygotuj też listę zadań z kolejnością, właścicielem z części 4 i sprawdzeniem z części 7. Zadania etapu B dziel na tory z `docs/PODZIAL_PRACY.md`.
 > 3. Pokaż projekt i listę zadań Szymonowi i Bohdanowi. Zacznij programować dopiero po ich akceptacji.
 > 4. Etap A rób po kolei. Zadania etapu B dawaj agentom równolegle, każdemu tylko jego moduł.
 > 5. Każde zadanie to osobna gałąź i pull request. Nie wrzucaj zmian do `main`. Pull request zatwierdza i scala Adam.
 > 6. Commity podpisuje właściciel zadania. Nie dopisuj modelu AI jako autora.
-> 7. Do każdego zadania zapisz log AI dla Szymona: polecenie, co zrobił agent i jakie pliki zmienił. Właściciel dopisze, co zmienił sam.
+> 7. Do każdego zadania zapisz log AI dla Szymona w pliku `docs/zmiany/<gałąź>.md`: polecenie, co zrobił agent i jakie pliki zmienił. Właściciel dopisze, co zmienił sam.
 > 8. Zadanie jest gotowe, gdy przechodzą testy i punkty z części 7. Testów nie osłabiaj, żeby przeszły.
 > 9. Gdy czegoś brakuje albo plan sam sobie przeczy, zatrzymaj się i zapytaj Szymona, a w sprawach technicznych Bohdana. Nie zgaduj. Dotyczy to zwłaszcza planu dzwonków, danych osobowych i treści ekranów.
 

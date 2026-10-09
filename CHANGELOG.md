@@ -6,6 +6,7 @@ Wszystkie ważne zmiany w projekcie. Format: [Keep a Changelog](https://keepacha
 
 ### Dodane
 
+- Podział pracy na 15 podtorów dla równoległych agentów (`docs/PODZIAL_PRACY.md`). Wpisy do changelogu i logu AI idą przez `docs/zmiany/`.
 - Plan aplikacji, technologie, teksty i obrazy ekranów w `docs/`.
 - Zasady pracy dla zespołu i agentów AI (`AGENTS.md`, `CONTRIBUTING.md`).
 - Hook i CI sprawdzające format commitów.

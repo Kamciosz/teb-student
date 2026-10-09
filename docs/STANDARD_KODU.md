@@ -141,7 +141,7 @@ Jak to osiągnąć:
 - Każdą komendę i ścieżkę z dokumentu sprawdzamy, zanim ją zapiszemy.
 - Czego nie wiemy, oznaczamy „nie wiadomo” albo „do ustalenia”. Nie zgadujemy.
 - Mapą projektu jest `docs/ARCHITECTURE.md`: moduł, ścieżka, co robi, właściciel, od czego zależy. Opisujemy moduły, nie pojedyncze funkcje.
-- Decyzje zapisujemy w `docs/adr/`, a zmiany w `CHANGELOG.md`.
+- Decyzje zapisujemy w `docs/adr/`. Zmiany zapisujemy w `docs/zmiany/<gałąź>.md`, a Szymon przenosi je do `CHANGELOG.md`.
 - README jest dla ludzi, `AGENTS.md` dla agentów. Nie kopiujemy jednego do drugiego, tylko linkujemy.
 
 ## 4. Testy
