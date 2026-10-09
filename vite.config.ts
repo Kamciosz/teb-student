@@ -34,7 +34,11 @@ const DEFAULT_PORT = 5173;
 // EN: Dev server port: PORT from the agent's computer or the default. Each subtrack has its own (docs/PODZIAL_PRACY.md, part 3).
 const port = Number(process.env.PORT ?? DEFAULT_PORT);
 
+// PL: Ustawienia Vite, które czytają polecenia dev, build i preview.
+// EN: The Vite settings read by the dev, build and preview commands.
 export default defineConfig({
+  // PL: Wtyczki w kolejności działania.
+  // EN: Plugins in the order they run.
   plugins: [
     // PL: Ekrany React.
     // EN: React screens.
@@ -58,6 +62,8 @@ export default defineConfig({
     // EN: The Worker from wrangler.jsonc runs under the same address as the app.
     cloudflare(),
   ],
+  // PL: Serwer deweloperski (polecenie dev).
+  // EN: The dev server (the dev command).
   server: {
     // PL: Port serwera deweloperskiego.
     // EN: Dev server port.
@@ -66,6 +72,8 @@ export default defineConfig({
     // EN: When the port is busy, stop instead of silently picking another one. Another port could collide with another agent.
     strictPort: true,
   },
+  // PL: Podgląd zbudowanej aplikacji.
+  // EN: Preview of the built app.
   preview: {
     // PL: Ten sam port dla podglądu zbudowanej aplikacji.
     // EN: The same port for previewing the built app.

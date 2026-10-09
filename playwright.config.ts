@@ -20,15 +20,21 @@ const DEFAULT_PORT = 5173;
 // EN: This agent's port (docs/PODZIAL_PRACY.md, part 3).
 const port = Number(process.env.PORT ?? DEFAULT_PORT);
 
+// PL: Ustawienia, które czyta polecenie test:e2e.
+// EN: The settings read by the test:e2e command.
 export default defineConfig({
   // PL: Katalog z testami całych ścieżek.
   // EN: Directory with the end-to-end tests.
   testDir: './e2e',
+  // PL: Ustawienia wspólne dla wszystkich testów.
+  // EN: Settings shared by all tests.
   use: {
     // PL: Adres aplikacji, względem którego otwierają się strony w testach.
     // EN: The app address that pages in tests are opened relative to.
     baseURL: `http://localhost:${port}`,
   },
+  // PL: Serwer, który Playwright uruchamia przed testami i zatrzymuje po nich.
+  // EN: The server Playwright starts before the tests and stops after them.
   webServer: {
     // PL: Polecenie, które uruchamia aplikację na czas testów.
     // EN: The command that starts the app for the tests.

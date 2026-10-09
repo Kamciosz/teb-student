@@ -15,6 +15,8 @@ import { cloudflareTest } from '@cloudflare/vitest-plugin';
 // EN: defineConfig tells the editor which settings are allowed.
 import { defineConfig } from 'vitest/config';
 
+// PL: Ustawienia, które czyta polecenie test.
+// EN: The settings read by the test command.
 export default defineConfig({
   // PL: Test Workera czyta jego ustawienia z wrangler.jsonc.
   // EN: The Worker test reads its settings from wrangler.jsonc.

@@ -12,6 +12,8 @@
 // EN: Playwright test functions.
 import { expect, test } from '@playwright/test';
 
+// PL: Jedyny przypadek: ekran startowy pokazuje to, co ma pokazywać.
+// EN: The only case: the start screen shows what it should show.
 test('ekran startowy pokazuje nazwę i „W budowie” / start screen shows the name and "W budowie"', async ({ page }) => {
   // PL: Otwórz stronę główną aplikacji.
   // EN: Open the app's home page.
