@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# PL: Workflow tylko czyta repozytorium. Bez tego token dostaje domyślne, szersze uprawnienia.
+# EN: The workflow only reads the repository. Without this the token gets the default, wider permissions.
+permissions:
+  contents: read
+
 jobs:
   commits:
     name: Format commitów
