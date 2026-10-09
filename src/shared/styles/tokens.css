@@ -1,0 +1,274 @@
+/**
+ * PL: Zmienne wyglądu aplikacji: kolory 8 palet (CA–CH) z akcentem szkoły, typografia, odstępy i zaokrąglenia.
+ *     To jedyny plik, w którym wolno wpisać kolor. Reszta aplikacji bierze kolory przez var(--...).
+ *     Wartości przeniesione 1:1 z docs/projekt/referencje/uklad_C.html.
+ * EN: Look-and-feel variables of the app: colors of the 8 palettes (CA–CH) with the school accent, typography,
+ *     spacing and radii. This is the only file where a color may be written down. The rest of the app takes
+ *     colors through var(--...). Values copied 1:1 from docs/projekt/referencje/uklad_C.html.
+ *
+ * PL: Paleta domyślna to CE Grafit, a szkoła domyślna to liceum (L). Paletę wybiera atrybut data-paleta,
+ *     a szkołę atrybut data-szkola na elemencie <html>. Bez atrybutów działa CE Grafit z akcentem liceum.
+ * EN: The default palette is CE Grafit and the default school is the lyceum (L). The palette is chosen by the
+ *     data-paleta attribute and the school by the data-szkola attribute on the <html> element. With no
+ *     attributes, CE Grafit with the lyceum accent applies.
+ *
+ * @author Kacper
+ * @since 2026-10-09
+ * @used_by src/shared/styles/base.css::var(--...)
+ */
+
+/* PL: Domyślny wygląd: paleta CE Grafit z akcentem liceum (niebieski). Kolory kafli, tekstu i tła.
+   EN: Default look: the CE Grafit palette with the lyceum accent (blue). Colors of tiles, text and background. */
+:root {
+  /* PL: Ciemny motyw, więc przeglądarka rysuje suwaki i pola formularzy na ciemno.
+     EN: Dark theme, so the browser draws scrollbars and form fields dark. */
+  color-scheme: dark;
+
+  /* PL: Tło ekranu, tło za aplikacją, kafel i kafel wyróżniony.
+     EN: Screen background, background behind the app, tile and highlighted tile. */
+  --bg: #26282d;
+  --bg-deep: #1c1d21;
+  --tile: #303339;
+  --tile-2: #3a3e45;
+
+  /* PL: Linia i obrys, tekst główny i tekst drugorzędny.
+     EN: Line and outline, primary text and secondary text. */
+  --line: #4a4f58;
+  --ink: #f1f2f4;
+  --ink-2: #aeb3bc;
+
+  /* PL: Cień pływającego paska (dock) i przycisku akcji.
+     EN: Shadow of the floating bar (dock) and of the action button. */
+  --shadow: 0 8px 32px rgba(10, 11, 13, .5);
+
+  /* PL: Akcent liceum: przycisk główny, jego stan po najechaniu, tekst na przycisku i obwódka fokusu.
+     EN: Lyceum accent: primary button, its hover state, text on the button and the focus ring. */
+  --accent: #6fa8ff;
+  --accent-hover: #8dbbff;
+  --on-accent: #0c1a33;
+  --focus: #6fa8ff;
+
+  /* PL: Skala rozmiarów tekstu: od podpisu (xs) do dużej cyfry licznika (num).
+     EN: Text size scale: from the caption (xs) to the large counter digit (num). */
+  --t-xs: 12px;
+  --t-sm: 14px;
+  --t-md: 16px;
+  --t-lg: 20px;
+  --t-xl: 28px;
+  --t-num-sm: 32px;
+  --t-num: 64px;
+
+  /* PL: Zaokrąglenia: pola i małe przyciski (sm), kafle i przyciski (r), pływający pasek (lg).
+     EN: Radii: fields and small buttons (sm), tiles and buttons (r), the floating bar (lg). */
+  --r-sm: 8px;
+  --r: 12px;
+  --r-lg: 20px;
+
+  /* PL: Krój pisma. Archivo jest pierwszy, a gdy się nie załaduje, działa krój systemowy telefonu.
+     EN: Typeface. Archivo comes first; when it fails to load, the phone's system typeface is used. */
+  --font: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* PL: Dolny odstęp bezpieczny: pasek gestów iPhone'a. Poza iPhone'em ma wartość 0.
+     EN: Safe bottom inset: the iPhone gesture bar. Outside an iPhone it is 0. */
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+
+/* PL: Akcent technikum (czerwony) dla domyślnej palety CE. Ta reguła jest przed paletami CA–CD,
+   żeby ich akcent miał pierwszeństwo, bo te palety nie mają wariantów szkoły.
+   EN: Technical school accent (red) for the default CE palette. This rule comes before the CA–CD palettes,
+   so their accent wins, because those palettes have no school variants. */
+:root[data-szkola="T"] {
+  --accent: #ff6b6b;
+  --accent-hover: #ff8585;
+  --on-accent: #2a0b0b;
+  --focus: #ff6b6b;
+}
+
+/* PL: Paleta CA Szałwia (jasna): jasne tło i zielony tekst, żółty akcent bez wariantów szkoły.
+   EN: Palette CA Sage (light): light background and green text, a yellow accent with no school variants. */
+:root[data-paleta="CA"] {
+  color-scheme: light;
+  --bg: #e6eee8;
+  --bg-deep: #d8e3db;
+  --tile: #ffffff;
+  --tile-2: #d3e2d8;
+  --line: #c2d3c8;
+  --ink: #12302a;
+  --ink-2: #4a6359;
+  --accent: #f2c744;
+  --accent-hover: #e8b826;
+  --on-accent: #12302a;
+  --focus: #12302a;
+  --shadow: 0 8px 32px rgba(18, 48, 42, .16);
+}
+
+/* PL: Paleta CB Błękit (jasna): jasnoniebieskie tło, pomarańczowy akcent bez wariantów szkoły.
+   EN: Palette CB Sky (light): light blue background, an orange accent with no school variants. */
+:root[data-paleta="CB"] {
+  color-scheme: light;
+  --bg: #e8eff8;
+  --bg-deep: #dae4f1;
+  --tile: #ffffff;
+  --tile-2: #d5e1f0;
+  --line: #c3d2e6;
+  --ink: #13233d;
+  --ink-2: #4b5d78;
+  --accent: #ff7a30;
+  --accent-hover: #f2691c;
+  --on-accent: #13233d;
+  --focus: #13233d;
+  --shadow: 0 8px 32px rgba(19, 35, 61, .16);
+}
+
+/* PL: Paleta CC Grafit: ciemne tło, różowy akcent bez wariantów szkoły.
+   EN: Palette CC Graphite: dark background, a pink accent with no school variants. */
+:root[data-paleta="CC"] {
+  --bg: #26282d;
+  --bg-deep: #1c1d21;
+  --tile: #303339;
+  --tile-2: #3a3e45;
+  --line: #4a4f58;
+  --ink: #f1f2f4;
+  --ink-2: #aeb3bc;
+  --accent: #ff8fb3;
+  --accent-hover: #ffa9c5;
+  --on-accent: #26282d;
+  --focus: #ff8fb3;
+  --shadow: 0 8px 32px rgba(10, 11, 13, .5);
+}
+
+/* PL: Paleta CD Śliwka: fioletowe tło, miętowy akcent bez wariantów szkoły.
+   EN: Palette CD Plum: purple background, a mint accent with no school variants. */
+:root[data-paleta="CD"] {
+  --bg: #2b1a33;
+  --bg-deep: #200f27;
+  --tile: #382443;
+  --tile-2: #452e52;
+  --line: #563d63;
+  --ink: #f6eef8;
+  --ink-2: #c4aecb;
+  --accent: #7fe3c9;
+  --accent-hover: #9cebd6;
+  --on-accent: #2b1a33;
+  --focus: #7fe3c9;
+  --shadow: 0 8px 32px rgba(16, 6, 20, .5);
+}
+
+/* PL: Paleta CE Grafit, wspólne kolory. Te same wartości co domyślny wygląd wyżej, żeby paletę
+   dało się też wybrać jawnie atrybutem. Akcent liceum i technikum jest niżej.
+   EN: Palette CE Graphite, shared colors. The same values as the default look above, so the palette
+   can also be chosen explicitly with the attribute. The lyceum and technical school accents are below. */
+:root[data-paleta="CE"] {
+  --bg: #26282d;
+  --bg-deep: #1c1d21;
+  --tile: #303339;
+  --tile-2: #3a3e45;
+  --line: #4a4f58;
+  --ink: #f1f2f4;
+  --ink-2: #aeb3bc;
+  --shadow: 0 8px 32px rgba(10, 11, 13, .5);
+}
+
+/* PL: Paleta CE, akcent liceum (L, niebieski) i technikum (T, czerwony).
+   EN: Palette CE, lyceum accent (L, blue) and technical school accent (T, red). */
+:root[data-paleta="CE"][data-szkola="L"] {
+  --accent: #6fa8ff;
+  --accent-hover: #8dbbff;
+  --on-accent: #0c1a33;
+  --focus: #6fa8ff;
+}
+
+:root[data-paleta="CE"][data-szkola="T"] {
+  --accent: #ff6b6b;
+  --accent-hover: #ff8585;
+  --on-accent: #2a0b0b;
+  --focus: #ff6b6b;
+}
+
+/* PL: Paleta CF Czerń: prawie czarne tło, wspólne kolory.
+   EN: Palette CF Black: an almost black background, shared colors. */
+:root[data-paleta="CF"] {
+  --bg: #0e0f11;
+  --bg-deep: #000000;
+  --tile: #181a1d;
+  --tile-2: #22252a;
+  --line: #33373d;
+  --ink: #f5f6f7;
+  --ink-2: #a3a9b2;
+  --shadow: 0 8px 32px rgba(0, 0, 0, .6);
+}
+
+/* PL: Paleta CF, akcent liceum i technikum.
+   EN: Palette CF, lyceum and technical school accents. */
+:root[data-paleta="CF"][data-szkola="L"] {
+  --accent: #4f8fff;
+  --accent-hover: #6fa3ff;
+  --on-accent: #07101f;
+  --focus: #4f8fff;
+}
+
+:root[data-paleta="CF"][data-szkola="T"] {
+  --accent: #ff4d55;
+  --accent-hover: #ff6e75;
+  --on-accent: #240608;
+  --focus: #ff4d55;
+}
+
+/* PL: Paleta CG Biel (jasna): jasnoszare tło, wspólne kolory.
+   EN: Palette CG White (light): a light grey background, shared colors. */
+:root[data-paleta="CG"] {
+  color-scheme: light;
+  --bg: #f3f4f6;
+  --bg-deep: #e6e8eb;
+  --tile: #ffffff;
+  --tile-2: #e8eaee;
+  --line: #d5d8dd;
+  --ink: #14161a;
+  --ink-2: #5a6069;
+  --shadow: 0 8px 32px rgba(20, 22, 26, .14);
+}
+
+/* PL: Paleta CG, akcent liceum i technikum. Tekst na akcencie jest biały, bo akcent jest ciemny.
+   EN: Palette CG, lyceum and technical school accents. Text on the accent is white, because the accent is dark. */
+:root[data-paleta="CG"][data-szkola="L"] {
+  --accent: #1f5fe0;
+  --accent-hover: #1a52c4;
+  --on-accent: #ffffff;
+  --focus: #1f5fe0;
+}
+
+:root[data-paleta="CG"][data-szkola="T"] {
+  --accent: #d42a3c;
+  --accent-hover: #b92233;
+  --on-accent: #ffffff;
+  --focus: #d42a3c;
+}
+
+/* PL: Paleta CH Granat: granatowe tło, wspólne kolory.
+   EN: Palette CH Navy: a navy background, shared colors. */
+:root[data-paleta="CH"] {
+  --bg: #16203a;
+  --bg-deep: #0e1629;
+  --tile: #1e2a4a;
+  --tile-2: #283659;
+  --line: #38476e;
+  --ink: #eef2fa;
+  --ink-2: #a9b6d3;
+  --shadow: 0 8px 32px rgba(5, 9, 20, .55);
+}
+
+/* PL: Paleta CH, akcent liceum i technikum.
+   EN: Palette CH, lyceum and technical school accents. */
+:root[data-paleta="CH"][data-szkola="L"] {
+  --accent: #6aa6ff;
+  --accent-hover: #89b9ff;
+  --on-accent: #0b1429;
+  --focus: #6aa6ff;
+}
+
+:root[data-paleta="CH"][data-szkola="T"] {
+  --accent: #ff5a63;
+  --accent-hover: #ff7b82;
+  --on-accent: #2a0a0d;
+  --focus: #ff5a63;
+}

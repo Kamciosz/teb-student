@@ -1,0 +1,105 @@
+/**
+ * PL: Podstawowe style aplikacji: zerowanie marginesów, tło, krój i rozmiary tekstu, widoczny fokus z klawiatury,
+ *     dotyk i bezpieczne marginesy telefonu. Bez żadnego koloru na sztywno: kolory biorą się ze zmiennych
+ *     w tokens.css. Reguły komponentów (kafle, przyciski, dock) należą do modułów, a nie tutaj.
+ * EN: Base styles of the app: margin reset, background, typeface and text sizes, keyboard-visible focus, touch
+ *     behavior and the phone's safe margins. No hard-coded color: colors come from the variables in tokens.css.
+ *     Component rules (tiles, buttons, dock) belong to the modules, not here.
+ *
+ * @author Kacper
+ * @since 2026-10-09
+ * @uses src/shared/styles/tokens.css::var(--...)
+ */
+
+/* PL: Zerowanie: każdy element liczy szerokość z ramką i paddingiem, bez domyślnych marginesów.
+   EN: Reset: every element counts its width with border and padding, with no default margins. */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* PL: Tło za aplikacją widać poza kolumną 430 px, na przykład na komputerze.
+   EN: The background behind the app shows outside the 430 px column, for example on a computer. */
+html {
+  background: var(--bg-deep);
+}
+
+/* PL: Tekst: krój, kolor, rozmiar 16 px i interlinia 1,45. Wygładzanie liter na iPhonie i Macu.
+   Boczne marginesy bezpieczne chronią treść przed wycięciem ekranu, gdy telefon leży poziomo.
+   EN: Text: typeface, color, 16 px size and 1.45 line height. Font smoothing on iPhone and Mac.
+   Safe side margins keep the content clear of the screen cutout when the phone lies sideways. */
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  font-size: var(--t-md);
+  line-height: 1.45;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* PL: Przyciski i pola dziedziczą krój, rozmiar i kolor tekstu, bo domyślnie przeglądarka daje własne.
+   EN: Buttons and fields inherit the typeface, size and text color, because the browser gives its own by default. */
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* PL: Dotyk: bez opóźnienia na podwójne stuknięcie i bez błysku przeglądarki. Dotknięcie pokazują komponenty.
+   EN: Touch: no delay for the double tap and no browser flash. Components show the touch themselves. */
+a,
+button,
+label {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* PL: Nagłówek H1 jest duży i pogrubiony. Podział wiersza wyrównuje długość linii.
+   EN: The H1 heading is large and bold. Line breaking balances the line lengths. */
+h1 {
+  font-size: var(--t-xl);
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* PL: Nagłówek H2 i akapit: podział wiersza bez osieroconych słów na końcu.
+   EN: The H2 heading and paragraph: line breaking without orphaned words at the end. */
+h2 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* PL: Nagłówek ekranu dostaje fokus programowo po zmianie ekranu, więc nie rysujemy wokół niego obwódki.
+   EN: The screen heading gets focus from code after a screen change, so we draw no outline around it. */
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+/* PL: Fokus z klawiatury: gruba obwódka w kolorze akcentu szkoły, widoczna na każdym tle.
+   EN: Keyboard focus: a thick outline in the school accent color, visible on any background. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* PL: Ukryty element naprawdę znika, nawet gdy inna reguła ustawia mu display.
+   EN: A hidden element really disappears, even when another rule sets its display. */
+[hidden] {
+  display: none !important;
+}
+
+/* PL: Uczeń wyłączył animacje w telefonie, więc wyłączamy przejścia w całej aplikacji.
+   EN: The student turned off animations on the phone, so we turn off transitions in the whole app. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
