@@ -7,12 +7,16 @@
  * @author Jakub
  * @since 2026-10-09
  * @uses worker/db/schema/surveys.ts::surveys
+ * @uses worker/shared/seed.ts::SeedSet
  * @used_by worker/db/seed/index.ts::*
  */
 
 // PL: Typy wierszy, żeby kompilator pilnował zgodności danych ze schematem.
 // EN: The row types, so the compiler keeps the data in line with the schema.
-import type { surveyOptions, surveyQuestions, surveys } from '../schema/surveys';
+import { surveyOptions, surveyQuestions, surveys } from '../schema/surveys';
+// PL: Typ zestawu danych testowych (tabela i jej wiersze).
+// EN: The test data set type (a table and its rows).
+import type { SeedSet } from '../../shared/seed';
 
 /**
  * PL: Ankiety testowe: aktywna (do końca roku), aktywna druga i zakończona.
@@ -58,4 +62,14 @@ export const SURVEY_OPTIONS_SEED: (typeof surveyOptions.$inferInsert)[] = [
   { id: 'stolowka-1-c', questionId: 'stolowka-1', position: 3, label: 'Źle' },
   { id: 'dzwonki-1-a', questionId: 'dzwonki-1', position: 1, label: 'Tak' },
   { id: 'dzwonki-1-b', questionId: 'dzwonki-1', position: 2, label: 'Nie' },
+];
+
+/**
+ * PL: Zestawy danych testowych modułu: scripts/db.ts wpisuje je do bazy po `npm run db:seed`. Tabela udziału (survey_participation) zostaje pusta, bo nie ma jeszcze kont uczniów.
+ * EN: The module's test data sets: scripts/db.ts inserts them into the database on `npm run db:seed`. The participation table (survey_participation) stays empty, because there are no student accounts yet.
+ */
+export const SURVEYS_SEED_SETS: SeedSet[] = [
+  { table: surveys, rows: SURVEYS_SEED },
+  { table: surveyQuestions, rows: SURVEY_QUESTIONS_SEED },
+  { table: surveyOptions, rows: SURVEY_OPTIONS_SEED },
 ];

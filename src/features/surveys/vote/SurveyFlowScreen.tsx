@@ -4,22 +4,21 @@
  *
  * @author Jakub
  * @since 2026-10-09
- * @uses src/features/surveys/vote/surveyApi.ts::fetchSurvey
+ * @uses src/features/surveys/vote/surveyQueries.ts::useSurvey
  * @uses src/features/surveys/vote/useVoteSubmit.ts::useVoteSubmit
  * @used_by src/features/surveys/vote/SurveysVoteScreen.tsx::SurveysVoteScreen
  */
 
-// PL: Haki Reacta: stan i stały odnośnik do funkcji.
-// EN: React hooks: state and a stable function reference.
-import { useCallback, useState } from 'react';
+// PL: Hak stanu Reacta.
+// EN: React's state hook.
+import { useState } from 'react';
 // PL: Parametr adresu.
 // EN: The address parameter.
 import { useParams } from 'react-router';
 import { FlowNotice, FlowTop } from './FlowParts';
 import { QuestionStep } from './QuestionStep';
-import { fetchSurvey } from './surveyApi';
+import { useSurvey } from './surveyQueries';
 import type { AnswerMap, SurveyDetail } from './types';
-import { useRemoteData } from './useRemoteData';
 import { useVoteSubmit } from './useVoteSubmit';
 
 // PL: Komunikaty o problemie z wysłaniem, które zastępują ekran pytań.
@@ -63,19 +62,22 @@ function SurveyQuestions({ survey }: { survey: SurveyDetail }) {
 }
 
 /**
- * PL: Rysuje ekran ankiety o numerze z adresu. Pokazuje wczytywanie, błąd (na przykład brak internetu), komunikat o ankiecie zakończonej albo już wypełnionej, a w pozostałych przypadkach pytania.
- * EN: Draws the survey screen for the id in the address. Shows loading, an error (for example no internet), a message for an ended or already filled survey, and otherwise the questions.
+ * PL: Rysuje ekran ankiety o numerze z adresu. Pokazuje wczytywanie, brak internetu, błąd, komunikat o ankiecie zakończonej albo już wypełnionej, a w pozostałych przypadkach pytania.
+ * EN: Draws the survey screen for the id in the address. Shows loading, no internet, an error, a message for an ended or already filled survey, and otherwise the questions.
  *
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
 export function SurveyFlowScreen() {
   const { surveyId = '' } = useParams();
-  const load = useCallback(() => fetchSurvey(surveyId), [surveyId]);
-  const { state, reload } = useRemoteData(load);
+  const query = useSurvey(surveyId);
+  const survey = query.data;
 
-  if (state.status === 'loading') return <main className="vote vote--flow" data-subtrack="5a"><p className="vote-small" role="status">Wczytuję ankietę…</p></main>;
-  if (state.status === 'error') return <FlowNotice title="Nie udało się pobrać ankiety" text="Sprawdź połączenie z internetem i spróbuj jeszcze raz." onRetry={reload} />;
-  if (state.data.hasVoted) return <FlowNotice {...BLOCKING_MESSAGES.already_voted} />;
-  if (!state.data.isActive) return <FlowNotice {...BLOCKING_MESSAGES.ended} />;
-  return <SurveyQuestions survey={state.data} />;
+  // PL: Zapisana albo świeża ankieta ma pierwszeństwo przed błędem odświeżania.
+  // EN: A saved or fresh survey takes precedence over a refresh error.
+  if (survey === undefined && query.isError) return <FlowNotice title="Nie udało się pobrać ankiety" text="Sprawdź połączenie z internetem i spróbuj jeszcze raz." onRetry={() => void query.refetch()} />;
+  if (survey === undefined && query.fetchStatus === 'paused') return <FlowNotice title="Brak internetu" text="Ankieta wczyta się, gdy wróci połączenie." onRetry={() => void query.refetch()} />;
+  if (survey === undefined) return <main className="vote vote--flow" data-subtrack="5a"><p className="vote-small" role="status">Wczytuję ankietę…</p></main>;
+  if (survey.hasVoted) return <FlowNotice {...BLOCKING_MESSAGES.already_voted} />;
+  if (!survey.isActive) return <FlowNotice {...BLOCKING_MESSAGES.ended} />;
+  return <SurveyQuestions survey={survey} />;
 }

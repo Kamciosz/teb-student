@@ -1,6 +1,6 @@
 /**
- * PL: Dostęp do bazy D1 dla podtoru 5a: otwiera Drizzle na wiązaniu DB i rozpoznaje błąd „ten głos już jest”. Wiązania DB nie ma jeszcze w wrangler.jsonc (zgłoszenie #41), więc openDatabase zwraca null, a trasy odpowiadają kodem 503.
- * EN: Database access for subtrack 5a: opens Drizzle on the DB binding and recognises the "this vote already exists" error. The DB binding is not in wrangler.jsonc yet (issue #41), so openDatabase returns null and the routes answer with code 503.
+ * PL: Dostęp do bazy D1 dla podtoru 5a: otwiera Drizzle na wiązaniu DB (c.env.DB albo input.db) i rozpoznaje błąd „ten głos już jest”.
+ * EN: Database access for subtrack 5a: opens Drizzle on the DB binding (c.env.DB or input.db) and recognises the "this vote already exists" error.
  *
  * @author Jakub
  * @since 2026-10-09
@@ -18,35 +18,22 @@ import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 import * as schema from '../../db/schema/surveys';
 
 /**
- * PL: Wiązania Workera, których potrzebuje podtor 5a. DB jest opcjonalne, bo do czasu zgłoszenia #41 Worker go nie dostaje.
- * EN: The Worker bindings subtrack 5a needs. DB is optional, because until issue #41 the Worker does not receive it.
- */
-export type VoteBindings = {
-  /** PL: Baza D1 aplikacji. EN: The app's D1 database. */
-  DB?: D1Database;
-};
-
-/**
  * PL: Baza z tabelami modułu surveys.
  * EN: The database with the surveys module tables.
  */
 export type VoteDatabase = DrizzleD1Database<typeof schema>;
 
 /**
- * PL: Otwiera bazę na wiązaniu DB.
- * EN: Opens the database on the DB binding.
+ * PL: Otwiera bazę na wiązaniu D1.
+ * EN: Opens the database on a D1 binding.
  *
- * @param bindings - PL: wiązania Workera z kontekstu zapytania. EN: the Worker bindings from the request context.
- * @returns PL: baza albo null, gdy wiązania DB nie ma. EN: the database, or null when there is no DB binding.
+ * @param d1 - PL: baza D1 z c.env.DB albo z input.db. EN: the D1 database from c.env.DB or input.db.
+ * @returns PL: baza z tabelami modułu. EN: the database with the module tables.
  */
-export function openDatabase(bindings: VoteBindings): VoteDatabase | null {
-  // PL: Bez wiązania nie ma bazy.
-  // EN: Without the binding there is no database.
-  if (bindings.DB === undefined) return null;
-
+export function openDatabase(d1: D1Database): VoteDatabase {
   // PL: Owiń D1 w Drizzle ze schematem modułu.
   // EN: Wrap D1 in Drizzle with the module schema.
-  return drizzle(bindings.DB, { schema });
+  return drizzle(d1, { schema });
 }
 
 /**

@@ -1,8 +1,8 @@
 /**
- * PL: Test ekranów ankiet dla ucznia (podtor 5a) na atrapie serwera: lista z dniami do końca, jedno pytanie na ekranie, „Dalej” po wyborze, wysłanie głosu, brak drugiego wypełnienia, błąd bez internetu i szerokość 320 px.
- *     Serwer jest atrapą (page.route), bo CI nie ma bazy D1 (zgłoszenie #41). Zasadę „jeden głos na ucznia” w bazie sprawdza worker/surveys/vote/schema.test.ts.
- * EN: Test of the survey screens for the student (subtrack 5a) against a mock server: the list with the days left, one question per screen, "Dalej" after a choice, sending the vote, no second filling, the offline error and the 320 px width.
- *     The server is a mock (page.route), because CI has no D1 database (issue #41). The "one vote per student" rule in the database is checked by worker/surveys/vote/schema.test.ts.
+ * PL: Test ekranów ankiet dla ucznia (podtor 5a) na atrapie serwera: lista z dniami do końca, jedno pytanie na ekranie, „Dalej” po wyborze, wysłanie głosu, brak drugiego wypełnienia, błąd bez internetu, lista z zapisu w telefonie i szerokość 320 px.
+ *     Ekrany sprawdzamy na atrapie serwera (page.route), bo atrapa nie zależy od dnia uruchomienia (termin ankiety). Jeden test odpytuje prawdziwy serwer z bazą D1 i danymi z npm run db:seed. Zasadę „jeden głos na ucznia” sprawdzają testy serwera na prawdziwej D1 (worker/surveys/vote/vote.test.ts).
+ * EN: Test of the survey screens for the student (subtrack 5a) against a mock server: the list with the days left, one question per screen, "Dalej" after a choice, sending the vote, no second filling, the offline error, the list from the phone's saved data and the 320 px width.
+ *     The screens are checked against a mock server (page.route), because a mock does not depend on the day of the run (the survey deadline). One test queries the real server with the D1 database and the data from npm run db:seed. The "one vote per student" rule is checked by the server tests on a real D1 (worker/surveys/vote/vote.test.ts).
  *
  * @author Jakub
  * @since 2026-10-09
@@ -148,6 +148,37 @@ test('bez internetu lista pokazuje błąd i da się spróbować ponownie / witho
   await mockSurveyServer(page);
   await page.getByRole('button', { name: 'Spróbuj ponownie' }).click();
   await expect(page.getByRole('heading', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
+});
+
+// PL: Zapis w telefonie: po powrocie na listę przy zerwanym połączeniu widać ostatnio pobraną listę, a nie błąd.
+// EN: The saved data: on returning to the list with the connection down, the last fetched list is shown instead of an error.
+test('po zerwaniu połączenia lista wraca z zapisu w telefonie / after the connection drops the list comes back from the saved data', async ({ page }) => {
+  await mockSurveyServer(page);
+  await page.goto('/surveys/vote');
+  await expect(page.getByRole('heading', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
+  // PL: Lista naprawdę trafia do localStorage telefonu (klucz z src/shared/query/queryClient.ts).
+  // EN: The list really lands in the phone's localStorage (the key from src/shared/query/queryClient.ts).
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('teb-student-query-cache') ?? '')).toContain('Zajęcia dodatkowe w II semestrze');
+  await page.getByRole('link', { name: 'Wypełnij' }).click();
+  await expect(page.getByText('Pytanie 1')).toBeVisible();
+
+  await page.unroute('**/api/surveys/vote/**');
+  await page.route('**/api/surveys/vote/**', (route) => route.abort('internetdisconnected'));
+  await page.goBack();
+  await expect(page.getByRole('heading', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
+// PL: Prawdziwy serwer z bazą D1 i danymi z npm run db:seed: lista odpowiada 200, nie ma w niej liczników głosów, a bez numeru ucznia serwer odmawia.
+// EN: The real server with the D1 database and the data from npm run db:seed: the list answers 200, has no vote counters, and without a student id the server refuses.
+test('prawdziwy serwer: lista z bazy D1 bez liczników, bez ucznia 401 / the real server: a list from D1 without counters, 401 without a student', async ({ request }) => {
+  const withStudent = await request.get('/api/surveys/vote', { headers: { 'X-Temporary-Student-Id': 'e2e-student-0000001' } });
+  const text = await withStudent.text();
+  expect(withStudent.status()).toBe(200);
+  expect(text).toContain('Zajęcia dodatkowe w II semestrze');
+  expect(text).not.toContain('votes');
+
+  expect((await request.get('/api/surveys/vote')).status()).toBe(401);
 });
 
 // PL: Ten sam tymczasowy numer ucznia po odświeżeniu strony (inaczej można by głosować przez odświeżenie).

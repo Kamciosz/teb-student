@@ -1,10 +1,10 @@
 /**
- * PL: Ekran 4.1 „Lista ankiet” (docs/projekt/EKRANY.md): trwające ankiety z liczbą dni do końca, wypełnione z oznaczeniem i zakończone. Pobiera listę z serwera i niczego nie zmienia.
- * EN: Screen 4.1 "Lista ankiet" (docs/projekt/EKRANY.md): running surveys with the days left, filled ones with a mark, and ended ones. Fetches the list from the server and changes nothing.
+ * PL: Ekran 4.1 „Lista ankiet” (docs/projekt/EKRANY.md): trwające ankiety z liczbą dni do końca, wypełnione z oznaczeniem i zakończone. Pobiera listę z serwera (zapisaną też w telefonie) i niczego nie zmienia.
+ * EN: Screen 4.1 "Lista ankiet" (docs/projekt/EKRANY.md): running surveys with the days left, filled ones with a mark, and ended ones. Fetches the list from the server (also saved on the phone) and changes nothing.
  *
  * @author Jakub
  * @since 2026-10-09
- * @uses src/features/surveys/vote/surveyApi.ts::fetchSurveyList
+ * @uses src/features/surveys/vote/surveyQueries.ts::useSurveyList
  * @uses src/shared/index.ts::Dock
  * @used_by src/features/surveys/vote/SurveysVoteScreen.tsx::SurveysVoteScreen
  */
@@ -17,9 +17,8 @@ import { Link } from 'react-router';
 import { Dock } from '../../../shared';
 import { CircleCheckIcon } from './icons';
 import { daysWord, describeSurvey, formatShortDate } from './format';
-import { fetchSurveyList } from './surveyApi';
+import { useSurveyList } from './surveyQueries';
 import type { ActiveSurvey, EndedSurvey } from './types';
-import { useRemoteData } from './useRemoteData';
 
 /**
  * PL: Kafel ankiety jeszcze niewypełnionej: temat, tytuł, opis, przycisk „Wypełnij” i licznik dni.
@@ -109,28 +108,29 @@ function SurveySections({ active, ended }: { active: ActiveSurvey[]; ended: Ende
 }
 
 /**
- * PL: Rysuje ekran listy ankiet. Pobiera dane przy wejściu. Gdy serwer nie odpowiada (na przykład brak internetu), pokazuje błąd i przycisk ponowienia.
- * EN: Draws the survey list screen. Fetches the data on entry. When the server does not answer (for example no internet), it shows an error and a retry button.
+ * PL: Rysuje ekran listy ankiet. Pokazuje ostatnią zapisaną listę od razu i odświeża ją z serwera. Bez zapisanej listy i bez internetu pokazuje komunikat o braku internetu albo błąd z przyciskiem ponowienia.
+ * EN: Draws the survey list screen. Shows the last saved list at once and refreshes it from the server. Without a saved list and without internet it shows a no-internet message, or an error with a retry button.
  *
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
 export function SurveyListScreen() {
-  const { state, reload } = useRemoteData(fetchSurveyList);
+  const query = useSurveyList();
 
   return (
     <>
       <main className="vote" data-subtrack="5a">
         <h1>Ankiety</h1>
-        {state.status === 'loading' ? <p className="vote-small" role="status">Wczytuję ankiety…</p> : null}
-        {state.status === 'error' ? (
+        {query.data !== undefined ? <SurveySections active={query.data.active} ended={query.data.ended} /> : null}
+        {query.data === undefined && query.isError ? (
           <div className="vote-message" role="alert">
             <p>Nie udało się pobrać ankiet. Sprawdź połączenie z internetem.</p>
-            <button type="button" className="vote-button vote-button--outline" onClick={reload}>
+            <button type="button" className="vote-button vote-button--outline" onClick={() => void query.refetch()}>
               Spróbuj ponownie
             </button>
           </div>
         ) : null}
-        {state.status === 'ready' ? <SurveySections active={state.data.active} ended={state.data.ended} /> : null}
+        {query.data === undefined && !query.isError && query.fetchStatus === 'paused' ? <p className="vote-small" role="status">Brak internetu. Ankiety pojawią się, gdy wróci połączenie.</p> : null}
+        {query.data === undefined && !query.isError && query.fetchStatus !== 'paused' ? <p className="vote-small" role="status">Wczytuję ankiety…</p> : null}
       </main>
       <Dock />
     </>

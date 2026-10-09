@@ -1,8 +1,8 @@
 /**
  * PL: Router Hono podtoru 5a (ankieta: głosowanie), podpięty pod /api/surveys/vote w worker/mounts.ts. Trzy adresy: lista ankiet, szczegóły ankiety i wysłanie odpowiedzi.
- *     Kody odpowiedzi: 401 brak ucznia, 503 brak bazy, 404 nie ma ankiety, 410 ankieta zakończona, 400 złe odpowiedzi, 409 uczeń już głosował.
+ *     Kody odpowiedzi: 401 brak ucznia, 404 nie ma ankiety, 410 ankieta zakończona, 400 złe odpowiedzi, 409 uczeń już głosował.
  * EN: The Hono router of subtrack 5a (survey: voting), mounted under /api/surveys/vote in worker/mounts.ts. Three routes: the survey list, the survey details and sending the answers.
- *     Response codes: 401 no student, 503 no database, 404 no such survey, 410 survey ended, 400 bad answers, 409 the student has already voted.
+ *     Response codes: 401 no student, 404 no such survey, 410 survey ended, 400 bad answers, 409 the student has already voted.
  *
  * @author Jakub
  * @since 2026-10-09
@@ -10,18 +10,21 @@
  * @uses worker/surveys/vote/validation.ts::checkAnswers
  * @uses worker/surveys/vote/temporaryStudent.ts::getStudentId
  * @used_by worker/surveys/vote/index.ts::surveysVoteApp
- * @used_by worker/surveys/vote/routes.test.ts::surveysVoteApp
+ * @used_by worker/surveys/vote/vote.test.ts::surveysVoteApp
  */
 
 // PL: Hono to router serwera. Dopasowuje adres zapytania do funkcji, która odpowie.
 // EN: Hono is the server router. It matches the request URL to the function that answers.
 import { Hono, type Context } from 'hono';
+// PL: Typ środowiska Workera z bazą D1 (binding DB).
+// EN: The Worker environment type with the D1 database (the DB binding).
+import type { Env } from '../../shared';
 // PL: Termin ankiety.
 // EN: The survey deadline.
 import { isSurveyActive, warsawToday } from './deadline';
 // PL: Baza i wiązania.
 // EN: The database and the bindings.
-import { openDatabase, type VoteBindings, type VoteDatabase } from './database';
+import { openDatabase, type VoteDatabase } from './database';
 // PL: Zapytania do bazy.
 // EN: The database queries.
 import { AlreadyVotedError, findSurvey, hasVoted, listSurveys, loadQuestions, recordVote } from './queries';
@@ -39,30 +42,25 @@ import { checkAnswers, parseAnswersBody } from './validation';
 type Session = { userId: string; db: VoteDatabase } | Response;
 
 /**
- * PL: Ustala ucznia i bazę. Brak ucznia to 401, brak bazy to 503.
- * EN: Resolves the student and the database. No student is 401, no database is 503.
+ * PL: Ustala ucznia i otwiera bazę. Brak ucznia to 401.
+ * EN: Resolves the student and opens the database. No student is 401.
  *
- * @param context - PL: zapytanie Hono. EN: the Hono request.
+ * @param context - PL: zapytanie Hono z bazą w context.env.DB. EN: the Hono request with the database in context.env.DB.
  * @returns PL: uczeń z bazą albo odpowiedź z błędem do oddania od razu. EN: the student with the database, or an error response to return at once.
  */
-function openSession(context: Context): Session {
+function openSession(context: Context<{ Bindings: Env }>): Session {
   // PL: Najpierw uczeń: bez niego nie ma po co otwierać bazy.
   // EN: The student first: without one there is no point in opening the database.
   const userId = getStudentId(context);
   if (userId === null) return context.json({ error: 'unauthorized' }, 401);
-
-  // PL: Potem baza. Gdy Worker nie ma wiązania DB (zgłoszenie #41), odpowiadamy 503.
-  // EN: Then the database. When the Worker has no DB binding (issue #41), we answer 503.
-  const db = openDatabase((context.env ?? {}) as VoteBindings);
-  if (db === null) return context.json({ error: 'database_unavailable' }, 503);
-  return { userId, db };
+  return { userId, db: openDatabase(context.env.DB) };
 }
 
 /**
- * PL: Router podtoru 5a. Bez typu wiązań, bo lista routerów w worker/mounts.ts przyjmuje zwykły Hono. Wiązania odczytuje openSession.
- * EN: The router of subtrack 5a. Without a bindings type, because the router list in worker/mounts.ts accepts a plain Hono. openSession reads the bindings.
+ * PL: Router podtoru 5a. Baza jest w context.env.DB (typ Env z worker/shared).
+ * EN: The router of subtrack 5a. The database is in context.env.DB (the Env type from worker/shared).
  */
-export const surveysVoteApp = new Hono();
+export const surveysVoteApp = new Hono<{ Bindings: Env }>();
 
 // PL: GET / – lista ankiet: trwające z liczbą dni i znacznikiem „wypełniona” oraz zakończone.
 // EN: GET / – the survey list: running ones with the days left and the "filled" mark, and ended ones.

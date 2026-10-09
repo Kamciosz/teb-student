@@ -5,16 +5,21 @@
  * @author Jakub
  * @since 2026-10-09
  * @uses src/features/surveys/vote/surveyApi.ts::sendAnswers
+ * @uses src/features/surveys/vote/surveyQueries.ts::SURVEYS_VOTE_KEY
  * @used_by src/features/surveys/vote/SurveyFlowScreen.tsx::SurveyQuestions
  */
 
 // PL: Haki Reacta: referencja i stan.
 // EN: React hooks: a ref and state.
 import { useRef, useState } from 'react';
+// PL: Klient zapytań, żeby po głosie odświeżyć listę i szczegóły ankiet.
+// EN: The query client, to refresh the survey list and details after a vote.
+import { useQueryClient } from '@tanstack/react-query';
 // PL: Przejście do innego ekranu.
 // EN: Navigation to another screen.
 import { useNavigate } from 'react-router';
 import { sendAnswers } from './surveyApi';
+import { SURVEYS_VOTE_KEY } from './surveyQueries';
 import type { AnswerMap } from './types';
 
 /** PL: Co poszło nie tak przy wysyłaniu: nic, głos już jest, ankieta się skończyła albo nie udało się wysłać. EN: What went wrong when sending: nothing, the vote already exists, the survey ended or sending failed. */
@@ -30,6 +35,7 @@ export type Problem = 'none' | 'already_voted' | 'ended' | 'failed';
  */
 export function useVoteSubmit(surveyId: string, answers: AnswerMap): { submit: () => Promise<void>; sending: boolean; problem: Problem } {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [sending, setSending] = useState(false);
   const [problem, setProblem] = useState<Problem>('none');
   // PL: Drugie stuknięcie, zanim ekran się przerysuje, nie może wysłać głosu drugi raz.
@@ -47,6 +53,9 @@ export function useVoteSubmit(surveyId: string, answers: AnswerMap): { submit: (
     setProblem('none');
     try {
       const result = await sendAnswers(surveyId, answers);
+      // PL: Po głosie (i po 409 oraz 410) zapisana lista jest nieaktualna. Oznaczamy ją tylko do odświeżenia: pobierze się przy wejściu na listę, a otwarty ekran nie miga.
+      // EN: After a vote (and after 409 and 410) the saved list is outdated. We only mark it stale: it refetches when the list opens, and the open screen does not flicker.
+      await queryClient.invalidateQueries({ queryKey: SURVEYS_VOTE_KEY, refetchType: 'none' });
       if (result === 'ok') await navigate('/surveys/vote/done', { replace: true });
       else setProblem(result);
     } catch {
