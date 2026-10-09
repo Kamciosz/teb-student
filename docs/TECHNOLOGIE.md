@@ -37,6 +37,8 @@ Wynik: żadna technologia nie zmienia się na inną. Zmiany po przeglądzie są 
 
 Wersje pochodzą z rejestru npm. Przy starcie projektu przypinamy dokładne wersje.
 
+Pakiety pomocnicze szkieletu (wtyczki Vite i Babel, `terser`, dodatki TanStack Query, `workbox`, typy) zatwierdził Bohdan 9.10.2026. Lista i wersje są w `package.json` i w opisie [PR 29](https://github.com/Kamciosz/teb-student/pull/29).
+
 ## Co zmieniło się po przeglądzie i dlaczego
 
 1. **React Compiler.** Oficjalne narzędzie Reacta, stabilna wersja 1.0. Sam przyspiesza odświeżanie ekranów: u Mety ładowanie do 12% szybciej, niektóre kliknięcia ponad 2,5 raza szybciej (sprawdzone). Nie wymaga pisania innego kodu.
@@ -80,7 +82,7 @@ Wersje pochodzą z rejestru npm. Przy starcie projektu przypinamy dokładne wers
 - Film: najwyżej 30 s. Po przekodowaniu 720p i MP4 z H.264. Bez przekodowania najwyżej 50 MB.
 - Podpisany adres do R2 zawiera typ pliku. CORS w R2 dopuszcza tylko adres naszej aplikacji. Po wysłaniu serwer sprawdza rozmiar pliku i usuwa za duży.
 - Zapis danych w telefonie ma numer wersji. Wylogowanie kasuje te dane.
-- Edytor wpisów: biblioteka do wyboru przez Bohdana, wpis w `docs/adr/`. Treść zapisujemy jako JSON. Serwer sprawdza ją według listy dozwolonych elementów, a aplikacja nie wstawia HTML z bazy bez czyszczenia.
+- Edytor wpisów: Tiptap (`docs/adr/0002-edytor-wpisow.md`). Treść zapisujemy jako JSON. Serwer sprawdza ją według listy dozwolonych elementów, a aplikacja nie wstawia HTML z bazy bez czyszczenia.
 - Film z YouTube: serwer przyjmuje tylko adresy `youtube.com` i `youtu.be` i zapisuje sam identyfikator filmu. Aplikacja pokazuje miniaturę, a `iframe` z `youtube-nocookie.com` wstawia dopiero po kliknięciu. Polityka CSP dopuszcza w `frame-src` tylko `https://www.youtube-nocookie.com`.
 - Linki w treści otwierają się w nowej karcie z `rel="noopener noreferrer"`. Serwer przyjmuje tylko adresy `https://`.
 
