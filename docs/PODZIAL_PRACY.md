@@ -2,7 +2,7 @@
 
 Cel: 10 i więcej agentów AI pracuje naraz, każdy w swoim module, i nie psuje pracy innych. Ten dokument mówi, kto rusza które pliki, w jakiej kolejności i co robić przy konflikcie.
 
-Stan na 9.10.2026: kodu jeszcze nie ma. Ścieżki w tym dokumencie są planowane i jeszcze nie istnieją. Nazwy katalogów to propozycja do zatwierdzenia przez Bohdana w projekcie technicznym. Gdy Bohdan zmieni nazwę, zmieniamy ją tutaj, a zasady zostają.
+Stan po etapie A (rejestracja podtorów): katalogi z części 3 istnieją i mają wpisy w routerze oraz na serwerze (`docs/ARCHITECTURE.md`). Nazwy katalogów to nadal propozycja do zatwierdzenia przez Bohdana w projekcie technicznym. Gdy Bohdan zmieni nazwę, zmieniamy ją tutaj, a zasady zostają.
 
 ## 1. Zasada główna
 

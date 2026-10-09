@@ -1,6 +1,6 @@
 /**
- * PL: Punkt wejścia aplikacji w telefonie. Znajduje element #root w index.html i rysuje w nim ekran startowy.
- * EN: Entry point of the app on the phone. Finds the #root element in index.html and draws the start screen in it.
+ * PL: Punkt wejścia aplikacji w telefonie. Znajduje element #root w index.html i rysuje w nim aplikację z routerem.
+ * EN: Entry point of the app on the phone. Finds the #root element in index.html and draws the app with the router in it.
  *
  * @author Bohdan
  * @since 2026-10-09
@@ -22,8 +22,8 @@ import './shared/styles/tokens.css';
 // PL: Style bazowe aplikacji.
 // EN: Base styles of the app.
 import './shared/styles/base.css';
-// PL: Ekran startowy aplikacji.
-// EN: The start screen of the app.
+// PL: Korzeń aplikacji: router z ekranami podtorów.
+// EN: The app root: the router with the subtrack screens.
 import { App } from './App';
 
 // PL: Znajdź element, w którym ma działać aplikacja.
