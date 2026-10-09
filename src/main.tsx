@@ -5,6 +5,8 @@
  * @author Bohdan
  * @since 2026-10-09
  * @uses src/App.tsx::App
+ * @uses src/shared/styles/tokens.css::var(--...)
+ * @uses src/shared/styles/base.css::var(--...)
  * @used_by index.html::script
  */
 
@@ -14,6 +16,12 @@ import { StrictMode } from 'react';
 // PL: createRoot uruchamia React w wybranym elemencie strony.
 // EN: createRoot starts React inside a chosen page element.
 import { createRoot } from 'react-dom/client';
+// PL: Zmienne wyglądu (kolory, typografia, odstępy). Muszą być wczytane przed base.css, który z nich korzysta.
+// EN: Look-and-feel variables (colors, typography, spacing). They must load before base.css, which uses them.
+import './shared/styles/tokens.css';
+// PL: Style bazowe aplikacji.
+// EN: Base styles of the app.
+import './shared/styles/base.css';
 // PL: Ekran startowy aplikacji.
 // EN: The start screen of the app.
 import { App } from './App';

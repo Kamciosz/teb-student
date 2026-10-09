@@ -15,6 +15,7 @@
  * @author Kacper
  * @since 2026-10-09
  * @used_by src/shared/styles/base.css::var(--...)
+ * @used_by src/main.tsx::import
  */
 
 /* PL: Domyślny wygląd: paleta CE Grafit z akcentem liceum (niebieski). Kolory kafli, tekstu i tła.
