@@ -38,7 +38,7 @@ Sam napisany kod nie oznacza „gotowe”.
 
 1. **Nie trzymamy starego kodu.** Przestarzałą rzecz usuwamy w całości: bez warstw zgodności, bez kodu, który obsługuje stary i nowy format naraz, bez zapasowych ścieżek dla starego zachowania. Co to nie znaczy:
    - Wspierane telefony zostają wspierane (iOS 15, starszy Android, `@vitejs/plugin-legacy`). To wymaganie, a nie stary kod.
-   - Zmiana bazy to nadal plik migracji Drizzle, bo tak baza dostaje nową strukturę. Od 29.10 w bazie są dane uczniów. Kasowanie danych wymaga zgody Szymona.
+   - Baza: do pilotażu nie ma danych uczniów, a aplikacja nie jest publiczna, więc nie piszemy migracji. Zmieniamy schemat Drizzle i tworzymy bazę testową od nowa. Sposób zmian bazy po starcie pilotażu ustala zespół przed 29.10.
    - Działanie bez internetu i zapas Resend dla maili to funkcje z planu, a nie stary kod.
 2. **Najprostsze rozwiązanie bieżącej potrzeby.** Bez abstrakcji „na zapas” i bez ustawień, których nikt dziś nie zmienia.
 3. **Najpierw cienka ścieżka od ekranu do bazy, potem rozbudowa.** Funkcja najpierw działa od początku do końca w najprostszej formie. Warstwy dokładamy stopniowo. Nie psujemy działającej rzeczy dla niedokończonej.

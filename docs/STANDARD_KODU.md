@@ -168,7 +168,7 @@ Jak to osiągnąć:
 
 ## 7. Baza i wymiana danych
 
-- Każda zmiana bazy to nowa migracja Drizzle. Starej migracji nie zmieniamy.
+- Do pilotażu nie piszemy migracji. Zmieniamy schemat Drizzle w jednym miejscu i tworzymy bazę testową od nowa. Dane testowe wgrywa skrypt, więc po zmianie bazy wystarczy go uruchomić.
 - Zapytanie, które kasuje dane, ma warunek `WHERE` i test.
 - Serwer zwraca czytelny błąd z kodem HTTP. Telefon pokazuje uczniowi komunikat po polsku, a nie treść błędu.
 - Nie powtarzamy automatycznie zapytań, które coś zapisują, bo mogą zapisać się dwa razy.
