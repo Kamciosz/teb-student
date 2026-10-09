@@ -1,7 +1,7 @@
 # ADR 0002: biblioteka edytora wpisów
 
 - **Data:** 9.10.2026
-- **Status:** Propozycja, czeka na Bohdana
+- **Status:** Przyjęta 9.10.2026
 - **Autor:** Szymon (projekt), Bohdan (decyzja)
 
 ## Kontekst
@@ -94,7 +94,7 @@ Ryzyka rekomendacji A:
 
 ## Decyzja
 
-Do wypełnienia przez Bohdana: wybrana opcja (A albo B), data i ewentualne uwagi.
+Bohdan wybrał opcję A, Tiptap, 9.10.2026. Warunek wycofania zostaje: gdy edytor nie zadziała na iPhonie z iOS 15, przechodzimy na opcję B, Lexical.
 
 ## Konsekwencje
 
