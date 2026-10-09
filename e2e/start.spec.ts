@@ -24,5 +24,5 @@ test('ekran startowy pokazuje nazwę i „W budowie” / start screen shows the 
   await expect(page.getByRole('heading', { name: 'TEB Student' })).toBeVisible();
   // PL: Napis o budowie musi być widoczny.
   // EN: The under-construction label must be visible.
-  await expect(page.getByText('W budowie')).toBeVisible();
+  await expect(page.getByText('W budowie CELOWO-ZEPSUTE')).toBeVisible();
 });
