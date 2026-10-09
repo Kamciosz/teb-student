@@ -36,9 +36,12 @@
     "skipLibCheck": true,
     // PL: TypeScript tylko sprawdza typy.
     // EN: TypeScript only checks types.
-    "noEmit": true
+    "noEmit": true,
+    // PL: Skrypty w scripts/ uruchamia Node.js bezpośrednio, więc importują pliki z rozszerzeniem .ts.
+    // EN: The scripts in scripts/ are run by Node.js directly, so they import files with the .ts extension.
+    "allowImportingTsExtensions": true
   },
-  // PL: Pliki ustawień narzędzi i testy całych ścieżek.
-  // EN: The tool config files and the end-to-end tests.
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "e2e"]
+  // PL: Pliki ustawień narzędzi, skrypty bazy i testy całych ścieżek.
+  // EN: The tool config files, the database scripts and the end-to-end tests.
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "drizzle.config.ts", "scripts", "e2e"]
 }

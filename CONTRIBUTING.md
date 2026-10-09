@@ -16,6 +16,10 @@ git config core.hooksPath
 
 Wynik powinien brzmieć `.githooks`.
 
+## Baza lokalna
+
+Tabele zakładamy od nowa ze schematu, bez migracji: `npm run db:reset`, potem `npm run db:seed`. Jak podtor dodaje tabelę i jak test używa bazy: `docs/ARCHITECTURE.md`, część „Baza danych”.
+
 ## Gałęzie
 
 | Typ | Nazwa | Od czego |

@@ -11,6 +11,9 @@
 // PL: Funkcje testowe Vitest.
 // EN: Vitest test functions.
 import { describe, expect, it } from 'vitest';
+// PL: Środowisko testowe Workera z bazą D1 (binding DB, tabele ze schematu).
+// EN: The Worker test environment with the D1 database (the DB binding, tables from the schema).
+import { env } from 'cloudflare:workers';
 // PL: Funkcja, którą sprawdzamy.
 // EN: The function under test.
 import { deleteSurveysStudentData } from './deleteStudentData';
@@ -21,9 +24,9 @@ describe('deleteSurveysStudentData', () => {
   // PL: Jedyny przypadek na dziś: funkcja nic nie robi i się nie psuje.
   // EN: The only case for now: the function does nothing and does not break.
   it('kończy się bez błędu / finishes without an error', async () => {
-    // PL: Wywołaj funkcję dla wymyślonego ucznia i poczekaj na koniec.
-    // EN: Call the function for an invented student and wait for it to finish.
-    const result = await deleteSurveysStudentData({ userId: 'test-user' });
+    // PL: Wywołaj funkcję dla wymyślonego ucznia i bazy testowej, poczekaj na koniec.
+    // EN: Call the function for an invented student and the test database, wait for it to finish.
+    const result = await deleteSurveysStudentData({ userId: 'test-user', db: env.DB });
 
     // PL: Funkcja niczego nie zwraca.
     // EN: The function returns nothing.
