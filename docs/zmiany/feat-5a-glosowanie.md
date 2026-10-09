@@ -1,0 +1,15 @@
+## Changelog
+
+### Dodane
+
+- Ankiety dla ucznia: lista aktywnych ankiet z liczbą dni do końca, oznaczenie wypełnionych i lista zakończonych.
+- Wypełnianie ankiety: jedno pytanie na ekranie, przycisk „Dalej” aktywny po wyborze odpowiedzi, ekran „Odpowiedzi wysłane”.
+- Jeden głos na ucznia: drugiej próby serwer nie przyjmuje, a ekran pokazuje komunikat.
+- Anonimowość na poziomie bazy: serwer zapisuje tylko liczniki odpowiedzi i informację, że uczeń już głosował, bez jego odpowiedzi i bez czasu.
+- Dane przykładowe: trzy ankiety (dwie trwające, jedna zakończona).
+
+## Log AI
+
+| Data | Zadanie i pull request | Polecenie dla AI (skrót) | Co zrobiło AI i jakie pliki zmieniło | Co zmienił właściciel | Kto |
+|---|---|---|---|---|---|
+| 2026-10-09 | #22, podtor 5a: ankieta, głosowanie | Zbuduj ankietę ucznia: lista, głosowanie, zapis w D1, anonimowość, testy | Schemat i dane przykładowe ankiet, serwer w `worker/surveys/vote/`, ekrany w `src/features/surveys/vote/`, testy Vitest i `e2e/surveys-vote.spec.ts` | do uzupełnienia | Jakub |
