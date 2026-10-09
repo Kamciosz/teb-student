@@ -40,3 +40,11 @@ jobs:
         run: npm test --if-present
       - name: Build
         run: npm run build --if-present
+      # PL: Pobierz Chromium i biblioteki systemowe, których potrzebuje. Bez tego test e2e nie ma przeglądarki.
+      # EN: Download Chromium and the system libraries it needs. Without this the e2e test has no browser.
+      - name: Przeglądarka do testów e2e
+        run: npx playwright install --with-deps chromium
+      # PL: Uruchom test całych ścieżek. Playwright sam startuje serwer (playwright.config.ts, webServer) na porcie 5173, bo PORT nie jest ustawiony.
+      # EN: Run the end-to-end tests. Playwright starts the server itself (playwright.config.ts, webServer) on port 5173, because PORT is not set.
+      - name: Testy e2e
+        run: npm run test:e2e

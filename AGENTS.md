@@ -19,7 +19,7 @@ Dla ludzi i agentów AI. Czytaj w całości przed pierwszą zmianą.
 # build:  npm run build
 # testy:  npm test
 # lint:   npm run lint   # na razie tylko typy TypeScript, limity i komentarze sprawdza recenzent
-# e2e:    PORT=<port podtoru> npm run test:e2e   # raz wcześniej: npx playwright install chromium
+# e2e:    PORT=<port podtoru> npm run test:e2e   # raz wcześniej: npx playwright install chromium; CI robi to samo w jobie „Build i testy”
 # dev:    PORT=<port podtoru> npm run dev
 ```
 
