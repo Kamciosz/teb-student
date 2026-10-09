@@ -33,8 +33,8 @@ import { AdminLayout, AdminScreen } from '../features/admin';
 import { DashboardScreen } from '../features/dashboard';
 
 /**
- * PL: Adresy ekranów. Adres to „/<moduł>/<część>” (docs/adr/0002-adresy-podtorow.md), a „/*” na końcu oddaje podtorowi wszystkie adresy pod spodem. Pulpit (podtor 9) jest pod „/”. Pole id to numer podtoru. Ekrany 3c, 4b, 5b i 8 mają wspólną ramę panelu z menu.
- * EN: The screen addresses. The address is "/<module>/<part>" (docs/adr/0002-adresy-podtorow.md), and the trailing "/*" gives the subtrack every address below it. The dashboard (subtrack 9) is at "/". The id field is the subtrack number. Screens 3c, 4b, 5b and 8 share the panel frame with the menu.
+ * PL: Adresy ekranów. Adres to „/<moduł>/<część>” (docs/adr/0003-adresy-podtorow.md), a „/*” na końcu oddaje podtorowi wszystkie adresy pod spodem. Pulpit (podtor 9) jest pod „/”. Pole id to numer podtoru. Ekrany 3c, 4b, 5b i 8 mają wspólną ramę panelu z menu.
+ * EN: The screen addresses. The address is "/<module>/<part>" (docs/adr/0003-adresy-podtorow.md), and the trailing "/*" gives the subtrack every address below it. The dashboard (subtrack 9) is at "/". The id field is the subtrack number. Screens 3c, 4b, 5b and 8 share the panel frame with the menu.
  */
 export const APP_ROUTES: RouteObject[] = [
   // PL: Pulpit, ekran startowy.
