@@ -34,10 +34,33 @@ Sam napisany kod nie oznacza „gotowe”.
 - Gdy czegoś brakuje albo plan sam sobie przeczy, agent się zatrzymuje i pyta Szymona, a w sprawach technicznych Bohdana. Dotyczy to zwłaszcza planu dzwonków, danych osobowych i treści ekranów.
 - Do każdego zadania agent dopisuje wpis w `docs/LOG_AI.md`.
 
+## Założenia architektury
+
+1. **Nie trzymamy starego kodu.** Przestarzałą rzecz usuwamy w całości: bez warstw zgodności, bez kodu, który obsługuje stary i nowy format naraz, bez zapasowych ścieżek dla starego zachowania. Co to nie znaczy:
+   - Wspierane telefony zostają wspierane (iOS 15, starszy Android, `@vitejs/plugin-legacy`). To wymaganie, a nie stary kod.
+   - Zmiana bazy to nadal plik migracji Drizzle, bo tak baza dostaje nową strukturę. Od 29.10 w bazie są dane uczniów. Kasowanie danych wymaga zgody Szymona.
+   - Działanie bez internetu i zapas Resend dla maili to funkcje z planu, a nie stary kod.
+2. **Najprostsze rozwiązanie bieżącej potrzeby.** Bez abstrakcji „na zapas” i bez ustawień, których nikt dziś nie zmienia.
+3. **Najpierw cienka ścieżka od ekranu do bazy, potem rozbudowa.** Funkcja najpierw działa od początku do końca w najprostszej formie. Warstwy dokładamy stopniowo. Nie psujemy działającej rzeczy dla niedokończonej.
+4. **Moduły z jedną odpowiedzialnością.** Moduł ma jedne drzwi (`index.ts`). Wygląd, logika i dostęp do danych są w osobnych plikach.
+5. **Dojrzałe biblioteki zamiast pisania od zera.** Wybieramy biblioteki aktywnie utrzymywane. Własny kod piszemy tylko z konkretnym powodem, zapisanym w pull requeście.
+6. **Najpierw sprawdź, co już mamy.** Zanim dodasz pakiet albo napiszesz własny kod, sprawdź w dokumentacji, co umieją zależności z `docs/TECHNOLOGIE.md` (na przykład wtyczki Better Auth, funkcje TanStack Query, Drizzle i Hono).
+7. **Decyzje z myślą o przyszłości.** Nie przyjmujemy prowizorki „na razie tak, potem zmienimy”. Jeśli rozwiązanie jest złe, nie wchodzi. Plan rozbudowy jest w `docs/PLAN_APLIKACJI.md`, część 2, i fala 1 musi go umożliwiać.
+8. **Wzorce z dojrzałych produktów.** Przed projektem funkcji sprawdź, jak ten sam problem rozwiązują znane produkty, i użyj sprawdzonego wzorca. W pull requeście napisz, skąd jest wzorzec.
+
+## Jak pracujemy
+
+- **Gotowe znaczy gotowe.** Nie „prawie”, nie „bez części, którą pominąłem”, nie opis tego, jak to zrobić. Zadanie z pięcioma punktami ma pięć zrobionych punktów.
+- **Blokada ma nazwę.** Gdy jeden punkt jest naprawdę zablokowany, zrób resztę i opisz blokadę jednym zdaniem: co konkretnie blokuje. Zdanie „trzeba to jeszcze zbadać” nie jest blokadą.
+- **Tanie i odwracalne: zrób, potem powiedz.** Dotyczy researchu, szkiców, analiz, refaktoru w zakresie zadania i testów API.
+- **Najpierw zapytaj tylko wtedy, gdy działanie:** trafi do uczniów albo innych ludzi, jest nieodwracalne albo kosztuje pieniądze.
+- **Zepsute na Twojej drodze: napraw.** Nie zgłaszaj problemu, który sam możesz naprawić w zakresie zadania.
+- **Pytanie to pytanie.** „Czy użyć X?” nie znaczy „przejdź na X”. Najpierw odpowiedz. Zmieniaj dopiero po poleceniu. Gdy nie wiesz, czy to pytanie, traktuj je jak pytanie.
+- **Raport:** co zrobione, czy działa i jaki jest dowód, co ma zrobić człowiek. Przy decyzji najwyżej 2 opcje i Twój wybór.
+
 ## Kod
 
-- Najprostsze rozwiązanie zadania. Bez warstw i ustawień „na później”.
-- Najpierw to, co już jest w projekcie, potem funkcje przeglądarki, dopiero potem nowa biblioteka. Nowa biblioteka wymaga wpisu w `docs/adr/` i zgody Bohdana.
+- Kolejność wyboru: to, co już jest w projekcie, potem funkcje przeglądarki, potem nowa dojrzała biblioteka. Nowa biblioteka wymaga wpisu w `docs/adr/` i zgody Bohdana.
 - Nazwy w kodzie po angielsku. Teksty dla ucznia po polsku, z polskimi znakami.
 - Nowa funkcja to nowy moduł, nie doklejka do istniejącego pliku.
 - Bez martwego kodu, wykomentowanych bloków i `console.log` w kodzie produkcyjnym.

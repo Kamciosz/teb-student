@@ -46,6 +46,39 @@ Termin liczymy od 29.10, nie od 12.11. Funkcja, której nie ma w pilotażu, nie 
 7. **Profil i ustawienia.** Dane konta, moje zgłoszenia, polityka prywatności, usunięcie konta, wybór szkoły (liceum albo technikum) i wybór kolorów.
 8. **Panel Samorządu.** Służy do publikowania wpisów, zmiany etapu zgłoszeń, tworzenia ankiet i wyników oraz wydawania kodów zaproszeń.
 
+### Rozbudowa fali 1 (29.10–12.11)
+
+Propozycja do zatwierdzenia przez właścicieli modułów. Na punkt kontrolny 29.10 wystarcza to, co jest w części 7. Rozbudowa wchodzi w czasie pilotażu, bo telefon pobiera nową wersję sam. Każdy punkt to osobny pull request, który da się cofnąć w gicie.
+
+Fala 1 musi być zbudowana tak, żeby rozbudowa nie wymagała przepisywania: treść wpisu jako JSON z listą typów elementów, ankieta z typem pytania, zgłoszenie z historią zmian etapu.
+
+Kolejność w module: od góry, najważniejsze najpierw.
+
+| Moduł | Rozbudowa | Wzór z dojrzałych produktów |
+|---|---|---|
+| Aktualności i gazetka | film z YouTube w treści, karty linków do mediów społecznościowych, sekcja „Źródła” (część 3, „Platforma”) | Ghost, Medium |
+| | podpis autora artykułu i stopka „Redakcja gazetki” | Ghost |
+| | etap „Do korekty”: drugi redaktor czyta tekst przed publikacją | WordPress (status „Oczekuje na przegląd”) |
+| | publikacja o wybranej godzinie i przypięcie wpisu na górze listy | WordPress, Instagram |
+| | wyszukiwanie we wpisach | każdy serwis z wiadomościami |
+| Zgłoszenia | zdjęcie w zgłoszeniu (ta sama wysyłka co we wpisach) | FixMyStreet |
+| | odpowiedź Samorządu przy zmianie etapu, widoczna dla autora, także anonimowego | FixMyStreet, GitHub Issues |
+| | „Mnie też to dotyczy” zamiast kilku zgłoszeń tej samej sprawy | FixMyStreet |
+| Ankiety | typy pytań: wielokrotny wybór, skala 1–5, krótka odpowiedź | Google Forms |
+| | data zamknięcia ankiety | Google Forms |
+| | pobranie wyników jako CSV, także od 5 odpowiedzi | Google Forms, Microsoft Forms |
+| Licznik do dzwonka | następna lekcja i przerwa, nie tylko koniec bieżącej | aplikacje szkolne z planem lekcji |
+| | lekcje skrócone: Samorząd włącza plan skrócony na wybrany dzień | |
+| Logowanie | logowanie Face ID albo odciskiem palca (klucz dostępu, wtyczka passkey w Better Auth) | Google, GitHub |
+| | lista urządzeń i wylogowanie z innych urządzeń | Google, GitHub |
+| Profil | pobranie moich danych jako plik (prawo z RODO) | Google Takeout |
+| | większy tekst w aplikacji | iOS, Android |
+| Panel Samorządu | dziennik zmian: kto i kiedy opublikował, usunął albo zmienił etap | GitHub (audit log), WordPress |
+| | nadawanie i odbieranie roli redakcji gazetki | |
+| Pulpit | kolejność kafelków ustawiana przez ucznia | iOS (widżety) |
+
+Czego nie dodajemy nawet w rozbudowie: komentarzy i reakcji pod wpisami (wymagają moderacji, której nie mamy), powiadomień push i czatu (to TEBtalk, fala 2).
+
 ### Fala 2 (po 12.11, do 30.11)
 
 TEBtalk, Grupy, Re-Wear jako tablica ogłoszeń ze zdjęciami albo filmem oraz własny dziennik (zakres do ustalenia). Stara aplikacja ma te moduły, ale piszemy je od nowa, tak jak resztę. Przed każdym zadajemy pytanie: kto z klasy otworzy to w tym tygodniu?
@@ -121,6 +154,7 @@ Wycena:
 - Według `01_PLAN.md` z folderu planu celem jest Cloudflare. Na punkcie kontrolnym 29.10 sprawdzamy, czy działa logowanie i aktualności. Jeśli nie, przechodzimy na Supabase i Vercel.
 - Ekrany nie mogą zależeć od wyboru platformy. Gdy zmienimy platformę, ekrany zostają takie same.
 - Logowania nie robimy przez Cloudflare Access. Darmowy plan ma limit 50 użytkowników, a pilotaż obejmie więcej osób.
+- Na 29.10 edytor ma tekst z formatowaniem i zdjęcia. Film z YouTube, karty linków i źródła wchodzą w rozbudowie (część 2).
 - Edytor wpisów jest rozbudowany, bo korzysta z niego kółko gazetki szkolnej. Ma nagłówki, pogrubienie, kursywę, podkreślenie, listy, cytat, linki, zdjęcia w treści z podpisem i film w treści. Ostateczną listę ustala zespół z redakcją gazetki.
 - W treść wpisu można wstawić film z YouTube. Redakcja wkleja adres, a uczeń odtwarza film w aplikacji, bez przechodzenia do YouTube. Odtwarzacz ładuje się dopiero po kliknięciu, przez `youtube-nocookie.com`, więc przed kliknięciem YouTube nic nie wie o uczniu.
 - Linki do mediów społecznościowych (Instagram, TikTok, Facebook, X) wyświetlają się jako karta z nazwą serwisu i adresem. Nie osadzamy ich, bo ładowałyby śledzenie tych serwisów.
