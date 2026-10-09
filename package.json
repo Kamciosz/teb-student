@@ -29,7 +29,7 @@
     "react-router": "8.4.0"
   },
   "devDependencies": {
-    "@babel/core": "7.29.7",
+    "@babel/core": "8.0.6",
     "@babel/plugin-transform-runtime": "7.29.7",
     "@babel/runtime": "7.29.10",
     "@cloudflare/vite-plugin": "1.63.1",
