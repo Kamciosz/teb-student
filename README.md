@@ -13,6 +13,7 @@ Repozytorium ma dokumentację i zasady pracy. Kodu aplikacji jeszcze nie ma. Pie
 3. [`docs/projekt/EKRANY.md`](docs/projekt/EKRANY.md): teksty i układ ekranów, obrazy w `docs/projekt/`.
 4. [`AGENTS.md`](AGENTS.md): zasady pracy dla ludzi i agentów AI.
 5. [`CONTRIBUTING.md`](CONTRIBUTING.md): gałęzie, commity, pull requesty.
+6. [`docs/STANDARD_KODU.md`](docs/STANDARD_KODU.md): jak komentujemy i piszemy kod.
 
 ## Wymagania
 

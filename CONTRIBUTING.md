@@ -56,3 +56,4 @@ Hook odrzuca zły format i ślady AI w commicie. CI sprawdza to samo w każdym p
 - [ ] `CHANGELOG.md` uzupełniony
 - [ ] wpis w `docs/LOG_AI.md`, jeśli pomagało AI
 - [ ] brak martwego kodu, `console.log` i plików tymczasowych
+- [ ] lista z `docs/STANDARD_KODU.md` spełniona: komentarze, limity, testy

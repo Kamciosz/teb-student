@@ -17,6 +17,7 @@
 ## Lista
 
 - [ ] build, testy i lint przechodzą
+- [ ] komentarze i limity zgodne z `docs/STANDARD_KODU.md`
 - [ ] punkty z części 7 planu działają, także przy szerokości 320 px
 - [ ] `CHANGELOG.md` uzupełniony
 - [ ] wpis w `docs/LOG_AI.md`

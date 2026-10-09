@@ -8,6 +8,7 @@ Dla ludzi i agentów AI. Czytaj w całości przed pierwszą zmianą.
 2. `docs/TECHNOLOGIE.md`: technologie i wersje. Agent ich nie zmienia sam. W sprawach technicznych pyta Bohdana.
 3. `docs/projekt/EKRANY.md`: teksty na ekranach. Nowych tekstów nie wymyślamy.
 4. `docs/ARCHITECTURE.md` i `docs/adr/`: jak zbudowana jest aplikacja i dlaczego.
+5. `docs/STANDARD_KODU.md`: komentarze, czytelny kod, testy. Obowiązuje w każdym pliku.
 
 ## Kiedy zadanie jest gotowe
 
@@ -40,7 +41,8 @@ Sam napisany kod nie oznacza „gotowe”.
 - Nazwy w kodzie po angielsku. Teksty dla ucznia po polsku, z polskimi znakami.
 - Nowa funkcja to nowy moduł, nie doklejka do istniejącego pliku.
 - Bez martwego kodu, wykomentowanych bloków i `console.log` w kodzie produkcyjnym.
-- Komentarz tylko tam, gdzie z kodu nie widać, dlaczego tak jest.
+- Komentarze po polsku wszędzie: nagłówek pliku, opis każdej eksportowanej funkcji i każdego kroku w funkcji. Szczegóły i przykład: `docs/STANDARD_KODU.md`, część 1.
+- Limity długości i zagnieżdżenia funkcji: `docs/STANDARD_KODU.md`, część 2.
 - Zasady techniczne (kolory, CSS, zdjęcia, filmy, R2, dane w telefonie) są w `docs/TECHNOLOGIE.md`, sekcja „Zasady dla agentów”.
 
 ## Prywatność
