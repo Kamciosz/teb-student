@@ -1,27 +1,38 @@
 /**
- * PL: Kasuje dane ucznia z modułu reports przy usunięciu konta: powiązanie ucznia z jego zgłoszeniami. Na razie nic nie robi, bo moduł nie ma jeszcze tabel z danymi ucznia. Profil (podtor 7) wywoła ją przez listę z worker/shared/accountDeletion.ts.
- * EN: Deletes the student's data from the reports module when the account is deleted: the link between the student and their reports. It does nothing for now, because the module has no tables with student data yet. Profile (subtrack 7) calls it through the list in worker/shared/accountDeletion.ts.
+ * PL: Kasuje dane ucznia z modułu reports przy usunięciu konta: zeruje autora jego zgłoszeń. Zgłoszenia zostają dla Samorządu, ale bez autora (docs/PLAN_APLIKACJI.md, część 3: „Jej zgłoszenia i wpisy zostają, ale bez autora”). Profil (podtor 7) wywoła funkcję przez listę z worker/shared/accountDeletion.ts.
+ * EN: Deletes the student's data from the reports module when the account is deleted: clears the author of their reports. The reports stay for the Student Council, but without an author (docs/PLAN_APLIKACJI.md, part 3). Profile (subtrack 7) calls the function through the list in worker/shared/accountDeletion.ts.
  *
- * @author Bohdan
+ * @author Szymon
  * @since 2026-10-09
  * @uses worker/shared/index.ts::DeleteStudentDataInput
+ * @uses worker/db/schema/reports.ts::reports
  * @used_by worker/reports/student/index.ts::deleteReportsStudentData
  * @used_by worker/reports/student/deleteStudentData.test.ts::deleteReportsStudentData
  */
 
+// PL: Warunek WHERE po numerze autora.
+// EN: The WHERE condition on the author id.
+import { eq } from 'drizzle-orm';
+// PL: Drizzle dla bazy D1.
+// EN: Drizzle for the D1 database.
+import { drizzle } from 'drizzle-orm/d1';
 // PL: Typ danych wejściowych, wspólny dla wszystkich modułów.
 // EN: The input type shared by all modules.
 import type { DeleteStudentDataInput } from '../../shared';
+// PL: Tabela zgłoszeń.
+// EN: The reports table.
+import { reports } from '../../db/schema/reports';
 
 /**
- * PL: Kasuje dane ucznia z modułu reports.
- * EN: Deletes the student's data from the reports module.
+ * PL: Zeruje autora zgłoszeń ucznia. Zgłoszenia innych uczniów zostają bez zmian.
+ * EN: Clears the author of the student's reports. Other students' reports stay unchanged.
  *
- * @param _input - PL: numer ucznia, którego dane znikają. Gdy funkcja zacznie kasować dane, zmienia nazwę na input. EN: the id of the student whose data goes away. When the function starts deleting data, it is renamed to input.
- * @returns PL: obietnica, która kończy się po skasowaniu. EN: a promise that settles after the deletion.
- * @throws PL: na razie nigdy. Po dodaniu zapytań błąd bazy ma przerwać usuwanie konta. EN: never for now. After queries are added, a database error must stop the account deletion.
+ * @param input - PL: numer ucznia, którego dane znikają, i baza D1. EN: the id of the student whose data goes away, and the D1 database.
+ * @returns PL: obietnica, która kończy się po zapisie. EN: a promise that settles after the write.
+ * @throws PL: błąd, gdy baza odrzuci zapytanie, żeby usuwanie konta się zatrzymało. EN: an error when the database rejects the query, so the account deletion stops.
  */
-export async function deleteReportsStudentData(_input: DeleteStudentDataInput): Promise<void> {
-  // PL: Moduł nie ma jeszcze tabel z danymi ucznia, więc nie ma czego kasować. Agent podtoru 4a dopisze tu zapytanie z warunkiem WHERE po numerze ucznia i zmieni test.
-  // EN: The module has no tables with student data yet, so there is nothing to delete. The agent of subtrack 4a adds a query with a WHERE condition on the student id here and changes the test.
+export async function deleteReportsStudentData(input: DeleteStudentDataInput): Promise<void> {
+  // PL: Wyzeruj autora tylko w zgłoszeniach tego ucznia (WHERE po numerze autora).
+  // EN: Clear the author only in this student's reports (WHERE on the author id).
+  await drizzle(input.db).update(reports).set({ authorId: null }).where(eq(reports.authorId, input.userId));
 }
