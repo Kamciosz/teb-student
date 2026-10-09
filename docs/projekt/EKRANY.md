@@ -12,7 +12,7 @@ Wzory ekranów:
 
 Kolory: makiety i opisy niżej są w palecie CC Grafit (akcent `#FF8FB3`). W aplikacji domyślna jest paleta CE Grafit z akcentem szkoły, decyzja z 9.10.2026. Wartości CE są w `referencje/uklad_C.html`. Z tego pliku bierzemy układ i teksty, kolory bierzemy z CE.
 
-Edytor wpisów (przepływ 5): decyzja z 9.10.2026 to edytor rozbudowany dla kółka gazetki szkolnej, a nie proste formatowanie. Lista funkcji jest w `docs/PLAN_APLIKACJI.md`, część 3. Ekran 5.2 pokazuje tylko pole „Opis”, więc pasek narzędzi edytora projektuje agent w tym samym stylu.
+Edytor wpisów (przepływ 5): decyzja z 9.10.2026 to edytor rozbudowany dla kółka gazetki szkolnej, a nie proste formatowanie. Lista funkcji jest w `docs/PLAN_APLIKACJI.md`, część 3. Ekran 5.2 pokazuje tylko pole „Opis”, więc pasek narzędzi edytora projektuje agent w tym samym stylu. Dochodzą: film z YouTube w treści, karta linku do mediów społecznościowych i sekcja „Źródła” na końcu artykułu.
 
 Wymiary: ekran 390 × 844 pt, kafle zaokrąglone 12 px, padding 16 px, odstępy 12 px. Dane na ekranach (Ola, 3TA, sala 204) są przykładowe.
 

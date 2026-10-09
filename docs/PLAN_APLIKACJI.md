@@ -122,6 +122,9 @@ Wycena:
 - Ekrany nie mogą zależeć od wyboru platformy. Gdy zmienimy platformę, ekrany zostają takie same.
 - Logowania nie robimy przez Cloudflare Access. Darmowy plan ma limit 50 użytkowników, a pilotaż obejmie więcej osób.
 - Edytor wpisów jest rozbudowany, bo korzysta z niego kółko gazetki szkolnej. Ma nagłówki, pogrubienie, kursywę, podkreślenie, listy, cytat, linki, zdjęcia w treści z podpisem i film w treści. Ostateczną listę ustala zespół z redakcją gazetki.
+- W treść wpisu można wstawić film z YouTube. Redakcja wkleja adres, a uczeń odtwarza film w aplikacji, bez przechodzenia do YouTube. Odtwarzacz ładuje się dopiero po kliknięciu, przez `youtube-nocookie.com`, więc przed kliknięciem YouTube nic nie wie o uczniu.
+- Linki do mediów społecznościowych (Instagram, TikTok, Facebook, X) wyświetlają się jako karta z nazwą serwisu i adresem. Nie osadzamy ich, bo ładowałyby śledzenie tych serwisów.
+- Artykuł może mieć na końcu sekcję „Źródła” z listą linków. Każdy link pokazuje domenę, żeby było widać, dokąd prowadzi.
 - Bibliotekę edytora wybiera Bohdan i zapisuje decyzję w `docs/adr/`. Edytor zapisuje treść jako dane (JSON), a nie jako HTML wpisany przez użytkownika. Serwer przyjmuje tylko dozwolone elementy i odrzuca resztę.
 
 ### Działanie bez internetu i aktualizacje
