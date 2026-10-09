@@ -1,0 +1,240 @@
+/**
+ * PL: Style ekranów aktualności (podtor 3a): pasek z powrotem, chipy filtra, kafle wpisów, treść wpisu i miniatura filmu. Kolory tylko przez var(--...) z tokens.css. Bez color-mix(), zagnieżdżania CSS, :has() i 100dvh, bo iOS 15.0–15.3 ich nie zna.
+ * EN: Styles of the news screens (subtrack 3a): the bar with the back arrow, the filter chips, the entry tiles, the entry content and the video thumbnail. Colors only through var(--...) from tokens.css. No color-mix(), CSS nesting, :has() or 100dvh, because iOS 15.0–15.3 does not know them.
+ *
+ * @author Szymon
+ * @since 2026-10-09
+ * @uses src/shared/styles/tokens.css::var(--...)
+ * @used_by src/features/news/feed/NewsFeedScreen.tsx::import
+ */
+
+/* PL: Kolumna ekranu: do 430 px, na środku, z marginesem 16 px i dolnym marginesem bezpiecznym iPhone'a.
+   EN: The screen column: up to 430 px, centered, with a 16 px margin and the iPhone safe bottom margin. */
+.news-feed {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 16px 16px calc(24px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-wrap: anywhere;
+}
+
+/* PL: Pasek: strzałka powrotu obok tytułu.
+   EN: The bar: the back arrow next to the title. */
+.news-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* PL: Strzałka ma pole dotyku 44 × 44 px.
+   EN: The arrow has a 44 × 44 px touch area. */
+.news-top__back {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r);
+  background: var(--tile);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: var(--t-lg);
+}
+
+/* PL: Chipy zawijają się do następnego wiersza, więc przy 320 px nic nie wychodzi poza ekran.
+   EN: Chips wrap to the next row, so at 320 px nothing goes off the screen. */
+.news-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.news-chip {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* PL: Wybrany chip ma kolor akcentu szkoły.
+   EN: The chosen chip has the school accent color. */
+.news-chip[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* PL: Lista kafli i komunikaty pod chipami.
+   EN: The tile list and the messages under the chips. */
+.news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.news-note {
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
+.news-note .news-button {
+  margin-top: 12px;
+}
+
+/* PL: Kafel wpisu: cały jest odnośnikiem. Wpis ważny ma jaśniejsze tło.
+   EN: The entry tile: all of it is a link. An important entry has a lighter background. */
+.news-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: var(--r);
+  background: var(--tile);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.news-card--important {
+  background: var(--tile-2);
+}
+
+.news-card h2 {
+  font-size: var(--t-lg);
+  line-height: 1.2;
+}
+
+.news-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.news-card small,
+.news-entry small {
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
+/* PL: Znacznik typu wpisu.
+   EN: The entry type tag. */
+.news-tag {
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  background: var(--ink);
+  color: var(--bg);
+  font-size: var(--t-xs);
+  font-weight: 700;
+}
+
+/* PL: Przyciski: wypełniony i z samym obrysem. Wysokość co najmniej 48 px.
+   EN: Buttons: filled and outline only. At least 48 px tall. */
+.news-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.news-button--outline {
+  border: 2px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+}
+
+/* PL: Wpis: odstępy między znacznikiem, treścią i przyciskiem.
+   EN: The entry: spacing between the tag, the content and the button. */
+.news-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* PL: Treść wpisu: akapity, nagłówki, listy, cytat i linki.
+   EN: The entry content: paragraphs, headings, lists, the quote and links. */
+.news-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.news-content h2 {
+  font-size: var(--t-lg);
+  line-height: 1.2;
+}
+
+.news-content h3 {
+  font-size: var(--t-md);
+}
+
+.news-content ul,
+.news-content ol {
+  padding-left: 24px;
+}
+
+.news-content blockquote {
+  padding-left: 12px;
+  border-left: 3px solid var(--line);
+  color: var(--ink-2);
+}
+
+.news-content a {
+  color: var(--accent);
+}
+
+/* PL: Film: miniatura 16:9 z przyciskiem odtwarzania, a po kliknięciu ramka tej samej wielkości.
+   EN: The video: a 16:9 thumbnail with a play button, and after a click a frame of the same size. */
+.news-video {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r);
+  background: var(--bg-deep);
+  overflow: hidden;
+}
+
+.news-video--thumb {
+  cursor: pointer;
+}
+
+.news-video__image,
+.news-video__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+}
+
+.news-video__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--t-lg);
+}
