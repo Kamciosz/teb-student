@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+# Hook prepare-commit-msg: pokazuje wzór, gdy commit nie ma jeszcze treści.
+# Nie nadpisuje komunikatów podanych z -m, merge'y ani amendów z treścią.
+case "$2" in
+	message|merge|squash) exit 0 ;;
+esac
+msg_file="$1"
+[ -s "$msg_file" ] && exit 0
+
+cat > "$msg_file" <<'EOF'
+
+# <typ>(<zakres>): opis co i dlaczego  (temat ≤72 znaki, ≥10 znaków)
+#
+# Typy: feat fix docs style refactor perf test build ci chore revert
+#
+# W treści (po pustej linii) odpowiedz:
+#  - dlaczego ta zmiana jest potrzebna
+#  - co się zmieni dla użytkownika/innych modułów
+#  - jak to sprawdzić (komenda, krok testu)
+#
+# Jeden commit = jedna logiczna zmiana. Nie mieszaj refaktoru z featurą.
+EOF

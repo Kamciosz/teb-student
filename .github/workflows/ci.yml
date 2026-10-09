@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  commits:
+    name: Format commitów
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sprawdź każdy commit hookiem z repozytorium
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          for sha in $(git rev-list "$BASE..$HEAD"); do
+            git log -1 --format=%B "$sha" > "$RUNNER_TEMP/msg"
+            sh .githooks/commit-msg "$RUNNER_TEMP/msg" || { echo "Commit $sha"; exit 1; }
+          done
+
+  build:
+    name: Build i testy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Lint i typy
+        run: npm run lint --if-present
+      - name: Testy
+        run: npm test --if-present
+      - name: Build
+        run: npm run build --if-present

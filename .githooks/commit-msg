@@ -1,0 +1,54 @@
+#!/usr/bin/env sh
+# Hook commit-msg: wymusza Conventional Commits (standard: ~/engineering-standard).
+# Bypass (świadomy, nie na codzień): git commit --no-verify
+msg_file="$1"
+subject=$(head -1 "$msg_file" | sed 's/[[:space:]]*$//')
+
+case "$subject" in
+	Merge*|Revert*|"fixup!"*|"squash!"*) exit 0 ;;
+esac
+
+pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9._/-]+\))?!?: .{10,}'
+if ! printf '%s' "$subject" | grep -Eq "$pattern"; then
+	cat >&2 <<EOF
+✖ Zły format commita: "$subject"
+
+Wzór:  <typ>(<zakres>): opis co i dlaczego      (temat ≥10 znaków)
+
+Typy:  feat     nowa funkcja            fix      poprawka błędu
+       docs     dokumentacja            refactor zmiana bez zmiany zachowania
+       test     testy                   perf     wydajność
+       build    build/zależności        ci       pipeline
+       chore    drobiazgi               style    formatowanie
+Przykład:
+       feat(combat): dodaj obrażenia obszarowe od pocisków
+
+Więcej kontekstu ("dlaczego") w treści commita, nie w temacie.
+Szczegóły: CONTRIBUTING.md → Commity
+EOF
+	exit 1
+fi
+
+len=$(printf '%s' "$subject" | wc -c | tr -d ' ')
+if [ "$len" -gt 72 ]; then
+	echo "✖ Temat ma $len znaków (limit 72). Skróć, szczegóły przenieś do treści." >&2
+	exit 1
+fi
+
+# Blokada śladów AI w commicie (standard: ~/engineering-standard → AGENTS.md → Autorstwo).
+# Autor to człowiek. Bypass dla świadomego wyjątku: git commit --no-verify
+ai_trailer='^(co-authored-by|assisted-by|generated-by|co-authored|contributed-by):.*(claude|gpt|codex|copilot|gemini|cursor|anthropic|openai|llm|chatgpt|windsurf|(^|[^[:alnum:]])ai([^[:alnum:]]|$))'
+ai_body='(generated|created|written|made)[[:space:]]+(with|by)[[:space:]]+\[?[[:space:]]*(claude|codex|chatgpt|copilot|gemini|cursor|anthropic|openai)'
+if grep -Eiq "$ai_trailer" "$msg_file" || grep -Eiq "$ai_body" "$msg_file" || grep -q '🤖' "$msg_file"; then
+	cat >&2 <<'EOF'
+✖ Commit zawiera ślad AI.
+
+Autor commita to człowiek, nie narzędzie. Usuń:
+  - trailer Co-Authored-By / Assisted-by / Generated-by z nazwą modelu
+  - stopkę "Generated with ..."
+  - emoji robota
+
+Jeśli to nie Twój commit, użyj git commit --no-verify świadomie.
+EOF
+	exit 1
+fi

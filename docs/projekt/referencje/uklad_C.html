@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12302A">
+<title>TEB Student: koncept C „Pulpit”</title>
+<link rel="icon" href="data:,">
+<script>
+  // ?shot dodaje pasek statusu do zrzutów, ?paleta=CA…CH włącza jeden z wariantów kolorów (tokeny niżej w :root).
+  // W CE…CH akcent zależy od szkoły: &szkola=L (liceum, niebieski, domyślnie) albo &szkola=T (technikum, czerwony).
+  (() => {
+    const params = new URLSearchParams(location.search);
+    const root = document.documentElement;
+    if (params.has('shot')) root.classList.add('shot');
+    const PALETY = { CA: ['Szałwia', '#E6EEE8'], CB: ['Błękit', '#E8EFF8'], CC: ['Grafit', '#26282D'], CD: ['Śliwka', '#2B1A33'],
+      CE: ['Grafit', '#26282D'], CF: ['Czerń', '#0E0F11'], CG: ['Biel', '#F3F4F6'], CH: ['Granat', '#16203A'] };
+    const p = (params.get('paleta') || '').toUpperCase();
+    if (!PALETY[p]) return;
+    root.dataset.paleta = p;
+    const szkola = (params.get('szkola') || 'L').toUpperCase() === 'T' ? 'T' : 'L';
+    if (p >= 'CE') root.dataset.szkola = szkola;
+    document.title = `TEB Student: koncept C, wariant ${p} „${PALETY[p][0]}”` + (p >= 'CE' ? (szkola === 'T' ? ', technikum' : ', liceum') : '');
+    document.querySelector('meta[name="theme-color"]').content = PALETY[p][1];
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+  /* Koncept C: szkolna tablica. Zielone tło jak tablica, biel i żółć kredy.
+     Żółty tylko dla jednej głównej akcji na ekranie. Duże wąskie cyfry działają jak tablica wyników. */
+  :root {
+    color-scheme: dark;
+    --bg: #12302A;
+    --bg-deep: #0D2420;
+    --tile: #1A3D35;
+    --tile-2: #22493F;
+    --line: #2B5247;
+    --ink: #EEF3EF;
+    --ink-2: #A7BFB6;
+    --accent: #F4D35E;
+    --accent-hover: #F7DE84;
+    --on-accent: #12302A;
+    --focus: #F4D35E;
+    --shadow: 0 8px 32px rgba(5, 18, 15, .5);
+
+    --t-xs: 12px;
+    --t-sm: 14px;
+    --t-md: 16px;
+    --t-lg: 20px;
+    --t-xl: 28px;
+    --t-num-sm: 32px;
+    --t-num: 64px;
+
+    --r-sm: 8px;
+    --r: 12px;
+    --r-lg: 20px;
+
+    --font: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  /* Warianty kolorów C: ten sam układ, inne tokeny. Kontrast każdej pary sprawdzony (tekst ≥ 4,5:1). */
+  :root[data-paleta="CA"] {
+    color-scheme: light;
+    --bg: #E6EEE8; --bg-deep: #D8E3DB; --tile: #FFFFFF; --tile-2: #D3E2D8; --line: #C2D3C8;
+    --ink: #12302A; --ink-2: #4A6359; --accent: #F2C744; --accent-hover: #E8B826; --on-accent: #12302A;
+    --focus: #12302A; --shadow: 0 8px 32px rgba(18, 48, 42, .16);
+  }
+  :root[data-paleta="CB"] {
+    color-scheme: light;
+    --bg: #E8EFF8; --bg-deep: #DAE4F1; --tile: #FFFFFF; --tile-2: #D5E1F0; --line: #C3D2E6;
+    --ink: #13233D; --ink-2: #4B5D78; --accent: #FF7A30; --accent-hover: #F2691C; --on-accent: #13233D;
+    --focus: #13233D; --shadow: 0 8px 32px rgba(19, 35, 61, .16);
+  }
+  :root[data-paleta="CC"] {
+    --bg: #26282D; --bg-deep: #1C1D21; --tile: #303339; --tile-2: #3A3E45; --line: #4A4F58;
+    --ink: #F1F2F4; --ink-2: #AEB3BC; --accent: #FF8FB3; --accent-hover: #FFA9C5; --on-accent: #26282D;
+    --focus: #FF8FB3; --shadow: 0 8px 32px rgba(10, 11, 13, .5);
+  }
+  :root[data-paleta="CD"] {
+    --bg: #2B1A33; --bg-deep: #200F27; --tile: #382443; --tile-2: #452E52; --line: #563D63;
+    --ink: #F6EEF8; --ink-2: #C4AECB; --accent: #7FE3C9; --accent-hover: #9CEBD6; --on-accent: #2B1A33;
+    --focus: #7FE3C9; --shadow: 0 8px 32px rgba(16, 6, 20, .5);
+  }
+  /* CE…CH: akcent zależy od szkoły. L (liceum) niebieski, T (technikum) czerwony; reszta tokenów wspólna. */
+  :root[data-paleta="CE"] {
+    --bg: #26282D; --bg-deep: #1C1D21; --tile: #303339; --tile-2: #3A3E45; --line: #4A4F58;
+    --ink: #F1F2F4; --ink-2: #AEB3BC; --shadow: 0 8px 32px rgba(10, 11, 13, .5);
+  }
+  :root[data-paleta="CE"][data-szkola="L"] { --accent: #6FA8FF; --accent-hover: #8DBBFF; --on-accent: #0C1A33; --focus: #6FA8FF; }
+  :root[data-paleta="CE"][data-szkola="T"] { --accent: #FF6B6B; --accent-hover: #FF8585; --on-accent: #2A0B0B; --focus: #FF6B6B; }
+  :root[data-paleta="CF"] {
+    --bg: #0E0F11; --bg-deep: #000000; --tile: #181A1D; --tile-2: #22252A; --line: #33373D;
+    --ink: #F5F6F7; --ink-2: #A3A9B2; --shadow: 0 8px 32px rgba(0, 0, 0, .6);
+  }
+  :root[data-paleta="CF"][data-szkola="L"] { --accent: #4F8FFF; --accent-hover: #6FA3FF; --on-accent: #07101F; --focus: #4F8FFF; }
+  :root[data-paleta="CF"][data-szkola="T"] { --accent: #FF4D55; --accent-hover: #FF6E75; --on-accent: #240608; --focus: #FF4D55; }
+  :root[data-paleta="CG"] {
+    color-scheme: light;
+    --bg: #F3F4F6; --bg-deep: #E6E8EB; --tile: #FFFFFF; --tile-2: #E8EAEE; --line: #D5D8DD;
+    --ink: #14161A; --ink-2: #5A6069; --shadow: 0 8px 32px rgba(20, 22, 26, .14);
+  }
+  :root[data-paleta="CG"][data-szkola="L"] { --accent: #1F5FE0; --accent-hover: #1A52C4; --on-accent: #FFFFFF; --focus: #1F5FE0; }
+  :root[data-paleta="CG"][data-szkola="T"] { --accent: #D42A3C; --accent-hover: #B92233; --on-accent: #FFFFFF; --focus: #D42A3C; }
+  :root[data-paleta="CH"] {
+    --bg: #16203A; --bg-deep: #0E1629; --tile: #1E2A4A; --tile-2: #283659; --line: #38476E;
+    --ink: #EEF2FA; --ink-2: #A9B6D3; --shadow: 0 8px 32px rgba(5, 9, 20, .55);
+  }
+  :root[data-paleta="CH"][data-szkola="L"] { --accent: #6AA6FF; --accent-hover: #89B9FF; --on-accent: #0B1429; --focus: #6AA6FF; }
+  :root[data-paleta="CH"][data-szkola="T"] { --accent: #FF5A63; --accent-hover: #FF7B82; --on-accent: #2A0A0D; --focus: #FF5A63; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: var(--bg-deep); }
+  body { font-family: var(--font); color: var(--ink); font-size: var(--t-md); line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  button, input, textarea { font: inherit; color: inherit; }
+  a, button, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  h1, h2 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  [tabindex="-1"]:focus { outline: none; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  svg.lucide { width: 20px; height: 20px; flex: none; }
+  [hidden] { display: none !important; }
+
+  .app { max-width: 430px; min-height: 100dvh; margin: 0 auto; background: var(--bg); padding-bottom: 112px; }
+  .statusbar { display: none; height: 44px; padding: 0 28px; align-items: center; justify-content: space-between; font-weight: 600; font-size: var(--t-md); }
+  .shot .statusbar { display: flex; }
+  .sb-icons { display: flex; gap: 4px; }
+  .sb-icons svg.lucide { width: 17px; height: 17px; }
+  .screen { padding: 12px 16px 24px; }
+
+  .hello { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 0 4px; margin-bottom: 16px; }
+  .date { color: var(--ink-2); font-size: var(--t-sm); font-weight: 500; }
+  h1 { font-size: var(--t-xl); line-height: 1.12; font-weight: 800; letter-spacing: -0.01em; }
+  .bell { text-align: right; flex: none; }
+  .bell-num { display: block; font-stretch: 62%; font-weight: 800; font-size: var(--t-num-sm); line-height: 1; }
+  .bell-num small { font-stretch: 100%; font-size: var(--t-sm); font-weight: 600; margin-left: 2px; }
+  .bell-cap { font-size: var(--t-sm); font-weight: 600; color: var(--ink-2); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tile { background: var(--tile); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+  .wide { grid-column: span 2; }
+  .tile .label { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--t-sm); font-weight: 600; color: var(--ink-2); }
+  .label svg.lucide { width: 16px; height: 16px; color: var(--ink); }
+  .label .right { margin-left: auto; color: var(--ink); }
+  .bell-num, .tile .num, .news time, .flow-top .step, .label .right { font-variant-numeric: tabular-nums; }
+  .tile h2 { font-size: var(--t-lg); line-height: 1.2; font-weight: 700; margin-top: 8px; }
+  .tile p { color: var(--ink-2); font-size: var(--t-sm); margin-top: 4px; }
+  .tile.important { background: var(--tile-2); }
+
+  .tile .num { font-stretch: 62%; font-weight: 800; font-size: var(--t-num); line-height: 0.9; letter-spacing: -0.01em; margin-top: 12px; color: var(--ink); }
+  .tile .num-cap { font-size: var(--t-sm); font-weight: 600; margin-top: 4px; color: var(--ink); }
+  .tile .sub { margin-top: auto; padding-top: 12px; }
+  .row-num { display: flex; align-items: center; gap: 16px; }
+  .row-num > div:first-child { flex: 1; }
+  .tile .row-num .num { margin-top: 0; text-align: right; }
+  .row-num .num small { display: block; font-size: var(--t-sm); font-stretch: 100%; font-weight: 600; letter-spacing: 0; margin-top: 4px; }
+
+  .stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 12px; }
+  .stages i { height: 4px; border-radius: 999px; background: var(--line); }
+  .stages i.on { background: var(--ink); }
+  .tile .stage-cap { font-size: var(--t-xs); font-weight: 600; margin-top: 8px; }
+  .ghost { margin-top: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--ink-2); border-radius: var(--r-sm); padding: 8px 12px; font-size: var(--t-sm); font-weight: 600; color: var(--ink); white-space: nowrap; }
+
+  .news { list-style: none; margin-top: 8px; }
+  .news li { display: flex; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); font-weight: 500; }
+  .news li:first-child { border-top: 0; }
+  .news time { font-stretch: 75%; font-weight: 700; font-size: var(--t-sm); color: var(--ink-2); width: 40px; flex: none; padding-top: 2px; }
+
+  .dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); width: min(calc(100% - 32px), 398px); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; background: var(--tile-2); border-radius: var(--r-lg); padding: 8px; box-shadow: var(--shadow); }
+  .shot .dock { bottom: 28px; }
+  .dock a { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink-2); text-decoration: none; font-size: var(--t-xs); font-weight: 600; padding: 4px 0; }
+  .dock a[aria-current="page"] { color: var(--ink); }
+  .dock a.add { width: 64px; height: 48px; border-radius: var(--r); background: var(--accent); color: var(--on-accent); justify-content: center; margin: 0 8px; }
+  .dock a.add svg.lucide { width: 26px; height: 26px; stroke-width: 2.5; }
+
+  /* Kroki (zgłoszenie i ankieta) */
+  .flow-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .flow-top b { flex: 1; font-weight: 700; }
+  .flow-top .step { font-stretch: 75%; font-weight: 700; color: var(--ink-2); }
+  .icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--tile); display: grid; place-items: center; cursor: pointer; text-decoration: none; color: var(--ink); }
+  .bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
+  .bars span { height: 4px; border-radius: 999px; background: var(--line); }
+  .bars span.on { background: var(--ink); }
+  .q-kicker { font-size: var(--t-sm); font-weight: 600; color: var(--ink-2); margin-bottom: 8px; }
+  #p-title { margin-bottom: 24px; }
+  .flow h1 { margin-bottom: 8px; }
+  .flow .lead { color: var(--ink-2); margin-bottom: 24px; }
+
+  .pick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pick label { position: relative; background: var(--tile); border-radius: var(--r); padding: 16px; height: 144px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; font-weight: 700; line-height: 1.2; }
+  .pick input, .answers input, .chips input { position: absolute; opacity: 0; pointer-events: none; }
+  .pick svg.lucide { width: 28px; height: 28px; stroke-width: 1.75; }
+  .pick label:has(input:checked), .answers label:has(input:checked), .chips label:has(input:checked) { background: var(--ink); color: var(--bg); }
+  .pick label:has(input:focus-visible), .answers label:has(input:focus-visible), .chips label:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .tick { position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; border-radius: 50%; background: var(--bg); color: var(--ink); display: none; place-items: center; }
+  .tick svg.lucide { width: 16px; height: 16px; stroke-width: 3; }
+  label:has(input:checked) .tick { display: grid; }
+
+  .answers { display: grid; gap: 12px; }
+  .answers label { position: relative; display: flex; align-items: center; gap: 12px; background: var(--tile); border-radius: var(--r); padding: 12px 48px 12px 12px; cursor: pointer; font-weight: 600; line-height: 1.25; min-height: 64px; }
+  .key { width: 32px; height: 32px; border-radius: var(--r-sm); border: 1.5px solid var(--ink-2); display: grid; place-items: center; font-stretch: 75%; font-weight: 800; flex: none; }
+  .answers label:has(input:checked) .key { background: var(--bg); color: var(--ink); border-color: var(--bg); }
+  .answers .tick { top: 50%; transform: translateY(-50%); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .chips label { display: inline-flex; align-items: center; min-height: 44px; background: var(--tile); border-radius: var(--r-sm); padding: 8px 16px; font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
+  .field { display: block; }
+  .field span { display: block; font-size: var(--t-sm); font-weight: 600; color: var(--ink-2); margin-bottom: 8px; }
+  .field input, .field textarea { width: 100%; background: var(--tile); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; resize: none; }
+  .field input:focus-visible, .field textarea:focus-visible { border-color: var(--ink); }
+  .field input::placeholder, .field textarea::placeholder { color: var(--ink-2); }
+  .hint { display: block; margin-top: 8px; font-size: var(--t-sm); color: var(--ink-2); }
+  .switch { display: flex; align-items: center; gap: 12px; background: var(--tile); border-radius: var(--r); padding: 12px 16px; margin-top: 12px; cursor: pointer; }
+  .switch input { position: absolute; opacity: 0; }
+  .track { width: 44px; height: 28px; border-radius: 999px; background: var(--line); position: relative; flex: none; }
+  .track::after { content: ''; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--ink-2); transition: transform .15s; }
+  .switch input:checked + .track { background: var(--ink); }
+  .switch input:checked + .track::after { transform: translateX(16px); background: var(--bg); }
+  .switch input:focus-visible + .track { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .switch b { display: block; }
+  .switch small { color: var(--ink-2); font-size: var(--t-sm); }
+
+  .note { display: flex; gap: 8px; align-items: flex-start; color: var(--ink-2); font-size: var(--t-sm); margin-top: 16px; }
+  .note svg.lucide { width: 16px; height: 16px; margin-top: 2px; }
+
+  .cta { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); width: min(calc(100% - 32px), 398px); display: flex; gap: 8px; }
+  .shot .cta { bottom: 28px; }
+  .btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: var(--r); padding: 16px; font-weight: 700; cursor: pointer; text-decoration: none; }
+  .btn-accent { background: var(--accent); color: var(--on-accent); }
+  .btn-accent:disabled { background: var(--tile-2); color: var(--ink-2); cursor: not-allowed; }
+  .btn-soft { background: var(--tile-2); color: var(--ink); flex: 0 0 auto; padding: 16px 20px; }
+
+  .done { text-align: center; padding-top: 80px; }
+  .done .big-check { width: 88px; height: 88px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; margin: 0 auto 24px; }
+  .done .big-check svg.lucide { width: 44px; height: 44px; stroke-width: 2.5; }
+  .done p { color: var(--ink-2); margin-top: 8px; }
+
+  @media (hover: hover) {
+    a.tile:hover, .icon-btn:hover, .pick label:hover, .answers label:hover, .chips label:hover, .btn-soft:hover { background: var(--tile-2); }
+    .pick label:has(input:checked):hover, .answers label:has(input:checked):hover, .chips label:has(input:checked):hover { background: var(--ink); }
+    .dock a:hover { color: var(--ink); }
+    .btn-accent:not(:disabled):hover, .dock a.add:hover { background: var(--accent-hover); }
+  }
+  /* Dotknięcie ma być widać: lekkie wciśnięcie zamiast niebieskiego błysku przeglądarki. */
+  a.tile, .btn, .icon-btn, .dock a, .pick label, .answers label, .chips label { transition: transform .12s ease-out; }
+  a.tile:active, .btn:not(:disabled):active, .icon-btn:active, .dock a:active, .pick label:active, .answers label:active, .chips label:active { transform: scale(.97); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="statusbar" aria-hidden="true">
+    <span>8:15</span>
+    <span class="sb-icons"><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span>
+  </div>
+
+  <main>
+    <!-- PULPIT -->
+    <section class="screen" id="s-start" aria-labelledby="h-start">
+      <header class="hello">
+        <div>
+          <p class="date">Wtorek, 6.10 · 1.&nbsp;lekcja</p>
+          <h1 id="h-start" tabindex="-1">Cześć, Ola</h1>
+        </div>
+        <p class="bell" role="status" aria-label="Dzwonek za 30 minut">
+          <span class="bell-num">30<small>min</small></span>
+          <span class="bell-cap">do dzwonka</span>
+        </p>
+      </header>
+
+      <div class="grid">
+        <article class="tile wide important">
+          <p class="label"><i data-lucide="triangle-alert"></i>Ważne · Sekretariat<span class="right">20 min</span></p>
+          <h2>Jutro 3TA zaczyna o&nbsp;9:50</h2>
+          <p>Dwie pierwsze lekcje przeniesione na piątek.</p>
+        </article>
+
+        <a class="tile" href="#ankieta">
+          <p class="label">Ankieta</p>
+          <p class="num">3</p>
+          <p class="num-cap">dni do końca</p>
+          <p class="sub">Zajęcia dodatkowe w&nbsp;II&nbsp;semestrze</p>
+          <span class="ghost">Wypełnij</span>
+        </a>
+
+        <article class="tile">
+          <p class="label">Zgłoszenia</p>
+          <p class="num">1</p>
+          <p class="num-cap">w trakcie</p>
+          <p class="sub">Nie działa projektor w&nbsp;sali&nbsp;204</p>
+          <span class="stages" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></span>
+          <p class="stage-cap">Etap 2 z&nbsp;3</p>
+        </article>
+
+        <article class="tile wide">
+          <div class="row-num">
+            <div>
+              <p class="label">Wydarzenie</p>
+              <h2>Turniej e-sportowy klas</h2>
+              <p>Zapisy drużyn do piątku 16.10</p>
+            </div>
+            <p class="num">10<small>dni</small></p>
+          </div>
+        </article>
+
+        <article class="tile wide">
+          <p class="label">Ogłoszenia<span class="right">3 nowe</span></p>
+          <ul class="news">
+            <li><time datetime="2026-10-12">12.10</time>Biblioteka: nowe godziny otwarcia</li>
+            <li><time datetime="2026-10-22">22.10</time>Próbny egzamin zawodowy INF.04</li>
+            <li><time datetime="2026-11-14">14.11</time>Dzień otwarty: szukamy 20 osób</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ZGŁOŚ: trzy kroki -->
+    <section class="screen flow" id="s-zglos" aria-labelledby="h-zglos" hidden>
+      <div class="flow-top">
+        <a class="icon-btn" href="#start" aria-label="Zamknij"><i data-lucide="x"></i></a>
+        <b id="h-zglos">Zgłoś problem</b>
+        <span class="step" id="r-step">1/3</span>
+      </div>
+      <div class="bars" id="r-bars" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
+
+      <form id="report" novalidate>
+        <div data-step="1">
+          <h1 tabindex="-1">Czego dotyczy?</h1>
+          <p class="lead">Wybierz jedno. W&nbsp;następnych krokach dodasz miejsce i&nbsp;opis.</p>
+          <div class="pick">
+            <label><input type="radio" name="cat" value="sala" checked><i data-lucide="wrench"></i>Sala lub sprzęt<span class="tick"><i data-lucide="check"></i></span></label>
+            <label><input type="radio" name="cat" value="bezp"><i data-lucide="shield-alert"></i>Bezpieczeństwo<span class="tick"><i data-lucide="check"></i></span></label>
+            <label><input type="radio" name="cat" value="pomysl"><i data-lucide="lightbulb"></i>Pomysł<span class="tick"><i data-lucide="check"></i></span></label>
+            <label><input type="radio" name="cat" value="inne"><i data-lucide="circle-help"></i>Inne<span class="tick"><i data-lucide="check"></i></span></label>
+          </div>
+        </div>
+
+        <div data-step="2" hidden>
+          <h1 tabindex="-1">Gdzie to jest?</h1>
+          <p class="lead">Zaznacz miejsce i&nbsp;dopisz szczegóły.</p>
+          <div class="chips">
+            <label><input type="radio" name="place" checked>Sala</label>
+            <label><input type="radio" name="place">Korytarz</label>
+            <label><input type="radio" name="place">Toaleta</label>
+            <label><input type="radio" name="place">Szatnia</label>
+            <label><input type="radio" name="place">Sala gimnastyczna</label>
+            <label><input type="radio" name="place">Boisko</label>
+          </div>
+          <label class="field"><span>Dokładne miejsce</span><input type="text" value="Sala 112" placeholder="np. sala 204, 2. piętro"></label>
+        </div>
+
+        <div data-step="3" hidden>
+          <h1 tabindex="-1">Opisz krótko</h1>
+          <p class="lead">Wystarczą jedno lub dwa zdania.</p>
+          <label class="field"><span>Opis</span><textarea id="r-desc" rows="4" placeholder="Co się stało?" aria-describedby="r-hint">Okno się nie domyka, w sali jest zimno.</textarea></label>
+          <small class="hint" id="r-hint" hidden>Wpisz opis, żeby wysłać zgłoszenie.</small>
+          <label class="switch">
+            <input type="checkbox" role="switch" checked>
+            <span class="track"></span>
+            <span><b>Wyślij anonimowo</b><small>Samorząd nie zobaczy, kto zgłosił.</small></span>
+          </label>
+        </div>
+
+        <div data-step="done" class="done" hidden>
+          <div class="big-check"><i data-lucide="check"></i></div>
+          <h1 tabindex="-1">Wysłane</h1>
+          <p>Zgłoszenie trafiło do Samorządu Uczniowskiego.<br>Status zobaczysz na pulpicie.</p>
+        </div>
+      </form>
+    </section>
+
+    <!-- ANKIETA: jedno pytanie na ekranie -->
+    <section class="screen flow" id="s-ankieta" aria-labelledby="h-ankieta" hidden>
+      <div class="flow-top">
+        <a class="icon-btn" href="#start" aria-label="Zamknij"><i data-lucide="x"></i></a>
+        <b id="h-ankieta">Zajęcia dodatkowe</b>
+        <span class="step" id="p-step">1/3</span>
+      </div>
+      <div class="bars" id="p-bars" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
+
+      <div id="p-question">
+        <p class="q-kicker" id="p-kicker">Pytanie 1</p>
+        <h1 id="p-title" tabindex="-1"></h1>
+        <div class="answers" id="p-answers" role="radiogroup" aria-labelledby="p-title"></div>
+        <p class="note"><i data-lucide="lock"></i>Odpowiedzi są anonimowe. Wyniki zobaczysz po zakończeniu ankiety.</p>
+      </div>
+
+      <div class="done" id="p-done" hidden>
+        <div class="big-check"><i data-lucide="check"></i></div>
+        <h1 tabindex="-1">Odpowiedzi wysłane</h1>
+        <p>Wyniki zobaczysz po zakończeniu ankiety w&nbsp;piątek 9.10.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="dock" aria-label="Menu główne">
+    <a href="#start"><i data-lucide="layout-grid"></i>Pulpit</a>
+    <a href="#zglos" class="add" aria-label="Zgłoś problem"><i data-lucide="plus"></i></a>
+    <a href="#ankieta"><i data-lucide="list-checks"></i>Ankiety</a>
+  </nav>
+
+  <div class="cta" id="r-cta" hidden>
+    <button class="btn btn-soft" type="button" id="r-back" aria-label="Wstecz"><i data-lucide="arrow-left"></i></button>
+    <button class="btn btn-accent" type="button" id="r-next">Dalej<i data-lucide="arrow-right"></i></button>
+  </div>
+  <div class="cta" id="p-cta" hidden>
+    <button class="btn btn-soft" type="button" id="p-back" aria-label="Wstecz"><i data-lucide="arrow-left"></i></button>
+    <button class="btn btn-accent" type="button" id="p-next">Dalej<i data-lucide="arrow-right"></i></button>
+  </div>
+</div>
+
+<script src="lucide.min.js"></script>
+<script>
+  const icons = () => lucide.createIcons({ icons: lucide.icons, attrs: { 'aria-hidden': 'true' } });
+  const $ = s => document.querySelector(s);
+  // Po zmianie kroku albo ekranu fokus idzie na nowy nagłówek, żeby czytnik ekranu go przeczytał.
+  const focusHeading = sel => $(sel)?.focus({ preventScroll: true });
+
+  // --- Zgłoszenie w trzech krokach ---
+  let rStep = 1;
+  const rDesc = $('#r-desc');
+  function updateSend() {
+    const empty = rStep === 3 && !rDesc.value.trim();
+    $('#r-next').disabled = empty;
+    $('#r-hint').hidden = !empty;
+  }
+  function renderReport() {
+    document.querySelectorAll('#report [data-step]').forEach(el => { el.hidden = el.dataset.step !== String(rStep); });
+    const done = rStep === 'done';
+    $('#r-step').textContent = done ? '' : rStep + '/3';
+    $('#r-bars').hidden = done;
+    document.querySelectorAll('#r-bars span').forEach((b, i) => b.classList.toggle('on', !done && i < rStep));
+    $('#r-back').hidden = rStep === 1 || done;
+    $('#r-next').innerHTML = done ? 'Wróć na pulpit' : rStep === 3 ? 'Wyślij zgłoszenie <i data-lucide="send"></i>' : 'Dalej <i data-lucide="arrow-right"></i>';
+    updateSend();
+    icons();
+  }
+  rDesc.addEventListener('input', updateSend);
+  $('#r-next').addEventListener('click', () => {
+    if (rStep === 'done') { location.hash = '#start'; return; }
+    rStep = rStep === 3 ? 'done' : rStep + 1;
+    renderReport();
+    focusHeading('#report [data-step]:not([hidden]) h1');
+  });
+  $('#r-back').addEventListener('click', () => { rStep = Math.max(1, rStep - 1); renderReport(); focusHeading('#report [data-step]:not([hidden]) h1'); });
+
+  // --- Ankieta: jedno pytanie na ekranie ---
+  const QUESTIONS = [
+    { q: 'Jakie zajęcia dodatkowe chcesz w drugim semestrze?', a: ['Koło programowania gier', 'Siatkówka', 'Przygotowanie do matury z matematyki', 'Fotografia'], pick: 1 },
+    { q: 'Ile razy w tygodniu możesz zostać po lekcjach?', a: ['Raz', 'Dwa razy', 'Trzy razy lub więcej', 'Nie mogę zostawać'], pick: null },
+    { q: 'O której godzinie zajęcia pasują ci najbardziej?', a: ['Zaraz po lekcjach', 'Od 15:30', 'Od 16:30'], pick: null }
+  ];
+  let pStep = 0;
+  function renderPoll() {
+    const done = pStep >= QUESTIONS.length;
+    $('#p-question').hidden = done;
+    $('#p-done').hidden = !done;
+    $('#p-bars').hidden = done;
+    $('#p-step').textContent = done ? '' : (pStep + 1) + '/' + QUESTIONS.length;
+    document.querySelectorAll('#p-bars span').forEach((b, i) => b.classList.toggle('on', i <= pStep));
+    $('#p-back').hidden = pStep === 0 || done;
+    if (!done) {
+      const item = QUESTIONS[pStep];
+      $('#p-kicker').textContent = 'Pytanie ' + (pStep + 1);
+      $('#p-title').textContent = item.q;
+      $('#p-answers').innerHTML = item.a.map((text, i) => `
+        <label><input type="radio" name="q${pStep}" value="${i}" ${item.pick === i ? 'checked' : ''}>
+          <span class="key">${'ABCD'[i]}</span>${text}<span class="tick"><i data-lucide="check"></i></span></label>`).join('');
+      $('#p-answers').querySelectorAll('input').forEach(inp => inp.addEventListener('change', () => {
+        item.pick = Number(inp.value);
+        $('#p-next').disabled = false;
+      }));
+    }
+    $('#p-next').disabled = !done && QUESTIONS[pStep].pick === null;
+    $('#p-next').innerHTML = done ? 'Wróć na pulpit' : pStep === QUESTIONS.length - 1 ? 'Wyślij odpowiedzi <i data-lucide="send"></i>' : 'Dalej <i data-lucide="arrow-right"></i>';
+    icons();
+  }
+  $('#p-next').addEventListener('click', () => {
+    if (pStep >= QUESTIONS.length) { location.hash = '#start'; return; }
+    pStep++;
+    renderPoll();
+    focusHeading(pStep >= QUESTIONS.length ? '#p-done h1' : '#p-title');
+  });
+  $('#p-back').addEventListener('click', () => { pStep = Math.max(0, pStep - 1); renderPoll(); focusHeading('#p-title'); });
+
+  // --- Nawigacja ---
+  const SCREENS = ['start', 'zglos', 'ankieta'];
+  function route(e) {
+    const id = SCREENS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'start';
+    document.querySelectorAll('.screen').forEach(s => { s.hidden = s.id !== 's-' + id; });
+    document.querySelectorAll('.dock a').forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === '#' + id ? 'page' : 'false'));
+    $('.dock').hidden = id !== 'start';
+    $('#r-cta').hidden = id !== 'zglos';
+    $('#p-cta').hidden = id !== 'ankieta';
+    if (id === 'zglos') { rStep = 1; renderReport(); }
+    if (id === 'ankieta') { pStep = 0; renderPoll(); }
+    window.scrollTo(0, 0);
+    if (e) focusHeading({ start: '#h-start', zglos: '#report [data-step="1"] h1', ankieta: '#p-title' }[id]);
+  }
+  addEventListener('hashchange', route);
+  icons();
+  route();
+</script>
+</body>
+</html>

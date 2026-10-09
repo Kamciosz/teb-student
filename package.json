@@ -1,0 +1,11 @@
+{
+  "name": "teb-student",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.22"
+  },
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks"
+  }
+}
