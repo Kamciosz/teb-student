@@ -1,0 +1,32 @@
+name: Pomysł
+description: Nowa funkcja albo zmiana w aplikacji.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Jaki problem rozwiązuje
+      description: Kto ma ten problem i kiedy.
+    validations:
+      required: true
+  - type: textarea
+    id: pomysl
+    attributes:
+      label: Co proponujesz
+    validations:
+      required: true
+  - type: dropdown
+    id: modul
+    attributes:
+      label: Moduł
+      options:
+        - logowanie
+        - aktualności
+        - zgłoszenia
+        - ankiety
+        - pulpit i licznik
+        - profil
+        - panel Samorządu
+        - inny
+    validations:
+      required: true
