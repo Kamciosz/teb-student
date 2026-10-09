@@ -102,6 +102,7 @@ Blokada: plik `.github/CODEOWNERS`, który sam prosi właściciela o przegląd, 
 - Brakuje czegoś w innym podtorze: agent zakłada zgłoszenie dla tamtego podtoru i pracuje dalej na tym, co jest. Nie zmienia cudzych plików.
 - Brakuje czegoś w części wspólnej: zgłoszenie dla podtoru 0.
 - Agent nigdy nie robi `git push --force` do cudzej gałęzi i nie scala pull requestów.
+- Agent zatrzymuje tylko proces na porcie swojego podtoru, na przykład `lsof -ti tcp:5175 | xargs kill`. Nigdy `pkill -f vite` ani `killall node`, bo to zatrzymuje serwery innych agentów na tym samym komputerze.
 
 ## 7. Ilu agentów naraz
 
