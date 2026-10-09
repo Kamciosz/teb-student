@@ -39,7 +39,7 @@ Termin liczymy od 29.10, nie od 12.11. Funkcja, której nie ma w pilotażu, nie 
 
 1. **Logowanie.** Główna ścieżka to kod 6 cyfr wysłany na szkolny adres @teb.edu.pl, bez hasła. Druga ścieżka jest dla osób bez skrzynki: kod zaproszenia od Samorządu, a potem własny login i hasło.
 2. **Pulpit.** To ekran startowy z kafelkami: „Ważne”, ankieta, moje zgłoszenia, wydarzenie i ostatnie ogłoszenia.
-3. **Aktualności.** Wpisy w stylu mediów społecznościowych, nie bloga. Mają cztery typy: Ważne, News, Wydarzenie i Sport. Wpis może mieć zdjęcia albo film, opis i link. Wpisy publikuje Samorząd.
+3. **Aktualności.** Wpisy w stylu mediów społecznościowych, nie bloga. Mają cztery typy: Ważne, News, Wydarzenie i Sport. Wpis może mieć zdjęcia albo film, opis i link. Wpisy publikuje Samorząd oraz redakcja gazetki szkolnej (kółko), która pisze dłuższe artykuły w rozbudowanym edytorze.
 4. **Zgłoszenia problemów.** Trzy kroki: czego dotyczy, gdzie to jest, krótki opis. Domyślnie zgłoszenie jest anonimowe. Uczeń widzi etap swojego zgłoszenia: przyjęte, w trakcie, załatwione.
 5. **Ankiety.** Jedno pytanie na ekranie. Odpowiedzi są anonimowe, a wyniki widzi tylko Samorząd.
 6. **Licznik do dzwonka.** Pokazuje, ile minut zostało do końca lekcji. Nie wydaje dźwięku.
@@ -81,7 +81,7 @@ Piszemy od zera, w nowym repozytorium. Stara aplikacja TEB-App (`Kamciosz/teb-ap
 - Kod logowania działa 10 minut. Po kilku złych próbach przepada.
 - Aplikacja nie zdradza, czy dany adres e-mail ma konto.
 - Na ekranach pełny e-mail jest ukryty (o***@teb.edu.pl).
-- Wpisy, zgłoszenia i ankiety tworzą tylko osoby z odpowiednią rolą. Role to uczeń, Samorząd i administrator.
+- Wpisy, zgłoszenia i ankiety tworzą tylko osoby z odpowiednią rolą. Role to uczeń, redakcja gazetki, Samorząd i administrator. Redakcja publikuje tylko wpisy.
 
 ### Platforma
 
@@ -121,7 +121,8 @@ Wycena:
 - Według `01_PLAN.md` z folderu planu celem jest Cloudflare. Na punkcie kontrolnym 29.10 sprawdzamy, czy działa logowanie i aktualności. Jeśli nie, przechodzimy na Supabase i Vercel.
 - Ekrany nie mogą zależeć od wyboru platformy. Gdy zmienimy platformę, ekrany zostają takie same.
 - Logowania nie robimy przez Cloudflare Access. Darmowy plan ma limit 50 użytkowników, a pilotaż obejmie więcej osób.
-- Edytor wpisów pozwala tylko na pogrubienie, kursywę, link i listę.
+- Edytor wpisów jest rozbudowany, bo korzysta z niego kółko gazetki szkolnej. Ma nagłówki, pogrubienie, kursywę, podkreślenie, listy, cytat, linki, zdjęcia w treści z podpisem i film w treści. Ostateczną listę ustala zespół z redakcją gazetki.
+- Bibliotekę edytora wybiera Bohdan i zapisuje decyzję w `docs/adr/`. Edytor zapisuje treść jako dane (JSON), a nie jako HTML wpisany przez użytkownika. Serwer przyjmuje tylko dozwolone elementy i odrzuca resztę.
 
 ### Działanie bez internetu i aktualizacje
 
@@ -237,7 +238,7 @@ Funkcja jest gotowa, gdy wszystkie jej punkty da się pokazać na telefonie. Sam
 **Aktualności**
 - Lista wpisów z filtrem: Wszystkie, Ważne, News, Wydarzenie, Sport.
 - Wpis ma zdjęcia albo film, opis i link.
-- Samorząd tworzy wpis w trzech krokach: typ i zdjęcia, treść, podgląd. Może go zapisać jako szkic albo opublikować.
+- Samorząd albo redakcja gazetki tworzy wpis w trzech krokach: typ i zdjęcia, treść w rozbudowanym edytorze, podgląd. Podgląd wygląda tak samo jak wpis u ucznia. Może go zapisać jako szkic albo opublikować.
 - Uczeń nie widzi szkiców i nie może dodać wpisu.
 
 **Zgłoszenia**
@@ -264,7 +265,7 @@ Funkcja jest gotowa, gdy wszystkie jej punkty da się pokazać na telefonie. Sam
 **Panel Samorządu**
 - Widzi go tylko osoba z rolą Samorządu albo administratora.
 - Wydaje kody zaproszeń, ważne 14 dni.
-- Administrator nadaje rolę Samorządu.
+- Administrator nadaje rolę Samorządu i redakcji gazetki.
 - Pobiera dane z pilotażu bez imion, nazwisk i adresów.
 
 **Dla każdej funkcji**
@@ -281,10 +282,10 @@ Przy każdej sprawie jest propozycja i decyzja z 9.10.2026.
 | Sprawa | Propozycja | Decyzja zespołu |
 |---|---|---|
 | Logowanie bez Cloudflare Access | Tak: kod 6 cyfr na mail i kod zaproszenia | Przyjęte |
-| Edytor wpisów | Tylko pogrubienie, kursywa, link i lista | Przyjęte |
+| Edytor wpisów | Tylko pogrubienie, kursywa, link i lista | Zmienione: rozbudowany edytor dla kółka gazetki szkolnej, nowa rola redakcji (część 3) |
 | Domyślne kolory | CE Grafit z akcentem szkoły, 8 palet w ustawieniach | Przyjęte: CE Grafit. Makiety w `docs/projekt/` są w CC Grafit, kolory bierzemy z CE |
 | Czy każdy ma skrzynkę @teb.edu.pl | Sprawdzić testem na 5–10 kontach do 20.10 | Przyjęte, test do 20.10 |
-| Kto z Samorządu publikuje wpisy | Do ustalenia z Samorządem | Otwarte, ustala Szymon z Samorządem |
+| Kto z Samorządu publikuje wpisy | Do ustalenia z Samorządem | Otwarte, ustala Szymon z Samorządem i redakcją gazetki |
 | Zasięg pilotażu | 3TA, szerzej tylko za zgodą dyrekcji | Przyjęte |
 | TEBtalk, Grupy, Re-Wear w fali 1 | Wyłączone do 12.11 | Przyjęte |
 | Właściciele logowania, aktualności, zgłoszeń i panelu | Do ustalenia; Kacper i Jakub mają już po trzy funkcje | Otwarte. Co robi właściciel: `docs/OWNERS.md` |

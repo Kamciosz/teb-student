@@ -80,6 +80,7 @@ Wersje pochodzą z rejestru npm. Przy starcie projektu przypinamy dokładne wers
 - Film: najwyżej 30 s. Po przekodowaniu 720p i MP4 z H.264. Bez przekodowania najwyżej 50 MB.
 - Podpisany adres do R2 zawiera typ pliku. CORS w R2 dopuszcza tylko adres naszej aplikacji. Po wysłaniu serwer sprawdza rozmiar pliku i usuwa za duży.
 - Zapis danych w telefonie ma numer wersji. Wylogowanie kasuje te dane.
+- Edytor wpisów: biblioteka do wyboru przez Bohdana, wpis w `docs/adr/`. Treść zapisujemy jako JSON. Serwer sprawdza ją według listy dozwolonych elementów, a aplikacja nie wstawia HTML z bazy bez czyszczenia.
 
 ## Do sprawdzenia przed startem
 
@@ -92,6 +93,7 @@ Wersje pochodzą z rejestru npm. Przy starcie projektu przypinamy dokładne wers
 - CORS dla wysyłki plików do R2;
 - czy szkoła używa Microsoft 365 czy Google (rekord MX domeny teb.edu.pl);
 - maile z kodem na 5–10 skrzynkach @teb.edu.pl (20.10);
+- edytor wpisów na iPhonie z iOS 15: pisanie, wklejanie tekstu z Worda i Google Docs, zdjęcie w treści;
 - tryb samolotowy, powrót internetu i wgranie nowej wersji na iPhonie i Androidzie.
 
 ## Koszt
