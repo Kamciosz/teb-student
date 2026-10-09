@@ -1,0 +1,108 @@
+/**
+ * PL: Style ekranów 4a (zgłoszenie i „Moje zgłoszenia”), przeniesione z docs/projekt/referencje/uklad_C.html. Wszystkie klasy zaczynają się od „rs-”, żeby nie zderzyć się z innymi modułami. Kolory tylko ze zmiennych tokens.css. Bez :has(), color-mix i zagnieżdżania CSS, bo iOS 15 ich nie zna (docs/adr/0004): stan „wybrany” to klasa rs-on.
+ * EN: Styles of the 4a screens (report and "Moje zgłoszenia"), ported from docs/projekt/referencje/uklad_C.html. Every class starts with "rs-", so it does not clash with other modules. Colors only from the tokens.css variables. No :has(), color-mix or CSS nesting, because iOS 15 does not know them (docs/adr/0004): the "chosen" state is the rs-on class.
+ *
+ * @author Szymon
+ * @since 2026-10-09
+ * @uses src/shared/styles/tokens.css::var(--...)
+ * @used_by src/features/reports/student/ReportsStudentScreen.tsx::import
+ */
+
+/* PL: Kolumna aplikacji jak w makiecie: do 430 px, wyśrodkowana, z miejscem na dolny przycisk.
+   EN: The app column as in the mockup: up to 430 px, centered, with room for the bottom button. */
+.rs-screen { max-width: 430px; min-height: 100dvh; margin: 0 auto; background: var(--bg); padding: 12px 16px calc(112px + env(safe-area-inset-bottom)); }
+.rs-icon { width: 20px; height: 20px; flex: none; }
+
+/* PL: Górny pasek: zamknięcie, tytuł, numer kroku.
+   EN: The top bar: close, title, step number. */
+.rs-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.rs-top b { flex: 1; font-weight: 700; }
+.rs-step { font-stretch: 75%; font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.rs-icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--tile); display: grid; place-items: center; color: var(--ink); text-decoration: none; }
+
+/* PL: Trzy paski postępu kroków.
+   EN: The three step progress bars. */
+.rs-bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
+.rs-bars span { height: 4px; border-radius: 999px; background: var(--line); }
+.rs-bars span.rs-on { background: var(--ink); }
+
+.rs-lead { color: var(--ink-2); margin: 8px 0 24px; }
+
+/* PL: Cztery karty kategorii (krok 1).
+   EN: The four category cards (step 1). */
+.rs-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rs-card { position: relative; background: var(--tile); border-radius: var(--r); padding: 16px; height: 144px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; border: 0; text-align: left; font-weight: 700; line-height: 1.2; color: var(--ink); cursor: pointer; }
+.rs-card .rs-icon { width: 28px; height: 28px; stroke-width: 1.75; }
+.rs-card.rs-on { background: var(--ink); color: var(--bg); }
+
+/* PL: Chipy miejsc (krok 2).
+   EN: The place chips (step 2). */
+.rs-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.rs-chip { display: inline-flex; align-items: center; min-height: 44px; background: var(--tile); border: 0; border-radius: var(--r-sm); padding: 8px 16px; font-size: var(--t-sm); font-weight: 600; color: var(--ink); cursor: pointer; }
+.rs-chip.rs-on { background: var(--ink); color: var(--bg); }
+
+/* PL: Pola tekstowe.
+   EN: Text fields. */
+.rs-field { display: block; }
+.rs-field span { display: block; font-size: var(--t-sm); font-weight: 600; color: var(--ink-2); margin-bottom: 8px; }
+.rs-field input, .rs-field textarea { width: 100%; background: var(--tile); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; resize: none; }
+.rs-field textarea { min-height: 112px; }
+.rs-field input:focus-visible, .rs-field textarea:focus-visible { border-color: var(--ink); }
+.rs-field input::placeholder, .rs-field textarea::placeholder { color: var(--ink-2); }
+.rs-hint { display: block; margin-top: 8px; font-size: var(--t-sm); color: var(--ink-2); }
+
+/* PL: Przełącznik anonimowości.
+   EN: The anonymity switch. */
+.rs-switch { position: relative; display: flex; align-items: center; gap: 12px; background: var(--tile); border-radius: var(--r); padding: 12px 16px; margin-top: 12px; cursor: pointer; }
+.rs-switch input { position: absolute; opacity: 0; width: 44px; height: 28px; margin: 0; }
+.rs-track { width: 44px; height: 28px; border-radius: 999px; background: var(--line); position: relative; flex: none; }
+.rs-track::after { content: ''; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--ink-2); transition: transform .15s; }
+.rs-switch input:checked + .rs-track { background: var(--ink); }
+.rs-switch input:checked + .rs-track::after { transform: translateX(16px); background: var(--bg); }
+.rs-switch input:focus-visible + .rs-track { outline: 3px solid var(--focus); outline-offset: 2px; }
+.rs-switch b { display: block; }
+.rs-switch small { color: var(--ink-2); font-size: var(--t-sm); }
+
+/* PL: Komunikat o błędzie nad dolnym przyciskiem.
+   EN: The error message above the bottom button. */
+.rs-error { margin-top: 16px; padding: 12px 16px; border-radius: var(--r); background: var(--tile-2); font-size: var(--t-sm); font-weight: 600; }
+
+/* PL: Dolne przyciski.
+   EN: The bottom buttons. */
+.rs-cta { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); width: min(calc(100% - 32px), 398px); display: flex; gap: 8px; }
+.rs-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; border: 0; border-radius: var(--r); padding: 16px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.rs-btn-accent { background: var(--accent); color: var(--on-accent); }
+.rs-btn-accent:disabled { background: var(--tile-2); color: var(--ink-2); cursor: not-allowed; }
+.rs-btn-soft { background: var(--tile-2); color: var(--ink); }
+.rs-btn-back { flex: 0 0 auto; padding: 16px 20px; }
+
+/* PL: Ekran „Wysłane”.
+   EN: The "Wysłane" (sent) screen. */
+.rs-done { text-align: center; padding-top: 80px; }
+.rs-big-check { width: 88px; height: 88px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; margin: 0 auto 24px; }
+.rs-big-check .rs-icon { width: 44px; height: 44px; stroke-width: 2.5; }
+.rs-done p { color: var(--ink-2); margin-top: 8px; }
+
+/* PL: „Moje zgłoszenia”: lista kafli z paskiem etapu.
+   EN: "Moje zgłoszenia": the tile list with the stage bar. */
+.rs-list { list-style: none; display: grid; gap: 12px; }
+.rs-tile { background: var(--tile); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.rs-tile-head { display: flex; align-items: center; gap: 8px; }
+.rs-tag { background: var(--tile-2); border-radius: var(--r-sm); padding: 4px 8px; font-size: var(--t-xs); font-weight: 700; }
+.rs-small { font-size: var(--t-sm); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.rs-tile h2 { font-size: var(--t-lg); line-height: 1.2; font-weight: 700; overflow-wrap: anywhere; }
+.rs-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.rs-stages i { height: 4px; border-radius: 999px; background: var(--line); }
+.rs-stages i.rs-on { background: var(--ink); }
+.rs-captions { display: flex; justify-content: space-between; gap: 4px; font-size: var(--t-xs); font-weight: 600; color: var(--ink-2); }
+.rs-captions .rs-now { color: var(--ink); }
+
+/* PL: Pasek „brak internetu”, pusta lista i błąd.
+   EN: The "no internet" banner, the empty list and the error. */
+.rs-empty { background: var(--tile); border-radius: var(--r); padding: 24px 16px; text-align: center; color: var(--ink-2); }
+.rs-empty p + .rs-btn { margin-top: 16px; }
+
+/* PL: Dotyk: lekkie zmniejszenie przycisku (wyłączone przy ograniczeniu ruchu w base.css).
+   EN: Touch: a slight shrink of the button (turned off for reduced motion in base.css). */
+.rs-btn, .rs-card, .rs-chip, .rs-icon-btn { transition: transform .12s ease-out; }
+.rs-btn:not(:disabled):active, .rs-card:active, .rs-chip:active, .rs-icon-btn:active { transform: scale(.97); }
