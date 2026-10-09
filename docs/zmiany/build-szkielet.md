@@ -6,6 +6,7 @@
 - Skrypty `npm run dev`, `build`, `test`, `lint` i `test:e2e`. Serwer deweloperski i Playwright biorą port ze zmiennej `PORT`.
 - Test Vitest adresu `/api/health` (w środowisku Cloudflare) i test Playwright ekranu startowego.
 - Pakiety z `docs/TECHNOLOGIE.md` w dokładnych wersjach.
+- Punkt wejścia aplikacji wczytuje `tokens.css`, a potem `base.css` z `src/shared/styles/`.
 
 ### Zmienione
 
@@ -15,4 +16,4 @@
 
 | Data | Zadanie i pull request | Polecenie dla AI (skrót) | Co zrobiło AI i jakie pliki zmieniło | Co zmienił właściciel | Kto |
 |---|---|---|---|---|---|
-| 2026-10-09 | etap A, szkielet (`build/szkielet`) | Zainstaluj pakiety w przypiętych wersjach, zrób minimalny szkielet z portem z `PORT` i skryptami, wpisz komendy do `AGENTS.md`. Lint z limitami odłożony do obsługi TypeScript 7. | Dodało `package.json` z pakietami, `index.html`, `src/`, `worker/`, `e2e/`, `vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`, `wrangler.jsonc`, cztery pliki `tsconfig`. Zmieniło blok komend w `AGENTS.md` i listę „Do sprawdzenia przed startem” w `docs/TECHNOLOGIE.md`. | | |
+| 2026-10-09 | etap A, szkielet (`build/szkielet`) | Zainstaluj pakiety w przypiętych wersjach, zrób minimalny szkielet z portem z `PORT` i skryptami, wpisz komendy do `AGENTS.md`. Lint z limitami odłożony do obsługi TypeScript 7. | Dodało `package.json` z pakietami, `index.html`, `src/`, `worker/`, `e2e/`, `vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`, `wrangler.jsonc`, cztery pliki `tsconfig`. Dopisało po jednej linii `@used_by` w nagłówkach `tokens.css` i `base.css`. Zmieniło blok komend w `AGENTS.md` i listę „Do sprawdzenia przed startem” w `docs/TECHNOLOGIE.md`. | | |
