@@ -4,13 +4,17 @@
  *
  * @author Szymon
  * @since 2026-10-09
- * @uses worker/db/schema/news.ts::NewNewsEntryRow
+ * @uses worker/db/schema/news.ts::newsEntries
+ * @uses worker/shared/seed.ts::SeedSet
  * @used_by worker/db/seed/index.ts::*
  */
 
-// PL: Typ wiersza do wstawienia do tabeli wpisów.
-// EN: The type of a row to insert into the entries table.
-import type { NewNewsEntryRow } from '../schema';
+// PL: Tabela wpisów i typ wiersza do jej wypełnienia.
+// EN: The entries table and the type of a row to fill it.
+import { newsEntries, type NewNewsEntryRow } from '../schema';
+// PL: Typ zestawu danych testowych.
+// EN: The test data set type.
+import type { SeedSet } from '../../shared';
 
 // PL: Milisekundy w minucie, godzinie i dobie, do liczenia, ile temu opublikowano wpis.
 // EN: Milliseconds in a minute, an hour and a day, for counting how long ago an entry was published.
@@ -134,3 +138,9 @@ export function buildNewsSeed(now: Date = new Date()): NewNewsEntryRow[] {
   // EN: Append the drafts at the end.
   return [...published, ...DRAFT_ROWS];
 }
+
+/**
+ * PL: Zestawy danych testowych modułu news dla polecenia `npm run db:seed`: wszystkie wpisy w jednej tabeli.
+ * EN: The test data sets of the news module for the `npm run db:seed` command: all entries in one table.
+ */
+export const NEWS_SEED_SETS: SeedSet[] = [{ table: newsEntries, rows: buildNewsSeed() }];

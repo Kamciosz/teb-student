@@ -16,6 +16,10 @@ import { useQuery } from '@tanstack/react-query';
 // EN: The fetching functions.
 import { fetchEntries, fetchEntry } from './api';
 
+// PL: Jedno ponowienie przy błędzie, żeby uczeń nie czekał kilku sekund na komunikat.
+// EN: One retry on an error, so the student does not wait several seconds for the message.
+const RETRIES = 1;
+
 /**
  * PL: Zapytanie o listę wpisów.
  * EN: The entry list query.
@@ -23,7 +27,7 @@ import { fetchEntries, fetchEntry } from './api';
  * @returns PL: stan zapytania z listą. EN: the query state with the list.
  */
 export function useEntries() {
-  return useQuery({ queryKey: ['news', 'feed', 'list'], queryFn: fetchEntries });
+  return useQuery({ queryKey: ['news', 'feed', 'list'], queryFn: fetchEntries, retry: RETRIES });
 }
 
 /**
@@ -34,5 +38,5 @@ export function useEntries() {
  * @returns PL: stan zapytania z wpisem. EN: the query state with the entry.
  */
 export function useEntry(id: string) {
-  return useQuery({ queryKey: ['news', 'feed', 'entry', id], queryFn: () => fetchEntry(id) });
+  return useQuery({ queryKey: ['news', 'feed', 'entry', id], queryFn: () => fetchEntry(id), retry: RETRIES });
 }

@@ -1,6 +1,6 @@
 /**
- * PL: Ekran listy aktualności (ekran 2.2): filtr po typie i kafle wpisów od najnowszego. Pokazuje stan ładowania, błędu, braku wpisów i zapisaną kopię bez internetu.
- * EN: The news list screen (screen 2.2): the type filter and entry tiles, newest first. Shows the loading, error and empty states, and the saved copy without internet.
+ * PL: Ekran listy aktualności (ekran 2.2): filtr po typie i kafle wpisów od najnowszego. Pokazuje stan ładowania, błędu i braku wpisów. Brak internetu zgłasza wspólny pasek z korzenia aplikacji, a ekran pokazuje wtedy zapisane wpisy.
+ * EN: The news list screen (screen 2.2): the type filter and entry tiles, newest first. Shows the loading, error and empty states. The shared bar at the app root reports missing internet, and the screen then shows the saved entries.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -34,21 +34,18 @@ export function FeedListScreen() {
   const [filter, setFilter] = useState<TypeFilter>('all');
   const query = useEntries();
   const visible = query.data ? filterEntries(query.data, filter) : [];
-  // PL: Zapisana kopia jest pokazywana, gdy odświeżenie się nie udało albo telefon nie ma internetu.
-  // EN: The saved copy is shown when the refresh failed or the phone has no internet.
-  const showingSavedCopy = query.data !== undefined && (query.isError || query.fetchStatus === 'paused');
 
   return (
     <main className="news-feed" data-subtrack="3a">
       <ScreenTop title="Aktualności" backTo="/" backLabel="Wróć do pulpitu" />
       <TypeFilterRow value={filter} onChange={setFilter} />
-      {showingSavedCopy ? <p className="news-note">Brak połączenia. Pokazujemy zapisane wpisy.</p> : null}
+      {query.isError && query.data !== undefined ? <p className="news-note">Nie udało się odświeżyć wpisów. Pokazujemy zapisane.</p> : null}
       {query.isPending && query.fetchStatus !== 'paused' ? (
         <p role="status" className="news-note">
           Ładuję wpisy…
         </p>
       ) : null}
-      {query.isPending && query.fetchStatus === 'paused' ? <p className="news-note">Brak połączenia i brak zapisanych wpisów.</p> : null}
+      {query.isPending && query.fetchStatus === 'paused' ? <p className="news-note">Brak internetu i brak zapisanych wpisów.</p> : null}
       {query.isError && query.data === undefined ? (
         <div className="news-note">
           <p>Nie udało się pobrać wpisów.</p>

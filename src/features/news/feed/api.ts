@@ -41,7 +41,7 @@ export class NewsApiError extends Error {
  * PL: Pobiera JSON z adresu i rzuca NewsApiError, gdy kod nie jest 2xx.
  * EN: Fetches JSON from an address and throws NewsApiError when the code is not 2xx.
  *
- * @param path - PL: ścieżka pod adresem serwera aktualności. EN: the path under the news server address.
+ * @param path - PL: ścieżka pod adresem serwera aktualności (pusta dla listy, bo adres z ukośnikiem na końcu daje 404). EN: the path under the news server address (empty for the list, because an address with a trailing slash gives 404).
  * @returns PL: odpowiedź jako obiekt JSON. EN: the answer as a JSON object.
  */
 async function getJson(path: string): Promise<unknown> {
@@ -57,7 +57,7 @@ async function getJson(path: string): Promise<unknown> {
  * @returns PL: wpisy od najnowszego. EN: the entries, newest first.
  */
 export async function fetchEntries(): Promise<NewsEntrySummary[]> {
-  const data = (await getJson('/')) as { entries: NewsEntrySummary[] };
+  const data = (await getJson('')) as { entries: NewsEntrySummary[] };
   return data.entries;
 }
 

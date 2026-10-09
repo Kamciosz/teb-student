@@ -17,6 +17,9 @@ import { Hono, type Context } from 'hono';
 // PL: Drizzle łączy się z D1.
 // EN: Drizzle connects to D1.
 import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
+// PL: Typ środowiska Workera z bazą DB.
+// EN: The Worker environment type with the DB database.
+import type { Env } from '../../shared';
 // PL: Typ wiersza wpisu.
 // EN: The entry row type.
 import type { NewsEntryRow } from '../../db/schema';
@@ -60,12 +63,6 @@ export type NewsEntryDetail = NewsEntrySummary & {
 };
 
 /**
- * PL: Środowisko routera: wiązanie D1 o nazwie DB. Dopóki wspólny wrangler.jsonc go nie ma (zgłoszenie #43), router odpowiada kodem 503.
- * EN: The router environment: the D1 binding named DB. Until the shared wrangler.jsonc has it (issue #43), the router answers with code 503.
- */
-type Bindings = { DB?: D1Database };
-
-/**
  * PL: Zamienia wiersz bazy na wpis z listy.
  * EN: Turns a database row into a list entry.
  *
@@ -97,36 +94,31 @@ function toDetail(row: NewsEntryRow): NewsEntryDetail {
 }
 
 /**
- * PL: Wykonuje zapytanie z bazą albo odpowiada błędem. Brak wiązania D1 to 503, błąd bazy to 500, oba z czytelnym kodem w JSON.
- * EN: Runs a query with the database or answers with an error. A missing D1 binding is 503, a database error is 500, both with a readable code in JSON.
+ * PL: Wykonuje zapytanie z bazą albo odpowiada błędem. Błąd bazy to 500 z samym kodem w JSON, bez szczegółów.
+ * EN: Runs a query with the database or answers with an error. A database error is 500 with just a code in JSON, without details.
  *
- * @param context - PL: kontekst zapytania Hono. EN: the Hono request context.
+ * @param context - PL: kontekst zapytania Hono z bazą w context.env.DB. EN: the Hono request context with the database in context.env.DB.
  * @param run - PL: funkcja, która dostaje bazę i zwraca odpowiedź. EN: a function that receives the database and returns the response.
  * @returns PL: odpowiedź HTTP. EN: the HTTP response.
  */
 async function withDatabase(
-  context: Context,
+  context: Context<{ Bindings: Env }>,
   run: (db: DrizzleD1Database) => Promise<Response>,
 ): Promise<Response> {
-  // PL: Bez wiązania D1 serwer nie ma skąd czytać.
-  // EN: Without the D1 binding the server has nowhere to read from.
-  const binding = (context.env as Bindings | undefined)?.DB;
-  if (!binding) return context.json({ error: 'database_unavailable' }, 503);
-
   // PL: Błąd bazy nie wycieka do telefonu: odpowiadamy samym kodem.
   // EN: A database error does not leak to the phone: we answer with the code only.
   try {
-    return await run(drizzle(binding));
+    return await run(drizzle(context.env.DB));
   } catch {
     return context.json({ error: 'database_error' }, 500);
   }
 }
 
 /**
- * PL: Router podtoru 3a. Tylko odczyt, tylko opublikowane wpisy. Ma zwykły typ Hono bez środowiska, bo lista w worker/mounts.ts przyjmuje routery tego typu, a wiązanie DB czytamy z context.env w withDatabase.
- * EN: The router of subtrack 3a. Read-only, published entries only. It has the plain Hono type without an environment, because the list in worker/mounts.ts accepts routers of that type, and we read the DB binding from context.env in withDatabase.
+ * PL: Router podtoru 3a. Tylko odczyt, tylko opublikowane wpisy. Baza jest w context.env.DB.
+ * EN: The router of subtrack 3a. Read-only, published entries only. The database is in context.env.DB.
  */
-export const newsFeedApp = new Hono();
+export const newsFeedApp = new Hono<{ Bindings: Env }>();
 
 // PL: Lista opublikowanych wpisów od najnowszego.
 // EN: The list of published entries, newest first.
