@@ -81,6 +81,8 @@ Wersje pochodzą z rejestru npm. Przy starcie projektu przypinamy dokładne wers
 - Podpisany adres do R2 zawiera typ pliku. CORS w R2 dopuszcza tylko adres naszej aplikacji. Po wysłaniu serwer sprawdza rozmiar pliku i usuwa za duży.
 - Zapis danych w telefonie ma numer wersji. Wylogowanie kasuje te dane.
 - Edytor wpisów: biblioteka do wyboru przez Bohdana, wpis w `docs/adr/`. Treść zapisujemy jako JSON. Serwer sprawdza ją według listy dozwolonych elementów, a aplikacja nie wstawia HTML z bazy bez czyszczenia.
+- Film z YouTube: serwer przyjmuje tylko adresy `youtube.com` i `youtu.be` i zapisuje sam identyfikator filmu. Aplikacja pokazuje miniaturę, a `iframe` z `youtube-nocookie.com` wstawia dopiero po kliknięciu. Polityka CSP dopuszcza w `frame-src` tylko `https://www.youtube-nocookie.com`.
+- Linki w treści otwierają się w nowej karcie z `rel="noopener noreferrer"`. Serwer przyjmuje tylko adresy `https://`.
 
 ## Do sprawdzenia przed startem
 
@@ -93,6 +95,7 @@ Wersje pochodzą z rejestru npm. Przy starcie projektu przypinamy dokładne wers
 - CORS dla wysyłki plików do R2;
 - czy szkoła używa Microsoft 365 czy Google (rekord MX domeny teb.edu.pl);
 - maile z kodem na 5–10 skrzynkach @teb.edu.pl (20.10);
+- film z YouTube w treści wpisu na iPhonie z iOS 15 i na Androidzie, także w aplikacji dodanej do ekranu głównego;
 - edytor wpisów na iPhonie z iOS 15: pisanie, wklejanie tekstu z Worda i Google Docs, zdjęcie w treści;
 - tryb samolotowy, powrót internetu i wgranie nowej wersji na iPhonie i Androidzie.
 
