@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Luka bezpieczeństwa
+    url: https://github.com/Kamciosz/teb-student/security/advisories/new
+    about: Zgłoś prywatnie, nie w publicznym zgłoszeniu.

@@ -1,0 +1,32 @@
+name: Błąd
+description: Coś nie działa tak, jak powinno.
+labels: [bug]
+body:
+  - type: textarea
+    id: co
+    attributes:
+      label: Co się stało
+      description: Co zobaczyłeś i czego się spodziewałeś.
+    validations:
+      required: true
+  - type: textarea
+    id: kroki
+    attributes:
+      label: Jak to powtórzyć
+      placeholder: |
+        1. Otwórz ...
+        2. Kliknij ...
+    validations:
+      required: true
+  - type: input
+    id: urzadzenie
+    attributes:
+      label: Telefon i przeglądarka
+      placeholder: np. iPhone SE, iOS 15, Safari
+    validations:
+      required: true
+  - type: textarea
+    id: zrzut
+    attributes:
+      label: Zrzut ekranu
+      description: Zasłoń dane osobowe, zanim wkleisz.

@@ -1,0 +1,24 @@
+name: Problem z dostępnością
+description: Czegoś nie da się zrobić, przeczytać albo kliknąć.
+labels: [dostępność]
+body:
+  - type: textarea
+    id: co
+    attributes:
+      label: Czego nie da się zrobić
+    validations:
+      required: true
+  - type: input
+    id: ekran
+    attributes:
+      label: Ekran w aplikacji
+      placeholder: np. pulpit, nowe zgłoszenie
+    validations:
+      required: true
+  - type: input
+    id: urzadzenie
+    attributes:
+      label: Telefon, przeglądarka i ustawienia
+      placeholder: np. Android, Chrome, czytnik TalkBack, duża czcionka
+    validations:
+      required: true

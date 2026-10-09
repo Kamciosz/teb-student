@@ -54,3 +54,7 @@ docs/adr/             zapisane decyzje techniczne
 | Jakub | ankiety, profil i prywatność, dane z pilotażu |
 
 Szczegóły w [`docs/OWNERS.md`](docs/OWNERS.md).
+
+## Licencja
+
+MIT, szczegóły w [LICENSE](LICENSE).
