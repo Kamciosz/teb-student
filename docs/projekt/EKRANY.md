@@ -10,6 +10,8 @@ Wzory ekranów:
 - `referencje/uklad_C.html`: układ C w HTML ze zmiennymi wszystkich 8 palet (CA–CH); parametry `?paleta=CE&szkola=T` przełączają paletę i szkołę,
 - `referencje/palety_CE-CH.png`: porównanie palet z akcentem szkoły.
 
+Kolory: makiety i opisy niżej są w palecie CC Grafit (akcent `#FF8FB3`). W aplikacji domyślna jest paleta CE Grafit z akcentem szkoły, decyzja z 9.10.2026. Wartości CE są w `referencje/uklad_C.html`. Z tego pliku bierzemy układ i teksty, kolory bierzemy z CE.
+
 Wymiary: ekran 390 × 844 pt, kafle zaokrąglone 12 px, padding 16 px, odstępy 12 px. Dane na ekranach (Ola, 3TA, sala 204) są przykładowe.
 
 ---
