@@ -51,6 +51,11 @@
     "workbox-window": "7.4.1",
     "wrangler": "4.149.0"
   },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.25.12"
+    }
+  },
   "allowScripts": {
     "workerd@1.20261006.1": true
   }
