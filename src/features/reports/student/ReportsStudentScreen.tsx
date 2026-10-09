@@ -1,25 +1,41 @@
 /**
- * PL: Ekran „W budowie” podtoru 4a (zgłoszenie: formularz i „moje zgłoszenia”). Tymczasowo pokazuje tylko tytuł i napis. Właściwy ekran zbuduje agent tego podtoru.
- * EN: The "W budowie" (under construction) screen of subtrack 4a (report: form and "my reports"). For now it shows only a title and a label. The agent of this subtrack builds the real screen.
+ * PL: Ekran podtoru 4a (zgłoszenie: formularz i „moje zgłoszenia”). Adres /reports/student otwiera formularz, a /reports/student/moje listę „Moje zgłoszenia”.
+ * EN: The screen of subtrack 4a (report: form and "my reports"). The address /reports/student opens the form, and /reports/student/moje opens the "Moje zgłoszenia" list.
  *
- * @author Bohdan
+ * @author Szymon
  * @since 2026-10-09
- * @uses src/shared/index.ts::UnderConstruction
+ * @uses src/features/reports/student/ReportForm.tsx::ReportForm
+ * @uses src/features/reports/student/MyReports.tsx::MyReports
  * @used_by src/features/reports/student/index.ts::ReportsStudentScreen
  */
 
-// PL: Wspólny ekran „W budowie”.
-// EN: The shared "W budowie" screen.
-import { UnderConstruction } from '../../../shared';
+// PL: Podtrasy w obrębie /reports/student/*.
+// EN: The sub-routes inside /reports/student/*.
+import { Route, Routes } from 'react-router';
+// PL: Style tego ekranu.
+// EN: The styles of this screen.
+import './reportsStudent.css';
+// PL: Ekrany podtoru. Dostawca zapytań stoi w korzeniu aplikacji.
+// EN: The subtrack screens. The query provider stands at the app root.
+import { MyReports } from './MyReports';
+import { ReportForm } from './ReportForm';
 
 /**
- * PL: Rysuje tymczasowy ekran podtoru 4a. Nie pobiera danych i nie zmienia nic poza ekranem.
- * EN: Draws the temporary screen of subtrack 4a. It fetches no data and changes nothing outside the screen.
+ * PL: Rysuje ekran podtoru 4a: formularz pod adresem głównym i listę pod „moje”.
+ * EN: Draws the screen of subtrack 4a: the form at the root address and the list under "moje".
  *
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
 export function ReportsStudentScreen() {
-  // PL: Zwróć wspólny ekran „W budowie” z numerem podtoru, żeby test i recenzent widzieli, który to ekran.
-  // EN: Return the shared "W budowie" screen with the subtrack number, so a test and a reviewer see which screen it is.
-  return <UnderConstruction subtrack="4a" title="Zgłoś problem" />;
+  // PL: Znacznik data-subtrack zostaje, bo po nim testy poznają ekran podtoru (jak w UnderConstruction).
+  // EN: The data-subtrack marker stays, because tests use it to recognise the subtrack screen (as in UnderConstruction).
+  return (
+    <main className="rs-screen" data-subtrack="4a">
+      <Routes>
+        <Route index element={<ReportForm />} />
+        <Route path="moje" element={<MyReports />} />
+        <Route path="*" element={<ReportForm />} />
+      </Routes>
+    </main>
+  );
 }
