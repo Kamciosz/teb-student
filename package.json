@@ -6,6 +6,52 @@
     "node": ">=22.22"
   },
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "lint": "tsc -p tsconfig.app.json && tsc -p tsconfig.worker.json && tsc -p tsconfig.node.json",
     "prepare": "git config core.hooksPath .githooks"
+  },
+  "dependencies": {
+    "@tanstack/query-sync-storage-persister": "5.104.1",
+    "@tanstack/react-query": "5.104.1",
+    "@tanstack/react-query-persist-client": "5.104.1",
+    "better-auth": "1.7.7",
+    "drizzle-orm": "0.45.4",
+    "hono": "4.13.13",
+    "mediabunny": "1.61.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router": "8.4.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.29.7",
+    "@babel/plugin-transform-runtime": "7.29.7",
+    "@babel/runtime": "7.29.10",
+    "@cloudflare/vite-plugin": "1.63.1",
+    "@cloudflare/vitest-plugin": "1.4.0",
+    "@cloudflare/workers-types": "5.20261009.1",
+    "@playwright/test": "1.64.0",
+    "@rolldown/plugin-babel": "0.2.4",
+    "@types/babel__core": "7.20.5",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-legacy": "8.2.3",
+    "@vitejs/plugin-react": "6.1.2",
+    "babel-plugin-react-compiler": "1.0.0",
+    "drizzle-kit": "0.31.11",
+    "terser": "5.51.2",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vite-plugin-pwa": "2.0.0",
+    "vitest": "5.0.3",
+    "workbox-build": "7.4.1",
+    "workbox-window": "7.4.1",
+    "wrangler": "4.149.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261006.1": true
   }
 }
