@@ -1,0 +1,10 @@
+# PL: Wzór pliku .dev.vars (ustawienia serwera tylko na tym komputerze). Skopiuj do .dev.vars: `cp .dev.vars.example .dev.vars`. Plik .dev.vars jest w .gitignore i nigdy nie trafia do repozytorium. Wartości poniżej są przykładowe, nie prawdziwe.
+# EN: A template of the .dev.vars file (server settings for this computer only). Copy it to .dev.vars: `cp .dev.vars.example .dev.vars`. The .dev.vars file is in .gitignore and never reaches the repository. The values below are examples, not real ones.
+
+# PL: Sekret logowania (Better Auth), co najmniej 32 znaki. Wymyśl własny na swój komputer, na przykład: `openssl rand -base64 32`. Na produkcji to sekret Workera (`wrangler secret put BETTER_AUTH_SECRET`), nie ten plik. W dev, gdy go brak, serwer losuje sekret w pamięci, ale zbudowany Worker go wymaga.
+# EN: The sign-in secret (Better Auth), at least 32 characters. Make up your own for your computer, for example: `openssl rand -base64 32`. In production it is a Worker secret (`wrangler secret put BETTER_AUTH_SECRET`), not this file. In dev, when missing, the server draws a secret in memory, but a built Worker requires it.
+BETTER_AUTH_SECRET=zmien-mnie-na-wlasny-losowy-sekret-min-32-znaki
+
+# PL: Adres aplikacji. Lokalnie to adres serwera deweloperskiego (npm run dev). Adres produkcyjny ustawi zespół po wdrożeniu.
+# EN: The app address. Locally it is the dev server address (npm run dev). The team sets the production address after the deployment.
+BETTER_AUTH_URL=http://localhost:5173

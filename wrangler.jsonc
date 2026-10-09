@@ -6,6 +6,7 @@
 // @uses worker/index.ts::app
 // @used_by vite.config.ts::cloudflare
 // @used_by vitest.config.ts::cloudflareTest
+// @used_by scripts/db.ts::getPlatformProxy
 {
   // PL: Nazwa Workera w Cloudflare.
   // EN: The Worker name in Cloudflare.
@@ -25,5 +26,21 @@
     // PL: Adresy /api/ trafiają zawsze do Workera, a nie do plików.
     // EN: /api/ URLs always go to the Worker, not to files.
     "run_worker_first": ["/api/*"]
-  }
+  },
+  // PL: Baza D1. Kod serwera czyta ją jako env.DB (typ Env w worker/shared/index.ts).
+  // PL: Pola database_id celowo nie ma: konta Cloudflare jeszcze nie ma, a lokalnie (npm run dev, npm test, npm run db:reset) Wrangler zakłada bazę sam i trzyma ją w .wrangler/state. Schemat wrangler.json oznacza database_id jako „not required”.
+  // PL: Przy pierwszym wdrożeniu (wrangler deploy) Wrangler sam utworzy bazę teb-student i zapisze jej identyfikator tutaj (automatyczne zakładanie zasobów, dokumentacja „Wrangler configuration”). Przy wdrożeniu z pulpitu Cloudflare albo z GitHub identyfikator nie wraca do repozytorium, więc wtedy trzeba go wpisać ręcznie. Tabel nie zakłada wdrożenie: robi to schemat (docs/ARCHITECTURE.md, „Baza danych”).
+  // EN: The D1 database. The server code reads it as env.DB (the Env type in worker/shared/index.ts).
+  // EN: The database_id field is left out on purpose: the Cloudflare account does not exist yet, and locally (npm run dev, npm test, npm run db:reset) Wrangler creates the database by itself and keeps it in .wrangler/state. The wrangler.json schema marks database_id as "not required".
+  // EN: On the first deploy (wrangler deploy) Wrangler creates the teb-student database by itself and writes its id here (automatic resource provisioning, "Wrangler configuration" docs). When deploying from the Cloudflare dashboard or from GitHub the id does not come back to the repository, so then it must be typed in by hand. A deploy does not create the tables: the schema does (docs/ARCHITECTURE.md, "Baza danych").
+  "d1_databases": [
+    {
+      // PL: Nazwa bindingu, pod którą baza jest w env.
+      // EN: The binding name under which the database is in env.
+      "binding": "DB",
+      // PL: Nazwa bazy w Cloudflare i w poleceniach Wranglera.
+      // EN: The database name in Cloudflare and in Wrangler commands.
+      "database_name": "teb-student"
+    }
+  ]
 }

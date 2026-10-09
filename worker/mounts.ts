@@ -41,8 +41,11 @@ export type ApiMount = {
   id: string;
   /** PL: Adres, pod którym działa router. Zawsze zaczyna się od /api/, bo tylko takie adresy trafiają do Workera (wrangler.jsonc, run_worker_first). EN: The address the router works under. It always starts with /api/, because only such addresses reach the Worker (wrangler.jsonc, run_worker_first). */
   basePath: string;
-  /** PL: Router Hono podtoru. EN: The subtrack's Hono router. */
-  router: Hono;
+  /**
+   * PL: Router Hono podtoru. Typ jest luźny celowo: goły `new Hono()` (z etapu A) i `new Hono<{ Bindings: Env }>()` z trasami mają różne typy, a TypeScript nie uzna żadnego z nich za podtyp drugiego (sprawdzone w Hono 4.13.13). Podtor, który czyta bazę, pisze `new Hono<{ Bindings: Env }>()`, wtedy `context.env.DB` ma typ D1Database.
+   * EN: The subtrack's Hono router. The type is loose on purpose: a bare `new Hono()` (from stage A) and a `new Hono<{ Bindings: Env }>()` with routes have different types, and TypeScript treats neither as a subtype of the other (checked in Hono 4.13.13). A subtrack that reads the database writes `new Hono<{ Bindings: Env }>()`, and then `context.env.DB` has the D1Database type.
+   */
+  router: Hono<any, any, any>;
 };
 
 /**

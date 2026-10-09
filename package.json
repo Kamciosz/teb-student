@@ -10,6 +10,9 @@
     "build": "vite build",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "db:reset": "node scripts/db.ts reset",
+    "db:seed": "node scripts/db.ts seed",
+    "pretest:e2e": "npm run db:reset && npm run db:seed",
     "lint": "tsc -p tsconfig.app.json && tsc -p tsconfig.worker.json && tsc -p tsconfig.node.json",
     "prepare": "git config core.hooksPath .githooks"
   },

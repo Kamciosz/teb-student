@@ -50,6 +50,7 @@ Te pliki zbierają podtory. Zmienia je tylko etap A albo Bohdan, nie podtor:
 - `src/features/<moduł>/index.ts` i `worker/<moduł>/index.ts`: zbierają `index.ts` podtorów.
 - `worker/db/schema/index.ts` i `worker/db/seed/index.ts`: zbierają pliki modułów.
 - `worker/shared/accountDeletion.ts`: lista funkcji, które kasują dane ucznia przy usunięciu konta.
+- `worker/shared/index.ts`: typ `Env` (binding `DB`) i `DeleteStudentDataInput`; `worker/shared/seed.ts`: typ `SeedSet`.
 - `src/shared/navigation/items.ts`: wpisy dolnego paska i menu panelu.
 
 Wpis w rejestrze prowadzi do `index.ts` podtoru. Podtor zmienia tylko swój katalog. Dzięki temu dwa podtory nigdy nie zmieniają tego samego pliku.
@@ -61,6 +62,45 @@ Telefon: `/<moduł>/<część>/*`. Pulpit ma adres `/`. Serwer: `/api/<moduł>/<
 ### Kasowanie danych ucznia
 
 Każdy moduł z danymi ucznia ma w swoim `index.ts` funkcję `delete<Moduł>StudentData`. Dziś każda nic nie robi i ma test. Podtor, który dodaje dane, wypełnia swoją funkcję. Lista siedmiu modułów jest w `worker/shared/accountDeletion.ts`. Usunięcie konta wywoła je po kolei. D1 nie ma transakcji między zapytaniami, więc kasowanie w różnych modułach nie jest jedną całością. Wewnątrz modułu używaj `db.batch`. Pulpit i licznik do dzwonka nie mają własnych danych ucznia, więc nie mają funkcji kasującej.
+
+### Baza danych
+
+Baza to Cloudflare D1 z bindingiem `DB` (`wrangler.jsonc`). Nie ma migracji: bazę lokalną i testową tworzymy od nowa ze schematu Drizzle (`AGENTS.md`, `docs/STANDARD_KODU.md`, część 7).
+
+**Jak podtor dodaje tabelę**
+
+1. Tabela idzie do `worker/db/schema/<moduł>.ts` (tylko podtor „a” modułu). Plik zbierający `worker/db/schema/index.ts` już ją wczyta.
+2. Dane testowe idą do `worker/db/seed/<moduł>.ts` jako lista zestawów o nazwie `<MODUŁ>_SEED_SETS` (typ `SeedSet` z `worker/shared`): `export const REPORTS_SEED_SETS: SeedSet[] = [{ table: reports, rows: REPORTS_SEED }];`. Kolejność zestawów nie ma znaczenia, klucze obce są sprawdzane na końcu.
+3. Router, który czyta bazę, jest typu `new Hono<{ Bindings: Env }>()` (`Env` z `worker/shared`). W obsłudze zapytania baza jest w `context.env.DB`, a drizzle: `drizzle(context.env.DB)`.
+4. Funkcja kasująca dane ucznia dostaje bazę w `input.db`.
+
+**Jak uruchomić bazę**
+
+```bash
+npm run db:reset   # kasuje bazę lokalną i zakłada wszystkie tabele ze schematu (wyłącz najpierw npm run dev)
+npm run db:seed    # wpisuje dane testowe wszystkich modułów (raz po db:reset)
+npm run dev        # serwer deweloperski używa tej samej bazy lokalnej (.wrangler/state)
+```
+
+`npm run test:e2e` robi `db:reset` i `db:seed` sam. Po każdej zmianie schematu uruchom `db:reset` i `db:seed` jeszcze raz.
+
+**Jak test używa bazy.** Przed każdym plikiem testów `worker/shared/testSetup.ts` zakłada w `env.DB` wszystkie tabele ze schematu. Test podtoru niczego nie zakłada: importuje tabelę ze `worker/db/schema/` i używa `env` z `cloudflare:workers`:
+
+```ts
+import { env } from 'cloudflare:workers';
+import { drizzle } from 'drizzle-orm/d1';
+import { reports } from '../../db/schema/reports';
+
+await drizzle(env.DB).insert(reports).values({ /* … */ });
+```
+
+Baza testowa jest osobna dla każdego pliku testów, więc testy nie psują sobie danych. Dane testowe (seed) nie są wpisywane do bazy testowej: test wpisuje te wiersze, których potrzebuje.
+
+**Skąd SQL.** Jedyne miejsce, które zamienia schemat na SQL, to `scripts/schemaSql.ts` (`drizzle-kit export`, ustawienia w `drizzle.config.ts`). Używają go `db:reset` i testy, więc baza lokalna i testowa mają te same tabele. Katalogu migracji nie ma i nie powstaje.
+
+**Sekrety i ustawienia.** Lokalne ustawienia serwera (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`) są w `.dev.vars`, którego nie ma w repozytorium. Wzór bez prawdziwych wartości to `.dev.vars.example`: `cp .dev.vars.example .dev.vars`. Na produkcji sekret ustawia się przez `wrangler secret put BETTER_AUTH_SECRET`. Pola są opisane w typie `Env`.
+
+**Wdrożenie.** `wrangler.jsonc` nie ma `database_id`, bo konta Cloudflare jeszcze nie ma. Pierwsze `wrangler deploy` założy bazę `teb-student` i zapisze jej identyfikator. Tabel nie zakłada: na bazie w chmurze trzeba wykonać SQL ze schematu (`node node_modules/drizzle-kit/bin.cjs export --config drizzle.config.ts`) w `wrangler d1 execute teb-student --remote --file=…`. Zespół ustala to przed pilotażem, razem ze sposobem zmian bazy po jego starcie.
 
 ## Najważniejsze przepływy
 
