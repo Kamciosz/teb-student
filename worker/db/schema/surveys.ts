@@ -91,9 +91,9 @@ export const surveyOptions = sqliteTable(
 
 /**
  * PL: Kto już wypełnił ankietę. Klucz (survey_id, user_id) pilnuje, że uczeń głosuje raz, także przy dwóch zapytaniach naraz. Bez czasu i bez odpowiedzi.
- *     Numer ucznia nie ma klucza obcego, bo tabele kont zakłada podtor 1a (zgłoszenie #42).
+ *     Numer ucznia to numer konta z podtoru 1a, bez klucza obcego: ślad kasuje deleteSurveysStudentData przy usuwaniu konta.
  * EN: Who has already filled in a survey. The (survey_id, user_id) key guarantees one vote per student, also with two requests at once. No time and no answers.
- *     The student id has no foreign key, because subtrack 1a creates the account tables (issue #42).
+ *     The student id is the account id from subtrack 1a, without a foreign key: the trace is deleted by deleteSurveysStudentData when the account is deleted.
  */
 export const surveyParticipation = sqliteTable(
   'survey_participation',

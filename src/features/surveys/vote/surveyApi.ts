@@ -4,14 +4,10 @@
  *
  * @author Jakub
  * @since 2026-10-09
- * @uses src/features/surveys/vote/temporaryStudentId.ts::getTemporaryStudentId
  * @used_by src/features/surveys/vote/SurveyListScreen.tsx::SurveyListScreen
  * @used_by src/features/surveys/vote/SurveyFlowScreen.tsx::SurveyFlowScreen
  */
 
-// PL: Tymczasowy numer ucznia i nazwa nagłówka.
-// EN: The temporary student id and the header name.
-import { TEMPORARY_STUDENT_HEADER, getTemporaryStudentId } from './temporaryStudentId';
 import type { AnswerMap, SurveyDetail, SurveyList } from './types';
 
 // PL: Początek adresów serwera ankiet. Zgadza się z worker/mounts.ts.
@@ -32,15 +28,13 @@ export class ApiError extends Error {
 }
 
 /**
- * PL: Nagłówki każdego zapytania: numer ucznia i rodzaj treści.
- * EN: The headers of every request: the student id and the content type.
+ * PL: Nagłówki każdego zapytania: rodzaj treści. Sesję ucznia niesie ciasteczko, które przeglądarka dołącza sama.
+ * EN: The headers of every request: the content type. The student session travels in the cookie the browser attaches itself.
  *
  * @returns PL: nagłówki. EN: the headers.
  */
 function requestHeaders(): Record<string, string> {
-  // PL: Numer ucznia jest tymczasowy, zob. temporaryStudentId.ts.
-  // EN: The student id is temporary, see temporaryStudentId.ts.
-  return { [TEMPORARY_STUDENT_HEADER]: getTemporaryStudentId(), 'Content-Type': 'application/json' };
+  return { 'Content-Type': 'application/json' };
 }
 
 /**

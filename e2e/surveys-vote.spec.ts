@@ -1,8 +1,8 @@
 /**
  * PL: Test ekranów ankiet dla ucznia (podtor 5a) na atrapie serwera: lista z dniami do końca, jedno pytanie na ekranie, „Dalej” po wyborze, wysłanie głosu, brak drugiego wypełnienia, błąd bez internetu, lista z zapisu w telefonie i szerokość 320 px.
- *     Ekrany sprawdzamy na atrapie serwera (page.route), bo atrapa nie zależy od dnia uruchomienia (termin ankiety). Jeden test odpytuje prawdziwy serwer z bazą D1 i danymi z npm run db:seed. Zasadę „jeden głos na ucznia” sprawdzają testy serwera na prawdziwej D1 (worker/surveys/vote/vote.test.ts).
+ *     Ekrany sprawdzamy na atrapie serwera (page.route), bo atrapa nie zależy od dnia uruchomienia (termin ankiety). Jeden test odpytuje prawdziwy serwer i sprawdza, że bez sesji ucznia odpowiada 401. Zasadę „jeden głos na ucznia” sprawdzają testy serwera na prawdziwej D1 (worker/surveys/vote/vote.test.ts).
  * EN: Test of the survey screens for the student (subtrack 5a) against a mock server: the list with the days left, one question per screen, "Dalej" after a choice, sending the vote, no second filling, the offline error, the list from the phone's saved data and the 320 px width.
- *     The screens are checked against a mock server (page.route), because a mock does not depend on the day of the run (the survey deadline). One test queries the real server with the D1 database and the data from npm run db:seed. The "one vote per student" rule is checked by the server tests on a real D1 (worker/surveys/vote/vote.test.ts).
+ *     The screens are checked against a mock server (page.route), because a mock does not depend on the day of the run (the survey deadline). One test queries the real server and checks that it answers 401 without a student session. The "one vote per student" rule is checked by the server tests on a real D1 (worker/surveys/vote/vote.test.ts).
  *
  * @author Jakub
  * @since 2026-10-09
@@ -31,7 +31,7 @@ const SURVEY = {
 
 // PL: Stan atrapy serwera: czy uczeń już zagłosował i jakie odpowiedzi wysłał.
 // EN: The state of the mock server: whether the student has voted and which answers were sent.
-type MockServer = { voted: boolean; received: unknown[]; headers: string[] };
+type MockServer = { voted: boolean; received: unknown[] };
 
 /**
  * PL: Podłącza atrapę serwera ankiet pod /api/surveys/vote. Po pierwszym głosie odpowiada 409, jak prawdziwy serwer.
@@ -41,11 +41,10 @@ type MockServer = { voted: boolean; received: unknown[]; headers: string[] };
  * @returns PL: stan atrapy do sprawdzenia w teście. EN: the mock state to check in the test.
  */
 async function mockSurveyServer(page: Page): Promise<MockServer> {
-  const server: MockServer = { voted: false, received: [], headers: [] };
+  const server: MockServer = { voted: false, received: [] };
   await page.route('**/api/surveys/vote/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/api/surveys/vote', '');
-    server.headers.push(request.headers()['x-temporary-student-id'] ?? '');
     if (request.method() === 'POST') {
       if (server.voted) return route.fulfill({ status: 409, json: { error: 'already_voted' } });
       server.voted = true;
@@ -169,30 +168,13 @@ test('po zerwaniu połączenia lista wraca z zapisu w telefonie / after the conn
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
-// PL: Prawdziwy serwer z bazą D1 i danymi z npm run db:seed: lista odpowiada 200, nie ma w niej liczników głosów, a bez numeru ucznia serwer odmawia.
-// EN: The real server with the D1 database and the data from npm run db:seed: the list answers 200, has no vote counters, and without a student id the server refuses.
-test('prawdziwy serwer: lista z bazy D1 bez liczników, bez ucznia 401 / the real server: a list from D1 without counters, 401 without a student', async ({ request }) => {
-  const withStudent = await request.get('/api/surveys/vote', { headers: { 'X-Temporary-Student-Id': 'e2e-student-0000001' } });
-  const text = await withStudent.text();
-  expect(withStudent.status()).toBe(200);
-  expect(text).toContain('Zajęcia dodatkowe w II semestrze');
-  expect(text).not.toContain('votes');
-
-  expect((await request.get('/api/surveys/vote')).status()).toBe(401);
-});
-
-// PL: Ten sam tymczasowy numer ucznia po odświeżeniu strony (inaczej można by głosować przez odświeżenie).
-// EN: The same temporary student id after a page reload (otherwise one could vote by reloading).
-test('telefon wysyła ten sam numer ucznia po odświeżeniu / the phone sends the same student id after a reload', async ({ page }) => {
-  const server = await mockSurveyServer(page);
-  await page.goto('/surveys/vote');
-  await expect(page.getByText('Obiad w stołówce')).toBeVisible();
-  await page.reload();
-  await expect(page.getByText('Obiad w stołówce')).toBeVisible();
-
-  expect(server.headers.length).toBeGreaterThanOrEqual(2);
-  expect(server.headers[0]).toMatch(/^[0-9a-f]{32}$/);
-  expect(new Set(server.headers).size).toBe(1);
+// PL: Prawdziwy serwer z bazą D1: bez sesji ucznia każdy adres ankiet odpowiada 401 i nie oddaje żadnych danych.
+// EN: The real server with the D1 database: without a student session every survey route answers 401 and returns no data.
+test('prawdziwy serwer: bez sesji ucznia 401 na każdym adresie / the real server: 401 on every route without a student session', async ({ request }) => {
+  for (const response of [await request.get('/api/surveys/vote'), await request.get('/api/surveys/vote/dodatkowe'), await request.post('/api/surveys/vote/dodatkowe/answers', { data: { answers: [] } })]) {
+    expect(response.status()).toBe(401);
+    expect(await response.text()).not.toContain('Zajęcia dodatkowe');
+  }
 });
 
 // PL: Telefon o szerokości 320 px: bez przewijania w bok, przycisk „Dalej” w całości na ekranie.

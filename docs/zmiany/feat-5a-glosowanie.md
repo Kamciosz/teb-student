@@ -4,6 +4,7 @@
 
 - Ankiety dla ucznia: lista aktywnych ankiet z liczbą dni do końca, oznaczenie wypełnionych i lista zakończonych.
 - Wypełnianie ankiety: jedno pytanie na ekranie, przycisk „Dalej” aktywny po wyborze odpowiedzi, ekran „Odpowiedzi wysłane”.
+- Ankiety wymagają zalogowanego ucznia: numer ucznia pochodzi z sesji logowania, a bez sesji serwer odpowiada 401.
 - Jeden głos na ucznia: drugiej próby serwer nie przyjmuje, a ekran pokazuje komunikat.
 - Anonimowość na poziomie bazy: serwer zapisuje tylko liczniki odpowiedzi i informację, że uczeń już głosował, bez jego odpowiedzi i bez czasu.
 - Lista ankiet i ostatnio otwarte ankiety zapisują się w telefonie, więc po zerwaniu połączenia lista nie znika.
