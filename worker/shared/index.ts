@@ -11,12 +11,16 @@
  */
 
 /**
- * PL: Środowisko Workera: to, co Cloudflare podaje serwerowi poza zapytaniem. Dziś tylko baza D1 pod nazwą DB (wrangler.jsonc, d1_databases). Router dostaje je jako `Hono<{ Bindings: Env }>`, a funkcja kasująca przez pole `db`.
- * EN: The Worker environment: what Cloudflare gives the server besides the request. Today only the D1 database under the name DB (wrangler.jsonc, d1_databases). A router receives it as `Hono<{ Bindings: Env }>`, and a deleting function through the `db` field.
+ * PL: Środowisko Workera: to, co Cloudflare podaje serwerowi poza zapytaniem. Dziś baza D1 pod nazwą DB (wrangler.jsonc, d1_databases) i dwa ustawienia logowania (.dev.vars.example). Router dostaje je jako `Hono<{ Bindings: Env }>`, a funkcja kasująca przez pole `db`.
+ * EN: The Worker environment: what Cloudflare gives the server besides the request. Today the D1 database under the name DB (wrangler.jsonc, d1_databases) and two sign-in settings (.dev.vars.example). A router receives it as `Hono<{ Bindings: Env }>`, and a deleting function through the `db` field.
  */
 export type Env = {
   /** PL: Baza D1 aplikacji (binding DB). EN: The app's D1 database (the DB binding). */
   DB: D1Database;
+  /** PL: Sekret logowania (Better Auth), min. 32 znaki. Lokalnie w .dev.vars, na produkcji sekret Workera. EN: The sign-in secret (Better Auth), 32+ characters. Locally in .dev.vars, in production a Worker secret. */
+  BETTER_AUTH_SECRET?: string;
+  /** PL: Adres aplikacji (Better Auth). Lokalnie w .dev.vars. EN: The app address (Better Auth). Locally in .dev.vars. */
+  BETTER_AUTH_URL?: string;
 };
 
 // PL: Alias, bo wewnątrz przestrzeni nazw Cloudflare nazwa Env oznacza już interfejs, który rozszerzamy.

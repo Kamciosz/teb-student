@@ -98,6 +98,8 @@ Baza testowa jest osobna dla każdego pliku testów, więc testy nie psują sobi
 
 **Skąd SQL.** Jedyne miejsce, które zamienia schemat na SQL, to `scripts/schemaSql.ts` (`drizzle-kit export`, ustawienia w `drizzle.config.ts`). Używają go `db:reset` i testy, więc baza lokalna i testowa mają te same tabele. Katalogu migracji nie ma i nie powstaje.
 
+**Sekrety i ustawienia.** Lokalne ustawienia serwera (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`) są w `.dev.vars`, którego nie ma w repozytorium. Wzór bez prawdziwych wartości to `.dev.vars.example`: `cp .dev.vars.example .dev.vars`. Na produkcji sekret ustawia się przez `wrangler secret put BETTER_AUTH_SECRET`. Pola są opisane w typie `Env`.
+
 **Wdrożenie.** `wrangler.jsonc` nie ma `database_id`, bo konta Cloudflare jeszcze nie ma. Pierwsze `wrangler deploy` założy bazę `teb-student` i zapisze jej identyfikator. Tabel nie zakłada: na bazie w chmurze trzeba wykonać SQL ze schematu (`node node_modules/drizzle-kit/bin.cjs export --config drizzle.config.ts`) w `wrangler d1 execute teb-student --remote --file=…`. Zespół ustala to przed pilotażem, razem ze sposobem zmian bazy po jego starcie.
 
 ## Najważniejsze przepływy
