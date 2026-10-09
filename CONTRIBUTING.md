@@ -44,6 +44,8 @@ Hook odrzuca zły format i ślady AI w commicie. CI sprawdza to samo w każdym p
 
 ## Pull request
 
+Gdy kilku agentów pracuje naraz, obowiązuje `docs/PODZIAL_PRACY.md`.
+
 1. `git fetch && git rebase origin/main`.
 2. Wypełnij szablon: co, po co, jak sprawdzone, ryzyka.
 3. Adam przegląda i scala. Bez zielonego CI nie scalamy.
@@ -53,7 +55,6 @@ Hook odrzuca zły format i ślady AI w commicie. CI sprawdza to samo w każdym p
 
 - [ ] build, testy i lint przechodzą lokalnie (komendy w `AGENTS.md`)
 - [ ] punkty z części 7 planu działają na telefonie, także przy szerokości 320 px
-- [ ] `CHANGELOG.md` uzupełniony
-- [ ] wpis w `docs/LOG_AI.md`, jeśli pomagało AI
+- [ ] plik `docs/zmiany/<gałąź>.md` z wpisem do changelogu i logu AI
 - [ ] brak martwego kodu, `console.log` i plików tymczasowych
 - [ ] lista z `docs/STANDARD_KODU.md` spełniona: komentarze, limity, testy

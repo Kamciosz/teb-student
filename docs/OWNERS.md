@@ -15,7 +15,7 @@ Kod pisze agent AI, a Adam sprawdza i scala pull requesty. Właściciel modułu 
 
 - daje agentowi zadanie dla swojego modułu i odpowiada na jego pytania,
 - sprawdza wynik na swoim telefonie według części 7 planu,
-- dopisuje swoją część wpisu w `docs/LOG_AI.md`,
+- dopisuje swoją część wpisu logu AI w `docs/zmiany/<gałąź>.md`,
 - umie wyjaśnić kod modułu na obronie.
 
 Adam sprawdza, czy kod jest poprawny. Właściciel sprawdza, czy moduł robi to, czego potrzebuje uczeń.

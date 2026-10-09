@@ -29,10 +29,11 @@ Sam napisany kod nie oznacza „gotowe”.
 ## Praca agentów
 
 - Jeden agent to jedno zadanie, jedna gałąź i jeden pull request. Agent rusza tylko swój moduł.
+- Tory, pliki każdego toru, porty i postępowanie przy konflikcie: `docs/PODZIAL_PRACY.md`.
 - Etap A (szkielet, wygląd) robi jeden agent po drugim. Moduły fali 1 mogą potem robić agenci równolegle.
 - Wspólne ustalenia (technologie, nazwy, wygląd, wymiana danych) zapisujemy przed pracą równoległą w `docs/adr/`.
 - Gdy czegoś brakuje albo plan sam sobie przeczy, agent się zatrzymuje i pyta Szymona, a w sprawach technicznych Bohdana. Dotyczy to zwłaszcza planu dzwonków, danych osobowych i treści ekranów.
-- Do każdego zadania agent dopisuje wpis w `docs/LOG_AI.md`.
+- Do każdego zadania agent zapisuje wpis do changelogu i logu AI w pliku `docs/zmiany/<gałąź>.md`. Nie zmienia `CHANGELOG.md` ani `docs/LOG_AI.md`.
 
 ## Założenia architektury
 
@@ -84,6 +85,6 @@ Sam napisany kod nie oznacza „gotowe”.
 
 ## Dokumentacja
 
-- Zmiana zachowania aplikacji: `CHANGELOG.md`, sekcja `Unreleased`.
+- Zmiana zachowania aplikacji: wpis w `docs/zmiany/<gałąź>.md`. Szymon przenosi go do `CHANGELOG.md`.
 - Decyzja techniczna: nowy plik `docs/adr/NNNN-tytul.md`.
 - Nowy moduł: wiersz w `docs/ARCHITECTURE.md`.

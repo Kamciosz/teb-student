@@ -19,6 +19,6 @@
 - [ ] build, testy i lint przechodzą
 - [ ] komentarze `PL:` i `EN:` przy każdym pliku, funkcji i kroku, limity zgodne z `docs/STANDARD_KODU.md`
 - [ ] punkty z części 7 planu działają, także przy szerokości 320 px
-- [ ] `CHANGELOG.md` uzupełniony
-- [ ] wpis w `docs/LOG_AI.md`
+- [ ] plik `docs/zmiany/<gałąź>.md` z wpisem do changelogu i logu AI
+- [ ] zmienione tylko pliki swojego toru (`docs/PODZIAL_PRACY.md`)
 - [ ] właściciel modułu przeczytał zmianę i umie ją wyjaśnić
