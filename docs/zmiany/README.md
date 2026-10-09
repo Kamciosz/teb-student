@@ -2,7 +2,7 @@
 
 Każdy pull request dodaje tu jeden plik zamiast zmieniać `CHANGELOG.md` i `docs/LOG_AI.md`. Dzięki temu równoległe gałęzie nie zmieniają tej samej linii i nie mają konfliktów.
 
-Nazwa pliku to nazwa gałęzi, w której `/` zamieniamy na `-`. Gałąź `feat/ankiety-wyniki` ma plik `docs/zmiany/feat-ankiety-wyniki.md`.
+Nazwa pliku to nazwa gałęzi, w której `/` zamieniamy na `-`. Gałąź `feat/5b-wyniki` ma plik `docs/zmiany/feat-5b-wyniki.md`.
 
 Szymon przenosi wpisy do `CHANGELOG.md` i `docs/LOG_AI.md` osobnym pull requestem, a potem kasuje przeniesione pliki. Ten plik zostaje.
 

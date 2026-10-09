@@ -73,7 +73,7 @@ Etap A robi jeden agent po drugim. Praca równoległa zaczyna się dopiero, gdy 
 4. Lista funkcji, które kasują dane ucznia przy usunięciu konta, ma wpis dla każdego modułu z danymi ucznia.
 5. Serwer i Playwright biorą port ze zmiennej `PORT`.
 6. Lint pozwala importować moduł tylko przez jego `index.ts` i zabrania cykli (`docs/STANDARD_KODU.md`, część 2).
-7. CI ma sprawdzenie „Granice torów”: gałąź `feat/<podtor>-…` (na przykład `feat/3b-tabela`) zmienia tylko pliki swojego podtoru i `docs/zmiany/`.
+7. CI ma sprawdzenie „Granice torów”: gałąź `feat/<podtor>-…` (na przykład `feat/3b-tabela`) zmienia tylko pliki swojego podtoru i `docs/zmiany/`. Skrypt i jedyna tabela mapowania podtorów: `.github/scripts/granice-torow.sh`, samotest: `.github/scripts/granice-torow.test.sh`. Gdy zmienia się tabela w części 3, samotest oblewa, dopóki skrypt jej nie dogoni.
 8. Wspólne elementy ekranów i wygląd są gotowe (podtor 0).
 
 Blokada: plik `.github/CODEOWNERS`, który sam prosi właściciela o przegląd, wymaga loginów GitHub. W `docs/OWNERS.md` brakuje loginów czterech osób. Dopisze je Adam.
