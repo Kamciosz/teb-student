@@ -1,0 +1,31 @@
+<!doctype html>
+<!--
+  PL: Jedyna strona HTML aplikacji. Vite wstawia do niej skrypty, a React rysuje ekrany w elemencie #root.
+  EN: The only HTML page of the app. Vite injects the scripts here and React draws the screens inside #root.
+
+  @author Bohdan
+  @since 2026-10-09
+  @uses src/main.tsx::main
+  @used_by vite.config.ts::defineConfig
+-->
+<html lang="pl">
+  <head>
+    <!-- PL: Kodowanie znaków, żeby polskie litery wyświetlały się poprawnie. -->
+    <!-- EN: Character encoding, so Polish letters display correctly. -->
+    <meta charset="UTF-8" />
+    <!-- PL: Szerokość strony równa szerokości ekranu telefonu. -->
+    <!-- EN: The page width equals the phone screen width. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- PL: Tytuł karty przeglądarki. -->
+    <!-- EN: Title of the browser tab. -->
+    <title>TEB Student</title>
+  </head>
+  <body>
+    <!-- PL: Tu React rysuje całą aplikację. -->
+    <!-- EN: React draws the whole app here. -->
+    <div id="root"></div>
+    <!-- PL: Punkt wejścia aplikacji w telefonie. -->
+    <!-- EN: Entry point of the app on the phone. -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

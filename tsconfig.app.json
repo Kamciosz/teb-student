@@ -1,0 +1,47 @@
+// PL: Ustawienia TypeScript dla aplikacji w telefonie (src/): typy przeglądarki i React.
+// EN: TypeScript settings for the app on the phone (src/): browser and React types.
+//
+// @author Bohdan
+// @since 2026-10-09
+// @used_by tsconfig.json::references
+// @used_by package.json::scripts
+{
+  "compilerOptions": {
+    // PL: Nowoczesny JavaScript. Starsze telefony dostają osobną wersję z @vitejs/plugin-legacy.
+    // EN: Modern JavaScript. Older phones get a separate build from @vitejs/plugin-legacy.
+    "target": "ES2022",
+    // PL: Moduły ES, tak jak w Vite.
+    // EN: ES modules, as in Vite.
+    "module": "ESNext",
+    // PL: Rozwiązywanie importów tak jak w narzędziach do budowania.
+    // EN: Import resolution the way build tools do it.
+    "moduleResolution": "bundler",
+    // PL: Typy przeglądarki.
+    // EN: Browser types.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // PL: Bez dodatkowych typów globalnych.
+    // EN: No extra global types.
+    "types": [],
+    // PL: JSX w stylu React 17+, bez importu React w każdym pliku.
+    // EN: React 17+ style JSX, without importing React in every file.
+    "jsx": "react-jsx",
+    // PL: Najostrzejsze sprawdzanie typów.
+    // EN: The strictest type checking.
+    "strict": true,
+    // PL: Importy samych typów muszą mieć słowo „type”.
+    // EN: Type-only imports must use the "type" keyword.
+    "verbatimModuleSyntax": true,
+    // PL: Każdy plik da się skompilować osobno, tak jak robi to Vite.
+    // EN: Every file can be compiled on its own, the way Vite does it.
+    "isolatedModules": true,
+    // PL: Nie sprawdzaj plików typów z node_modules.
+    // EN: Do not check type files from node_modules.
+    "skipLibCheck": true,
+    // PL: TypeScript tylko sprawdza typy. Pliki buduje Vite.
+    // EN: TypeScript only checks types. Vite builds the files.
+    "noEmit": true
+  },
+  // PL: Pliki aplikacji w telefonie.
+  // EN: The app files on the phone.
+  "include": ["src"]
+}

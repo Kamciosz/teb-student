@@ -1,0 +1,44 @@
+// PL: Ustawienia TypeScript dla narzędzi uruchamianych w Node.js na komputerze: pliki ustawień Vite, Vitest i Playwright oraz testy w e2e/.
+// EN: TypeScript settings for the tools run in Node.js on the computer: the Vite, Vitest and Playwright config files and the tests in e2e/.
+//
+// @author Bohdan
+// @since 2026-10-09
+// @used_by tsconfig.json::references
+// @used_by package.json::scripts
+{
+  "compilerOptions": {
+    // PL: Nowoczesny JavaScript, bo Node.js 22 go obsługuje.
+    // EN: Modern JavaScript, because Node.js 22 supports it.
+    "target": "ES2022",
+    // PL: Moduły ES.
+    // EN: ES modules.
+    "module": "ESNext",
+    // PL: Rozwiązywanie importów tak jak w narzędziach do budowania.
+    // EN: Import resolution the way build tools do it.
+    "moduleResolution": "bundler",
+    // PL: Tylko biblioteka języka. Node.js daje pakiet z „types”.
+    // EN: Only the language library. Node.js comes from the package in "types".
+    "lib": ["ES2022"],
+    // PL: Typy Node.js, na przykład zmienne środowiska.
+    // EN: Node.js types, for example environment variables.
+    "types": ["node"],
+    // PL: Najostrzejsze sprawdzanie typów.
+    // EN: The strictest type checking.
+    "strict": true,
+    // PL: Importy samych typów muszą mieć słowo „type”.
+    // EN: Type-only imports must use the "type" keyword.
+    "verbatimModuleSyntax": true,
+    // PL: Każdy plik da się skompilować osobno.
+    // EN: Every file can be compiled on its own.
+    "isolatedModules": true,
+    // PL: Nie sprawdzaj plików typów z node_modules.
+    // EN: Do not check type files from node_modules.
+    "skipLibCheck": true,
+    // PL: TypeScript tylko sprawdza typy.
+    // EN: TypeScript only checks types.
+    "noEmit": true
+  },
+  // PL: Pliki ustawień narzędzi i testy całych ścieżek.
+  // EN: The tool config files and the end-to-end tests.
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "e2e"]
+}

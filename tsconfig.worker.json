@@ -1,0 +1,44 @@
+// PL: Ustawienia TypeScript dla serwera (worker/): typy środowiska Cloudflare Workers i testów w nim.
+// EN: TypeScript settings for the server (worker/): Cloudflare Workers types and the tests that run in it.
+//
+// @author Bohdan
+// @since 2026-10-09
+// @used_by tsconfig.json::references
+// @used_by package.json::scripts
+{
+  "compilerOptions": {
+    // PL: Nowoczesny JavaScript, bo Worker działa w nowym środowisku.
+    // EN: Modern JavaScript, because the Worker runs in a modern environment.
+    "target": "ES2022",
+    // PL: Moduły ES.
+    // EN: ES modules.
+    "module": "ESNext",
+    // PL: Rozwiązywanie importów tak jak w narzędziach do budowania.
+    // EN: Import resolution the way build tools do it.
+    "moduleResolution": "bundler",
+    // PL: Tylko biblioteka języka. Typy Workera dają pakiety z „types”.
+    // EN: Only the language library. The Worker types come from the packages in "types".
+    "lib": ["ES2022"],
+    // PL: Typy Cloudflare Workers oraz moduł „cloudflare:test” z wtyczki testów.
+    // EN: Cloudflare Workers types and the "cloudflare:test" module from the test plugin.
+    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-plugin/types"],
+    // PL: Najostrzejsze sprawdzanie typów.
+    // EN: The strictest type checking.
+    "strict": true,
+    // PL: Importy samych typów muszą mieć słowo „type”.
+    // EN: Type-only imports must use the "type" keyword.
+    "verbatimModuleSyntax": true,
+    // PL: Każdy plik da się skompilować osobno.
+    // EN: Every file can be compiled on its own.
+    "isolatedModules": true,
+    // PL: Nie sprawdzaj plików typów z node_modules.
+    // EN: Do not check type files from node_modules.
+    "skipLibCheck": true,
+    // PL: TypeScript tylko sprawdza typy.
+    // EN: TypeScript only checks types.
+    "noEmit": true
+  },
+  // PL: Kod serwera i jego testy.
+  // EN: The server code and its tests.
+  "include": ["worker"]
+}
