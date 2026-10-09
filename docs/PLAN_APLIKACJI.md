@@ -276,18 +276,18 @@ Funkcja jest gotowa, gdy wszystkie jej punkty da się pokazać na telefonie. Sam
 
 ## 8. Do decyzji zespołu
 
-Przy każdej sprawie jest moja propozycja. Na spotkaniu wpiszcie decyzję.
+Przy każdej sprawie jest propozycja i decyzja z 9.10.2026.
 
 | Sprawa | Propozycja | Decyzja zespołu |
 |---|---|---|
-| Logowanie bez Cloudflare Access | Tak: kod 6 cyfr na mail i kod zaproszenia | |
-| Edytor wpisów | Tylko pogrubienie, kursywa, link i lista | |
-| Domyślne kolory | CE Grafit z akcentem szkoły, 8 palet w ustawieniach | |
-| Czy każdy ma skrzynkę @teb.edu.pl | Sprawdzić testem na 5–10 kontach do 20.10 | |
-| Kto z Samorządu publikuje wpisy | Do ustalenia z Samorządem | |
-| Zasięg pilotażu | 3TA, szerzej tylko za zgodą dyrekcji | |
-| TEBtalk, Grupy, Re-Wear w fali 1 | Wyłączone do 12.11 | |
-| Właściciele logowania, aktualności, zgłoszeń i panelu | Do ustalenia; Kacper i Jakub mają już po trzy funkcje | |
+| Logowanie bez Cloudflare Access | Tak: kod 6 cyfr na mail i kod zaproszenia | Przyjęte |
+| Edytor wpisów | Tylko pogrubienie, kursywa, link i lista | Przyjęte |
+| Domyślne kolory | CE Grafit z akcentem szkoły, 8 palet w ustawieniach | Przyjęte: CE Grafit. Makiety w `docs/projekt/` są w CC Grafit, kolory bierzemy z CE |
+| Czy każdy ma skrzynkę @teb.edu.pl | Sprawdzić testem na 5–10 kontach do 20.10 | Przyjęte, test do 20.10 |
+| Kto z Samorządu publikuje wpisy | Do ustalenia z Samorządem | Otwarte, ustala Szymon z Samorządem |
+| Zasięg pilotażu | 3TA, szerzej tylko za zgodą dyrekcji | Przyjęte |
+| TEBtalk, Grupy, Re-Wear w fali 1 | Wyłączone do 12.11 | Przyjęte |
+| Właściciele logowania, aktualności, zgłoszeń i panelu | Do ustalenia; Kacper i Jakub mają już po trzy funkcje | Otwarte. Co robi właściciel: `docs/OWNERS.md` |
 
 ## 9. Polecenie dla agenta orkiestrującego
 
