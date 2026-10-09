@@ -1,31 +1,39 @@
 /**
- * PL: Ekran „W budowie” podtoru 5a (ankieta: głosowanie). Tymczasowo pokazuje tylko tytuł i napis. Właściwy ekran zbuduje agent tego podtoru.
- * EN: The "W budowie" (under construction) screen of subtrack 5a (survey: voting). For now it shows only a title and a label. The agent of this subtrack builds the real screen.
+ * PL: Ekrany ankiet dla ucznia (podtor 5a): lista, pytania i potwierdzenie. Router dopasowuje ten komponent do /surveys/vote/*, a tu rozdzielamy dalszy adres: sama lista, /<numer ankiety> z pytaniami i /done z potwierdzeniem.
+ * EN: The survey screens for the student (subtrack 5a): the list, the questions and the confirmation. The router matches this component to /surveys/vote/*, and here we split the rest of the address: the list alone, /<survey id> with the questions and /done with the confirmation.
  *
- * @author Bohdan
+ * @author Jakub
  * @since 2026-10-09
- * @uses src/shared/index.ts::UnderConstruction
- * @uses src/shared/index.ts::Dock
+ * @uses src/features/surveys/vote/SurveyListScreen.tsx::SurveyListScreen
+ * @uses src/features/surveys/vote/SurveyFlowScreen.tsx::SurveyFlowScreen
+ * @uses src/features/surveys/vote/SurveyDoneScreen.tsx::SurveyDoneScreen
  * @used_by src/features/surveys/vote/index.ts::SurveysVoteScreen
  */
 
-// PL: Wspólny ekran „W budowie” i dolny pasek nawigacji.
-// EN: The shared "W budowie" screen and the bottom navigation bar.
-import { Dock, UnderConstruction } from '../../../shared';
+// PL: Zagnieżdżone trasy: dalsza część adresu po /surveys/vote.
+// EN: Nested routes: the rest of the address after /surveys/vote.
+import { Route, Routes } from 'react-router';
+// PL: Style ekranów ankiety. Kolory tylko ze zmiennych w tokens.css.
+// EN: The survey screen styles. Colors only from the variables in tokens.css.
+import './vote.css';
+import { SurveyDoneScreen } from './SurveyDoneScreen';
+import { SurveyFlowScreen } from './SurveyFlowScreen';
+import { SurveyListScreen } from './SurveyListScreen';
 
 /**
- * PL: Rysuje tymczasowy ekran podtoru 5a. Nie pobiera danych i nie zmienia nic poza ekranem.
- * EN: Draws the temporary screen of subtrack 5a. It fetches no data and changes nothing outside the screen.
+ * PL: Rysuje właściwy ekran podtoru 5a dla bieżącego adresu. Sam nie pobiera danych.
+ * EN: Draws the right subtrack 5a screen for the current address. It fetches no data itself.
  *
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
 export function SurveysVoteScreen() {
-  // PL: Zwróć ekran „W budowie” z numerem podtoru, a pod nim dolny pasek. W docs/projekt/EKRANY.md dolny pasek ma lista ankiet, a ekrany pytań go nie mają, więc agent podtoru zostawia go tylko na liście.
-  // EN: Return the "W budowie" screen with the subtrack number, and the bottom bar under it. In docs/projekt/EKRANY.md the survey list has the bottom bar and the question screens do not, so the subtrack agent keeps it on the list only.
+  // PL: „done” jest stałym adresem, więc wygrywa z numerem ankiety.
+  // EN: "done" is a fixed address, so it wins over a survey id.
   return (
-    <>
-      <UnderConstruction subtrack="5a" title="Ankiety" />
-      <Dock />
-    </>
+    <Routes>
+      <Route index element={<SurveyListScreen />} />
+      <Route path="done" element={<SurveyDoneScreen />} />
+      <Route path=":surveyId" element={<SurveyFlowScreen />} />
+    </Routes>
   );
 }
