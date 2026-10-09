@@ -6,6 +6,7 @@
   @author Bohdan
   @since 2026-10-09
   @uses src/main.tsx::main
+  @uses public/apple-touch-icon.png::icon
   @used_by vite.config.ts::defineConfig
 -->
 <html lang="pl">
@@ -19,6 +20,24 @@
     <!-- PL: Tytuł karty przeglądarki. -->
     <!-- EN: Title of the browser tab. -->
     <title>TEB Student</title>
+    <!-- PL: Kolor paska przeglądarki. To samo tło --bg palety CE co theme_color w manifeście (vite.config.ts). -->
+    <!-- EN: The browser bar color. The same --bg background of the CE palette as theme_color in the manifest (vite.config.ts). -->
+    <meta name="theme-color" content="#26282d" />
+    <!-- PL: iPhone: aplikacja dodana do ekranu głównego otwiera się bez paska Safari. -->
+    <!-- EN: iPhone: the app added to the home screen opens without the Safari bar. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- PL: To samo dla Androida. Chrome uznaje wpis „apple-mobile-web-app-capable” za przestarzały i chce tego. -->
+    <!-- EN: The same for Android. Chrome treats "apple-mobile-web-app-capable" as deprecated and wants this one. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- PL: iPhone: czarny pasek stanu. Wariant „black-translucent” wymagałby odstępu od góry, którego aplikacja jeszcze nie ma. -->
+    <!-- EN: iPhone: a black status bar. The "black-translucent" variant would need a top inset that the app does not have yet. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <!-- PL: iPhone: nazwa pod ikoną na ekranie głównym. -->
+    <!-- EN: iPhone: the name under the icon on the home screen. -->
+    <meta name="apple-mobile-web-app-title" content="TEB Student" />
+    <!-- PL: iPhone: ikona na ekranie głównym (180 × 180, bez przezroczystości). -->
+    <!-- EN: iPhone: the home screen icon (180 × 180, no transparency). -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body>
     <!-- PL: Tu React rysuje całą aplikację. -->
