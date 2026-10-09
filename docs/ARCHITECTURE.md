@@ -2,7 +2,7 @@
 
 <!-- code-docs: lang=PL+EN map=docs/ARCHITECTURE.md tags=@author,@since,@uses,@used_by,@invariant -->
 
-To jest mapa projektu. Zasady komentarzy w kodzie: `docs/STANDARD_KODU.md`.
+To jest mapa projektu. Zasady komentarzy w kodzie: `docs/STANDARD_KODU.md`. Założenia architektury: `AGENTS.md`, część „Założenia architektury”.
 
 Stan na 9.10.2026: kodu jeszcze nie ma. Ten plik opisuje układ wynikający z technologii zatwierdzonych przez Bohdana (`docs/TECHNOLOGIE.md`, `docs/adr/0001-technologie.md`). Agent orkiestrujący uzupełni go w projekcie technicznym, a zespół zatwierdzi przed programowaniem.
 
