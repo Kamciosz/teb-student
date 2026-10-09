@@ -1,0 +1,334 @@
+/**
+ * PL: Wygląd ekranów ankiety (podtor 5a): kafle, przyciski, odpowiedzi A–D, pasek postępu i potwierdzenie. Kolory tylko przez var(--...) z tokens.css. Układ działa od 320 px szerokości.
+ *     Bez :has(), color-mix(), @property i zagnieżdżonego CSS, bo iOS 15 i starsze Androidy ich nie znają.
+ * EN: The look of the survey screens (subtrack 5a): tiles, buttons, options A–D, the progress bar and the confirmation. Colors only through var(--...) from tokens.css. The layout works from 320 px width.
+ *     No :has(), color-mix(), @property or nested CSS, because iOS 15 and older Androids do not know them.
+ *
+ * @author Jakub
+ * @since 2026-10-09
+ * @uses src/shared/styles/tokens.css::var(--...)
+ * @used_by src/features/surveys/vote/SurveysVoteScreen.tsx::import
+ */
+
+/* PL: Kolumna ekranu: do 430 px szerokości, na środku, z odstępem 16 px po bokach.
+   EN: The screen column: up to 430 px wide, centered, with 16 px on the sides. */
+.vote {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 24px 16px 24px;
+  background: var(--bg);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* PL: Ekran pytań zajmuje całą wysokość, żeby przycisk był na dole.
+   EN: The question screen takes the full height, so the button sits at the bottom. */
+.vote--flow {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-top: 12px;
+}
+
+.vote--center {
+  justify-content: space-between;
+}
+
+/* PL: Etykieta nad sekcją i nad pytaniem: mała, wersaliki bez zmiany pisowni, kolor drugorzędny.
+   EN: The label above a section and above a question: small, secondary color. */
+.vote-label {
+  margin: 16px 0 8px;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.vote-label--ink {
+  margin: 0;
+  color: var(--ink);
+}
+
+.vote-label--spaced {
+  margin-top: 24px;
+}
+
+.vote-small {
+  margin-top: 4px;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.vote-lead {
+  margin-top: 8px;
+  color: var(--ink-2);
+}
+
+/* PL: Lista kafli: bez punktorów, odstęp 12 px.
+   EN: The tile list: no bullets, 12 px gap. */
+.vote-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 4px;
+  list-style: none;
+}
+
+.vote-tile {
+  padding: 16px;
+  border-radius: var(--r);
+  background: var(--tile);
+}
+
+.vote-tile--row {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.vote-tile__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.vote-tile__title {
+  margin-top: 4px;
+  font-size: var(--t-lg);
+  line-height: 1.2;
+}
+
+/* PL: Licznik dni po prawej: duża cyfra nad słowem.
+   EN: The day counter on the right: a large digit above the word. */
+.vote-counter {
+  text-align: right;
+}
+
+.vote-counter__num {
+  font-size: var(--t-num-sm);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.vote-filled {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* PL: Przyciski: duży cel dotyku 48 px. Link i przycisk wyglądają tak samo.
+   EN: Buttons: a large 48 px touch target. A link and a button look the same. */
+.vote-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 12px;
+  padding: 0 20px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.vote-button--primary {
+  width: 100%;
+  margin-top: 0;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.vote-button--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.vote-button:disabled {
+  border-color: var(--line);
+  background: var(--tile-2);
+  color: var(--ink-2);
+  cursor: not-allowed;
+}
+
+.vote-message {
+  margin-top: 16px;
+}
+
+.vote-error {
+  margin-bottom: 8px;
+  font-size: var(--t-sm);
+  color: var(--ink);
+}
+
+/* PL: Górny pasek ekranu pytań: „Wstecz”, tytuł ankiety i krok.
+   EN: The top bar of the question screen: "Wstecz", the survey title and the step. */
+.vote-top__row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.vote-top__title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.vote-top__step {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.vote-icon-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* PL: Pasek postępu: tyle odcinków, ile pytań; wypełnione są do bieżącego.
+   EN: The progress bar: as many segments as questions; filled up to the current one. */
+.vote-bars {
+  display: flex;
+  gap: 4px;
+  margin: 8px 0 24px;
+}
+
+.vote-bars__bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.vote-bars__bar--on {
+  background: var(--ink);
+}
+
+/* PL: Odpowiedzi: prawdziwe pola wyboru są ukryte wizualnie, a rysujemy kafel obok nich.
+   EN: Options: the real radio inputs are visually hidden, and we draw the tile next to them. */
+.vote-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+  border: 0;
+}
+
+.vote-option {
+  display: block;
+  cursor: pointer;
+}
+
+.vote-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.vote-option__body {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 56px;
+  padding: 12px 16px;
+  border: 1.5px solid transparent;
+  border-radius: var(--r);
+  background: var(--tile);
+}
+
+.vote-option input:checked + .vote-option__body {
+  border-color: var(--ink);
+  background: var(--tile-2);
+}
+
+.vote-option input:focus-visible + .vote-option__body {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.vote-option__letter {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.vote-option input:checked + .vote-option__body .vote-option__letter {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.vote-option__text {
+  min-width: 0;
+}
+
+.vote-note {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+/* PL: Dolny przycisk przykleja się do dołu ekranu i omija pasek gestów iPhone'a.
+   EN: The bottom button sticks to the bottom of the screen and clears the iPhone gesture bar. */
+.vote-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 16px 0 calc(16px + var(--safe-bottom));
+  background: var(--bg);
+}
+
+/* PL: Potwierdzenie i komunikaty: treść na środku, kółko ze znacznikiem.
+   EN: The confirmation and messages: content in the middle, a circle with a check. */
+.vote-done {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  margin-top: 80px;
+  text-align: center;
+}
+
+.vote-done__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  margin-bottom: 16px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--bg);
+}
+
+/* PL: Tekst tylko dla czytnika ekranu.
+   EN: Text for the screen reader only. */
+.vote-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
