@@ -8,6 +8,17 @@ updates:
       prefix: build
       include: scope
     open-pull-requests-limit: 5
+    # PL: Paczki Babel muszą mieć tę samą wersję główną, więc Dependabot podnosi je razem, jednym pull requestem.
+    # EN: Babel packages must share one major version, so Dependabot bumps them together in one pull request.
+    groups:
+      babel:
+        patterns:
+          - "@babel/*"
+    # PL: Typy Node trzymamy na wersji z .nvmrc (22). Nowsza wersja główna podpowiada funkcje, których Node 22 nie ma.
+    # EN: Node types stay on the .nvmrc version (22). A newer major version suggests features that Node 22 does not have.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
