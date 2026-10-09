@@ -1,6 +1,6 @@
 /**
- * PL: Test ekranów aktualności (podtor 3a) w przeglądarce: lista z filtrem, wpis z linkami i filmem, wpis nieistniejący, błąd serwera i szerokość 320 px. Odpowiedzi serwera są podstawione (page.route), bo prawdziwy D1 w teście czeka na zgłoszenie #43. Test oblewa na gałęzi bez zmiany, bo tam adres /news/feed pokazuje tylko „W budowie”.
- * EN: Test of the news screens (subtrack 3a) in the browser: the list with the filter, an entry with links and a video, a missing entry, a server error and the 320 px width. The server answers are stubbed (page.route), because a real D1 in the test waits for issue #43. The test fails on a branch without the change, because there the /news/feed address shows only "W budowie".
+ * PL: Test ekranów aktualności (podtor 3a) w przeglądarce: lista z filtrem, wpis z linkami i filmem, wpis nieistniejący, błąd serwera, widok bez internetu i szerokość 320 px. Odpowiedzi serwera są podstawione (page.route), bo prawdziwy D1 w teście czeka na zgłoszenie #43. Test oblewa na gałęzi bez zmiany, bo tam adres /news/feed pokazuje tylko „W budowie”.
+ * EN: Test of the news screens (subtrack 3a) in the browser: the list with the filter, an entry with links and a video, a missing entry, a server error, the view without internet and the 320 px width. The server answers are stubbed (page.route), because a real D1 in the test waits for issue #43. The test fails on a branch without the change, because there the /news/feed address shows only "W budowie".
  *
  * @author Szymon
  * @since 2026-10-09
@@ -180,4 +180,31 @@ test('szerokość 320 px bez poziomego przewijania / 320 px width without horizo
   await page.getByRole('link', { name: /Turniej e-sportowy klas/ }).click();
   await expect(page.getByText(LONG_WORD.slice(0, 20))).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});
+
+// PL: Gdy po zapisaniu listy serwer przestaje odpowiadać, ekran pokazuje zapisane wpisy i napis o braku połączenia, a nie biały ekran.
+// EN: When the server stops answering after the list was saved, the screen shows the saved entries and a no-connection note, not a white screen.
+test('bez połączenia ekran pokazuje zapisane wpisy / without a connection the screen shows the saved entries', async ({ page }) => {
+  await page.goto('/news/feed');
+  await expect(page.locator('.news-card')).toHaveCount(4);
+  // PL: Poczekaj, aż lista trafi do localStorage (zapis jest opóźniony o około sekundę).
+  // EN: Wait until the list reaches localStorage (the save is delayed by about a second).
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem('teb-news-feed')?.includes('e-sport') ?? false)).toBe(true);
+
+  // PL: Postarz zapisane dane o godzinę, żeby ekran próbował je odświeżyć (świeże dane nie są pobierane ponownie).
+  // EN: Age the saved data by an hour, so the screen tries to refresh it (fresh data is not fetched again).
+  await page.evaluate(() => {
+    const saved = JSON.parse(window.localStorage.getItem('teb-news-feed') ?? '{}');
+    for (const query of saved.clientState.queries) query.state.dataUpdatedAt -= 3_600_000;
+    window.localStorage.setItem('teb-news-feed', JSON.stringify(saved));
+  });
+
+  // PL: Odetnij serwer aktualności i otwórz ekran od nowa.
+  // EN: Cut off the news server and open the screen anew.
+  await page.unroute('**/api/news/feed**');
+  await page.route('**/api/news/feed**', (route) => route.abort());
+  await page.reload();
+
+  await expect(page.locator('.news-card')).toHaveCount(4);
+  await expect(page.getByText('Brak połączenia. Pokazujemy zapisane wpisy.')).toBeVisible();
 });
