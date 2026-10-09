@@ -1,6 +1,6 @@
 /**
- * PL: Test funkcji deleteSurveysStudentData. Sprawdza, że wywołanie kończy się bez błędu i niczego nie zwraca. Gdy podtor 5a doda kasowanie, rozbudowuje ten test o sprawdzenie, że dane ucznia znikają, a cudze zostają.
- * EN: Test of the deleteSurveysStudentData function. Checks that the call finishes without an error and returns nothing. When subtrack 5a adds the deletion, it extends this test to check that the student's data goes away and other people's data stays.
+ * PL: Test funkcji deleteSurveysStudentData na prawdziwej bazie D1: kasuje wpisy udziału tylko tego ucznia, cudze zostają, a liczniki głosów się nie zmieniają, bo wyniki są anonimowe. Samo zapytanie kasujące, z warunkiem WHERE po numerze ucznia, sprawdza też queries.test.ts.
+ * EN: Test of the deleteSurveysStudentData function on a real D1 database: it deletes the participation rows of this student only, other people's rows stay, and the vote counters do not change, because the results are anonymous. The deleting query itself, with a WHERE condition on the student id, is also checked by queries.test.ts.
  *
  * @author Bohdan
  * @since 2026-10-09
@@ -14,6 +14,12 @@ import { describe, expect, it } from 'vitest';
 // PL: Środowisko testowe Workera z bazą D1 (binding DB, tabele ze schematu).
 // EN: The Worker test environment with the D1 database (the DB binding, tables from the schema).
 import { env } from 'cloudflare:workers';
+// PL: Klient bazy do przygotowania i sprawdzenia wierszy.
+// EN: The database client for preparing and checking rows.
+import { drizzle } from 'drizzle-orm/d1';
+// PL: Tabele ankiet.
+// EN: The survey tables.
+import { surveyOptions, surveyParticipation, surveyQuestions, surveys } from '../../db/schema/surveys';
 // PL: Funkcja, którą sprawdzamy.
 // EN: The function under test.
 import { deleteSurveysStudentData } from './deleteStudentData';
@@ -21,15 +27,29 @@ import { deleteSurveysStudentData } from './deleteStudentData';
 // PL: Grupa testów kasowania danych ucznia z modułu surveys.
 // EN: A group of tests for deleting the student's data from the surveys module.
 describe('deleteSurveysStudentData', () => {
-  // PL: Jedyny przypadek na dziś: funkcja nic nie robi i się nie psuje.
-  // EN: The only case for now: the function does nothing and does not break.
-  it('kończy się bez błędu / finishes without an error', async () => {
-    // PL: Wywołaj funkcję dla wymyślonego ucznia i bazy testowej, poczekaj na koniec.
-    // EN: Call the function for an invented student and the test database, wait for it to finish.
-    const result = await deleteSurveysStudentData({ userId: 'test-user', db: env.DB });
+  // PL: Ślad ucznia znika, cudzy zostaje, a wyniki ankiety się nie zmieniają.
+  // EN: The student's trace goes away, other people's stays, and the survey results do not change.
+  it('kasuje udział tylko tego ucznia i nie rusza liczników / deletes this student participation only and leaves the counters', async () => {
+    // PL: Przygotuj ankietę z jedną odpowiedzią o liczniku 2 i udziałem dwóch uczniów.
+    // EN: Prepare a survey with one option with the counter 2 and the participation of two students.
+    const db = drizzle(env.DB);
+    await db.insert(surveys).values({ id: 'del', label: null, title: 'Kasowanie', endsOn: '2099-12-31' });
+    await db.insert(surveyQuestions).values({ id: 'del-1', surveyId: 'del', position: 1, prompt: 'Pytanie?' });
+    await db.insert(surveyOptions).values({ id: 'del-1-a', questionId: 'del-1', position: 1, label: 'A', votes: 2 });
+    await db.insert(surveyParticipation).values([
+      { surveyId: 'del', userId: 'student-del-0001' },
+      { surveyId: 'del', userId: 'student-del-0002' },
+    ]);
 
-    // PL: Funkcja niczego nie zwraca.
-    // EN: The function returns nothing.
-    expect(result).toBeUndefined();
+    // PL: Skasuj dane pierwszego ucznia.
+    // EN: Delete the first student's data.
+    await deleteSurveysStudentData({ userId: 'student-del-0001', db: env.DB });
+
+    // PL: Został tylko drugi uczeń, a licznik nadal wynosi 2.
+    // EN: Only the second student is left, and the counter is still 2.
+    const participation = await db.select().from(surveyParticipation);
+    const options = await db.select().from(surveyOptions);
+    expect(participation.map((row) => row.userId)).toEqual(['student-del-0002']);
+    expect(options[0]?.votes).toBe(2);
   });
 });
