@@ -1,6 +1,6 @@
 # Architektura
 
-<!-- code-docs: lang=PL map=docs/ARCHITECTURE.md tags=@author,@since,@uses,@used_by,@invariant -->
+<!-- code-docs: lang=PL+EN map=docs/ARCHITECTURE.md tags=@author,@since,@uses,@used_by,@invariant -->
 
 To jest mapa projektu. Zasady komentarzy w kodzie: `docs/STANDARD_KODU.md`.
 

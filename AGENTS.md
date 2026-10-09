@@ -41,7 +41,7 @@ Sam napisany kod nie oznacza „gotowe”.
 - Nazwy w kodzie po angielsku. Teksty dla ucznia po polsku, z polskimi znakami.
 - Nowa funkcja to nowy moduł, nie doklejka do istniejącego pliku.
 - Bez martwego kodu, wykomentowanych bloków i `console.log` w kodzie produkcyjnym.
-- Komentarze po polsku wszędzie: nagłówek pliku, opis każdej eksportowanej funkcji i każdego kroku w funkcji. Szczegóły i przykład: `docs/STANDARD_KODU.md`, część 1.
+- Komentarze wszędzie, po polsku i po angielsku (`PL:`, potem `EN:`): plik, każda funkcja, typ, stała i każdy krok w funkcji. Kodu bez komentarza nie scalamy. Szczegóły i przykład: `docs/STANDARD_KODU.md`, część 1.
 - Limity długości i zagnieżdżenia funkcji: `docs/STANDARD_KODU.md`, część 2.
 - Zasady techniczne (kolory, CSS, zdjęcia, filmy, R2, dane w telefonie) są w `docs/TECHNOLOGIE.md`, sekcja „Zasady dla agentów”.
 
