@@ -98,6 +98,7 @@ Wersje pochodzą z rejestru npm. Przy starcie projektu przypinamy dokładne wers
 - film z YouTube w treści wpisu na iPhonie z iOS 15 i na Androidzie, także w aplikacji dodanej do ekranu głównego;
 - edytor wpisów na iPhonie z iOS 15: pisanie, wklejanie tekstu z Worda i Google Docs, zdjęcie w treści;
 - tryb samolotowy, powrót internetu i wgranie nowej wersji na iPhonie i Androidzie.
+- lint plików TS czeka na wersję typescript-eslint, która obsługuje TypeScript 7. Do tego czasu limity i komentarze sprawdza recenzent.
 
 ## Koszt
 

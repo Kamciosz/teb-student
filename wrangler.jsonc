@@ -1,0 +1,29 @@
+// PL: Ustawienia Workera Cloudflare: nazwa, plik z kodem serwera i sposób wysyłania plików aplikacji.
+// EN: Cloudflare Worker settings: the name, the server code file and how the app files are served.
+//
+// @author Bohdan
+// @since 2026-10-09
+// @uses worker/index.ts::app
+// @used_by vite.config.ts::cloudflare
+// @used_by vitest.config.ts::cloudflareTest
+{
+  // PL: Nazwa Workera w Cloudflare.
+  // EN: The Worker name in Cloudflare.
+  "name": "teb-student",
+  // PL: Plik z kodem serwera.
+  // EN: The server code file.
+  "main": "worker/index.ts",
+  // PL: Data zgodności środowiska Workers: ustala, jak zachowują się funkcje platformy. Nie może być późniejsza niż wersja workerd z package-lock.json.
+  // EN: Workers compatibility date: fixes how platform features behave. It must not be later than the workerd version in package-lock.json.
+  "compatibility_date": "2026-10-01",
+  // PL: Pliki aplikacji wysyła Cloudflare, bez użycia procesora Workera.
+  // EN: Cloudflare serves the app files, without using Worker CPU time.
+  "assets": {
+    // PL: Nieznany adres otwiera aplikację, bo ekrany wybiera React Router w telefonie.
+    // EN: An unknown URL opens the app, because React Router picks the screens in the phone.
+    "not_found_handling": "single-page-application",
+    // PL: Adresy /api/ trafiają zawsze do Workera, a nie do plików.
+    // EN: /api/ URLs always go to the Worker, not to files.
+    "run_worker_first": ["/api/*"]
+  }
+}

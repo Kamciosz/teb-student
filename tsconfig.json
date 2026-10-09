@@ -1,0 +1,21 @@
+// PL: Główny plik TypeScript. Sam niczego nie sprawdza, tylko wskazuje trzy zestawy plików. Każdy ma własne ustawienia, bo telefon, serwer i narzędzia mają inne typy.
+// EN: The main TypeScript file. It checks nothing itself and only points to three file sets. Each has its own settings, because the phone, the server and the tools have different types.
+//
+// @author Bohdan
+// @since 2026-10-09
+// @uses tsconfig.app.json
+// @uses tsconfig.worker.json
+// @uses tsconfig.node.json
+// @used_by package.json::scripts
+{
+  // PL: Brak własnych plików.
+  // EN: No files of its own.
+  "files": [],
+  // PL: Trzy zestawy: telefon, serwer, narzędzia.
+  // EN: Three sets: phone, server, tools.
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.worker.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}

@@ -9,6 +9,7 @@
  * @author Kacper
  * @since 2026-10-09
  * @uses src/shared/styles/tokens.css::var(--...)
+ * @used_by src/main.tsx::import
  */
 
 /* PL: Zerowanie: każdy element liczy szerokość z ramką i paddingiem, bez domyślnych marginesów.

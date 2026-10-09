@@ -16,9 +16,11 @@ Dla ludzi i agentów AI. Czytaj w całości przed pierwszą zmianą.
 - Przechodzą build, testy i lint. Komendy dopisuje szkielet (etap A):
 
 ```bash
-# build:  (dopisze szkielet)
-# testy:  (dopisze szkielet)
-# lint:   (dopisze szkielet)
+# build:  npm run build
+# testy:  npm test
+# lint:   npm run lint   # na razie tylko typy TypeScript, limity i komentarze sprawdza recenzent
+# e2e:    PORT=<port podtoru> npm run test:e2e   # raz wcześniej: npx playwright install chromium
+# dev:    PORT=<port podtoru> npm run dev
 ```
 
 - CI na pull requeście jest zielone, a Adam zatwierdził zmianę.
