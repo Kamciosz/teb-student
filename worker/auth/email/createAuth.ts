@@ -1,6 +1,6 @@
 /**
- * PL: Fabryka obiektu Better Auth dla logowania kodem z maila. Baza i nadawca kodu przychodzą z zewnątrz, więc te same ustawienia (kod 6 cyfr, 10 minut, 3 próby) działają na D1 w Workerze i na pamięci w testach.
- * EN: The factory of the Better Auth object for e-mail code sign-in. The database and the code sender come from outside, so the same settings (6 digits, 10 minutes, 3 attempts) work on D1 in the Worker and on memory in tests.
+ * PL: Fabryka obiektu Better Auth dla logowania kodem z maila. Baza i nadawca kodu przychodzą z zewnątrz, więc te same ustawienia (kod 6 cyfr, 10 minut, 3 próby) działają na D1 w Workerze i w testach.
+ * EN: The factory of the Better Auth object for e-mail code sign-in. The database and the code sender come from outside, so the same settings (6 digits, 10 minutes, 3 attempts) work on D1 in the Worker and in tests.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -24,7 +24,7 @@ import { AUTH_BASE_PATH, CODE_LENGTH, CODE_LIFETIME_SECONDS, CODE_MAX_ATTEMPTS }
  * EN: What is needed to build the sign-in object.
  */
 export type CreateAuthOptions = {
-  /** PL: Adapter bazy Better Auth: Drizzle na D1 w Workerze, pamięć w testach. EN: The Better Auth database adapter: Drizzle on D1 in the Worker, memory in tests. */
+  /** PL: Adapter bazy Better Auth: Drizzle na D1 (w Workerze i w testach). EN: The Better Auth database adapter: Drizzle on D1 (in the Worker and in tests). */
   database: BetterAuthOptions['database'];
   /** PL: Tajny klucz do podpisywania ciasteczek sesji, co najmniej 32 znaki. EN: The secret key for signing session cookies, at least 32 characters. */
   secret: string;

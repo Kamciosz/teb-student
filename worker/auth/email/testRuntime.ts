@@ -1,6 +1,6 @@
 /**
- * PL: Pomocnik testów podtoru 1a: logowanie na bazie w pamięci, z nadawcą, który zapisuje kody zamiast je drukować. Dzięki temu testy sprawdzają ten sam kod co Worker, bez D1 i bez terminala. Plik nie trafia do paczki, bo importują go tylko testy.
- * EN: The subtrack 1a test helper: sign-in on an in-memory database, with a sender that records codes instead of printing them. This way tests exercise the same code as the Worker, without D1 and without a terminal. The file does not reach the bundle, because only tests import it.
+ * PL: Pomocnik testów podtoru 1a: logowanie na prawdziwej bazie D1 testów (env.DB), z nadawcą, który zapisuje kody zamiast je drukować. Dzięki temu testy sprawdzają ten sam kod co Worker, bez terminala. Plik nie trafia do paczki, bo importują go tylko testy.
+ * EN: The subtrack 1a test helper: sign-in on the real test D1 database (env.DB), with a sender that records codes instead of printing them. This way tests exercise the same code as the Worker, without a terminal. The file does not reach the bundle, because only tests import it.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -11,31 +11,32 @@
  * @used_by worker/auth/email/deleteStudentData.test.ts::createTestRuntime
  */
 
-// PL: Baza w pamięci z Better Auth i klasa routera.
-// EN: The in-memory database from Better Auth and the router class.
-import { memoryAdapter } from 'better-auth/adapters/memory';
+// PL: Środowisko testowe z bazą D1 (binding DB, tabele ze schematu) i klasa routera.
+// EN: The test environment with the D1 database (the DB binding, tables from the schema) and the router class.
+import { env } from 'cloudflare:workers';
 import { Hono } from 'hono';
 import type { CodeMessage } from './codeSender';
+import type { Env } from '../../shared';
 import { createAuth } from './createAuth';
 import { createAuthEmailApp } from './routes';
-import type { RuntimeAuth } from './runtimeAuth';
+import { createDatabaseAdapter, type RuntimeAuth } from './runtimeAuth';
 
 /**
  * PL: Wszystko, czego test potrzebuje do rozmowy z logowaniem.
  * EN: Everything a test needs to talk to sign-in.
  */
 export type TestRuntime = {
-  /** PL: Obiekt logowania na pamięci. EN: The sign-in object on memory. */
+  /** PL: Obiekt logowania na bazie D1 testów. EN: The sign-in object on the test D1 database. */
   runtime: RuntimeAuth;
   /** PL: Kody „wysłane” do tej pory, od najstarszego. EN: The codes "sent" so far, oldest first. */
   sent: CodeMessage[];
   /** PL: Aplikacja z routerem pod /api/auth/email, tak jak w Workerze. EN: The app with the router under /api/auth/email, as in the Worker. */
-  app: Hono;
+  app: Hono<{ Bindings: Env }>;
 };
 
 /**
- * PL: Tworzy świeże logowanie na pamięci.
- * EN: Creates a fresh sign-in on memory.
+ * PL: Tworzy świeże logowanie na bazie D1 testów.
+ * EN: Creates a fresh sign-in on the test D1 database.
  *
  * @param canSendCodes - PL: prawda, gdy nadawca kodu ma istnieć (domyślnie tak). EN: true when the code sender should exist (the default).
  * @returns PL: logowanie, lista wysłanych kodów i aplikacja. EN: the sign-in, the list of sent codes and the app.
@@ -43,11 +44,10 @@ export type TestRuntime = {
 export function createTestRuntime(canSendCodes = true): TestRuntime {
   const sent: CodeMessage[] = [];
 
-  // PL: Wszystkie tabele podajemy z góry, bo adapter pamięci rzuca błąd przy brakującej.
-  // EN: We pass every table up front, because the memory adapter errors on a missing one.
-  const database = memoryAdapter({ user: [], session: [], account: [], verification: [] });
+  // PL: Ten sam adapter D1 co w Workerze, na bazie testowej pliku.
+  // EN: The same D1 adapter as in the Worker, on the file's test database.
   const auth = createAuth({
-    database,
+    database: createDatabaseAdapter(env.DB),
     secret: 'test-secret-test-secret-test-secret-00',
     sendCode: async (message) => {
       sent.push(message);
@@ -57,7 +57,7 @@ export function createTestRuntime(canSendCodes = true): TestRuntime {
 
   // PL: Router podpięty pod ten sam adres co w worker/mounts.ts.
   // EN: The router mounted at the same address as in worker/mounts.ts.
-  const app = new Hono();
+  const app = new Hono<{ Bindings: Env }>();
   app.route('/api/auth/email', createAuthEmailApp({ getRuntime: () => runtime }));
   return { runtime, sent, app };
 }
@@ -86,7 +86,7 @@ export function uniqueIp(): string {
  * @returns PL: odpowiedź aplikacji. EN: the app response.
  */
 export function call(
-  app: Hono,
+  app: TestRuntime['app'],
   path: string,
   options: { method?: string; body?: unknown; cookie?: string; ip?: string } = {},
 ): Promise<Response> {
@@ -96,13 +96,14 @@ export function call(
   };
   if (options.body !== undefined) headers['content-type'] = 'application/json';
   if (options.cookie) headers.cookie = options.cookie;
-  return Promise.resolve(
-    app.request(`http://localhost/api/auth/email${path}`, {
-      method: options.method ?? (options.body === undefined ? 'GET' : 'POST'),
-      headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    }),
-  );
+  const init = {
+    method: options.method ?? (options.body === undefined ? 'GET' : 'POST'),
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  };
+  // PL: Środowisko testowe (env) jako trzeci argument: trasy czytają context.env.DB.
+  // EN: The test environment (env) as the third argument: routes read context.env.DB.
+  return Promise.resolve(app.request(`http://localhost/api/auth/email${path}`, init, env));
 }
 
 /**

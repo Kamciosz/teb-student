@@ -6,7 +6,9 @@
 - Ekrany 1.1 i 1.2 (adres i kod) pod adresem `/auth/email`, z komunikatami błędów i ponowną wysyłką kodu.
 - Tabele Better Auth (`user`, `session`, `account`, `verification`) w `worker/db/schema/auth.ts`.
 - Dla innych podtorów: `requireStudent` po stronie serwera i `useAuthSession` w telefonie.
-- Kasowanie konta, sesji i oczekującego kodu ucznia w `deleteAuthStudentData`.
+- Kasowanie konta, sesji i oczekującego kodu ucznia w `deleteAuthStudentData` (na `input.db`).
+- Dane testowe `AUTH_SEED_SETS` (trzech wymyślonych uczniów) dla `npm run db:seed`.
+- Testy serwera działają na prawdziwej bazie D1 testów (`env.DB`), a sesja w telefonie to `useQuery` ze wspólnego dostawcy zapytań. Wylogowanie czyści dane w telefonie (`clearQueryData`).
 
 ### Zmienione
 

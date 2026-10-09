@@ -4,13 +4,16 @@
  *
  * @author Szymon
  * @since 2026-10-09
- * @uses worker/auth/email/deleteStudentData.ts::createDeleteAuthStudentData
+ * @uses worker/auth/email/deleteStudentData.ts::deleteAuthStudentData
  * @uses worker/auth/email/testRuntime.ts::createTestRuntime
  * @used_by vitest.config.ts::include
  */
 
 import { describe, expect, it } from 'vitest';
-import { createDeleteAuthStudentData } from './deleteStudentData';
+// PL: Środowisko testowe z bazą D1 (binding DB, tabele ze schematu).
+// EN: The test environment with the D1 database (the DB binding, tables from the schema).
+import { env } from 'cloudflare:workers';
+import { deleteAuthStudentData } from './deleteStudentData';
 import { call, createTestRuntime, signIn } from './testRuntime';
 
 /** PL: Wymyślone adresy dwóch uczniów. EN: Invented addresses of two students. */
@@ -30,7 +33,7 @@ describe('deleteAuthStudentData', () => {
     const jan = await internalAdapter.findUserByEmail(JAN);
     expect(jan).not.toBeNull();
 
-    await createDeleteAuthStudentData(() => test.runtime)({ userId: jan?.user.id ?? '' });
+    await deleteAuthStudentData({ userId: jan?.user.id ?? '', db: env.DB });
 
     expect(await internalAdapter.findUserByEmail(JAN)).toBeNull();
     expect(await (await call(test.app, '/get-session', { cookie: janCookie })).json()).toBeNull();
@@ -52,7 +55,7 @@ describe('deleteAuthStudentData: kod i nieznany uczeń / code and unknown studen
     const { internalAdapter } = await test.runtime.auth.$context;
     const jan = await internalAdapter.findUserByEmail(JAN);
 
-    await createDeleteAuthStudentData(() => test.runtime)({ userId: jan?.user.id ?? '' });
+    await deleteAuthStudentData({ userId: jan?.user.id ?? '', db: env.DB });
 
     const response = await call(test.app, '/sign-in/email-otp', { body: { email: JAN, otp: pendingCode } });
     expect(response.status).toBe(400);
@@ -64,7 +67,7 @@ describe('deleteAuthStudentData: kod i nieznany uczeń / code and unknown studen
   it('nieznany uczeń nic nie zmienia / an unknown student changes nothing', async () => {
     const test = createTestRuntime();
     const cookie = await signIn(test, JAN);
-    await createDeleteAuthStudentData(() => test.runtime)({ userId: 'nie-ma-takiego' });
+    await deleteAuthStudentData({ userId: 'nie-ma-takiego', db: env.DB });
     const session = (await (await call(test.app, '/get-session', { cookie })).json()) as { user: { email: string } };
     expect(session.user.email).toBe(JAN);
   });

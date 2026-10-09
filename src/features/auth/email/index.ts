@@ -18,6 +18,6 @@ export { AuthEmailScreen } from './AuthEmailScreen';
 // EN: The session hook. Usage: const session = useAuthSession(); when session.status === 'signed-in', the student is in session.student (id and email). States: loading, signed-out, signed-in, error (no network: it is not known whether there is a session).
 export { useAuthSession, type AuthSessionState, type StudentSession } from './useAuthSession';
 
-// PL: Wylogowanie: kasuje sesję na serwerze. Zwraca { ok } albo { ok: false, message } z komunikatem po polsku. Dane zapisane w telefonie czyści wywołujący.
-// EN: Sign-out: deletes the session on the server. Returns { ok } or { ok: false, message } with a message in Polish. Data stored on the phone is cleared by the caller.
+// PL: Wylogowanie: kasuje sesję na serwerze i czyści dane zapisane w telefonie (clearQueryData). Zwraca { ok } albo { ok: false, message } z komunikatem po polsku. Po { ok } wywołujący przenosi ucznia na /auth/email.
+// EN: Sign-out: deletes the session on the server and clears the data saved on the phone (clearQueryData). Returns { ok } or { ok: false, message } with a message in Polish. After { ok } the caller takes the student to /auth/email.
 export { signOutStudent, type AuthResult } from './authApi';

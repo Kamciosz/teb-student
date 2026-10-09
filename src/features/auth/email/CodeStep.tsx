@@ -5,6 +5,7 @@
  * @author Szymon
  * @since 2026-10-09
  * @uses src/features/auth/email/authApi.ts::verifyCode
+ * @uses src/features/auth/email/useAuthSession.ts::useSessionRefresh
  * @uses src/features/auth/email/CodeFields.tsx::CodeFields
  * @used_by src/features/auth/email/AuthEmailScreen.tsx::CodeStep
  */
@@ -16,6 +17,7 @@ import { emptyDigits, formatCountdown, isCodeComplete, RESEND_SECONDS } from './
 import { Icon } from './icons';
 import { maskEmail } from './schoolEmail';
 import { useCountdown } from './useCountdown';
+import { useSessionRefresh } from './useAuthSession';
 
 /** PL: Numer elementu z komunikatem błędu. EN: The id of the error message element. */
 const ERROR_ID = 'auth-email-code-error';
@@ -47,6 +49,7 @@ function useCodeStep(email: string) {
   // EN: Changing the number recreates the fields from scratch, with focus in the first one.
   const [round, setRound] = useState(0);
   const countdown = useCountdown(RESEND_SECONDS);
+  const refreshSession = useSessionRefresh();
 
   // PL: Po błędzie wyczyść pola, żeby uczeń zaczął wpisywać od początku.
   // EN: After an error clear the fields so the student starts typing from the beginning.
@@ -60,6 +63,7 @@ function useCodeStep(email: string) {
     event.preventDefault();
     setIsBusy(true);
     const result = await verifyCode(email, digits.join(''));
+    if (result.ok) await refreshSession();
     setIsBusy(false);
     if (!result.ok) reset(result.message);
   };

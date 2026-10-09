@@ -1,6 +1,6 @@
 /**
- * PL: Testy routera logowania kodem: zły kod, kod po terminie, obca domena, sesja po zalogowaniu, wylogowanie, limit wysyłek i brak wysyłki bez nadawcy. Działają na bazie w pamięci, ale na tym samym kodzie co Worker.
- * EN: Tests of the code sign-in router: a wrong code, an expired code, a foreign domain, the session after sign-in, sign-out, the send limit and no sending without a sender. They run on an in-memory database, but on the same code as the Worker.
+ * PL: Testy routera logowania kodem: zły kod, kod po terminie, obca domena, sesja po zalogowaniu, wylogowanie, limit wysyłek i brak wysyłki bez nadawcy. Działają na prawdziwej bazie D1 testów, na tym samym kodzie co Worker.
+ * EN: Tests of the code sign-in router: a wrong code, an expired code, a foreign domain, the session after sign-in, sign-out, the send limit and no sending without a sender. They run on the real test D1 database, on the same code as the Worker.
  *
  * @author Szymon
  * @since 2026-10-09

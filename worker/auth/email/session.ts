@@ -12,6 +12,9 @@
 // PL: Typ middleware z Hono.
 // EN: The middleware type from Hono.
 import type { MiddlewareHandler } from 'hono';
+// PL: Typ środowiska Workera (baza DB i sekrety).
+// EN: The Worker environment type (the DB database and secrets).
+import type { Env } from '../../shared';
 import { AuthNotConfiguredError, getRuntimeAuth, type RuntimeAuth } from './runtimeAuth';
 
 /**
@@ -26,25 +29,25 @@ export type Student = {
 };
 
 /**
- * PL: Typ środowiska Hono z uczniem. Użyj go tak: new Hono<StudentEnv>().use(requireStudent).
- * EN: The Hono environment type with the student. Use it like this: new Hono<StudentEnv>().use(requireStudent).
+ * PL: Typ środowiska Hono z uczniem. Zawiera też bindingi (context.env.DB). Użyj go tak: new Hono<StudentEnv>().use(requireStudent).
+ * EN: The Hono environment type with the student. It includes the bindings too (context.env.DB). Use it like this: new Hono<StudentEnv>().use(requireStudent).
  */
-export type StudentEnv = { Variables: { student: Student } };
+export type StudentEnv = { Bindings: Env; Variables: { student: Student } };
 
 /**
- * PL: Buduje middleware sprawdzające sesję. Osobna funkcja, żeby test mógł podać obiekt na pamięci.
- * EN: Builds the session-checking middleware. A separate function so a test can pass an object on memory.
+ * PL: Buduje middleware sprawdzające sesję. Osobna funkcja, żeby test mógł podać własnego nadawcę kodu.
+ * EN: Builds the session-checking middleware. A separate function so a test can pass its own code sender.
  *
- * @param getRuntime - PL: zwraca obiekt logowania. EN: returns the sign-in object.
+ * @param getRuntime - PL: zwraca obiekt logowania dla środowiska Workera. EN: returns the sign-in object for the Worker environment.
  * @returns PL: middleware Hono. EN: the Hono middleware.
  */
-export function createRequireStudent(getRuntime: () => RuntimeAuth): MiddlewareHandler<StudentEnv> {
+export function createRequireStudent(getRuntime: (env: Env) => RuntimeAuth): MiddlewareHandler<StudentEnv> {
   return async (context, next) => {
     // PL: Serwer bez ustawień logowania to 503, nie 401: uczeń nie zrobił nic złego.
     // EN: A server without sign-in settings is 503, not 401: the student did nothing wrong.
     let runtime: RuntimeAuth;
     try {
-      runtime = getRuntime();
+      runtime = getRuntime(context.env);
     } catch (error) {
       if (error instanceof AuthNotConfiguredError) return context.json({ error: 'not_configured' }, 503);
       throw error;
