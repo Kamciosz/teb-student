@@ -1,0 +1,56 @@
+# PL: Sprawdzenie „Granice torów”: gałąź feat/<podtor>-… zmienia tylko pliki swojego podtoru i docs/zmiany/.
+# PL: Najpierw samotest mapowania, potem sprawdzenie plików z pull requesta. Logika jest w skryptach powłoki.
+# EN: The "Track boundaries" check: a feat/<subtrack>-… branch changes only its own subtrack files and docs/zmiany/.
+# EN: First the mapping self-test, then the check of the pull request files. The logic lives in shell scripts.
+#
+# @author Adam
+# @since 2026-10-09
+# @uses .github/scripts/granice-torow.sh::main
+# @uses .github/scripts/granice-torow.test.sh
+# @used_by docs/PODZIAL_PRACY.md::Co musi zrobić etap A
+
+name: Granice torów
+
+# PL: Uruchamiaj na każdym pull requeście.
+# EN: Run on every pull request.
+on:
+  pull_request:
+
+# PL: Workflow tylko czyta repozytorium.
+# EN: The workflow only reads the repository.
+permissions:
+  contents: read
+
+jobs:
+  # PL: Nazwa zadania jest nazwą sprawdzenia widoczną w pull requeście.
+  # EN: The job name is the check name shown in the pull request.
+  granice-torow:
+    name: Granice torów
+    runs-on: ubuntu-latest
+    steps:
+      # PL: Pobierz całą historię, bo różnica „base...head” potrzebuje wspólnego przodka.
+      # EN: Fetch the full history, because the "base...head" diff needs the common ancestor.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # PL: Samotest oblewa, gdy mapowanie podtorów w skrypcie jest złe.
+      # EN: The self-test fails when the subtrack mapping in the script is wrong.
+      - name: Samotest mapowania podtorów
+        run: sh .github/scripts/granice-torow.test.sh
+
+      # PL: Sprawdź pliki zmienione w pull requeście względem gałęzi docelowej.
+      # EN: Check the files changed in the pull request against the target branch.
+      - name: Sprawdź, czy gałąź zmienia tylko swój podtor
+        env:
+          BRANCH: ${{ github.head_ref }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # PL: Lista idzie do pliku, a nie do potoku, bo błąd gita nie może po cichu dać pustej listy.
+          # EN: The list goes to a file, not a pipe, because a git error must not silently give an empty list.
+          git -c core.quotePath=false diff --name-only --no-renames "$BASE...$HEAD" > "$RUNNER_TEMP/zmienione.txt"
+
+          # PL: Uruchom skrypt: kod wyjścia 1 robi to sprawdzenie czerwonym.
+          # EN: Run the script: exit code 1 turns this check red.
+          sh .github/scripts/granice-torow.sh "$BRANCH" < "$RUNNER_TEMP/zmienione.txt"
