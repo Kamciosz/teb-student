@@ -1,27 +1,36 @@
 /**
- * PL: Kasuje dane ucznia z modułu profile przy usunięciu konta: dane profilu: imię, klasa, szkoła i wybór palety. Na razie nic nie robi, bo moduł nie ma jeszcze tabel z danymi ucznia. Profil (podtor 7) wywoła ją przez listę z worker/shared/accountDeletion.ts.
- * EN: Deletes the student's data from the profile module when the account is deleted: profile data: name, class, school and palette choice. It does nothing for now, because the module has no tables with student data yet. Profile (subtrack 7) calls it through the list in worker/shared/accountDeletion.ts.
+ * PL: Kasuje dane ucznia z modułu profile przy usunięciu konta: wiersz profilu (imię, klasa, szkoła i wybór palety). Profil (podtor 7) wywołuje ją przez listę z worker/shared/accountDeletion.ts.
+ * EN: Deletes the student's data from the profile module when the account is deleted: the profile row (name, class, school and palette choice). Profile (subtrack 7) calls it through the list in worker/shared/accountDeletion.ts.
  *
  * @author Bohdan
  * @since 2026-10-09
  * @uses worker/shared/index.ts::DeleteStudentDataInput
+ * @uses worker/db/schema/profile.ts::profiles
  * @used_by worker/profile/index.ts::deleteProfileStudentData
  * @used_by worker/profile/deleteStudentData.test.ts::deleteProfileStudentData
  */
 
+// PL: Warunek równości i Drizzle dla D1.
+// EN: The equality condition and Drizzle for D1.
+import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/d1';
+// PL: Tabela profili.
+// EN: The profiles table.
+import { profiles } from '../db/schema/profile';
 // PL: Typ danych wejściowych, wspólny dla wszystkich modułów.
 // EN: The input type shared by all modules.
 import type { DeleteStudentDataInput } from '../shared';
 
 /**
- * PL: Kasuje dane ucznia z modułu profile.
- * EN: Deletes the student's data from the profile module.
+ * PL: Kasuje dane ucznia z modułu profile. Cudze profile zostają.
+ * EN: Deletes the student's data from the profile module. Other people's profiles stay.
  *
- * @param _input - PL: numer ucznia, którego dane znikają. Gdy funkcja zacznie kasować dane, zmienia nazwę na input. EN: the id of the student whose data goes away. When the function starts deleting data, it is renamed to input.
+ * @param input - PL: numer ucznia, którego dane znikają, i baza. EN: the id of the student whose data goes away, and the database.
  * @returns PL: obietnica, która kończy się po skasowaniu. EN: a promise that settles after the deletion.
- * @throws PL: na razie nigdy. Po dodaniu zapytań błąd bazy ma przerwać usuwanie konta. EN: never for now. After queries are added, a database error must stop the account deletion.
+ * @throws PL: przy błędzie bazy, żeby usuwanie konta się zatrzymało. EN: on a database error, so the account deletion stops.
  */
-export async function deleteProfileStudentData(_input: DeleteStudentDataInput): Promise<void> {
-  // PL: Moduł nie ma jeszcze tabel z danymi ucznia, więc nie ma czego kasować. Agent podtoru 7 dopisze tu zapytanie z warunkiem WHERE po numerze ucznia i zmieni test.
-  // EN: The module has no tables with student data yet, so there is nothing to delete. The agent of subtrack 7 adds a query with a WHERE condition on the student id here and changes the test.
+export async function deleteProfileStudentData(input: DeleteStudentDataInput): Promise<void> {
+  // PL: Skasuj profil tylko tego ucznia (warunek WHERE po numerze ucznia).
+  // EN: Delete only this student's profile (a WHERE condition on the student id).
+  await drizzle(input.db).delete(profiles).where(eq(profiles.userId, input.userId));
 }

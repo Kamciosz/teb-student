@@ -1,0 +1,69 @@
+/**
+ * PL: Style ekranów profilu. Kolory tylko przez zmienne z src/shared/styles/tokens.css, więc zmieniają się razem z paletą i akcentem szkoły.
+ * EN: Styles of the profile screens. Colors only through the variables from src/shared/styles/tokens.css, so they change together with the palette and the school accent.
+ */
+
+/* PL: Kolumna aplikacji jak w makiecie: do 430 px, wyśrodkowana. Bez dolnego paska, więc wystarcza mały odstęp na dole.
+   EN: The app column as in the mockup: up to 430 px, centered. No dock, so a small bottom gap is enough. */
+.pf-screen { max-width: 430px; min-height: 100dvh; margin: 0 auto; background: var(--bg); padding: 12px 16px calc(32px + env(safe-area-inset-bottom)); overflow-wrap: anywhere; }
+.pf-icon { width: 20px; height: 20px; flex: none; }
+
+/* PL: Górny pasek: przycisk powrotu i tytuł.
+   EN: The top bar: the back button and the title. */
+.pf-top { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.pf-top b { flex: 1; font-weight: 700; }
+.pf-icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--tile); display: grid; place-items: center; color: var(--ink); text-decoration: none; flex: none; }
+
+/* PL: Kółko z literą, imię i podpis.
+   EN: The circle with the letter, the name and the caption. */
+.pf-who { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.pf-avatar { width: 72px; height: 72px; flex: none; border-radius: 50%; background: var(--tile-2); display: grid; place-items: center; font-size: var(--t-num-sm); font-weight: 800; }
+.pf-who-text { min-width: 0; }
+.pf-who-text small { color: var(--ink-2); font-size: var(--t-sm); }
+
+/* PL: Kafel z wierszami: kreska między wierszami, bez kreski nad pierwszym.
+   EN: A tile with rows: a line between rows, none above the first. */
+.pf-tile { list-style: none; background: var(--tile); border-radius: var(--r); overflow: hidden; margin-bottom: 12px; }
+.pf-tile li + li { border-top: 1px solid var(--line); }
+.pf-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 16px; border: 0; background: none; color: var(--ink); text-align: left; text-decoration: none; cursor: pointer; }
+.pf-row .pf-icon { color: var(--ink-2); }
+.pf-row-text { flex: 1; min-width: 0; }
+.pf-row-text small { display: block; color: var(--ink-2); font-size: var(--t-sm); }
+
+/* PL: Podpis wersji na dole.
+   EN: The version caption at the bottom. */
+.pf-version { margin-top: 24px; text-align: center; color: var(--ink-2); font-size: var(--t-xs); }
+
+/* PL: Pola tekstowe i grupy wyboru w ustawieniach.
+   EN: Text fields and choice groups in the settings. */
+.pf-field { display: block; margin-bottom: 16px; }
+.pf-field span { display: block; font-size: var(--t-sm); font-weight: 600; color: var(--ink-2); margin-bottom: 8px; }
+.pf-field input { width: 100%; background: var(--tile); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
+.pf-field input:focus-visible { border-color: var(--ink); }
+.pf-group { border: 0; margin: 0 0 20px; min-width: 0; }
+.pf-group legend { font-size: var(--t-sm); font-weight: 600; color: var(--ink-2); margin-bottom: 8px; }
+.pf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pf-chip { position: relative; display: inline-flex; align-items: center; min-height: 44px; background: var(--tile); border-radius: var(--r-sm); padding: 8px 16px; font-size: var(--t-sm); font-weight: 600; cursor: pointer; }
+.pf-chip input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.pf-chip:has(input:checked) { background: var(--accent); color: var(--on-accent); }
+.pf-chip:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* PL: Przyciski: główny w kolorze akcentu i łagodny. Każdy na całą szerokość, wysokość min. 44 px.
+   EN: Buttons: the primary one in the accent color and a soft one. Each full width, at least 44 px tall. */
+.pf-btn { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; margin-top: 12px; border: 0; border-radius: var(--r); padding: 12px 16px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.pf-btn-accent { background: var(--accent); color: var(--on-accent); }
+.pf-btn-soft { background: var(--tile); color: var(--ink); }
+.pf-btn:disabled { opacity: .5; cursor: default; }
+
+/* PL: Napisy: opis pod nagłówkiem, podpowiedź, błąd i pusty ekran.
+   EN: Texts: the lead under the heading, the hint, the error and the empty screen. */
+.pf-lead { color: var(--ink-2); margin: 8px 0 24px; }
+.pf-hint { margin: 0 0 12px; font-size: var(--t-sm); color: var(--ink-2); }
+.pf-error { margin: 12px 0; padding: 12px 16px; border-radius: var(--r); background: var(--tile-2); font-size: var(--t-sm); font-weight: 600; }
+.pf-empty { text-align: center; color: var(--ink-2); padding: 32px 0; }
+
+/* PL: Polityka prywatności: części z nagłówkiem i akapitami.
+   EN: The privacy policy: parts with a heading and paragraphs. */
+.pf-section { margin-bottom: 24px; }
+.pf-section h2 { font-size: var(--t-lg); margin-bottom: 8px; }
+.pf-section p { color: var(--ink-2); }
