@@ -14,9 +14,9 @@
 // PL: useState trzyma komunikat błędu wylogowania.
 // EN: useState keeps the sign-out error message.
 import { useState } from 'react';
-// PL: Link do innego ekranu i przejście z kodu.
-// EN: A link to another screen and the navigation from code.
-import { Link, useNavigate } from 'react-router';
+// PL: Link do innego ekranu.
+// EN: A link to another screen.
+import { Link } from 'react-router';
 // PL: Sesja i wylogowanie, przez drzwi modułu auth.
 // EN: The session and the sign-out, through the auth module door.
 import { signOutStudent, useAuthSession } from '../auth';
@@ -51,8 +51,8 @@ function LinkRow({ icon, to, label, hint }: { icon: IconName; to: string; label:
 }
 
 /**
- * PL: Rysuje ekran profilu. Wylogowanie kasuje sesję i dane w telefonie, a potem przenosi na ekran logowania.
- * EN: Draws the profile screen. Signing out deletes the session and the data on the phone, then takes the student to the sign-in screen.
+ * PL: Rysuje ekran profilu. Wylogowanie kasuje sesję i dane w telefonie, a wspólny kod przenosi potem na ekran logowania.
+ * EN: Draws the profile screen. Signing out deletes the session and the data on the phone, and the shared code then takes the student to the sign-in screen.
  *
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
@@ -61,16 +61,14 @@ export function ProfileHome() {
   // EN: The session gives the e-mail address, the profile gives the name and class (from the server or the saved copy).
   const session = useAuthSession();
   const profile = useProfile().data;
-  const navigate = useNavigate();
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const email = session.status === 'signed-in' ? session.student.email : '';
   const name = profile?.name ?? '';
 
-  /** PL: Wylogowuje i przenosi na logowanie; przy błędzie pokazuje komunikat z modułu auth. EN: Signs out and goes to sign-in; on an error shows the message from the auth module. */
+  /** PL: Wylogowuje; po sukcesie wspólny kod (clearQueryData) sam przenosi na logowanie, a przy błędzie pokazujemy komunikat z modułu auth. EN: Signs out; after success the shared code (clearQueryData) takes the student to sign-in itself, and on an error we show the message from the auth module. */
   async function handleSignOut(): Promise<void> {
     const result = await signOutStudent();
-    if (result.ok) navigate('/auth/email', { replace: true });
-    else setSignOutError(result.message);
+    if (!result.ok) setSignOutError(result.message);
   }
 
   return (

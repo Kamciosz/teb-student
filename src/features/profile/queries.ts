@@ -82,10 +82,10 @@ export function useDeleteAccount() {
     mutationFn: deleteAccount,
     networkMode: 'always',
     onSuccess: () => {
-      // PL: Konto nie istnieje, więc wyczyść zapisane dane (profil, zgłoszenia, sesję) i wygląd.
-      // EN: The account no longer exists, so clear the saved data (profile, reports, session) and the look.
-      clearQueryData();
+      // PL: Konto nie istnieje, więc najpierw wróć do wyglądu domyślnego, a potem wyczyść zapisane dane (profil, zgłoszenia, sesję). clearQueryData na końcu przenosi na ekran logowania.
+      // EN: The account no longer exists, so first go back to the default look, then clear the saved data (profile, reports, session). clearQueryData finally takes the student to the sign-in screen.
       resetLook();
+      clearQueryData();
     },
   });
 }
