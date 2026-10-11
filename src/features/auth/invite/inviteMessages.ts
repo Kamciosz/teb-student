@@ -5,8 +5,9 @@
  * @author Szymon
  * @since 2026-10-11
  * @used_by src/features/auth/invite/inviteApi.ts::describeError
- * @used_by src/features/auth/invite/SignUpForm.tsx::TEXT
- * @used_by src/features/auth/invite/SignInForm.tsx::TEXT
+ * @used_by src/features/auth/invite/AuthInviteScreen.tsx::MESSAGES
+ * @used_by src/features/auth/invite/SignUpForm.tsx::SCREEN_TEXT
+ * @used_by src/features/auth/invite/SignInForm.tsx::MESSAGES
  * @used_by src/features/auth/invite/inviteMessages.test.ts::describeError
  */
 

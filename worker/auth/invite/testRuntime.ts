@@ -8,7 +8,6 @@
  * @uses worker/auth/invite/routes.ts::createAuthInviteApp
  * @uses worker/auth/email/testRuntime.ts::createTestRuntime
  * @used_by worker/auth/invite/routes.test.ts::createTestInvite
- * @used_by worker/auth/invite/inviteCodes.test.ts::issueInviteCode
  */
 
 import { env } from 'cloudflare:workers';

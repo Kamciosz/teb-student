@@ -7,6 +7,7 @@
  * @used_by worker/auth/invite/createInviteAuth.ts::createInviteAuth
  * @used_by worker/auth/invite/inviteCodes.ts::issueInviteCode
  * @used_by worker/auth/invite/routes.ts::createAuthInviteApp
+ * @used_by worker/auth/invite/login.ts::normalizeLogin
  */
 
 /**

@@ -6,8 +6,8 @@
  * @since 2026-10-11
  * @uses worker/auth/invite/routes.ts::authInviteApp
  * @uses src/features/auth/invite/inviteMessages.ts::describeError
- * @used_by src/features/auth/invite/useInviteSubmit.ts::signUpWithCode
- * @used_by src/features/auth/invite/useInviteSubmit.ts::signInWithPassword
+ * @used_by src/features/auth/invite/SignUpForm.tsx::signUpWithCode
+ * @used_by src/features/auth/invite/SignInForm.tsx::signInWithPassword
  */
 
 import { describeError, MESSAGES, type ClientError } from './inviteMessages';

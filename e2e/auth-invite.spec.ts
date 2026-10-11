@@ -72,6 +72,13 @@ test.describe('ekran 1.3 / screen 1.3', () => {
     await expect(submit).toBeEnabled();
   });
 
+  test('formularz jest widoczny, gdy sesja się nie ładuje (brak sieci) / the form is visible when the session does not load (no network)', async ({ page }) => {
+    await page.route('**/api/auth/email/get-session', () => new Promise(() => {}));
+    await page.goto('/auth/invite');
+    await expect(page.getByRole('heading', { name: 'Masz kod od Samorządu?' })).toBeVisible();
+    await expect(page.getByLabel('Kod zaproszenia', { exact: true })).toBeVisible();
+  });
+
   test('strzałka wraca do logowania szkolnym adresem / the arrow goes back to the school address sign-in', async ({ page }) => {
     await stubServer(page);
     await page.goto('/auth/invite');

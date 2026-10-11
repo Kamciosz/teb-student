@@ -35,10 +35,8 @@ export function AuthInviteScreen() {
   // EN: A signed-in student has nothing to do here, so they go to the dashboard.
   if (session.status === 'signed-in') return <Navigate to="/" replace />;
 
-  // PL: Dopóki serwer nie odpowie, pokaż pustą kolumnę zamiast formularza, żeby ten nie mignął zalogowanemu.
-  // EN: Until the server answers, show an empty column instead of the form, so it does not flash for a signed-in student.
-  if (session.status === 'loading') return <main className="auth-invite" data-subtrack="1b" aria-busy="true" />;
-
+  // PL: Formularz pokazujemy w każdym innym stanie, także gdy sesja się jeszcze ładuje albo nie ma sieci: zapytanie o sesję bez internetu czeka, więc pusty ekran trwałby bez końca. Zalogowany uczeń zobaczy formularz najwyżej na chwilę przed przeniesieniem.
+  // EN: We show the form in every other state, also while the session is still loading or there is no network: the session query waits without internet, so a blank screen would last forever. A signed-in student sees the form at most for a moment before being redirected.
   return (
     <main className="auth-invite" data-subtrack="1b">
       <header className="auth-invite__bar">
