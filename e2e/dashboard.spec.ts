@@ -74,6 +74,9 @@ test('licznik do dzwonka pokazuje pusty stan / the bell countdown shows the empt
 // EN: Every tile leads to the right screen.
 test('kafelki prowadzą do właściwych ekranów / the tiles lead to the right screens', async ({ page }) => {
   await mockDashboard(page, FULL);
+  // PL: Ekrany docelowe pytają swoje moduły. Bez sesji dostałyby 401 i wspólna bramka przeniosłaby na logowanie, więc podstawiamy puste odpowiedzi 200: sprawdzamy tylko adres.
+  // EN: The target screens ask their modules. Without a session they would get 401 and the shared gate would move to sign-in, so we stub empty 200 answers: we only check the address.
+  await page.route(/\/api\/(news|surveys|reports)\//, (route) => route.fulfill({ json: {} }));
   const cases: { name: string; open: () => Promise<void>; path: string }[] = [
     { name: 'Ważne', open: () => page.getByRole('link', { name: /Jutro 3TA/ }).click(), path: '/news/feed/wazne-3ta' },
     { name: 'Wypełnij', open: () => page.getByRole('link', { name: 'Wypełnij' }).click(), path: '/surveys/vote/dodatkowe' },
@@ -85,7 +88,7 @@ test('kafelki prowadzą do właściwych ekranów / the tiles lead to the right s
   for (const item of cases) {
     await page.goto('/');
     await item.open();
-    expect(new URL(page.url()).pathname, item.name).toBe(item.path);
+    await expect(page, item.name).toHaveURL(new RegExp(`${item.path}$`));
   }
 });
 
