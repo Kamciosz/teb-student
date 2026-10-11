@@ -12,7 +12,7 @@
 
 // PL: Funkcje testowe Vitest.
 // EN: Vitest test functions.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 // PL: Klient zapytań do budowy klientów testowych.
 // EN: The query client, to build test clients.
 import { QueryClient } from '@tanstack/react-query';
@@ -121,5 +121,21 @@ describe('czyszczenie przy wylogowaniu / clearing on sign-out', () => {
 
     expect(() => clearQueryData(client, broken)).not.toThrow();
     expect(client.getQueryCache().getAll()).toHaveLength(0);
+  });
+
+  it('na końcu przenosi na logowanie, także po błędzie pamięci / ends with the move to sign-in, also after a storage error', () => {
+    const broken: QueryStorage = {
+      getItem: () => null,
+      setItem: () => undefined,
+      removeItem: () => {
+        throw new Error('zablokowane / blocked');
+      },
+    };
+    const redirect = vi.fn();
+
+    clearQueryData(createFilledClient(), createStubStorage(), redirect);
+    clearQueryData(createFilledClient(), broken, redirect);
+
+    expect(redirect).toHaveBeenCalledTimes(2);
   });
 });
