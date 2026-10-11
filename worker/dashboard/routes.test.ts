@@ -1,6 +1,6 @@
 /**
- * PL: Test routera pulpitu na prawdziwej bazie D1 z testowego Workera i prawdziwych routerach aktualności, zgłoszeń i ankiet. Sprawdza dane kafelków dla zalogowanego ucznia, pusty wynik bez sesji i bez danych oraz to, że awaria bazy nie psuje całej odpowiedzi.
- * EN: Test of the dashboard router on a real D1 database of the test Worker and the real news, reports and surveys routers. Checks the tile data for a signed-in student, the empty result without a session and without data, and that a database failure does not break the whole answer.
+ * PL: Test routera pulpitu na prawdziwej bazie D1 z testowego Workera i prawdziwych routerach aktualności, zgłoszeń i ankiet. Sprawdza dane kafelków dla zalogowanego ucznia, pusty wynik bez sesji i bez danych oraz to, że awaria modułu daje błąd 502, a nie puste kafelki.
+ * EN: Test of the dashboard router on a real D1 database of the test Worker and the real news, reports and surveys routers. Checks the tile data for a signed-in student, the empty result without a session and without data, and that a module failure gives a 502 error, not empty tiles.
  *
  * @author Kacper
  * @since 2026-10-11
@@ -192,16 +192,16 @@ describe('GET / bez sesji i przy awarii / without a session and on a failure', (
     expect(data.report).toBeNull();
   });
 
-  // PL: Gdy baza nie działa, moduły odpowiadają błędem, a pulpit nadal oddaje 200 z pustymi kafelkami i bez szczegółów błędu.
-  // EN: When the database does not work, the modules answer with an error, and the dashboard still returns 200 with empty tiles and no error details.
-  it('przy awarii bazy oddaje 200 i puste kafelki bez szczegółów / on a database failure returns 200 and empty tiles without details', async () => {
+  // PL: Gdy baza nie działa, moduł aktualności odpowiada błędem, a pulpit oddaje 502 bez szczegółów. To nie może wyglądać jak „nic nie ma”, bo telefon zastąpiłby zapisane dane pustymi kafelkami.
+  // EN: When the database does not work, the news module answers with an error, and the dashboard returns 502 without details. It must not look like "nothing there", because the phone would replace the saved data with empty tiles.
+  it('przy awarii bazy oddaje 502 bez szczegółów, a nie puste kafelki / on a database failure returns 502 without details, not empty tiles', async () => {
     const failing = { DB: { prepare: () => { throw new Error('tajny szczegół bazy'); } } };
 
     const response = await ask(null, failing);
     const text = await response.text();
 
-    expect(response.status).toBe(200);
-    expect(JSON.parse(text)).toEqual({ important: null, announcements: [], survey: null, report: null });
+    expect(response.status).toBe(502);
+    expect(JSON.parse(text)).toEqual({ error: 'upstream_error' });
     expect(text).not.toContain('tajny');
   });
 });

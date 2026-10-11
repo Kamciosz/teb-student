@@ -5,7 +5,7 @@
 - Pulpit zamiast ekranu „W budowie”: powitanie z datą i cztery kafelki. „Ważne” pokazuje najnowszy wpis typu „Ważne”, „Ankieta” aktywną ankietę z liczbą dni do końca i przyciskiem „Wypełnij”, „Zgłoszenia” zgłoszenie ucznia z paskiem etapu, „Ogłoszenia” trzy ostatnie wpisy z datami.
 - Każdy kafelek prowadzi do właściwego ekranu: wpis, ankieta, „Moje zgłoszenia”, lista aktualności.
 - Pusty kafelek mówi, że nic nie ma, zamiast znikać. Licznik do dzwonka pokazuje pusty stan, bo podtor 6 jeszcze nie istnieje.
-- Serwer pulpitu `GET /api/dashboard`: jedno zapytanie zbiera dane z routerów aktualności, zgłoszeń i ankiet (tylko przez ich `index.ts`). Aktualności są publiczne, a ankieta i zgłoszenia bez sesji dają pusty kafelek. Awaria jednego modułu nie psuje reszty pulpitu.
+- Serwer pulpitu `GET /api/dashboard`: jedno zapytanie zbiera dane z routerów aktualności, zgłoszeń i ankiet (tylko przez ich `index.ts`). Aktualności są publiczne, a ankieta i zgłoszenia bez sesji dają pusty kafelek. Błąd któregokolwiek modułu daje odpowiedź 502, a telefon pokazuje wtedy komunikat albo zapisane dane, a nie puste kafelki.
 - Pulpit zapisuje się w telefonie: bez internetu widać ostatnio pobrane dane, a po nieudanym odświeżeniu napis „Nie udało się odświeżyć pulpitu. Pokazujemy zapisane dane.”.
 
 ## Log AI

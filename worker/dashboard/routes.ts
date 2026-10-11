@@ -40,24 +40,24 @@ type InnerRouter = { request: (input: string, init: RequestInit, env: Env) => Re
  * @param router - PL: router modułu. EN: the module router.
  * @param env - PL: środowisko Workera z bazą. EN: the Worker environment with the database.
  * @param cookie - PL: nagłówek `cookie` zapytania pulpitu albo undefined. EN: the `cookie` header of the dashboard request, or undefined.
- * @returns PL: odpowiedź JSON modułu albo null, gdy moduł odmówił (na przykład 401 bez sesji) lub odpowiedział błędem. EN: the module's JSON answer, or null when it refused (for example 401 without a session) or answered with an error.
+ * @returns PL: odpowiedź JSON modułu albo null, gdy moduł odmówił z powodu braku sesji (401): to pusty kafel, a nie błąd. EN: the module's JSON answer, or null when the module refused because of no session (401): that is an empty tile, not an error.
+ * @throws PL: Error, gdy moduł odpowiedział innym błędem albo odpowiedź nie jest JSON. EN: an Error when the module answered with another error or the answer is not JSON.
  */
 async function readList(router: InnerRouter, env: Env, cookie: string | undefined): Promise<unknown> {
-  try {
-    // PL: Zapytanie o listę, z ciasteczkiem tylko gdy jest.
-    // EN: Ask for the list, with the cookie only when there is one.
-    const response = await router.request('/', { headers: cookie === undefined ? {} : { cookie } }, env);
-    return response.ok ? await response.json() : null;
-  } catch {
-    // PL: Odpowiedź bez JSON to taki sam brak danych jak błąd: kafel pokaże pusty stan.
-    // EN: An answer without JSON is the same lack of data as an error: the tile shows the empty state.
-    return null;
-  }
+  // PL: Zapytanie o listę, z ciasteczkiem tylko gdy jest.
+  // EN: Ask for the list, with the cookie only when there is one.
+  const response = await router.request('/', { headers: cookie === undefined ? {} : { cookie } }, env);
+
+  // PL: Brak sesji to pusty kafel. Każdy inny błąd modułu to błąd pulpitu, żeby telefon nie wziął go za „nic nie ma” i nie zastąpił nim zapisanych danych.
+  // EN: No session is an empty tile. Every other module error is a dashboard error, so the phone does not take it for "nothing there" and does not replace the saved data with it.
+  if (response.status === 401) return null;
+  if (!response.ok) throw new Error(`Module answered ${response.status}`);
+  return await response.json();
 }
 
 /**
- * PL: Router pulpitu. Nie wymaga sesji: aktualności są publiczne, a zgłoszenia i ankiety bez sesji dają pusty kafel (moduły odpowiadają 401).
- * EN: The dashboard router. It does not require a session: the news is public, and reports and surveys without a session give an empty tile (the modules answer 401).
+ * PL: Router pulpitu. Nie wymaga sesji: aktualności są publiczne, a zgłoszenia i ankiety bez sesji dają pusty kafel (moduły odpowiadają 401). Błąd któregokolwiek modułu to odpowiedź 502 bez szczegółów.
+ * EN: The dashboard router. It does not require a session: the news is public, and reports and surveys without a session give an empty tile (the modules answer 401). An error of any module is a 502 answer without details.
  */
 export const dashboardApp = new Hono<{ Bindings: Env }>();
 
@@ -67,14 +67,20 @@ dashboardApp.get('/', async (context) => {
   // PL: Zapytaj trzy moduły naraz.
   // EN: Ask the three modules at once.
   const cookie = context.req.header('cookie');
-  const [news, surveys, reports] = await Promise.all([
-    readList(newsFeedApp, context.env, cookie),
-    readList(surveysVoteApp, context.env, cookie),
-    readList(reportsStudentApp, context.env, cookie),
-  ]);
+  try {
+    const [news, surveys, reports] = await Promise.all([
+      readList(newsFeedApp, context.env, cookie),
+      readList(surveysVoteApp, context.env, cookie),
+      readList(reportsStudentApp, context.env, cookie),
+    ]);
 
-  // PL: Złóż odpowiedź z danych kafelków.
-  // EN: Build the answer from the tile data.
-  const data: DashboardData = { ...summarizeNews(news), survey: summarizeSurveys(surveys), report: summarizeReports(reports) };
-  return context.json(data);
+    // PL: Złóż odpowiedź z danych kafelków.
+    // EN: Build the answer from the tile data.
+    const data: DashboardData = { ...summarizeNews(news), survey: summarizeSurveys(surveys), report: summarizeReports(reports) };
+    return context.json(data);
+  } catch {
+    // PL: Błąd modułu to 502 bez szczegółów. Telefon pokaże komunikat albo zapisane dane, a nie puste kafelki.
+    // EN: A module error is 502 without details. The phone shows a message or the saved data, not empty tiles.
+    return context.json({ error: 'upstream_error' }, 502);
+  }
 });
