@@ -1,0 +1,482 @@
+/**
+ * PL: Wygląd ekranów ankiet w panelu (podtor 5b): kafle, przyciski, pola, wiersze odpowiedzi A–E, pasek wyboru, paski wyników i komunikaty. Kolory tylko przez var(--...) z tokens.css. Układ działa od 320 px szerokości: nic nie ma stałej szerokości poza ikonami i literami, a tekst się zawija.
+ *     Bez :has(), color-mix(), @property i zagnieżdżonego CSS, bo iOS 15 i starsze Androidy ich nie znają.
+ * EN: The look of the survey panel screens (subtrack 5b): tiles, buttons, fields, option rows A–E, the choice bar, result bars and messages. Colors only through var(--...) from tokens.css. The layout works from 320 px width: nothing has a fixed width except icons and letters, and the text wraps.
+ *     No :has(), color-mix(), @property or nested CSS, because iOS 15 and older Androids do not know them.
+ *
+ * @author Jakub
+ * @since 2026-10-12
+ * @uses src/shared/styles/tokens.css::var(--...)
+ * @used_by src/features/surveys/admin/SurveysAdminScreen.tsx::import
+ */
+
+/* PL: Kolumna ekranu: do 430 px, na środku, z odstępem 16 px po bokach. Tekst się zawija, żeby nic nie wystawało przy 320 px.
+   EN: The screen column: up to 430 px, centered, with 16 px on the sides. Text wraps, so nothing sticks out at 320 px. */
+.sa {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 12px 16px 24px;
+  background: var(--bg);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* PL: Ekran z przyciskiem na dole: kolumna na całą wysokość.
+   EN: A screen with a button at the bottom: a column of the full height. */
+.sa--flow {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.sa--center {
+  justify-content: space-between;
+}
+
+/* PL: Górny pasek: „Wstecz” i tytuł.
+   EN: The top bar: "Wstecz" and the title. */
+.sa-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sa-top__title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--t-lg);
+}
+
+/* PL: Przycisk z samą ikoną: pole dotyku 44 × 44 px.
+   EN: An icon-only button: a 44 × 44 px touch target. */
+.sa-icon-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.sa-icon-button:disabled {
+  color: var(--line);
+  cursor: not-allowed;
+}
+
+.sa-label {
+  margin: 16px 0 8px;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.sa-label--tight {
+  margin: 0;
+}
+
+.sa-h2 {
+  display: block;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.sa-small {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.sa-small--ink {
+  margin-top: 8px;
+  color: var(--ink);
+}
+
+.sa-lead {
+  margin-top: 8px;
+  color: var(--ink-2);
+}
+
+/* PL: Lista kafli: bez punktorów, odstęp 12 px.
+   EN: The tile list: no bullets, 12 px gap. */
+.sa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+}
+
+.sa-section + .sa-section {
+  margin-top: 24px;
+}
+
+/* PL: Kafel. Wersja „row” to link: treść po lewej i szewron po prawej.
+   EN: A tile. The "row" version is a link: the content on the left and a chevron on the right. */
+.sa-tile {
+  display: block;
+  padding: 16px;
+  border-radius: var(--r);
+  background: var(--tile);
+  color: var(--ink);
+}
+
+.sa-tile--row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  text-decoration: none;
+}
+
+.sa-tile--row svg {
+  flex: none;
+  color: var(--ink-2);
+}
+
+.sa-tile--center {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.sa-tile__main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* PL: Przyciski: duży cel dotyku 48 px. Link i przycisk wyglądają tak samo.
+   EN: Buttons: a large 48 px touch target. A link and a button look the same. */
+.sa-button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  padding: 0 20px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sa-button--primary {
+  margin-top: 0;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.sa-button--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.sa-button:disabled {
+  border-color: var(--line);
+  background: var(--tile-2);
+  color: var(--ink-2);
+  cursor: not-allowed;
+}
+
+/* PL: Dolny przycisk przykleja się do dołu ekranu i omija pasek gestów iPhone'a.
+   EN: The bottom button sticks to the bottom of the screen and clears the iPhone gesture bar. */
+.sa-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 16px 0 calc(16px + var(--safe-bottom));
+  background: var(--bg);
+}
+
+/* PL: Notatka z ikoną i komunikat błędu.
+   EN: A note with an icon and the error message. */
+.sa-note {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 16px 0 12px;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.sa-note svg,
+.sa-field-error svg {
+  flex: none;
+}
+
+.sa-message {
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: var(--r);
+  background: var(--tile-2);
+}
+
+.sa-message__text {
+  display: flex;
+  gap: 8px;
+  font-size: var(--t-sm);
+}
+
+.sa-message__text svg {
+  flex: none;
+}
+
+/* PL: Formularz: kolumna, która rośnie do końca ekranu, żeby przycisk był na dole.
+   EN: The form: a column that grows to the end of the screen, so the button sits at the bottom. */
+.sa-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.sa-question {
+  margin-top: 12px;
+}
+
+.sa-question__head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 8px;
+}
+
+/* PL: Pole tekstu: 48 px wysokości, ramka w kolorze linii, a w fokusie w kolorze tekstu.
+   EN: The text field: 48 px tall, a border in the line color, and in focus in the text color. */
+.sa-input,
+.sa-option__input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+}
+
+.sa-input:focus-visible,
+.sa-option__input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.sa-input[aria-invalid='true'] {
+  border-color: var(--ink);
+}
+
+.sa-field-error {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  font-size: var(--t-sm);
+}
+
+/* PL: Wiersze odpowiedzi: litera w ramce, pole tekstu i „x”.
+   EN: The option rows: a boxed letter, the text field and "x". */
+.sa-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  list-style: none;
+}
+
+.sa-option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 4px 0 12px;
+  border-radius: var(--r);
+  background: var(--tile);
+}
+
+.sa-option__input {
+  flex: 1;
+  border-color: transparent;
+  background: transparent;
+}
+
+.sa-letter {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--ink-2);
+  border-radius: var(--r-sm);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+/* PL: Pasek wyboru czasu trwania: prawdziwe przyciski opcji są ukryte, a rysujemy napis.
+   EN: The duration choice bar: the real radio buttons are hidden, and we draw the label. */
+.sa-duration {
+  margin-top: 8px;
+  border: 0;
+}
+
+.sa-duration legend {
+  padding: 0;
+}
+
+.sa-segment {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r);
+  background: var(--tile);
+}
+
+.sa-segment__choice {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.sa-segment__choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.sa-segment__text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: var(--r-sm);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sa-segment__choice input:checked + .sa-segment__text {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.sa-segment__choice input:focus-visible + .sa-segment__text {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* PL: Wyniki: nagłówek, pasek odcinków do progu, duża liczba, paski odpowiedzi.
+   EN: The results: the header, the segment bar to the threshold, the big number, the option bars. */
+.sa-results-head {
+  margin: 8px 0 24px;
+}
+
+.sa-segments {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+
+.sa-segments__part {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.sa-segments__part--on {
+  background: var(--ink);
+}
+
+.sa-numxl {
+  font-size: var(--t-num);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sa-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+  list-style: none;
+}
+
+.sa-result__row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.sa-key {
+  flex: none;
+  width: 16px;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.sa-result__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.sa-result__value {
+  flex: none;
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.sa-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.sa-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+/* PL: Ekran „Tylko dla Samorządu”: treść na środku, kółko z kłódką.
+   EN: The "Tylko dla Samorządu" screen: content in the middle, a circle with a lock. */
+.sa-done {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  margin-top: 80px;
+  text-align: center;
+}
+
+.sa-done__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  margin-bottom: 16px;
+  border-radius: 999px;
+  background: var(--tile-2);
+}
+
+.sa-done__title {
+  font-size: var(--t-xl);
+  font-weight: 800;
+}
