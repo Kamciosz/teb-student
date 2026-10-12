@@ -6,10 +6,12 @@
  * @since 2026-10-09
  * @uses worker/auth/email/index.ts::authEmailApp
  * @uses worker/auth/invite/index.ts::authInviteApp
+ * @uses worker/auth/invite/index.ts::issueInviteCode
  * @uses worker/auth/email/index.ts::deleteAuthStudentData
  * @uses worker/auth/email/index.ts::requireStudent
  * @used_by worker/mounts.ts::API_MOUNTS
  * @used_by worker/shared/accountDeletion.ts::STUDENT_DATA_DELETERS
+ * @used_by worker/admin/…::issueInviteCode (panel Samorządu, podtor 8 / Student Council panel, subtrack 8)
  * @used_by worker/<moduł>/…::requireStudent (routery innych podtorów / routers of other subtracks)
  */
 
@@ -21,6 +23,6 @@ export { authEmailApp, deleteAuthStudentData } from './email';
 // EN: The session check for the routers of other modules. Usage: new Hono<StudentEnv>().use(requireStudent); the student (id and email) comes from context.get('student'). Without a session it answers 401.
 export { requireStudent, type Student, type StudentEnv } from './email';
 
-// PL: Router podtoru 1b (kody zaproszeń, login i hasło).
-// EN: The router of subtrack 1b (invitation codes, login and password).
-export { authInviteApp } from './invite';
+// PL: Router podtoru 1b (kody zaproszeń, login i hasło) i funkcja tworząca kod zaproszenia dla panelu Samorządu (issueInviteCode(env.DB) → { code, expiresAt }).
+// EN: The router of subtrack 1b (invitation codes, login and password) and the function that creates an invitation code for the Student Council panel (issueInviteCode(env.DB) → { code, expiresAt }).
+export { authInviteApp, issueInviteCode } from './invite';
