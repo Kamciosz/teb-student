@@ -1,27 +1,36 @@
 /**
- * PL: Kasuje dane ucznia z modułu admin przy usunięciu konta: role ucznia w panelu i wydane przez niego kody zaproszeń. Na razie nic nie robi, bo moduł nie ma jeszcze tabel z danymi ucznia. Profil (podtor 7) wywoła ją przez listę z worker/shared/accountDeletion.ts.
- * EN: Deletes the student's data from the admin module when the account is deleted: the student's roles in the panel and the invitation codes they issued. It does nothing for now, because the module has no tables with student data yet. Profile (subtrack 7) calls it through the list in worker/shared/accountDeletion.ts.
+ * PL: Kasuje dane ucznia z modułu admin przy usunięciu konta: jego role w panelu. Kody zaproszeń zostają, bo nie mają wystawcy (leżą w tabeli verification podtoru 1b bez numeru ucznia). Profil (podtor 7) wywoła funkcję przez listę z worker/shared/accountDeletion.ts.
+ * EN: Deletes the student's data from the admin module when the account is deleted: their panel roles. Invitation codes stay, because they have no issuer (they live in the verification table of subtrack 1b without a student id). Profile (subtrack 7) calls the function through the list in worker/shared/accountDeletion.ts.
  *
  * @author Bohdan
  * @since 2026-10-09
+ * @uses worker/db/schema/admin.ts::panelRoles
  * @uses worker/shared/index.ts::DeleteStudentDataInput
  * @used_by worker/admin/index.ts::deleteAdminStudentData
  * @used_by worker/admin/deleteStudentData.test.ts::deleteAdminStudentData
  */
 
+// PL: Warunek „równa się” i klient bazy do kasowania.
+// EN: The "equals" condition and the database client for deleting.
+import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/d1';
+// PL: Tabela ról w panelu.
+// EN: The panel roles table.
+import { panelRoles } from '../db/schema/admin';
 // PL: Typ danych wejściowych, wspólny dla wszystkich modułów.
 // EN: The input type shared by all modules.
 import type { DeleteStudentDataInput } from '../shared';
 
 /**
- * PL: Kasuje dane ucznia z modułu admin.
- * EN: Deletes the student's data from the admin module.
+ * PL: Kasuje dane ucznia z modułu admin. Role innych uczniów zostają.
+ * EN: Deletes the student's data from the admin module. Other students' roles stay.
  *
- * @param _input - PL: numer ucznia, którego dane znikają. Gdy funkcja zacznie kasować dane, zmienia nazwę na input. EN: the id of the student whose data goes away. When the function starts deleting data, it is renamed to input.
+ * @param input - PL: numer ucznia, którego dane znikają, i baza. EN: the id of the student whose data goes away, and the database.
  * @returns PL: obietnica, która kończy się po skasowaniu. EN: a promise that settles after the deletion.
- * @throws PL: na razie nigdy. Po dodaniu zapytań błąd bazy ma przerwać usuwanie konta. EN: never for now. After queries are added, a database error must stop the account deletion.
+ * @throws PL: przy błędzie bazy, żeby usuwanie konta się zatrzymało. EN: on a database error, so the account deletion stops.
  */
-export async function deleteAdminStudentData(_input: DeleteStudentDataInput): Promise<void> {
-  // PL: Moduł nie ma jeszcze tabel z danymi ucznia, więc nie ma czego kasować. Agent podtoru 8 dopisze tu zapytanie z warunkiem WHERE po numerze ucznia i zmieni test.
-  // EN: The module has no tables with student data yet, so there is nothing to delete. The agent of subtrack 8 adds a query with a WHERE condition on the student id here and changes the test.
+export async function deleteAdminStudentData(input: DeleteStudentDataInput): Promise<void> {
+  // PL: Skasuj role tylko tego ucznia (warunek WHERE po numerze ucznia).
+  // EN: Delete only this student's roles (a WHERE condition on the student id).
+  await drizzle(input.db).delete(panelRoles).where(eq(panelRoles.userId, input.userId));
 }
