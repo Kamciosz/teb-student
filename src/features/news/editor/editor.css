@@ -1,0 +1,371 @@
+/**
+ * PL: Style kreatora „Nowy wpis” (podtor 3b): pasek z postępem, chipy typu, pola, pasek narzędzi, pole edytora, podgląd i przyciski. Kolory tylko przez var(--...) z tokens.css. Bez color-mix(), zagnieżdżania CSS, :has() i 100dvh, bo iOS 15.0–15.3 ich nie zna. Wszystko zawija się do następnego wiersza, więc przy 320 px nic nie wychodzi poza ekran.
+ * EN: Styles of the "Nowy wpis" wizard (subtrack 3b): the progress bar, the type chips, the fields, the toolbar, the editor field, the preview and the buttons. Colors only through var(--...) from tokens.css. No color-mix(), CSS nesting, :has() or 100dvh, because iOS 15.0–15.3 does not know them. Everything wraps to the next row, so at 320 px nothing goes off the screen.
+ *
+ * @author Szymon
+ * @since 2026-10-12
+ * @uses src/shared/styles/tokens.css::var(--...)
+ * @used_by src/features/news/editor/NewsEditorScreen.tsx::import
+ */
+
+/* PL: Kolumna ekranu: do 430 px, na środku, z marginesem 16 px i bezpiecznym dolnym marginesem iPhone'a. min-width: 0 pozwala dzieciom się zwężać.
+   EN: The screen column: up to 430 px, centered, with a 16 px margin and the iPhone safe bottom margin. min-width: 0 lets the children shrink. */
+.editor-screen {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 16px 16px calc(24px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-wrap: anywhere;
+}
+
+.editor-step {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* PL: Pasek: strzałka, tytuł i numer kroku w jednym wierszu, pod nim pasek postępu.
+   EN: The bar: the arrow, the title and the step number in one row, the progress bar under them. */
+.editor-top {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.editor-top__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.editor-top__back {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--r);
+  background: var(--tile);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: var(--t-lg);
+  cursor: pointer;
+}
+
+.editor-top__title {
+  flex: 1;
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.editor-top__step {
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
+.editor-progress {
+  display: flex;
+  gap: 4px;
+}
+
+.editor-progress__bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.editor-progress__bar--on {
+  background: var(--ink);
+}
+
+/* PL: Chipy typu: zawijane, wysokość 44 px, wybrany ma kolor akcentu.
+   EN: The type chips: wrapped, 44 px tall, the chosen one has the accent color. */
+.editor-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.editor-chip {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.editor-chip[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* PL: Etykieta i pole. Rozmiar 16 px, żeby iPhone nie przybliżał ekranu po dotknięciu pola.
+   EN: The label and the field. 16 px size, so the iPhone does not zoom the screen after a tap on the field. */
+.editor-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.editor-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+  color: var(--ink);
+  font-size: var(--t-md);
+  font-weight: 400;
+}
+
+/* PL: Edytor: kafel z paskiem narzędzi na górze (ekran 5.2).
+   EN: The editor: a tile with the toolbar on top (screen 5.2). */
+.editor-box {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+  overflow: hidden;
+}
+
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.editor-tool {
+  min-width: 44px;
+  height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.editor-tool[aria-pressed='true'] {
+  background: var(--tile-2);
+}
+
+.editor-tool:disabled {
+  color: var(--ink-2);
+  cursor: default;
+}
+
+/* PL: Okienko adresu pod paskiem.
+   EN: The address panel under the toolbar. */
+.editor-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--tile-2);
+}
+
+.editor-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* PL: Pole tekstu: co najmniej 140 px wysokości, zawijanie długich słów.
+   EN: The text field: at least 140 px tall, long words wrap. */
+.editor-surface {
+  min-height: 140px;
+  padding: 16px;
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.editor-counter {
+  padding: 0 16px 12px;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  text-align: right;
+}
+
+/* PL: Treść w polu edytora i w podglądzie: ta sama typografia co u ucznia (akapity, nagłówki, listy, cytat, linki).
+   EN: The content in the editor field and in the preview: the same typography as for the student (paragraphs, headings, lists, the quote, links). */
+.editor-surface > * + *,
+.editor-preview .ProseMirror > * + * {
+  margin-top: 12px;
+}
+
+.editor-surface h2,
+.editor-preview h2 {
+  font-size: var(--t-lg);
+  line-height: 1.2;
+}
+
+.editor-surface h3,
+.editor-preview h3 {
+  font-size: var(--t-md);
+}
+
+.editor-surface ul,
+.editor-surface ol,
+.editor-preview ul,
+.editor-preview ol {
+  padding-left: 24px;
+}
+
+.editor-surface blockquote,
+.editor-preview blockquote {
+  padding-left: 12px;
+  border-left: 3px solid var(--line);
+  color: var(--ink-2);
+}
+
+.editor-surface a,
+.editor-preview a {
+  color: var(--accent);
+}
+
+/* PL: Własne elementy w edytorze i podglądzie: film (miniatura), zdjęcie z podpisem, karta linku i źródła. Obrazy nigdy nie są szersze niż kolumna.
+   EN: The custom elements in the editor and the preview: a video (a thumbnail), a photo with a caption, a link card and sources. Images are never wider than the column. */
+.editor-video img,
+.editor-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--r);
+}
+
+.editor-figure figcaption {
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
+.editor-card,
+.editor-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile-2);
+  font-size: var(--t-sm);
+}
+
+.editor-sources ul {
+  padding-left: 20px;
+}
+
+/* PL: Zaznaczony klocek (film, zdjęcie, karta, źródła) ma obrys w kolorze akcentu.
+   EN: A selected block (a video, a photo, a card, sources) has an accent-colored outline. */
+.ProseMirror-selectednode {
+  outline: 3px solid var(--focus);
+}
+
+/* PL: Podgląd wpisu: kafel jak wpis u ucznia (znacznik, źródło z chwilą, tytuł, treść).
+   EN: The entry preview: a tile like the student's entry (the tag, the source with the moment, the title, the content). */
+.editor-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--r);
+  background: var(--tile);
+}
+
+.editor-entry__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-entry__meta small {
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
+.editor-entry__title {
+  font-size: var(--t-xl);
+  line-height: 1.12;
+}
+
+.editor-tag {
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  background: var(--ink);
+  color: var(--bg);
+  font-size: var(--t-xs);
+  font-weight: 700;
+}
+
+/* PL: Przyciski: wypełniony i z samym obrysem. Wysokość co najmniej 48 px.
+   EN: Buttons: filled and outline only. At least 48 px tall. */
+.editor-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.editor-button--wide {
+  width: 100%;
+}
+
+.editor-button--outline {
+  border: 2px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+}
+
+.editor-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* PL: Komunikaty: błąd, napis o ładowaniu i potwierdzenie zapisu.
+   EN: Messages: an error, the loading label and the save confirmation. */
+.editor-error {
+  color: var(--ink);
+  font-size: var(--t-sm);
+  font-weight: 600;
+}
+
+.editor-note {
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
+.editor-note .editor-button {
+  margin-top: 12px;
+}
+
+.editor-done {
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
