@@ -4,7 +4,9 @@
  *
  * @author Szymon
  * @since 2026-10-12
- * @used_by src/features/news/editor/ContentStep.tsx::MAX_TEXT_CHARS
+ * @used_by src/features/news/editor/RichEditor.tsx::MAX_TEXT_CHARS
+ * @used_by src/features/news/editor/ContentStep.tsx::MAX_TITLE_CHARS
+ * @used_by src/features/news/editor/AddressPanel.tsx::MAX_SOURCES
  * @used_by worker/news/editor/validateBody.ts::MAX_BODY_BYTES
  * @used_by worker/news/editor/validateEntry.ts::MAX_TITLE_CHARS
  */

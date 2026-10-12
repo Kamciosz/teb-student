@@ -138,9 +138,9 @@ test('link javascript: jest odrzucany, a link https dostaje rel i target / a jav
 // PL: Film z YouTube: adres z parametrami daje węzeł z samym identyfikatorem, bez ramki.
 // EN: A YouTube video: an address with parameters gives a node with the id only, without a frame.
 test('film z YouTube zapisuje sam identyfikator i nie wstawia ramki / a YouTube video stores only the id and inserts no frame', async ({ page }) => {
-  let body: { content: { type: string; attrs?: { videoId: string } }[] } | null = null;
+  const sent: { body?: { content: { type: string; attrs?: { videoId: string } }[] } } = {};
   await page.route(ENTRIES, (route) => {
-    body = route.request().postDataJSON().body;
+    sent.body = route.request().postDataJSON().body;
     return route.fulfill({ status: 201, json: { id: 'abc' } });
   });
   await fillEntry(page, 'Zobacz film.');
@@ -152,7 +152,7 @@ test('film z YouTube zapisuje sam identyfikator i nie wstawia ramki / a YouTube 
   await expect(page.locator('.editor-preview iframe')).toHaveCount(0);
   await page.getByRole('button', { name: 'Opublikuj' }).click();
   await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
-  expect(body?.content.find((node) => node.type === 'youtube')?.attrs).toEqual({ videoId: 'dQw4w9WgXcQ' });
+  expect(sent.body?.content.find((node) => node.type === 'youtube')?.attrs).toEqual({ videoId: 'dQw4w9WgXcQ' });
 });
 
 // PL: Lista z Worda (akapity z mso-list) staje się prawdziwą listą po wklejeniu.

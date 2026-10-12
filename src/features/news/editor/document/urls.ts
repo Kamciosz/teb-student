@@ -4,9 +4,10 @@
  *
  * @author Szymon
  * @since 2026-10-12
- * @used_by src/features/news/editor/document/nodes.ts::YOUTUBE_ID_PATTERN
- * @used_by src/features/news/editor/document/extensions.ts::NEWS_EXTENSIONS
+ * @used_by src/features/news/editor/document/nodes.ts::socialNetworkName
+ * @used_by src/features/news/editor/AddressPanel.tsx::parseYouTubeId
  * @used_by worker/news/editor/validateBody.ts::normalizeHttpsUrl
+ * @used_by src/features/news/editor/document/urls.test.ts::parseYouTubeId
  */
 
 // PL: Identyfikator filmu YouTube: dokładnie 11 znaków: litery, cyfry, myślnik i podkreślenie. Taki sam wzór ma czytnik w podtorze 3a.

@@ -6,7 +6,6 @@
  * @since 2026-10-12
  * @uses src/features/news/editor/texts.ts::TO_AGREE
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::sendEntry
- * @used_by src/features/news/editor/api.test.ts::sendEntry
  */
 
 import { TO_AGREE } from './texts';

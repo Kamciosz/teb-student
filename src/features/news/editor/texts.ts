@@ -4,8 +4,13 @@
  *
  * @author Szymon
  * @since 2026-10-12
- * @used_by src/features/news/editor/NewsEditorScreen.tsx::SCREEN
+ * @used_by src/features/news/editor/TypeStep.tsx::SCREEN
+ * @used_by src/features/news/editor/ContentStep.tsx::SCREEN
+ * @used_by src/features/news/editor/PreviewStep.tsx::SCREEN
  * @used_by src/features/news/editor/EditorToolbar.tsx::TO_AGREE
+ * @used_by src/features/news/editor/AddressPanel.tsx::TO_AGREE
+ * @used_by src/features/news/editor/NewsEditorScreen.tsx::TO_AGREE
+ * @used_by src/features/news/editor/api.ts::TO_AGREE
  */
 
 /**
