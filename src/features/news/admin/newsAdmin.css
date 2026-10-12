@@ -1,0 +1,46 @@
+/*
+ * PL: Style ekranu „Wpisy” w panelu (podtor 3c). Kolory tylko przez zmienne z tokens.css. Klasy mają przedrostek na-.
+ * EN: Styles of the "Wpisy" panel screen (subtrack 3c). Colors only through variables from tokens.css. Classes have the na- prefix.
+ */
+
+/* PL: Kolumna ekranu do 430 px, z miejscem na dolny przycisk. EN: The screen column up to 430 px, with room for the bottom button. */
+.na-screen { max-width: 430px; margin: 0 auto; padding: 12px 16px calc(176px + env(safe-area-inset-bottom)); }
+.na-icon { width: 20px; height: 20px; flex: none; }
+.na-small { font-size: var(--t-sm); color: var(--ink-2); }
+
+/* PL: Górny pasek: wstecz i tytuł. EN: The top bar: back and title. */
+.na-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.na-top h1 { flex: 1; font-size: var(--t-md); font-weight: 700; }
+.na-icon-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--tile); display: grid; place-items: center; color: var(--ink); text-decoration: none; }
+
+/* PL: Lista kafli wpisów. EN: The entry tile list. */
+.na-list { list-style: none; display: grid; gap: 12px; }
+.na-tile { display: flex; flex-direction: column; gap: 8px; background: var(--tile); border-radius: var(--r); padding: 16px; }
+.na-tile-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.na-title { font-size: var(--t-lg); line-height: 1.2; font-weight: 700; overflow-wrap: anywhere; }
+.na-tag { background: var(--tile-2); border-radius: var(--r-sm); padding: 4px 8px; font-size: var(--t-xs); font-weight: 700; }
+.na-tag-status { background: var(--ink); color: var(--bg); }
+.na-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.na-actions .na-btn { flex: 1 1 120px; }
+
+/* PL: Pusty stan i komunikat błędu. EN: The empty state and the error message. */
+.na-empty { display: grid; justify-items: center; gap: 8px; background: var(--tile); border-radius: var(--r); padding: 24px; text-align: center; }
+.na-empty .na-icon { width: 28px; height: 28px; color: var(--ink-2); }
+.na-empty h2 { font-size: var(--t-lg); font-weight: 700; }
+.na-empty p { font-size: var(--t-sm); color: var(--ink-2); }
+.na-notice { display: flex; align-items: flex-start; gap: 8px; background: var(--tile-2); border-radius: var(--r); padding: 12px; margin-bottom: 12px; font-size: var(--t-sm); }
+.na-notice span { flex: 1; overflow-wrap: anywhere; }
+
+/* PL: Przyciski: główny w kolorze akcentu, obrys dla czynności mniej ważnych. EN: Buttons: the main one in the accent color, an outline for less important actions. */
+.na-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border: 0; border-radius: var(--r); padding: 12px 16px; background: var(--accent); color: var(--on-accent); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+.na-btn-outline { background: none; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink-2); }
+.na-btn:disabled { background: var(--tile-2); color: var(--ink-2); box-shadow: none; cursor: not-allowed; }
+
+/* PL: Dolny przycisk „Nowy wpis” z uwagą nad nim. EN: The bottom "Nowy wpis" button with the note above it. */
+.na-cta { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); width: min(calc(100% - 32px), 398px); display: grid; gap: 12px; }
+
+/* PL: Arkusz potwierdzenia usunięcia: przyciemnienie i arkusz od krawędzi do krawędzi (wzór: ekran 6.3c). EN: The delete confirmation sheet: the dimmed area and an edge-to-edge sheet (model: screen 6.3c). */
+.na-backdrop { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg-deep) 72%, transparent); display: flex; align-items: flex-end; justify-content: center; z-index: 10; }
+.na-sheet { width: min(100%, 430px); display: grid; gap: 12px; background: var(--tile-2); border-radius: 24px 24px 0 0; padding: 24px 24px calc(24px + env(safe-area-inset-bottom)); }
+.na-sheet h2 { font-size: var(--t-lg); font-weight: 700; }
+.na-sheet p { color: var(--ink-2); overflow-wrap: anywhere; }
