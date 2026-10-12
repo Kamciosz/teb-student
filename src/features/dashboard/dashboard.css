@@ -1,0 +1,255 @@
+/**
+ * PL: Wygląd pulpitu (podtor 9): rząd powitania, kafle, liczby, pasek etapów, wiersze ogłoszeń i komunikaty. Kolory tylko przez var(--...) z tokens.css. Układ działa od 320 px szerokości. Bez :has(), color-mix(), zagnieżdżonego CSS i 100dvh, bo iOS 15.0–15.3 ich nie zna.
+ * EN: The look of the dashboard (subtrack 9): the greeting row, tiles, numbers, the stage bar, announcement rows and messages. Colors only through var(--...) from tokens.css. The layout works from 320 px width. No :has(), color-mix(), nested CSS or 100dvh, because iOS 15.0–15.3 does not know them.
+ *
+ * @author Kacper
+ * @since 2026-10-11
+ * @uses src/shared/styles/tokens.css::var(--...)
+ * @used_by src/features/dashboard/DashboardScreen.tsx::import
+ */
+
+/* PL: Kolumna ekranu: do 430 px, na środku, z marginesem 16 px i dolnym marginesem bezpiecznym iPhone'a. Długie słowa łamią się, więc przy 320 px nic nie wychodzi poza ekran.
+   EN: The screen column: up to 430 px, centered, with a 16 px margin and the iPhone safe bottom margin. Long words break, so at 320 px nothing goes off the screen. */
+.dash {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 16px 16px calc(24px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* PL: Rząd powitania: data i „Cześć” po lewej, licznik do dzwonka po prawej, wyrównane do dołu. Rząd się zawija, gdy brakuje miejsca.
+   EN: The greeting row: the date and "Cześć" on the left, the bell countdown on the right, aligned to the bottom. The row wraps when there is no room. */
+.dash-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 0 4px 4px;
+}
+
+/* PL: Licznik do dzwonka, wyrównany do prawej.
+   EN: The bell countdown, aligned to the right. */
+.dash-bell {
+  text-align: right;
+}
+
+.dash-bell__num {
+  font-size: var(--t-xl);
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* PL: Kafel: tło, zaokrąglenie 12 px i odstęp 16 px. Kafel-link nie ma podkreślenia.
+   EN: The tile: background, a 12 px radius and 16 px padding. A link tile has no underline. */
+.dash-tile {
+  display: block;
+  padding: 16px;
+  border-radius: var(--r);
+  background: var(--tile);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* PL: Kafel „Ważne” ma jaśniejsze tło niż pozostałe.
+   EN: The "Ważne" tile has a lighter background than the others. */
+.dash-tile--important {
+  background: var(--tile-2);
+}
+
+/* PL: Kafle z liczbą: góra z liczbą, dół przyklejony do spodu kafla, a oba kafle w rzędzie mają tę samą wysokość.
+   EN: Tiles with a number: the top with the number, the bottom stuck to the tile bottom, and both tiles in a row have the same height. */
+.dash-tile--split {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* PL: Dwa kafle obok siebie. minmax(0, 1fr) pozwala kaflom się zwęzić, więc długi tytuł ich nie rozpycha.
+   EN: Two tiles side by side. minmax(0, 1fr) lets the tiles shrink, so a long title does not push them wider. */
+.dash-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* PL: Na bardzo wąskim ekranie kafle stoją jeden pod drugim, bo w połowie szerokości tekst byłby ściśnięty.
+   EN: On a very narrow screen the tiles stack, because at half width the text would be cramped. */
+@media (max-width: 359px) {
+  .dash-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* PL: Etykieta kafla: mały, pogrubiony, przygaszony tekst. Etykieta „split” ma wiek wpisu po prawej.
+   EN: The tile label: a small, bold, muted text. The "split" label has the entry age on the right. */
+.dash-label {
+  display: block;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.dash-label--split {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* PL: Podpis liczby ma kolor tekstu, a etykieta-link prowadzi do listy i ma pole dotyku co najmniej 44 px.
+   EN: The number caption has the text color, and the link label leads to the list and has a touch area of at least 44 px. */
+.dash-label--ink {
+  color: var(--ink);
+}
+
+.dash-label--link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -12px 0 -4px;
+  text-decoration: none;
+}
+
+/* PL: Ikona obok etykiety stoi w jednej linii z tekstem.
+   EN: The icon next to the label stands in line with the text. */
+.dash-icon {
+  vertical-align: -2px;
+}
+
+/* PL: Tytuł kafla „Ważne”, odstęp 8 px nad nim.
+   EN: The title of the "Ważne" tile, 8 px above it. */
+.dash-title {
+  margin-top: 8px;
+  font-size: var(--t-lg);
+  line-height: 1.2;
+}
+
+/* PL: Mały tekst pod tytułem i w kaflach.
+   EN: The small text under the title and in the tiles. */
+.dash-small {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+/* PL: Duża liczba kafla: dni do końca ankiety i liczba zgłoszeń w trakcie.
+   EN: The big tile number: days left of the survey and the number of reports in progress. */
+.dash-num {
+  display: block;
+  margin-top: 12px;
+  font-size: var(--t-num);
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* PL: Dół kafla z liczbą: opis i przycisk albo pasek etapów.
+   EN: The bottom of a tile with a number: a caption and a button or the stage bar. */
+.dash-bottom {
+  display: block;
+}
+
+/* PL: Treść zgłoszenia ma najwyżej trzy linie, żeby kafel nie urósł od długiego opisu (do 500 znaków).
+   EN: The report text has at most three lines, so the tile does not grow from a long description (up to 500 characters). */
+.dash-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* PL: Przycisk z obrysem: pole dotyku 44 px, na całą szerokość kafla.
+   EN: The outline button: a 44 px touch area, the full tile width. */
+.dash-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 0 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* PL: Pasek trzech etapów: segmenty o wysokości 4 px, zapalone mają kolor tekstu, a pozostałe kolor linii.
+   EN: The three-stage bar: segments 4 px high, the lit ones have the text color and the others the line color. */
+.dash-stages {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.dash-stages i {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.dash-stages .dash-stages__on {
+  background: var(--ink);
+}
+
+/* PL: Podpis etapu pod paskiem.
+   EN: The stage caption under the bar. */
+.dash-caption {
+  display: block;
+  margin-top: 8px;
+  font-size: var(--t-xs);
+}
+
+/* PL: Napis pustego kafla.
+   EN: The empty tile label. */
+.dash-empty {
+  margin-top: 8px;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+/* PL: Lista wierszy ogłoszeń bez punktorów.
+   EN: The announcement row list without bullets. */
+.dash-rows {
+  list-style: none;
+}
+
+/* PL: Wiersz: data i tytuł, linia nad każdym oprócz pierwszego, pole dotyku co najmniej 44 px.
+   EN: A row: a date and a title, a line above every one except the first, a touch area of at least 44 px. */
+.dash-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.dash-rows li:first-child .dash-row {
+  border-top: 0;
+}
+
+/* PL: Data wiersza ma stałą szerokość, żeby tytuły zaczynały się w jednej linii.
+   EN: The row date has a fixed width, so the titles start on one line. */
+.dash-row__date {
+  flex: none;
+  min-width: 40px;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+/* PL: Komunikat o stanie pobierania nad kafelkami.
+   EN: The fetching state message above the tiles. */
+.dash-note {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
