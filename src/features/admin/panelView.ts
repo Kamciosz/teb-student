@@ -1,11 +1,11 @@
 /**
- * PL: Logika widoku panelu bez rysowania: który wiersz widzi jaka rola, jak brzmi podpis roli, kiedy ekran jest dozwolony i jak wygląda data końca kodu. Teksty są z docs/projekt/EKRANY.md, przepływ 6 (ekrany 6.1a–6.1c, 6.2b).
+ * PL: Logika widoku panelu bez rysowania: który wiersz widzi jaka rola, jak brzmi podpis roli, jak porównać role i jak wygląda data końca kodu. Teksty są z docs/projekt/EKRANY.md, przepływ 6 (ekrany 6.1a–6.1c, 6.2b).
  * EN: The panel view logic without drawing: which row each role sees, how the role caption reads, when a screen is allowed and what the code end date looks like. The texts come from docs/projekt/EKRANY.md, flow 6 (screens 6.1a–6.1c, 6.2b).
  *
  * @author Szymon
  * @since 2026-10-12
  * @used_by src/features/admin/PanelHome.tsx::PANEL_SECTIONS
- * @used_by src/features/admin/AdminLayout.tsx::canOpenPanelPath
+ * @used_by src/features/admin/PanelGate.tsx::isLevelEnough
  * @used_by src/features/admin/InvitesScreen.tsx::formatInviteEnd
  * @used_by src/features/admin/queries.ts::panelEntryFor
  * @used_by src/features/admin/panelView.test.ts::PANEL_SECTIONS
@@ -116,23 +116,6 @@ export function panelEntryFor(level: PanelLevel | null): PanelEntry | null {
   // EN: The editorial team has "Panel redakcji", the other roles "Panel Samorządu", with a badge of their role.
   const badges: Record<PanelLevel, string> = { admin: 'Administrator', council: 'Samorząd', editor: 'Redakcja' };
   return { label: level === 'editor' ? 'Panel redakcji' : 'Panel Samorządu', badge: badges[level] };
-}
-
-/**
- * PL: Sprawdza, czy rola może otworzyć ekran pod danym adresem. Samorząd i administrator otwierają każdy ekran ramy, a redakcja tylko Wpisy i ekran główny panelu. To tylko wygoda: uprawnienia sprawdza serwer.
- * EN: Checks whether a role can open the screen at the given address. The Council and the administrator open every frame screen, while the editorial team only Entries and the panel main screen. This is only a convenience: the server checks permissions.
- *
- * @param level - PL: rola ucznia. EN: the student's role.
- * @param pathname - PL: adres otwartego ekranu. EN: the address of the open screen.
- * @returns PL: true, gdy ekran wolno pokazać. EN: true when the screen may be shown.
- */
-export function canOpenPanelPath(level: PanelLevel, pathname: string): boolean {
-  // PL: Samorząd i administrator widzą wszystko.
-  // EN: The Council and the administrator see everything.
-  if (isLevelEnough(level, 'council')) return true;
-  // PL: Redakcja: ekran główny panelu albo Wpisy (/news/admin i wszystko pod spodem).
-  // EN: The editorial team: the panel main screen or Entries (/news/admin and everything below it).
-  return /^\/admin\/?$/.test(pathname) || /^\/news\/admin(\/|$)/.test(pathname);
 }
 
 /**

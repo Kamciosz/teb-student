@@ -4,15 +4,15 @@
 
 - Role w panelu Samorządu: redakcja gazetki (tylko Wpisy), Samorząd (Wpisy, Zgłoszenia, Ankiety, Kody zaproszeń) i administrator (wszystko). Tabela `panel_roles` i dane testowe (`seed-user-1` to administrator, `seed-user-2` ma rolę redakcji).
 - Sprawdzanie roli dla routerów innych modułów: `requirePanelRole('editor' | 'council' | 'admin')` z `worker/admin/index.ts`. Bez sesji odpowiada 401, bez wystarczającej roli 403.
-- Rama panelu z bramką roli. Uczeń bez roli widzi ekran 6.1d „Tylko dla Samorządu”, a redakcja tylko Wpisy i ekran główny panelu.
-- Ekran główny panelu (6.1b, 6.1c): podpis roli i wiersze części panelu, które widzi ta rola. Menu z listy `PANEL_MENU_ITEMS` zastąpiły wiersze z projektu („Wpisy”, „Kody zaproszeń”).
+- Bramka roli `PanelGate` na ekranach panelu (eksportowana z `src/features/admin/index.ts`). Uczeń bez roli widzi ekran 6.1d „Tylko dla Samorządu”, a redakcja tylko Wpisy i ekran główny panelu.
+- Ekran główny panelu (6.1b, 6.1c): podpis roli i wiersze części panelu, które widzi ta rola.
 - Kody zaproszeń (6.2): przycisk „Wydaj kod” (kod ważny 14 dni), kafel „Nowy kod” z datą końca i kopiowaniem. Bez internetu przycisk jest nieaktywny. `POST /api/admin/invites` wywołuje `issueInviteCode` z modułu logowania.
 - `GET /api/admin/me` oddaje rolę ucznia. `usePanelEntry` z `src/features/admin/index.ts` daje profilowi wiersz „Panel Samorządu” albo „Panel redakcji” ze znacznikiem (ekran 6.1a).
 - Kasowanie ról ucznia przy usunięciu konta (`deleteAdminStudentData`).
 
 ### Zmienione
 
-- Menu panelu nad ekranami zniknęło z ramy (zastępuje je ekran główny panelu). `PANEL_MENU_ITEMS` w `src/shared` nie jest już używane przez panel.
+- Menu panelu zostaje w ramie, bo `e2e/news-admin.spec.ts` (podtor 3c) oczekuje go bez sesji. Bramka roli jest więc na ekranach, nie w ramie.
 
 ## Log AI
 

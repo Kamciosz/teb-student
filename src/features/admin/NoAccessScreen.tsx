@@ -1,12 +1,12 @@
 /**
- * PL: Ekran 6.1d „Panel: brak dostępu” z docs/projekt/EKRANY.md: uczeń bez roli (albo redakcja pod adresem, który nie jest Wpisami) widzi tylko ten komunikat i przycisk powrotu na pulpit. To wygoda, a nie zabezpieczenie: uprawnienia sprawdza serwer (403).
- * EN: Screen 6.1d "Panel: brak dostępu" from docs/projekt/EKRANY.md: a student without a role (or the editorial team at an address that is not Entries) sees only this message and a button back to the dashboard. This is a convenience, not a protection: the server checks permissions (403).
+ * PL: Ekran 6.1d „Panel: brak dostępu” z docs/projekt/EKRANY.md: uczeń bez roli (albo z rolą za niską dla ekranu) widzi tylko ten komunikat i przycisk powrotu na pulpit. To wygoda, a nie zabezpieczenie: uprawnienia sprawdza serwer (403).
+ * EN: Screen 6.1d "Panel: brak dostępu" from docs/projekt/EKRANY.md: a student without a role (or with a role too low for the screen) sees only this message and a button back to the dashboard. This is a convenience, not a protection: the server checks permissions (403).
  *
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/admin/icons.tsx::Icon
  * @uses src/features/admin/ScreenTop.tsx::ScreenTop
- * @used_by src/features/admin/AdminLayout.tsx::NoAccessScreen
+ * @used_by src/features/admin/PanelGate.tsx::NoAccessScreen
  */
 
 import { Link } from 'react-router';

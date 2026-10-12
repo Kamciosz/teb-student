@@ -71,7 +71,7 @@ test('Samorząd widzi ekran główny panelu / the Council sees the panel main sc
   await expect(page.getByRole('link', { name: /Zgłoszenia Zmieniaj etap zgłoszeń\./ })).toHaveAttribute('href', '/reports/admin');
   await expect(page.getByRole('link', { name: /Ankiety Twórz ankiety i czytaj wyniki\./ })).toHaveAttribute('href', '/surveys/admin');
   await expect(page.getByRole('link', { name: /Kody zaproszeń Wydaj kod osobie bez szkolnej skrzynki\./ })).toHaveAttribute('href', '/admin/kody');
-  await expect(page.locator('main[data-subtrack="8"] li')).toHaveCount(4);
+  await expect(page.locator('.ad-tile li')).toHaveCount(4);
 });
 
 // PL: Redakcja widzi tylko Wpisy z notatką, a adres kodów kończy się ekranem 6.1d.
@@ -82,7 +82,7 @@ test('redakcja widzi tylko Wpisy / the editorial team sees only Entries', async 
 
   await expect(page.getByText('Panel redakcji', { exact: true })).toBeVisible();
   await expect(page.getByText('Twoja rola: redakcja gazetki')).toBeVisible();
-  await expect(page.locator('main[data-subtrack="8"] li')).toHaveCount(1);
+  await expect(page.locator('.ad-tile li')).toHaveCount(1);
   await expect(page.getByText('Redakcja publikuje tylko wpisy. Resztę panelu widzi Samorząd.')).toBeVisible();
 
   // PL: Ręcznie wpisany adres kodów: redakcja dostaje 6.1d.

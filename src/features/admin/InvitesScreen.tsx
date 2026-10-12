@@ -30,7 +30,7 @@ export function InvitesScreen() {
   const invite = issue.data;
 
   return (
-    <>
+    <main className="ad-screen" data-subtrack="8">
       <ScreenTop title="Kody zaproszeń" backTo="/admin" backLabel="Wróć do panelu" />
       {/* PL: Do kogo jest kod i jak długo działa. EN: Who the code is for and how long it works. */}
       <p className="ad-lead">Dla osób bez szkolnej skrzynki. Kod działa jeden raz i jest ważny 14 dni.</p>
@@ -58,6 +58,6 @@ export function InvitesScreen() {
           Wydaj kod
         </button>
       </div>
-    </>
+    </main>
   );
 }

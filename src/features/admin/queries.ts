@@ -7,7 +7,7 @@
  * @uses src/features/admin/api.ts::fetchPanelLevel
  * @uses src/features/admin/api.ts::issueInvite
  * @uses src/features/admin/panelView.ts::panelEntryFor
- * @used_by src/features/admin/AdminLayout.tsx::usePanelLevel
+ * @used_by src/features/admin/PanelGate.tsx::usePanelLevel
  * @used_by src/features/admin/PanelHome.tsx::usePanelLevel
  * @used_by src/features/admin/InvitesScreen.tsx::useIssueInvite
  * @used_by src/features/admin/index.ts::usePanelEntry

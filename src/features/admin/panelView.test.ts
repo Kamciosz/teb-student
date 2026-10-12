@@ -1,6 +1,6 @@
 /**
- * PL: Testy logiki widoku panelu: wiersze widoczne dla każdej roli (macierz z ekranów 6.1b i 6.1c), podpisy ról, wiersz wejścia w profilu (6.1a), dostęp redakcji tylko do Wpisów i data końca kodu.
- * EN: Tests of the panel view logic: the rows visible to each role (the matrix from screens 6.1b and 6.1c), the role captions, the profile entry row (6.1a), the editorial team's access to Entries only and the code end date.
+ * PL: Testy logiki widoku panelu: wiersze widoczne dla każdej roli (macierz z ekranów 6.1b i 6.1c), podpisy ról, wiersz wejścia w profilu (6.1a), porównanie ról i data końca kodu.
+ * EN: Tests of the panel view logic: the rows visible to each role (the matrix from screens 6.1b and 6.1c), the role captions, the profile entry row (6.1a), the role comparison and the code end date.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { canOpenPanelPath, formatInviteEnd, panelEntryFor, roleCaption, sectionsFor } from './panelView';
+import { formatInviteEnd, isLevelEnough, panelEntryFor, roleCaption, sectionsFor } from './panelView';
 
 // PL: Grupa testów wierszy ekranu głównego.
 // EN: A group of tests for the main screen rows.
@@ -42,21 +42,15 @@ describe('roleCaption i panelEntryFor / roleCaption and panelEntryFor', () => {
   });
 });
 
-// PL: Grupa testów dostępu do ekranów ramy.
-// EN: A group of tests for access to the frame screens.
-describe('canOpenPanelPath', () => {
-  it('redakcja otwiera ekran główny i Wpisy, a resztę nie / the editorial team opens the main screen and Entries, not the rest', () => {
-    expect(canOpenPanelPath('editor', '/admin')).toBe(true);
-    expect(canOpenPanelPath('editor', '/news/admin')).toBe(true);
-    expect(canOpenPanelPath('editor', '/news/admin/nowy')).toBe(true);
-    expect(canOpenPanelPath('editor', '/admin/kody')).toBe(false);
-    expect(canOpenPanelPath('editor', '/reports/admin')).toBe(false);
-    expect(canOpenPanelPath('editor', '/news/administracja')).toBe(false);
-  });
-
-  it('Samorząd i administrator otwierają każdy ekran / the Council and the administrator open every screen', () => {
-    expect(canOpenPanelPath('council', '/surveys/admin')).toBe(true);
-    expect(canOpenPanelPath('admin', '/admin/kody')).toBe(true);
+// PL: Grupa testów porównania ról po stronie telefonu: te same reguły co na serwerze.
+// EN: A group of tests for comparing roles on the phone side: the same rules as on the server.
+describe('isLevelEnough', () => {
+  it('rola wyższa wystarcza tam, gdzie niższa / a higher role is enough where a lower one is', () => {
+    expect(isLevelEnough('editor', 'editor')).toBe(true);
+    expect(isLevelEnough('editor', 'council')).toBe(false);
+    expect(isLevelEnough('council', 'editor')).toBe(true);
+    expect(isLevelEnough('council', 'admin')).toBe(false);
+    expect(isLevelEnough('admin', 'council')).toBe(true);
   });
 });
 

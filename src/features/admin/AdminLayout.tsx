@@ -1,56 +1,47 @@
 /**
- * PL: Rama panelu Samorządu: bramka roli przed ekranami panelu. Ekrany podtorów 3c, 4b, 5b i 8 leżą w tej ramie. Uczeń bez roli widzi ekran 6.1d „Tylko dla Samorządu”, a redakcja tylko Wpisy i ekran główny panelu. Rola jest czytana z serwera (z pamięci telefonu, gdy nie ma internetu). To wygoda: uprawnienia sprawdza serwer (requirePanelRole).
- * EN: The Student Council panel frame: the role gate in front of the panel screens. The screens of subtracks 3c, 4b, 5b and 8 live in this frame. A student without a role sees screen 6.1d "Tylko dla Samorządu", and the editorial team only Entries and the panel main screen. The role is read from the server (from the phone's storage when there is no internet). This is a convenience: the server checks permissions (requirePanelRole).
+ * PL: Rama panelu Samorządu: menu panelu nad treścią i miejsce na ekran wybranej części panelu. Rama niczego nie pobiera i nie sprawdza roli, bo ekran 3c pokazuje się w niej bez logowania (e2e/news-admin.spec.ts). Rolę sprawdza PanelGate, który każdy ekran panelu zakłada sam, a uprawnienia i tak sprawdza serwer (requirePanelRole). Ekrany części panelu leżą w katalogach ich modułów (wpisy, zgłoszenia, ankiety).
+ * EN: The Student Council panel frame: the panel menu above the content and a place for the screen of the chosen panel section. The frame fetches nothing and checks no role, because the 3c screen shows in it without signing in (e2e/news-admin.spec.ts). The role is checked by PanelGate, which every panel screen puts on itself, and the server checks permissions anyway (requirePanelRole). The screens of the panel sections live in the directories of their modules (entries, reports, surveys).
  *
  * @author Bohdan
  * @since 2026-10-09
- * @uses src/features/admin/queries.ts::usePanelLevel
- * @uses src/features/admin/panelView.ts::canOpenPanelPath
- * @uses src/features/admin/NoAccessScreen.tsx::NoAccessScreen
+ * @uses src/shared/index.ts::PANEL_MENU_ITEMS
  * @used_by src/features/admin/index.ts::AdminLayout
  */
 
-import { Outlet, useLocation } from 'react-router';
+// PL: NavLink to link, który sam oznacza bieżący ekran. Outlet to miejsce na ekran wybranej części panelu.
+// EN: NavLink is a link that marks the current screen itself. Outlet is the place for the screen of the chosen panel section.
+import { NavLink, Outlet } from 'react-router';
+// PL: Lista wpisów menu panelu.
+// EN: The list of panel menu entries.
+import { PANEL_MENU_ITEMS } from '../../shared';
+// PL: Style panelu (menu ramy i ekrany podtoru 8).
+// EN: The panel styles (the frame menu and the subtrack 8 screens).
 import './admin.css';
-import { Icon } from './icons';
-import { NoAccessScreen } from './NoAccessScreen';
-import { canOpenPanelPath } from './panelView';
-import { usePanelLevel } from './queries';
 
 /**
- * PL: Rysuje ramę panelu: ekran wybrany przez router albo ekran braku dostępu. Nie zmienia nic poza ekranem.
- * EN: Draws the panel frame: the screen the router chose or the no-access screen. It changes nothing outside the screen.
+ * PL: Rysuje ramę panelu: menu i wybrany ekran. Nie pobiera danych i nie zmienia nic poza ekranem. Uprawnienia sprawdza serwer, a nie ta rama.
+ * EN: Draws the panel frame: the menu and the chosen screen. It fetches no data and changes nothing outside the screen. The server checks permissions, not this frame.
  *
  * @returns PL: drzewo elementów ramy. EN: the tree of frame elements.
  */
 export function AdminLayout() {
-  const { pathname } = useLocation();
-  const query = usePanelLevel();
-  const level = query.data;
-
-  // PL: Rola jeszcze nie przyszła. Bez internetu i bez zapisu w telefonie zapytanie czeka w uśpieniu (paused), więc pokazujemy błąd, a nie wieczne wczytywanie.
-  // EN: The role has not arrived yet. Without internet and without a saved copy the query waits paused, so we show the error and not endless loading.
-  if (level === undefined) {
-    const hasFailed = query.isError || query.fetchStatus === 'paused';
-    return (
-      <main className="ad-screen" data-subtrack="8">
-        {hasFailed ? (
-          <p className="ad-error" role="alert">
-            <Icon name="triangle-alert" />
-            Nie udało się pobrać panelu. Spróbuj ponownie za chwilę.
-          </p>
-        ) : (
-          <p className="ad-empty" role="status">Wczytuję panel…</p>
-        )}
-      </main>
-    );
-  }
-
-  // PL: Uczeń bez roli albo redakcja pod adresem spoza Wpisów dostaje ekran 6.1d.
-  // EN: A student without a role or the editorial team at an address outside Entries gets screen 6.1d.
-  if (level === null || !canOpenPanelPath(level, pathname)) return <NoAccessScreen />;
-
-  // PL: Rola wystarcza: pokaż ekran wybrany przez router.
-  // EN: The role is enough: show the screen the router chose.
-  return <Outlet />;
+  // PL: Zwróć ramę: menu panelu i pod nim ekran, który wybrał router.
+  // EN: Return the frame: the panel menu and, under it, the screen the router chose.
+  return (
+    <>
+      {/* PL: Menu panelu. Nazwa „Panel Samorządu” jest z nazwy przepływu w docs/projekt/EKRANY.md. EN: The panel menu. The name "Panel Samorządu" comes from the flow name in docs/projekt/EKRANY.md. */}
+      <nav className="ad-menu" aria-label="Panel Samorządu">
+        <ul>
+          {/* PL: Po jednym linku na wpis menu. EN: One link per menu entry. */}
+          {PANEL_MENU_ITEMS.map((item) => (
+            <li key={item.path}>
+              <NavLink className="ad-menu-link" to={item.path}>{item.label}</NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      {/* PL: Tu router wstawia ekran wybranej części panelu. EN: The router puts the screen of the chosen panel section here. */}
+      <Outlet />
+    </>
+  );
 }

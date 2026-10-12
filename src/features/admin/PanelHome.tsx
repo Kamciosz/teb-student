@@ -29,7 +29,7 @@ export function PanelHome() {
   if (!level) return null;
 
   return (
-    <>
+    <main className="ad-screen" data-subtrack="8">
       {/* PL: Redakcja ma „Panel redakcji”, reszta „Panel Samorządu”. EN: The editorial team has "Panel redakcji", the rest "Panel Samorządu". */}
       <ScreenTop title={level === 'editor' ? 'Panel redakcji' : 'Panel Samorządu'} backTo="/profile" backLabel="Wróć do profilu" />
       {/* PL: Podpis roli ucznia. EN: The student's role caption. */}
@@ -56,6 +56,6 @@ export function PanelHome() {
           Redakcja publikuje tylko wpisy. Resztę panelu widzi Samorząd.
         </p>
       ) : null}
-    </>
+    </main>
   );
 }
