@@ -1,0 +1,74 @@
+/**
+ * PL: Kafel jednego wpisu na liście panelu: znacznik typu, znacznik stanu (szkic albo opublikowany), źródło z datą, tytuł i przyciski „Opublikuj” (tylko szkic) oraz „Usuń”. Kafel wpisu ucznia (podtor 3a) nie jest wystawiony przez drzwi modułu, więc to własny kafel panelu, nie podgląd wpisu.
+ * EN: The tile of one entry on the panel list: the type tag, the status tag (draft or published), the source with the date, the title and the "Opublikuj" (draft only) and "Usuń" buttons. The student entry tile (subtrack 3a) is not exposed through the module door, so this is the panel's own tile, not an entry preview.
+ *
+ * @author Szymon
+ * @since 2026-10-12
+ * @uses src/features/news/admin/icons.tsx::Icon
+ * @used_by src/features/news/admin/NewsAdminScreen.tsx::EntryTile
+ */
+
+import type { PanelEntry } from './api';
+import { Icon } from './icons';
+import { SCREEN, TO_AGREE } from './texts';
+
+/**
+ * PL: Dane kafla.
+ * EN: The tile data.
+ */
+export type EntryTileProps = {
+  /** PL: Wpis do pokazania. EN: The entry to show. */
+  entry: PanelEntry;
+  /** PL: Czy przyciski zapisu są wyłączone (brak internetu albo trwa zapis). EN: Whether the write buttons are off (no internet or a save in progress). */
+  isLocked: boolean;
+  /** PL: Publikacja szkicu. EN: Publishing the draft. */
+  onPublish: () => void;
+  /** PL: Prośba o usunięcie, po której arkusz pyta o potwierdzenie. EN: A request to delete, after which the sheet asks for confirmation. */
+  onDelete: () => void;
+};
+
+/**
+ * PL: Zamienia chwilę ISO na krótką datę „dzień.miesiąc” w czasie telefonu.
+ * EN: Turns an ISO moment into a short "day.month" date in the phone's time.
+ *
+ * @param iso - PL: chwila jako tekst ISO 8601. EN: the moment as an ISO 8601 string.
+ * @returns PL: na przykład „9.10”. EN: for example "9.10".
+ */
+function shortDate(iso: string): string {
+  const date = new Date(iso);
+  return `${date.getDate()}.${date.getMonth() + 1}`;
+}
+
+/**
+ * PL: Rysuje kafel wpisu.
+ * EN: Draws the entry tile.
+ *
+ * @param props - PL: wpis i funkcje przycisków. EN: the entry and the button functions.
+ * @returns PL: drzewo elementów kafla. EN: the tree of tile elements.
+ */
+export function EntryTile({ entry, isLocked, onPublish, onDelete }: EntryTileProps) {
+  const isDraft = entry.status === 'draft';
+  // PL: Znaczniki, źródło z datą (szkic nie ma daty), tytuł i rząd przycisków.
+  // EN: The tags, the source with the date (a draft has no date), the title and the row of buttons.
+  return (
+    <li className="na-tile">
+      <div className="na-tile-head">
+        <span className="na-tag">{SCREEN.types[entry.type] ?? entry.type}</span>
+        <span className="na-tag na-tag-status">{isDraft ? TO_AGREE.draft : TO_AGREE.published}</span>
+        <span className="na-small">{entry.publishedAt ? `${entry.source} · ${shortDate(entry.publishedAt)}` : entry.source}</span>
+      </div>
+      <h2 className="na-title">{entry.title}</h2>
+      <div className="na-actions">
+        {/* PL: Szkic można opublikować, opublikowanego już nie. EN: A draft can be published, a published entry cannot. */}
+        {isDraft ? (
+          <button type="button" className="na-btn" disabled={isLocked} aria-label={TO_AGREE.actionName(SCREEN.publish, entry.title)} onClick={onPublish}>
+            <Icon name="send" />{SCREEN.publish}
+          </button>
+        ) : null}
+        <button type="button" className="na-btn na-btn-outline" disabled={isLocked} aria-label={TO_AGREE.actionName(TO_AGREE.delete, entry.title)} onClick={onDelete}>
+          <Icon name="trash-2" />{TO_AGREE.delete}
+        </button>
+      </div>
+    </li>
+  );
+}
