@@ -7,6 +7,7 @@
  * @uses worker/auth/invite/routes.ts::authInviteApp
  * @uses worker/auth/invite/inviteCodes.ts::issueInviteCode
  * @used_by worker/auth/index.ts::authInviteApp
+ * @used_by worker/auth/index.ts::issueInviteCode
  */
 
 // PL: Router podtoru 1b.
