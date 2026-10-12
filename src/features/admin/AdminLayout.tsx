@@ -1,6 +1,6 @@
 /**
- * PL: Rama panelu Samorządu: menu panelu nad treścią i miejsce na ekran wybranej części panelu. Na razie zwykła lista linków bez wyglądu. Ramę rozwija podtor 8, a ekrany części panelu leżą w katalogach ich modułów (wpisy, zgłoszenia, ankiety).
- * EN: The Student Council panel frame: the panel menu above the content and a place for the screen of the chosen panel section. For now a plain list of links without styling. Subtrack 8 develops the frame, while the screens of the panel sections live in the directories of their modules (entries, reports, surveys).
+ * PL: Rama panelu Samorządu: menu panelu nad treścią i miejsce na ekran wybranej części panelu. Rama niczego nie pobiera i nie sprawdza roli, bo ekran 3c pokazuje się w niej bez logowania (e2e/news-admin.spec.ts). Rolę sprawdza PanelGate, który każdy ekran panelu zakłada sam, a uprawnienia i tak sprawdza serwer (requirePanelRole). Ekrany części panelu leżą w katalogach ich modułów (wpisy, zgłoszenia, ankiety).
+ * EN: The Student Council panel frame: the panel menu above the content and a place for the screen of the chosen panel section. The frame fetches nothing and checks no role, because the 3c screen shows in it without signing in (e2e/news-admin.spec.ts). The role is checked by PanelGate, which every panel screen puts on itself, and the server checks permissions anyway (requirePanelRole). The screens of the panel sections live in the directories of their modules (entries, reports, surveys).
  *
  * @author Bohdan
  * @since 2026-10-09
@@ -14,6 +14,9 @@ import { NavLink, Outlet } from 'react-router';
 // PL: Lista wpisów menu panelu.
 // EN: The list of panel menu entries.
 import { PANEL_MENU_ITEMS } from '../../shared';
+// PL: Style panelu (menu ramy i ekrany podtoru 8).
+// EN: The panel styles (the frame menu and the subtrack 8 screens).
+import './admin.css';
 
 /**
  * PL: Rysuje ramę panelu: menu i wybrany ekran. Nie pobiera danych i nie zmienia nic poza ekranem. Uprawnienia sprawdza serwer, a nie ta rama.
@@ -27,12 +30,12 @@ export function AdminLayout() {
   return (
     <>
       {/* PL: Menu panelu. Nazwa „Panel Samorządu” jest z nazwy przepływu w docs/projekt/EKRANY.md. EN: The panel menu. The name "Panel Samorządu" comes from the flow name in docs/projekt/EKRANY.md. */}
-      <nav aria-label="Panel Samorządu">
+      <nav className="ad-menu" aria-label="Panel Samorządu">
         <ul>
           {/* PL: Po jednym linku na wpis menu. EN: One link per menu entry. */}
           {PANEL_MENU_ITEMS.map((item) => (
             <li key={item.path}>
-              <NavLink to={item.path}>{item.label}</NavLink>
+              <NavLink className="ad-menu-link" to={item.path}>{item.label}</NavLink>
             </li>
           ))}
         </ul>
