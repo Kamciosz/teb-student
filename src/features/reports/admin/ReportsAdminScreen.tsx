@@ -1,25 +1,33 @@
 /**
- * PL: Ekran „W budowie” podtoru 4b (zgłoszenia w panelu: zmiana etapu). Tymczasowo pokazuje tylko napis. Właściwy ekran zbuduje agent tego podtoru.
- * EN: The "W budowie" (under construction) screen of subtrack 4b (reports in the panel: stage change). For now it shows only a label. The agent of this subtrack builds the real screen.
+ * PL: Ekran podtoru 4b (zgłoszenia w panelu: zmiana etapu): lista pod `/reports/admin` i szczegół pod `/reports/admin/<numer>`. Stoi w ramie panelu z menu (podtor 8). Uprawnienia sprawdza serwer, ten ekran tylko pokazuje błąd, gdy serwer odmówi.
+ * EN: The screen of subtrack 4b (reports in the panel: stage change): the list under `/reports/admin` and the detail under `/reports/admin/<id>`. It stands in the panel frame with the menu (subtrack 8). The server checks permissions, this screen only shows an error when the server refuses.
  *
  * @author Bohdan
  * @since 2026-10-09
- * @uses src/shared/index.ts::UnderConstruction
+ * @uses src/features/reports/admin/ReportsList.tsx::ReportsList
+ * @uses src/features/reports/admin/ReportDetail.tsx::ReportDetail
  * @used_by src/features/reports/admin/index.ts::ReportsAdminScreen
  */
 
-// PL: Wspólny ekran „W budowie”.
-// EN: The shared "W budowie" screen.
-import { UnderConstruction } from '../../../shared';
+import { Route, Routes } from 'react-router';
+import './reportsAdmin.css';
+import { ReportDetail } from './ReportDetail';
+import { ReportsList } from './ReportsList';
 
 /**
- * PL: Rysuje tymczasowy ekran podtoru 4b. Nie pobiera danych i nie zmienia nic poza ekranem.
- * EN: Draws the temporary screen of subtrack 4b. It fetches no data and changes nothing outside the screen.
+ * PL: Rysuje ekran podtoru 4b: listę albo szczegół zgłoszenia, zależnie od adresu.
+ * EN: Draws the screen of subtrack 4b: the list or the report detail, depending on the address.
  *
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
 export function ReportsAdminScreen() {
-  // PL: Zwróć wspólny ekran „W budowie” z numerem podtoru, żeby test i recenzent widzieli, który to ekran.
-  // EN: Return the shared "W budowie" screen with the subtrack number, so a test and a reviewer see which screen it is.
-  return <UnderConstruction subtrack="4b" />;
+  return (
+    <section className="ra-screen" data-subtrack="4b">
+      <Routes>
+        <Route index element={<ReportsList />} />
+        <Route path=":id" element={<ReportDetail />} />
+        <Route path="*" element={<ReportsList />} />
+      </Routes>
+    </section>
+  );
 }
