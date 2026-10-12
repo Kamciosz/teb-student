@@ -96,6 +96,9 @@ test('bez internetu lista zostaje, a „Nowa ankieta” jest nieaktywna / withou
   await mockPanelServer(page);
   await page.goto('/surveys/admin');
   await expect(page.getByText('Obiad w stołówce')).toBeVisible();
+  // PL: Lista naprawdę trafia do localStorage telefonu (klucz z src/shared/query/queryClient.ts), więc jest z czego ją pokazać bez sieci.
+  // EN: The list really lands in the phone's localStorage (the key from src/shared/query/queryClient.ts), so there is something to show it from without a network.
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('teb-student-query-cache') ?? '')).toContain('Obiad w stołówce');
 
   await context.setOffline(true);
 
@@ -104,6 +107,17 @@ test('bez internetu lista zostaje, a „Nowa ankieta” jest nieaktywna / withou
   await expect(page.getByText('Obiad w stołówce')).toBeVisible();
   await context.setOffline(false);
   await expect(page.getByRole('link', { name: 'Nowa ankieta' })).toBeVisible();
+});
+
+// PL: Błąd serwera daje komunikat, a nie biały ekran (część 7 planu).
+// EN: A server error gives a message, not a blank screen (plan part 7).
+test('błąd pobrania pokazuje komunikat na liście i w wynikach / a fetch error shows a message on the list and in the results', async ({ page }) => {
+  await mockPanelServer(page, { listStatus: 500 });
+
+  await page.goto('/surveys/admin');
+  await expect(page.getByText('Nie udało się pobrać ankiet. Spróbuj ponownie za chwilę.')).toBeVisible();
+  await page.goto('/surveys/admin/stolowka');
+  await expect(page.getByText('Nie udało się pobrać wyników. Spróbuj ponownie za chwilę.')).toBeVisible();
 });
 
 // PL: Osoba bez roli (403) widzi ekran z makiety 6.1d, a nie błąd.
