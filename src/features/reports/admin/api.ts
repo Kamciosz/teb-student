@@ -41,6 +41,8 @@ export type AdminReportDetail = { report: AdminReport; history: StageChange[] };
  * @throws PL: błąd z kodem odpowiedzi, gdy odpowiedź nie jest udana. EN: an error with the response code when the response is not successful.
  */
 async function readJson<T>(response: Response): Promise<T> {
+  // PL: Błąd odpowiedzi (na przykład 403 bez roli) trafia do zapytania jako błąd.
+  // EN: A response error (for example 403 without a role) reaches the query as an error.
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return (await response.json()) as T;
 }
@@ -53,6 +55,8 @@ async function readJson<T>(response: Response): Promise<T> {
  * @throws PL: błąd sieci albo błąd z kodem odpowiedzi (403 bez roli Samorządu). EN: a network error, or an error with the response code (403 without the Student Council role).
  */
 export async function fetchAdminReports(): Promise<AdminReport[]> {
+  // PL: Odczytaj listę z pola `reports`.
+  // EN: Read the list from the `reports` field.
   return (await readJson<{ reports: AdminReport[] }>(await fetch(API_URL))).reports;
 }
 
@@ -65,6 +69,8 @@ export async function fetchAdminReports(): Promise<AdminReport[]> {
  * @throws PL: błąd sieci albo błąd z kodem odpowiedzi. EN: a network error, or an error with the response code.
  */
 export async function fetchAdminReport(id: string): Promise<AdminReportDetail> {
+  // PL: Numer idzie do adresu po zakodowaniu, żeby nie zmienił ścieżki.
+  // EN: The id goes into the address encoded, so it cannot change the path.
   return readJson<AdminReportDetail>(await fetch(`${API_URL}/${encodeURIComponent(id)}`));
 }
 
@@ -77,6 +83,8 @@ export async function fetchAdminReport(id: string): Promise<AdminReportDetail> {
  * @throws PL: błąd sieci albo błąd z kodem odpowiedzi. EN: a network error, or an error with the response code.
  */
 export async function changeReportStage(change: { id: string; stage: string }): Promise<AdminReportDetail> {
+  // PL: Wyślij tylko etap; kto zmienia, serwer bierze z sesji.
+  // EN: Send only the stage; the server takes who changes it from the session.
   const init = { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ stage: change.stage }) };
   return readJson<AdminReportDetail>(await fetch(`${API_URL}/${encodeURIComponent(change.id)}`, init));
 }

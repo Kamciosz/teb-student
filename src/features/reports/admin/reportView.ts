@@ -25,6 +25,8 @@ const SCHOOL_TIME_ZONE = 'Europe/Warsaw';
  * @returns PL: zgłoszenia z tego etapu, w tej samej kolejności. EN: the reports of that stage, in the same order.
  */
 export function filterByStage(reports: readonly AdminReport[], filter: string): AdminReport[] {
+  // PL: „Wszystkie” oddaje kopię listy, etap zostawia pasujące zgłoszenia.
+  // EN: "Wszystkie" returns a copy of the list, a stage keeps the matching reports.
   return filter === ALL_STAGES ? [...reports] : reports.filter((report) => report.stage === filter);
 }
 
@@ -36,6 +38,8 @@ export function filterByStage(reports: readonly AdminReport[], filter: string): 
  * @returns PL: polska nazwa albo sam kod, gdy serwer wyśle nieznany. EN: the Polish name, or the code itself when the server sends an unknown one.
  */
 export function stageLabel(code: string): string {
+  // PL: Nieznany kod z serwera nie psuje ekranu.
+  // EN: An unknown code from the server does not break the screen.
   return STAGES.find((stage) => stage.code === code)?.label ?? code;
 }
 
@@ -47,6 +51,8 @@ export function stageLabel(code: string): string {
  * @returns PL: polska nazwa albo sam kod. EN: the Polish name, or the code itself.
  */
 export function categoryLabel(code: string): string {
+  // PL: Nieznany kod z serwera nie psuje ekranu.
+  // EN: An unknown code from the server does not break the screen.
   return CATEGORY_LABELS[code] ?? code;
 }
 
@@ -58,6 +64,8 @@ export function categoryLabel(code: string): string {
  * @returns PL: tekst miejsca. EN: the place text.
  */
 export function placeText(report: Pick<AdminReport, 'place' | 'placeDetail'>): string {
+  // PL: Puste dokładne miejsce (`null` albo pusty tekst) ustępuje rodzajowi miejsca.
+  // EN: An empty exact place (`null` or an empty text) gives way to the kind of place.
   return report.placeDetail || (PLACE_LABELS[report.place] ?? report.place);
 }
 
@@ -69,6 +77,8 @@ export function placeText(report: Pick<AdminReport, 'place' | 'placeDetail'>): s
  * @returns PL: data bez zer wiodących. EN: the date without leading zeros.
  */
 export function formatShortDate(milliseconds: number): string {
+  // PL: Rozbij datę na części w czasie szkoły i złóż ją bez zer wiodących.
+  // EN: Split the date into parts in school time and assemble it without leading zeros.
   const parts = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'numeric', timeZone: SCHOOL_TIME_ZONE }).formatToParts(milliseconds);
   const day = parts.find((part) => part.type === 'day')?.value ?? '';
   const month = parts.find((part) => part.type === 'month')?.value ?? '';

@@ -20,6 +20,8 @@ import { Icon } from './icons';
  * @returns PL: drzewo elementów paska. EN: the tree of bar elements.
  */
 export function PanelTop({ title, to, backLabel }: { title: string; to: string; backLabel: string }) {
+  // PL: Przycisk wstecz jest linkiem z nazwą dla czytnika ekranu, bo ma tylko ikonę.
+  // EN: The back button is a link with a name for a screen reader, because it has only an icon.
   return (
     <div className="ra-top">
       <Link className="ra-icon-btn" to={to} aria-label={backLabel}>

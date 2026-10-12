@@ -19,6 +19,8 @@ import { Icon } from './icons';
  * @returns PL: element komunikatu. EN: the message element.
  */
 export function Notice({ text }: { text: string }) {
+  // PL: Ikona i tekst błędu obok siebie.
+  // EN: The icon and the error text side by side.
   return (
     <div className="ra-notice" role="alert">
       <Icon name="triangle-alert" />

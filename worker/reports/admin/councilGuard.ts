@@ -21,4 +21,8 @@ import type { StudentEnv } from '../../auth';
  * @param context - PL: zapytanie. EN: the request.
  * @returns PL: odpowiedź 403 z kodem błędu. EN: a 403 response with an error code.
  */
-export const denyCouncilGuard: MiddlewareHandler<StudentEnv> = async (context) => context.json({ error: 'forbidden' }, 403);
+export const denyCouncilGuard: MiddlewareHandler<StudentEnv> = async (context) => {
+  // PL: Odpowiedz 403 bez wywołania dalszych funkcji, więc żaden adres routera nie wykona się dla ucznia.
+  // EN: Answer 403 without calling the next functions, so no router route runs for the student.
+  return context.json({ error: 'forbidden' }, 403);
+};

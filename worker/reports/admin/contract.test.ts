@@ -25,6 +25,8 @@ describe('zgodność nazw panelu ze schematem / panel names and schema contract'
   // PL: Te same kody w tej samej kolejności, a etapy dokładnie w kolejności schematu.
   // EN: The same codes in the same order, and the stages exactly in schema order.
   it('kody są takie same / the codes are the same', () => {
+    // PL: Porównaj listy kodów po obu stronach.
+    // EN: Compare the code lists on both sides.
     expect(Object.keys(CATEGORY_LABELS)).toEqual([...REPORT_CATEGORIES]);
     expect(Object.keys(PLACE_LABELS)).toEqual([...REPORT_PLACES]);
     expect(STAGES.map((stage) => stage.code)).toEqual([...REPORT_STAGES]);

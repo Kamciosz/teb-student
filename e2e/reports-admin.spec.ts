@@ -23,11 +23,15 @@ type StubReport = { id: string; isAnonymous: boolean; category: string; place: s
  * @returns PL: lokalizator kafli. EN: the tile locator.
  */
 function items(page: Page) {
+  // PL: Lista ma nazwę „Zgłoszenia”, a menu panelu nie.
+  // EN: The list is named "Zgłoszenia", the panel menu is not.
   return page.getByRole('list', { name: 'Zgłoszenia' }).getByRole('listitem');
 }
 
 /** PL: Trzy zgłoszenia jak na ekranie 6.4a, od najnowszego. EN: Three reports as on screen 6.4a, newest first. */
 function sampleReports(): StubReport[] {
+  // PL: Pierwsze zgłoszenie ma autora, dwa pozostałe są anonimowe.
+  // EN: The first report has an author, the other two are anonymous.
   return [
     { id: 'r1', isAnonymous: false, category: 'safety', place: 'corridor', placeDetail: null, description: 'Na schodach przy szatni jest mokro i ślisko.', stage: 'received', createdAt: Date.UTC(2026, 9, 11, 8), updatedAt: Date.UTC(2026, 9, 11, 8) },
     { id: 'r2', isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Można by postawić kosz do koszykówki przy boisku.', stage: 'received', createdAt: Date.UTC(2026, 9, 9, 8), updatedAt: Date.UTC(2026, 9, 9, 8) },
@@ -68,6 +72,8 @@ async function stubAdminApi(page: Page, reports: StubReport[] = sampleReports())
 // PL: Filtr po etapie, oba stany puste i oznaczenie anonimowych zgłoszeń na liście.
 // EN: The stage filter, both empty states and the marking of anonymous reports in the list.
 test('lista pokazuje zgłoszenia i filtruje po etapie / the list shows reports and filters by stage', async ({ page }) => {
+  // PL: Podstaw API i otwórz listę.
+  // EN: Stub the API and open the list.
   await stubAdminApi(page);
   await page.goto('/reports/admin');
 
@@ -89,6 +95,8 @@ test('lista pokazuje zgłoszenia i filtruje po etapie / the list shows reports a
 // PL: Bez żadnych zgłoszeń tekst jest inny niż przy pustym etapie.
 // EN: With no reports at all the text differs from the empty stage.
 test('pusta lista mówi, że nikt nic nie zgłosił / the empty list says nobody reported anything', async ({ page }) => {
+  // PL: Serwer oddaje pustą listę; bez filtra tekst mówi, że nikt nic nie zgłosił.
+  // EN: The server returns an empty list; without a filter the text says nobody reported anything.
   await stubAdminApi(page, []);
   await page.goto('/reports/admin');
   await expect(page.getByRole('heading', { name: 'Nikt jeszcze nic nie zgłosił' })).toBeVisible();
@@ -98,11 +106,15 @@ test('pusta lista mówi, że nikt nic nie zgłosił / the empty list says nobody
 // PL: Zgłoszenie anonimowe nie ma autora, z autorem mówi tylko, że anonimowość wyłączono.
 // EN: An anonymous report has no author, a signed one says only that anonymity was turned off.
 test('szczegół: anonimowe i z autorem / detail: anonymous and with an author', async ({ page }) => {
+  // PL: Zgłoszenie anonimowe: napis o anonimowości.
+  // EN: An anonymous report: the anonymity label.
   await stubAdminApi(page);
   await page.goto('/reports/admin/r3');
   await expect(page.getByText('Zgłoszenie anonimowe')).toBeVisible();
   await expect(page.getByText('Samorząd nie widzi, kto je wysłał.')).toBeVisible();
 
+  // PL: Zgłoszenie z autorem: tylko informacja o rezygnacji z anonimowości.
+  // EN: A report with an author: only the information that anonymity was turned off.
   await page.goto('/reports/admin/r1');
   await expect(page.getByText('Autor zgłosił bez anonimowości.')).toBeVisible();
   await expect(page.getByText('Samorząd nie widzi, kto je wysłał.')).toHaveCount(0);
@@ -139,11 +151,17 @@ test('Samorząd zmienia etap i widzi historię / the Student Council changes the
 // EN: A save error shows a message and the button stays active, to retry.
 test('błąd zapisu zostawia przycisk aktywny / a save error leaves the button active', async ({ page }) => {
   await stubAdminApi(page);
+  // PL: Zapis kończy się błędem serwera, reszta API działa jak zwykle.
+  // EN: Saving ends with a server error, the rest of the API works as usual.
   await page.route(/\/api\/reports\/admin\/r3$/, (route) => (route.request().method() === 'PATCH' ? route.fulfill({ status: 503, json: { error: 'server_error' } }) : route.fallback()));
+  // PL: Wybierz inny etap i spróbuj zapisać.
+  // EN: Choose another stage and try to save.
   await page.goto('/reports/admin/r3');
   await page.getByRole('radio', { name: 'Załatwione' }).click();
   await page.getByRole('button', { name: 'Zapisz etap' }).click();
 
+  // PL: Komunikat błędu jest widoczny, a przycisk można dotknąć jeszcze raz.
+  // EN: The error message is visible and the button can be tapped again.
   await expect(page.getByRole('alert')).toContainText('Nie udało się zapisać etapu. Spróbuj ponownie za chwilę.');
   await expect(page.getByRole('button', { name: 'Zapisz etap' })).toBeEnabled();
 });
@@ -151,6 +169,8 @@ test('błąd zapisu zostawia przycisk aktywny / a save error leaves the button a
 // PL: Odmowa serwera (403 bez roli) pokazuje komunikat błędu pobrania, a nie dane.
 // EN: A server refusal (403 without a role) shows the fetch error message, not data.
 test('odmowa serwera pokazuje błąd pobrania / a server refusal shows the fetch error', async ({ page }) => {
+  // PL: Serwer odmawia dostępu uczniowi bez roli.
+  // EN: The server refuses access to a student without a role.
   await page.route(/\/api\/reports\/admin$/, (route) => route.fulfill({ status: 403, json: { error: 'forbidden' } }));
   await page.goto('/reports/admin');
   await expect(page.getByRole('alert')).toContainText('Nie udało się pobrać zgłoszeń. Spróbuj ponownie za chwilę.');
@@ -160,14 +180,20 @@ test('odmowa serwera pokazuje błąd pobrania / a server refusal shows the fetch
 // PL: Przy 320 px lista i szczegół nie przewijają się w poziomie, a dolny przycisk mieści się w oknie.
 // EN: At 320 px the list and the detail do not scroll horizontally, and the bottom button fits in the window.
 test('przy szerokości 320 px nic się nie przewija w poziomie / nothing scrolls horizontally at 320 px', async ({ page }) => {
+  // PL: Wąski ekran jak w małym telefonie; `overflow` to nadwyżka szerokości strony ponad okno.
+  // EN: A narrow screen like a small phone; `overflow` is the page width beyond the window.
   await page.setViewportSize({ width: 320, height: 640 });
   await stubAdminApi(page);
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
+  // PL: Lista: trzy kafle i brak przewijania w poziomie.
+  // EN: The list: three tiles and no horizontal scrolling.
   await page.goto('/reports/admin');
   await expect(items(page)).toHaveCount(3);
   expect(await overflow()).toBeLessThanOrEqual(0);
 
+  // PL: Szczegół: brak przewijania w poziomie, a dolny przycisk mieści się w oknie.
+  // EN: The detail: no horizontal scrolling, and the bottom button fits in the window.
   await page.goto('/reports/admin/r1');
   await expect(page.getByRole('button', { name: 'Zapisz etap' })).toBeVisible();
   expect(await overflow()).toBeLessThanOrEqual(0);
@@ -184,6 +210,8 @@ test('przy szerokości 320 px nic się nie przewija w poziomie / nothing scrolls
 // PL: Bez internetu lista i szczegół zostają z ostatnich danych, filtr działa, a zapis czeka na sieć.
 // EN: Offline the list and the detail stay with the last data, the filter works and saving waits for the network.
 test('bez internetu: dane zostają, a zapis jest zablokowany / offline: the data stays and saving is blocked', async ({ page, context }) => {
+  // PL: Z internetem otwórz szczegół, żeby trafił do pamięci, i wróć na listę.
+  // EN: With internet open the detail so it reaches the cache, and go back to the list.
   await stubAdminApi(page);
   await page.goto('/reports/admin');
   await page.getByRole('link', { name: /Nie działa projektor/ }).click();

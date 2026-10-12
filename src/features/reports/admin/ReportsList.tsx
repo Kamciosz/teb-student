@@ -27,6 +27,8 @@ import { categoryLabel, filterByStage, formatShortDate, placeText, stageLabel } 
  * @returns PL: drzewo elementów kafla. EN: the tree of tile elements.
  */
 function ReportTile({ report }: { report: AdminReport }) {
+  // PL: Cały kafel jest linkiem do szczegółu: znacznik kategorii, data z miejscem, opis, napis o anonimowości i znacznik etapu.
+  // EN: The whole tile is a link to the detail: the category tag, the date with the place, the description, the anonymity label and the stage tag.
   return (
     <li>
       <Link className="ra-tile" to={report.id}>
@@ -52,6 +54,8 @@ function ReportTile({ report }: { report: AdminReport }) {
  * @returns PL: drzewo elementów. EN: the tree of elements.
  */
 function EmptyState({ isFiltered }: { isFiltered: boolean }) {
+  // PL: Z wybranym etapem tekst mówi o etapie, bez filtra o tym, że nikt nic nie zgłosił.
+  // EN: With a stage chosen the text speaks of the stage, without a filter it says nobody reported anything.
   return (
     <div className="ra-empty">
       <Icon name="inbox" />
@@ -69,9 +73,15 @@ function EmptyState({ isFiltered }: { isFiltered: boolean }) {
  * @returns PL: drzewo elementów treści. EN: the tree of body elements.
  */
 function ListBody({ query, filter }: { query: ReturnType<typeof useAdminReports>; filter: string }) {
+  // PL: Dane (z serwera albo z zapisu w telefonie) mają pierwszeństwo nad stanem zapytania.
+  // EN: The data (from the server or from the saved copy) takes priority over the query state.
   if (query.data) {
+    // PL: Filtr po etapie liczy się w telefonie, więc działa też bez internetu.
+    // EN: The stage filter is computed on the phone, so it works offline too.
     const visible = filterByStage(query.data, filter);
     if (visible.length === 0) return <EmptyState isFiltered={filter !== ALL_STAGES} />;
+    // PL: Kafle zgłoszeń od najnowszego.
+    // EN: The report tiles, newest first.
     return (
       <ul className="ra-list" aria-label="Zgłoszenia">
         {visible.map((report) => (
@@ -80,7 +90,11 @@ function ListBody({ query, filter }: { query: ReturnType<typeof useAdminReports>
       </ul>
     );
   }
+  // PL: Bez danych i z błędem pokaż komunikat (także przy odmowie 403).
+  // EN: Without data and with an error, show the message (also for a 403 refusal).
   if (query.isError) return <Notice text="Nie udało się pobrać zgłoszeń. Spróbuj ponownie za chwilę." />;
+  // PL: Bez danych i bez błędu zapytanie jeszcze trwa.
+  // EN: Without data and without an error the query is still running.
   return <div role="status" aria-busy="true" />;
 }
 
@@ -91,8 +105,12 @@ function ListBody({ query, filter }: { query: ReturnType<typeof useAdminReports>
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
 export function ReportsList() {
+  // PL: Wybrany filtr to stan ekranu; lista z serwera albo z zapisu w telefonie.
+  // EN: The chosen filter is the screen state; the list comes from the server or from the saved copy.
   const [filter, setFilter] = useState(ALL_STAGES);
   const query = useAdminReports();
+  // PL: Pasek z tytułem, chipy filtra i treść pod nimi.
+  // EN: The top bar with the title, the filter chips and the body under them.
   return (
     <>
       <PanelTop title="Zgłoszenia" to="/admin" backLabel="Wróć" />

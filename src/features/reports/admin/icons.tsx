@@ -29,6 +29,8 @@ const SHAPES: Record<IconName, string[]> = {
  * @returns PL: element SVG. EN: the SVG element.
  */
 export function Icon({ name }: { name: IconName }) {
+  // PL: Narysuj wszystkie ścieżki wybranej ikony w jednym elemencie SVG.
+  // EN: Draw all paths of the chosen icon in one SVG element.
   return (
     <svg className="ra-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {SHAPES[name].map((path) => (

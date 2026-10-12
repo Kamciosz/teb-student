@@ -28,6 +28,8 @@ import { categoryLabel, formatShortDate, placeText, stageLabel } from './reportV
  * @returns PL: drzewo elementów kafla. EN: the tree of tile elements.
  */
 function AuthorTile({ isAnonymous }: { isAnonymous: boolean }) {
+  // PL: Przy anonimowym zgłoszeniu nie ma żadnych danych autora, więc pokazujemy tylko napis. Z autorem pokazujemy tylko tę informację.
+  // EN: An anonymous report has no author data at all, so we show only the label. With an author we show only that information.
   return (
     <div className="ra-author">
       <Icon name="user-round" />
@@ -47,6 +49,8 @@ function AuthorTile({ isAnonymous }: { isAnonymous: boolean }) {
  * @returns PL: drzewo elementów historii. EN: the tree of history elements.
  */
 function History({ rows }: { rows: StageChange[] }) {
+  // PL: Jeden wiersz na etap, od najnowszego (tak je daje serwer).
+  // EN: One row per stage, newest first (as the server gives them).
   return (
     <ul className="ra-history" aria-label="Historia">
       {rows.map((row) => (
@@ -67,6 +71,8 @@ function History({ rows }: { rows: StageChange[] }) {
  * @returns PL: drzewo elementów nagłówka. EN: the tree of header elements.
  */
 function ReportHead({ report }: { report: AdminReport }) {
+  // PL: Znacznik kategorii, data z miejscem i opis zgłoszenia.
+  // EN: The category tag, the date with the place and the report description.
   return (
     <>
       <div className="ra-tile-head">
@@ -86,11 +92,17 @@ function ReportHead({ report }: { report: AdminReport }) {
  * @returns PL: drzewo elementów. EN: the tree of elements.
  */
 function DetailBody({ report, history }: { report: AdminReport; history: StageChange[] }) {
+  // PL: Wybrany etap to stan ekranu; `null` znaczy, że Samorząd jeszcze nic nie wybrał.
+  // EN: The chosen stage is the screen state; `null` means the Student Council has not chosen anything yet.
   const [picked, setPicked] = useState<string | null>(null);
   const save = useChangeStage(report.id);
   const isOnline = useIsOnline();
+  // PL: Zapis jest możliwy tylko przy zmienionym etapie, z internetem i gdy poprzedni zapis nie trwa.
+  // EN: Saving is possible only with a changed stage, with internet and when the previous save is not running.
   const stage = picked ?? report.stage;
   const canSave = stage !== report.stage && isOnline && !save.isPending;
+  // PL: Nagłówek, autor, pasek wyboru, historia i dolny przycisk z uwagami nad nim.
+  // EN: The header, the author, the segmented control, the history and the bottom button with the notes above it.
   return (
     <>
       <ReportHead report={report} />
@@ -117,8 +129,12 @@ function DetailBody({ report, history }: { report: AdminReport; history: StageCh
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
 export function ReportDetail() {
+  // PL: Numer zgłoszenia jest w adresie; szczegół z serwera albo z zapisu w telefonie.
+  // EN: The report id is in the address; the detail comes from the server or from the saved copy.
   const { id = '' } = useParams();
   const query = useAdminReport(id);
+  // PL: Dane mają pierwszeństwo, potem błąd, a bez obu zapytanie jeszcze trwa.
+  // EN: The data takes priority, then the error, and with neither the query is still running.
   return (
     <>
       <PanelTop title="Zgłoszenie" to="/reports/admin" backLabel="Wróć" />

@@ -18,6 +18,8 @@ import { STAGES } from './reportLabels';
  * @returns PL: drzewo elementów paska. EN: the tree of control elements.
  */
 export function StagePicker({ value, onChange }: { value: string; onChange: (stage: string) => void }) {
+  // PL: Jeden przycisk na etap; wybrany ma `aria-checked`, a dotknięcie innego woła `onChange`.
+  // EN: One button per stage; the chosen one has `aria-checked`, and tapping another calls `onChange`.
   return (
     <div className="ra-segments" role="radiogroup" aria-label="Etap">
       {STAGES.map((stage) => (

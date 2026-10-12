@@ -21,6 +21,8 @@ import { ReportsList } from './ReportsList';
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
 export function ReportsAdminScreen() {
+  // PL: Pusty adres to lista, adres z numerem to szczegół, każdy inny wraca do listy. `data-subtrack` pokazuje testowi, który to ekran.
+  // EN: An empty address is the list, an address with an id is the detail, any other goes back to the list. `data-subtrack` shows a test which screen it is.
   return (
     <section className="ra-screen" data-subtrack="4b">
       <Routes>

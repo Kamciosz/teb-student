@@ -44,6 +44,8 @@ const MAX_BODY_BYTES = 1024;
  * @returns PL: prawda, gdy to znany etap. EN: true when it is a known stage.
  */
 function isReportStage(value: unknown): value is ReportStage {
+  // PL: Porównaj ze stałą listą etapów ze schematu.
+  // EN: Compare with the constant list of stages from the schema.
   return REPORT_STAGES.some((stage) => stage === value);
 }
 
@@ -55,15 +57,23 @@ function isReportStage(value: unknown): value is ReportStage {
  * @returns PL: router Hono podtoru 4b. EN: the Hono router of subtrack 4b.
  */
 export function createReportsAdminApp(guard: MiddlewareHandler<StudentEnv>) {
+  // PL: Sesja ucznia (401 bez niej) i zaraz za nią strażnik roli (403 bez roli): jedna linia dla całego routera.
+  // EN: The student session (401 without it) and right behind it the role guard (403 without a role): one line for the whole router.
   const app = new Hono<StudentEnv>().use(requireStudent, guard);
 
   // PL: GET / oddaje wszystkie zgłoszenia od najnowszego. Filtr po etapie robi telefon.
   // EN: GET / returns all reports, newest first. The phone does the stage filter.
-  app.get('/', async (context) => context.json({ reports: await listReports(context.env.DB) }));
+  app.get('/', async (context) => {
+    // PL: Odczytaj wszystkie zgłoszenia; zapytanie nie wybiera autora.
+    // EN: Read all reports; the query does not select the author.
+    return context.json({ reports: await listReports(context.env.DB) });
+  });
 
   // PL: GET /:id oddaje zgłoszenie z historią albo 404.
   // EN: GET /:id returns the report with its history, or 404.
   app.get('/:id', async (context) => {
+    // PL: Odczytaj zgłoszenie z historią; brak zgłoszenia to 404.
+    // EN: Read the report with its history; a missing report is 404.
     const found = await getReport(context.env.DB, context.req.param('id'));
     return found ? context.json(found) : context.json({ error: 'not_found' }, 404);
   });
@@ -87,6 +97,8 @@ export function createReportsAdminApp(guard: MiddlewareHandler<StudentEnv>) {
     return context.json(await getReport(context.env.DB, id));
   });
 
+  // PL: Oddaj router z trzema adresami.
+  // EN: Return the router with its three routes.
   return app;
 }
 

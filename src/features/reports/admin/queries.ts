@@ -44,6 +44,8 @@ function detailKey(id: string) {
  * @returns PL: wynik zapytania (dane, stan ładowania, błąd). EN: the query result (data, loading state, error).
  */
 export function useAdminReports() {
+  // PL: Lista jest świeża 30 sekund; zapis w telefonie robi wspólny dostawca zapytań.
+  // EN: The list is fresh for 30 seconds; saving on the phone is done by the shared query provider.
   return useQuery({ queryKey: LIST_KEY, queryFn: fetchAdminReports, staleTime: 30_000, retry: RETRIES });
 }
 
@@ -55,6 +57,8 @@ export function useAdminReports() {
  * @returns PL: wynik zapytania. EN: the query result.
  */
 export function useAdminReport(id: string) {
+  // PL: Każde zgłoszenie ma własny klucz w pamięci.
+  // EN: Every report has its own cache key.
   return useQuery({ queryKey: detailKey(id), queryFn: () => fetchAdminReport(id), staleTime: 30_000, retry: RETRIES });
 }
 
@@ -66,11 +70,15 @@ export function useAdminReport(id: string) {
  * @returns PL: mutacja z funkcją `mutate` i stanem zapisu. EN: a mutation with the `mutate` function and the saving state.
  */
 export function useChangeStage(id: string) {
+  // PL: `networkMode: 'always'` pokazuje błąd zamiast czekać na sieć; przycisk i tak blokuje się bez internetu.
+  // EN: `networkMode: 'always'` shows an error instead of waiting for the network; the button is disabled offline anyway.
   const client = useQueryClient();
   return useMutation({
     mutationFn: (stage: string) => changeReportStage({ id, stage }),
     networkMode: 'always',
     onSuccess: (detail) => {
+      // PL: Odpowiedź serwera to aktualny szczegół, więc wstawiamy go do pamięci i odświeżamy listę.
+      // EN: The server answer is the current detail, so we put it into the cache and refresh the list.
       client.setQueryData(detailKey(id), detail);
       return client.invalidateQueries({ queryKey: LIST_KEY });
     },
@@ -84,6 +92,8 @@ export function useChangeStage(id: string) {
  * @returns PL: prawda, gdy jest połączenie. EN: true when there is a connection.
  */
 export function useIsOnline(): boolean {
+  // PL: Nasłuchuj stanu sieci z TanStack Query, tego samego co pasek „Brak internetu”.
+  // EN: Listen to the network state from TanStack Query, the same one the "Brak internetu" bar uses.
   return useSyncExternalStore(
     (notify) => onlineManager.subscribe(notify),
     () => onlineManager.isOnline(),
