@@ -1,6 +1,6 @@
 /**
- * PL: Czyste funkcje widoku panelu zgłoszeń: filtr po etapie, nazwa etapu, krótka data i tekst miejsca. Bez Reacta, żeby dało się je sprawdzić testem.
- * EN: Pure functions of the reports panel view: the stage filter, the stage name, the short date and the place text. No React, so a test can check them.
+ * PL: Czyste funkcje widoku panelu zgłoszeń: filtr po etapie, nazwa etapu, krótka data, tekst miejsca i liczba osób („Mnie też”). Bez Reacta, żeby dało się je sprawdzić testem.
+ * EN: Pure functions of the reports panel view: the stage filter, the stage name, the short date, the place text and the number of people ("Me too"). No React, so a test can check them.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -15,6 +15,12 @@ import { ALL_STAGES, CATEGORY_LABELS, PLACE_LABELS, STAGES } from './reportLabel
 
 /** PL: Strefa czasowa szkoły. Data ma być taka sama na każdym telefonie. EN: The school time zone. A date must be the same on every phone. */
 const SCHOOL_TIME_ZONE = 'Europe/Warsaw';
+
+/** PL: Reguły liczby mnogiej dla polskiego (jedna, dwie–cztery, reszta). EN: The plural rules for Polish (one, two to four, the rest). */
+const polishPlural = new Intl.PluralRules('pl-PL');
+
+/** PL: Słowo „osoba” w odmianie: dla kategorii `one` i `few`; reszta to „osób”. Tekst do uzgodnienia z zespołem. EN: The word "person" in its forms: for the `one` and `few` categories; the rest is "osób". The text is to be agreed with the team. */
+const PERSON_WORDS: Record<string, string> = { one: 'osoba', few: 'osoby' };
 
 /**
  * PL: Zostawia zgłoszenia z wybranego etapu. Filtr „Wszystkie” zostawia wszystkie.
@@ -67,6 +73,23 @@ export function placeText(report: Pick<AdminReport, 'place' | 'placeDetail'>): s
   // PL: Puste dokładne miejsce (`null` albo pusty tekst) ustępuje rodzajowi miejsca.
   // EN: An empty exact place (`null` or an empty text) gives way to the kind of place.
   return report.placeDetail || (PLACE_LABELS[report.place] ?? report.place);
+}
+
+/**
+ * PL: Podaje liczbę osób, które dołączyły („Mnie też”), np. „+3 osoby”. Bez danych (zapis z telefonu sprzed tej zmiany) albo przy zerze nie ma czego pokazać, więc zwraca `null`.
+ * EN: Gives the number of people who joined ("Me too"), for example "+3 osoby". Without data (a phone copy from before this change) or with zero there is nothing to show, so it returns `null`.
+ *
+ * @param count - PL: liczba dołączeń albo `undefined`, gdy serwer jej nie wysłał. EN: the number of joins, or `undefined` when the server did not send it.
+ * @returns PL: tekst z odmianą albo `null`. EN: the text with the right form, or `null`.
+ */
+export function joinText(count: number | undefined): string | null {
+  // PL: Brak danych albo zero: nie pokazujemy nic.
+  // EN: No data or zero: we show nothing.
+  if (count === undefined || count <= 0) return null;
+  // PL: Odmiana wg reguł polskich: 1 → „osoba”, 2–4 (poza 12–14) → „osoby”, reszta → „osób”.
+  // EN: The form by the Polish rules: 1 → "osoba", 2–4 (except 12–14) → "osoby", the rest → "osób".
+  const word = PERSON_WORDS[polishPlural.select(count)] ?? 'osób';
+  return `+${count} ${word}`;
 }
 
 /**

@@ -1,6 +1,6 @@
 /**
- * PL: Test czystych funkcji widoku panelu zgłoszeń: filtr po etapie, nazwy, miejsce i krótka data.
- * EN: Test of the pure functions of the reports panel view: the stage filter, the names, the place and the short date.
+ * PL: Test czystych funkcji widoku panelu zgłoszeń: filtr po etapie, nazwy, miejsce, krótka data i liczba osób („Mnie też”).
+ * EN: Test of the pure functions of the reports panel view: the stage filter, the names, the place, the short date and the number of people ("Me too").
  *
  * @author Szymon
  * @since 2026-10-12
@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
 // PL: Typ zgłoszenia i funkcje, które sprawdzamy.
 // EN: The report type and the functions under test.
 import type { AdminReport } from './api';
-import { categoryLabel, filterByStage, formatShortDate, placeText, stageLabel } from './reportView';
+import { categoryLabel, filterByStage, formatShortDate, joinText, placeText, stageLabel } from './reportView';
 
 /**
  * PL: Buduje zgłoszenie testowe z podanym etapem.
@@ -27,7 +27,7 @@ import { categoryLabel, filterByStage, formatShortDate, placeText, stageLabel } 
 function report(id: string, stage: string): AdminReport {
   // PL: Pola nieistotne dla filtra mają stałe wartości.
   // EN: The fields irrelevant to the filter have constant values.
-  return { id, isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Opis', stage, createdAt: 1, updatedAt: 1 };
+  return { id, isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Opis', stage, createdAt: 1, updatedAt: 1, joinCount: 0 };
 }
 
 // PL: Grupa testów filtra.
@@ -87,5 +87,38 @@ describe('formatShortDate', () => {
     // EN: 8:00 UTC is the same day, and 23:30 UTC the day before is already 6.10 in Warsaw.
     expect(formatShortDate(Date.UTC(2026, 9, 6, 8, 0))).toBe('6.10');
     expect(formatShortDate(Date.UTC(2026, 9, 5, 23, 30))).toBe('6.10');
+  });
+});
+
+// PL: Grupa testów liczby osób („Mnie też”).
+// EN: A group of tests for the number of people ("Me too").
+describe('joinText', () => {
+  // PL: Brak danych albo zero: nic nie pokazujemy.
+  // EN: No data or zero: we show nothing.
+  it('brak danych i zero dają null / no data and zero give null', () => {
+    // PL: Stare zapisy bez pola i zero dołączeń nie mają czego pokazać.
+    // EN: Old copies without the field and zero joins have nothing to show.
+    expect(joinText(undefined)).toBeNull();
+    expect(joinText(0)).toBeNull();
+  });
+
+  // PL: Odmiana: 1 → „osoba”, 2–4 → „osoby”, 5 i więcej → „osób”.
+  // EN: The form: 1 → "osoba", 2–4 → "osoby", 5 and more → "osób".
+  it('odmienia według reguł polskich / follows the Polish plural rules', () => {
+    // PL: Jedna osoba.
+    // EN: One person.
+    expect(joinText(1)).toBe('+1 osoba');
+    // PL: Dwie, trzy, cztery osoby.
+    // EN: Two, three, four people.
+    expect(joinText(2)).toBe('+2 osoby');
+    expect(joinText(4)).toBe('+4 osoby');
+    // PL: Pięć i więcej to „osób”, także 12–14, a 22 i 25 wracają do „osoby” i „osób”.
+    // EN: Five and more is "osób", also 12–14, and 22 and 25 go back to "osoby" and "osób".
+    expect(joinText(5)).toBe('+5 osób');
+    expect(joinText(12)).toBe('+12 osób');
+    expect(joinText(14)).toBe('+14 osób');
+    expect(joinText(22)).toBe('+22 osoby');
+    expect(joinText(25)).toBe('+25 osób');
+    expect(joinText(112)).toBe('+112 osób');
   });
 });
