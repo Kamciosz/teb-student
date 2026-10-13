@@ -193,6 +193,70 @@ test('film z YouTube zapisuje sam identyfikator i nie wstawia ramki / a YouTube 
   expect(sent.body?.content.find((node) => node.type === 'youtube')?.attrs).toEqual({ videoId: 'dQw4w9WgXcQ' });
 });
 
+// PL: Miniatura w edytorze ma widoczny napis „Film z YouTube”, a w edytorze nie ma żadnej ramki.
+// EN: The thumbnail in the editor has the visible label "Film z YouTube", and the editor has no frame at all.
+test('miniatura filmu ma napis i w edytorze nie ma ramki / the video thumbnail has a label and the editor has no frame', async ({ page }) => {
+  await fillEntry(page, 'Zobacz film.');
+  await page.getByRole('button', { name: 'Film' }).click();
+  await page.getByLabel('Adres filmu z YouTube').fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  await page.getByRole('button', { name: 'Dodaj film' }).click();
+  await expect(page.locator('.editor-video')).toContainText('Film z YouTube');
+  await expect(page.locator('.editor-video img')).toHaveAttribute('alt', '');
+  await expect(page.locator('.editor-surface iframe')).toHaveCount(0);
+});
+
+// PL: Zły adres filmu pokazuje komunikat w formularzu i nie wstawia węzła.
+// EN: A bad video address shows a message in the form and inserts no node.
+test('zły adres filmu pokazuje komunikat i nic nie wstawia / a bad video address shows a message and inserts nothing', async ({ page }) => {
+  await fillEntry(page, 'Zobacz film.');
+  await page.getByRole('button', { name: 'Film' }).click();
+  await page.getByLabel('Adres filmu z YouTube').fill('https://evil.example/watch?v=dQw4w9WgXcQ');
+  await page.getByRole('button', { name: 'Dodaj film' }).click();
+  await expect(page.getByRole('alert')).toHaveText('To nie jest adres filmu z YouTube.');
+  await expect(page.locator('.editor-video')).toHaveCount(0);
+});
+
+// PL: Skrócony adres „shorts” z parametrem udostępniania też daje sam identyfikator.
+// EN: A "shorts" address with the share parameter also gives the id only.
+test('adres shorts z parametrem udostępniania zapisuje identyfikator / a shorts address with the share parameter stores the id', async ({ page }) => {
+  const sent: { body?: { content: { type: string; attrs?: { videoId: string } }[] } } = {};
+  await page.route(ENTRIES, (route) => {
+    sent.body = route.request().postDataJSON().body;
+    return route.fulfill({ status: 201, json: { id: 'abc' } });
+  });
+  await fillEntry(page, 'Zobacz krótki film.');
+  await page.getByRole('button', { name: 'Film' }).click();
+  await page.getByLabel('Adres filmu z YouTube').fill('https://youtube.com/shorts/dQw4w9WgXcQ?feature=share');
+  await page.getByRole('button', { name: 'Dodaj film' }).click();
+  await openPreview(page);
+  await page.getByRole('button', { name: 'Opublikuj' }).click();
+  await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
+  expect(sent.body?.content.find((node) => node.type === 'youtube')?.attrs).toEqual({ videoId: 'dQw4w9WgXcQ' });
+});
+
+// PL: Wklejony HTML z obcym adresem w miejscu identyfikatora nie tworzy filmu i adres nie trafia do treści. Poprawny identyfikator w tym samym HTML zostaje.
+// EN: Pasted HTML with a foreign address in place of the id creates no video, and the address never reaches the content. A valid id in the same HTML stays.
+test('wklejony HTML z obcym adresem filmu nie trafia do treści / pasted HTML with a foreign video address does not reach the content', async ({ page }) => {
+  const sent: { body?: { content: { type: string; attrs?: { videoId: string } }[] } } = {};
+  await page.route(ENTRIES, (route) => {
+    sent.body = route.request().postDataJSON().body;
+    return route.fulfill({ status: 201, json: { id: 'abc' } });
+  });
+  await fillEntry(page, 'Zobacz film.');
+  const html = '<p>Obok</p><div data-youtube-video="https://evil.example/x"></div><div data-youtube-video="dQw4w9WgXcQ"></div>';
+  await page.getByRole('textbox', { name: 'Opis' }).evaluate((node, pasted) => {
+    const data = new DataTransfer();
+    data.setData('text/html', pasted);
+    node.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+  }, html);
+  await expect(page.locator('.editor-video')).toHaveCount(1);
+  await openPreview(page);
+  await page.getByRole('button', { name: 'Opublikuj' }).click();
+  await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
+  expect(JSON.stringify(sent.body)).not.toContain('evil.example');
+  expect(sent.body?.content.find((node) => node.type === 'youtube')?.attrs).toEqual({ videoId: 'dQw4w9WgXcQ' });
+});
+
 // PL: Lista z Worda (akapity z mso-list) staje się prawdziwą listą po wklejeniu.
 // EN: A Word list (paragraphs with mso-list) becomes a real list after pasting.
 test('wklejona lista z Worda staje się listą / a pasted Word list becomes a list', async ({ page }) => {
