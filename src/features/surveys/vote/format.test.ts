@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest';
 // PL: Funkcje, które sprawdzamy.
 // EN: The functions under test.
-import { daysWord, describeSurvey, estimateMinutes, formatShortDate, pluralPl } from './format';
+import { daysWord, describeSurvey, estimateMinutes, formatClosesAt, formatShortDate, pluralPl } from './format';
 
 // PL: Formy słowa „pytanie”.
 // EN: The forms of the word "pytanie".
@@ -63,5 +63,21 @@ describe('daysWord i formatShortDate', () => {
   it('data jak w makiecie / the date as in the mockup', () => {
     expect(formatShortDate('2026-09-30')).toBe('30.09');
     expect(formatShortDate('2026-10-02')).toBe('2.10');
+  });
+});
+
+// PL: Grupa testów godziny zamknięcia w polskim czasie.
+// EN: A group of tests for the closing hour in Polish time.
+describe('formatClosesAt', () => {
+  it('pokazuje dzień i godzinę w Warszawie / shows the day and the hour in Warsaw', () => {
+    // PL: 18:00 UTC przed zmianą czasu (25.10.2026) to 20:00 w Polsce (UTC+2).
+    // EN: 18:00 UTC before the clock change (25 Oct 2026) is 20:00 in Poland (UTC+2).
+    expect(formatClosesAt('2026-10-23T18:00:00.000Z')).toBe('Do 23.10, 20:00');
+  });
+
+  it('dzień i godzina z zerem z przodu, dzień bez zera / the hour with a leading zero, the day without one', () => {
+    // PL: 07:05 UTC zimą to 08:05 w Polsce (UTC+1).
+    // EN: 07:05 UTC in winter is 08:05 in Poland (UTC+1).
+    expect(formatClosesAt('2026-12-02T07:05:00.000Z')).toBe('Do 2.12, 08:05');
   });
 });
