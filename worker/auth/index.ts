@@ -7,6 +7,7 @@
  * @uses worker/auth/email/index.ts::authEmailApp
  * @uses worker/auth/invite/index.ts::authInviteApp
  * @uses worker/auth/invite/index.ts::issueInviteCode
+ * @uses worker/auth/invite/index.ts::listInviteCodes
  * @uses worker/auth/email/index.ts::deleteAuthStudentData
  * @uses worker/auth/email/index.ts::requireStudent
  * @uses worker/auth/email/index.ts::findStudentByEmail
@@ -31,6 +32,6 @@ export { requireStudent, type Student, type StudentEnv } from './email';
 // EN: The student lookup for the Student Council panel (subtrack 8): findStudentByEmail(env.DB, address) → { id, name, email } | null, listStudentsByIds(env.DB, ids) → { id, name, email }[], countStudents(env.DB) → the number of accounts. They return only the id, the name and the address.
 export { countStudents, findStudentByEmail, listStudentsByIds, type StudentSummary } from './email';
 
-// PL: Router podtoru 1b (kody zaproszeń, login i hasło) i funkcja tworząca kod zaproszenia dla panelu Samorządu (issueInviteCode(env.DB) → { code, expiresAt }).
-// EN: The router of subtrack 1b (invitation codes, login and password) and the function that creates an invitation code for the Student Council panel (issueInviteCode(env.DB) → { code, expiresAt }).
-export { authInviteApp, issueInviteCode } from './invite';
+// PL: Router podtoru 1b (kody zaproszeń, login i hasło), funkcja tworząca kod zaproszenia dla panelu Samorządu (issueInviteCode(env.DB) → { code, expiresAt }) i lista kodów, które jeszcze działają (listInviteCodes(env.DB) → { code, expiresAt }[], od najkrócej ważnego). Panel Samorządu (podtor 8) pokazuje listę na ekranie „Kody zaproszeń”.
+// EN: The router of subtrack 1b (invitation codes, login and password), the function that creates an invitation code for the Student Council panel (issueInviteCode(env.DB) → { code, expiresAt }) and the list of codes that still work (listInviteCodes(env.DB) → { code, expiresAt }[], from the one valid for the shortest time). The Student Council panel (subtrack 8) shows the list on the "Invitation codes" screen.
+export { authInviteApp, issueInviteCode, listInviteCodes } from './invite';
