@@ -20,7 +20,7 @@ import { authClient } from './authApi';
  * PL: Klucz zapytania o sesję. Po zalogowaniu useSessionRefresh unieważnia to zapytanie, żeby sesja odświeżyła się od razu.
  * EN: The session query key. After sign-in useSessionRefresh invalidates this query so the session refreshes right away.
  */
-const SESSION_QUERY_KEY = ['auth', 'session'] as const;
+export const SESSION_QUERY_KEY = ['auth', 'session'] as const;
 
 /**
  * PL: Zalogowany uczeń: numer i adres szkolny.

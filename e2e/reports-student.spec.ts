@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżki ucznia w podtorze 4a: zgłoszenie w trzech krokach, krok „Ktoś już to zgłosił?” z dołączeniem „Mnie też”, potwierdzenie i „Moje zgłoszenia” z etapem. Do tego blokady przycisków, szerokość 320 px, brak internetu i błąd serwera. Główna ścieżka używa podstawionego API z pamięcią (prawdziwe wymaga logowania).
- * EN: Test of the student path in subtrack 4a: a report in three steps, the "Ktoś już to zgłosił?" step with the "Mnie też" join, the confirmation and "Moje zgłoszenia" with the stage. Plus the button guards, 320 px width, no internet and a server error. The main path uses a stubbed API with memory (the real one requires sign-in).
+ * PL: Test ścieżki ucznia w podtorze 4a: zgłoszenie w trzech krokach, krok „Ktoś już to zgłosił?” z dołączeniem „Mnie też”, potwierdzenie i „Moje zgłoszenia” z etapem i odpowiedzią Samorządu na osi historii. Do tego blokady przycisków, szerokość 320 px, brak internetu i błąd serwera. Główna ścieżka używa podstawionego API z pamięcią (prawdziwe wymaga logowania).
+ * EN: Test of the student path in subtrack 4a: a report in three steps, the "Ktoś już to zgłosił?" step with the "Mnie też" join, the confirmation and "Moje zgłoszenia" with the stage and the Student Council answer on the history axis. Plus the button guards, 320 px width, no internet and a server error. The main path uses a stubbed API with memory (the real one requires sign-in).
  *
  * @author Szymon
  * @since 2026-10-09
@@ -100,7 +100,7 @@ async function stubReportsApi(page: Page): Promise<void> {
     // EN: POST appends a report at the "received" stage and returns the id.
     const body = route.request().postDataJSON() as { category: string; place: string; placeDetail?: string; description: string };
     const now = Date.now();
-    saved.unshift({ id: `e2e-${now}`, category: body.category, place: body.place, placeDetail: body.placeDetail ?? null, description: body.description, stage: 'received', createdAt: now, updatedAt: now });
+    saved.unshift({ id: `e2e-${now}`, category: body.category, place: body.place, placeDetail: body.placeDetail ?? null, description: body.description, stage: 'received', createdAt: now, updatedAt: now, history: [{ stage: 'received', note: null, changedAt: now }] });
     return route.fulfill({ status: 201, json: { id: `e2e-${now}` } });
   });
 }
@@ -130,6 +130,41 @@ test('uczeń wysyła zgłoszenie i widzi je w „Moich zgłoszeniach” / studen
   await expect(tile).toBeVisible();
   await expect(tile.getByText('Sala lub sprzęt')).toBeVisible();
   await expect(tile.locator('[aria-current="step"]')).toHaveText('Przyjęte');
+  // PL: Oś historii ma pierwszy wpis z etapem „Przyjęte” i bez odpowiedzi.
+  // EN: The history axis has the first entry with the "Przyjęte" stage and no answer.
+  await expect(tile.getByRole('list', { name: 'Historia zgłoszenia' }).getByText('Przyjęte')).toBeVisible();
+  await expect(tile.getByText('Odpowiedź Samorządu')).toHaveCount(0);
+});
+
+// PL: Odpowiedź Samorządu przy zmianie etapu widzi uczeń na osi historii przy swoim zgłoszeniu.
+// EN: The student sees the Student Council answer given with a stage change on the history axis of their report.
+test('uczeń widzi odpowiedź Samorządu przy etapie / student sees the Student Council answer next to the stage', async ({ page }) => {
+  // PL: Serwer zwraca zgłoszenie z dwoma wpisami historii; drugi ma odpowiedź.
+  // EN: The server returns a report with two history entries; the second one has an answer.
+  const report = {
+    id: 'e2e-odpowiedz',
+    category: 'room_equipment',
+    place: 'classroom',
+    placeDetail: null,
+    description: 'Projektor nie włącza się',
+    stage: 'in_progress',
+    createdAt: Date.UTC(2026, 9, 6, 8, 0),
+    updatedAt: Date.UTC(2026, 9, 7, 8, 0),
+    history: [
+      { stage: 'received', note: null, changedAt: Date.UTC(2026, 9, 6, 8, 0) },
+      { stage: 'in_progress', note: 'Sprawdzimy projektor na przerwie obiadowej.', changedAt: Date.UTC(2026, 9, 7, 8, 0) },
+    ],
+  };
+  await page.route('**/api/reports/student', (route) => route.fulfill({ json: { reports: [report] } }));
+
+  // PL: Otwórz listę: odpowiedź Samorządu stoi przy etapie „W trakcie”.
+  // EN: Open the list: the Student Council answer stands next to the "W trakcie" stage.
+  await page.goto('/reports/student/moje');
+  const tile = page.getByRole('listitem').filter({ hasText: 'Projektor nie włącza się' });
+  const history = tile.getByRole('list', { name: 'Historia zgłoszenia' });
+  await expect(history.getByRole('listitem')).toHaveCount(2);
+  await expect(history.getByText('Odpowiedź Samorządu')).toBeVisible();
+  await expect(history.getByText('Sprawdzimy projektor na przerwie obiadowej.')).toBeVisible();
 });
 
 // PL: Krok podobnych zgłoszeń: licznik „Mnie też”, dołączenie bez tworzenia duplikatu i brak autora na ekranie.
@@ -240,7 +275,7 @@ test('błąd serwera pokazuje komunikat i zachowuje opis / a server error shows 
 test('bez internetu: błąd przy wysyłaniu, pasek i zachowana lista / offline: a send error, the banner and a kept list', async ({ page, context }) => {
   // PL: Serwer zwraca jedno zgłoszenie, żeby test nie zależał od bazy.
   // EN: The server returns one report, so the test does not depend on the database.
-  const report = { id: 'e2e-1', category: 'safety', place: 'gym', placeDetail: null, description: 'Luźna deska w sali', stage: 'in_progress', createdAt: Date.UTC(2026, 9, 6, 8, 0), updatedAt: Date.UTC(2026, 9, 7, 8, 0) };
+  const report = { id: 'e2e-1', category: 'safety', place: 'gym', placeDetail: null, description: 'Luźna deska w sali', stage: 'in_progress', createdAt: Date.UTC(2026, 9, 6, 8, 0), updatedAt: Date.UTC(2026, 9, 7, 8, 0), history: [{ stage: 'received', note: null, changedAt: Date.UTC(2026, 9, 6, 8, 0) }, { stage: 'in_progress', note: null, changedAt: Date.UTC(2026, 9, 7, 8, 0) }] };
   await page.route('**/api/reports/student', (route) => (route.request().method() === 'GET' ? route.fulfill({ json: { reports: [report] } }) : route.continue()));
 
   // PL: Otwórz listę online: widać zgłoszenie z etapem „W trakcie”.

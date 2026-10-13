@@ -153,10 +153,17 @@ describe('DashboardHeader', () => {
   // PL: Licznik do dzwonka pokazuje pusty stan (plan jest pusty, a pulpit go nie widzi) i prowadzi do ekranu /bell.
   // EN: The bell countdown shows the empty state (the plan is empty and the dashboard cannot see it) and leads to the /bell screen.
   it('ma powitanie i pusty licznik, który prowadzi do dzwonka / has the greeting and the empty countdown that leads to the bell', () => {
-    const result = html(<DashboardHeader />);
+    const result = html(<DashboardHeader editing={false} onToggleEdit={() => {}} />);
 
     expect(result).toContain('Cześć');
     expect(result).toContain('Brak planu dzwonków');
     expect(result).toContain('href="/bell"');
+  });
+
+  // PL: Przycisk układu pokazuje „Zmień układ” poza trybem edycji i „Gotowe” w trybie edycji.
+  // EN: The layout button shows "Zmień układ" outside the edit mode and "Gotowe" in the edit mode.
+  it('przycisk układu zmienia napis / the layout button changes its label', () => {
+    expect(html(<DashboardHeader editing={false} onToggleEdit={() => {}} />)).toContain('Zmień układ');
+    expect(html(<DashboardHeader editing onToggleEdit={() => {}} />)).toContain('Gotowe');
   });
 });

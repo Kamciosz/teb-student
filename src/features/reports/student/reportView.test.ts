@@ -1,10 +1,11 @@
 /**
- * PL: Test czystych funkcji widoku „Moje zgłoszenia”: segmenty paska etapu i krótka data.
- * EN: Test of the pure functions of the "Moje zgłoszenia" view: the stage bar segments and the short date.
+ * PL: Test czystych funkcji widoku „Moje zgłoszenia”: segmenty paska etapu, nazwa etapu i krótka data.
+ * EN: Test of the pure functions of the "Moje zgłoszenia" view: the stage bar segments, the stage name and the short date.
  *
  * @author Szymon
  * @since 2026-10-09
  * @uses src/features/reports/student/reportView.ts::stageSegments
+ * @uses src/features/reports/student/reportView.ts::stageLabel
  * @used_by vitest.config.ts::include
  */
 
@@ -13,7 +14,7 @@
 import { describe, expect, it } from 'vitest';
 // PL: Funkcje, które sprawdzamy.
 // EN: The functions under test.
-import { formatShortDate, stageSegments } from './reportView';
+import { formatShortDate, stageLabel, stageSegments } from './reportView';
 
 // PL: Grupa testów paska etapu.
 // EN: A group of tests for the stage bar.
@@ -36,6 +37,30 @@ describe('stageSegments', () => {
     // PL: Sprawdź etap spoza listy.
     // EN: Check a stage outside the list.
     expect(stageSegments('coś-nowego')).toEqual([true, false, false]);
+  });
+});
+
+// PL: Grupa testów nazwy etapu.
+// EN: A group of tests for the stage name.
+describe('stageLabel', () => {
+  // PL: Kod etapu zamienia się na nazwę z listy.
+  // EN: A stage code turns into the name from the list.
+  it.each([
+    ['received', 'Przyjęte'],
+    ['in_progress', 'W trakcie'],
+    ['resolved', 'Załatwione'],
+  ])('etap %s to „%s” / stage %s', (stage, expected) => {
+    // PL: Porównaj z nazwą z listy.
+    // EN: Compare with the name from the list.
+    expect(stageLabel(stage)).toBe(expected);
+  });
+
+  // PL: Nieznany kod nie znika z ekranu, tylko wraca jako tekst.
+  // EN: An unknown code does not vanish from the screen, it comes back as text.
+  it('nieznany kod wraca bez zmian / an unknown code comes back unchanged', () => {
+    // PL: Sprawdź kod spoza listy.
+    // EN: Check a code outside the list.
+    expect(stageLabel('coś-nowego')).toBe('coś-nowego');
   });
 });
 
