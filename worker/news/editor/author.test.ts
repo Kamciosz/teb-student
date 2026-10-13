@@ -95,3 +95,22 @@ describe('requireNewsAuthor', () => {
     expect(await db.select().from(newsEntries)).toHaveLength(1);
   });
 });
+
+describe('requireNewsAuthor na trasach edycji / on the editing routes', () => {
+  // PL: Odczyt i zapis szkicu wymagają tej samej roli co zapis nowego wpisu.
+  // EN: Reading and saving a draft require the same role as saving a new entry.
+  const routes: Array<[string, string]> = [
+    ['GET', '/entries/00000000-0000-4000-8000-000000000001'],
+    ['PUT', '/entries/00000000-0000-4000-8000-000000000001'],
+  ];
+
+  it.each(routes)('%s %s: bez sesji daje 401 / without a session gives 401', async (method, path) => {
+    const response = await newsEditorApp.request(path, { method, body: method === 'GET' ? undefined : JSON.stringify(ENTRY) }, { ...env, BETTER_AUTH_SECRET: TEST_SECRET });
+    expect(response.status).toBe(401);
+  });
+
+  it.each(routes)('%s %s: uczeń bez roli daje 403 / a student without a role gives 403', async (method, path) => {
+    const response = await newsEditorApp.request(path, { method, body: method === 'GET' ? undefined : JSON.stringify(ENTRY), headers: { cookie } }, { ...env, BETTER_AUTH_SECRET: TEST_SECRET });
+    expect(response.status).toBe(403);
+  });
+});

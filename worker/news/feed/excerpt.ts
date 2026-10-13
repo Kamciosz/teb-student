@@ -6,6 +6,7 @@
  * @since 2026-10-09
  * @used_by worker/news/feed/routes.ts::toSummary
  * @used_by worker/news/feed/excerpt.test.ts::excerptFromBody
+ * @used_by worker/news/feed/queries.ts::matchesTerm
  */
 
 /**
@@ -85,4 +86,26 @@ export function excerptFromBody(body: unknown): string {
   // PL: Żaden blok nie ma tekstu, na przykład sam film.
   // EN: No block has text, for example a video alone.
   return '';
+}
+
+/**
+ * PL: Zwraca cały tekst treści w jednej linii, bez skracania. Służy wyszukiwaniu, a nie listy.
+ * EN: Returns the whole text of the content in one line, without cutting. It serves the search, not the list.
+ *
+ * @param body - PL: treść wpisu z bazy. EN: the entry content from the database.
+ * @returns PL: tekst wszystkich bloków z pojedynczymi spacjami. EN: the text of all blocks with single spaces.
+ */
+export function plainTextOf(body: unknown): string {
+  // PL: Ten sam warunek co w excerptFromBody: bez listy bloków nie ma tekstu.
+  // EN: The same condition as in excerptFromBody: without a list of blocks there is no text.
+  const blocks = (body as { content?: unknown } | null)?.content;
+  if (!Array.isArray(blocks)) return '';
+
+  // PL: Bloki łączymy spacją, żeby słowa z różnych akapitów się nie skleiły.
+  // EN: We join the blocks with a space, so words from different paragraphs do not stick together.
+  return blocks
+    .map((block) => textOf(block, 0))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }

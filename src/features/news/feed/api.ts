@@ -41,7 +41,7 @@ export class NewsApiError extends Error {
  * PL: Pobiera JSON z adresu i rzuca NewsApiError, gdy kod nie jest 2xx.
  * EN: Fetches JSON from an address and throws NewsApiError when the code is not 2xx.
  *
- * @param path - PL: ścieżka pod adresem serwera aktualności (pusta dla listy, bo adres z ukośnikiem na końcu daje 404). EN: the path under the news server address (empty for the list, because an address with a trailing slash gives 404).
+ * @param path - PL: ścieżka pod adresem serwera aktualności, z opcjonalnym zapytaniem (pusta dla całej listy, bo adres z ukośnikiem na końcu daje 404). EN: the path under the news server address, with an optional query (empty for the whole list, because an address with a trailing slash gives 404).
  * @returns PL: odpowiedź jako obiekt JSON. EN: the answer as a JSON object.
  */
 async function getJson(path: string): Promise<unknown> {
@@ -51,13 +51,15 @@ async function getJson(path: string): Promise<unknown> {
 }
 
 /**
- * PL: Pobiera listę opublikowanych wpisów.
- * EN: Fetches the list of published entries.
+ * PL: Pobiera listę opublikowanych wpisów. Z szukanym tekstem zwraca tylko pasujące.
+ * EN: Fetches the list of published entries. With a searched text it returns only the matching ones.
  *
+ * @param term - PL: szukany tekst; pusty znaczy cała lista. EN: the searched text; empty means the whole list.
  * @returns PL: wpisy od najnowszego. EN: the entries, newest first.
  */
-export async function fetchEntries(): Promise<NewsEntrySummary[]> {
-  const data = (await getJson('')) as { entries: NewsEntrySummary[] };
+export async function fetchEntries(term = ''): Promise<NewsEntrySummary[]> {
+  const path = term === '' ? '' : `?q=${encodeURIComponent(term)}`;
+  const data = (await getJson(path)) as { entries: NewsEntrySummary[] };
   return data.entries;
 }
 
