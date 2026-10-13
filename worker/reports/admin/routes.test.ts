@@ -1,6 +1,6 @@
 /**
- * PL: Test routera podtoru 4b na prawdziwej bazie D1 z testowego Workera. Sprawdza dostęp (401 bez sesji, 403 bez roli albo z rolą redakcji, wpuszczenie Samorządu i administratora), listę, szczegół, zmianę etapu z historią, błędy (400, 404) i to, że odpowiedź HTTP nie zawiera numeru autora, także dla zgłoszeń z autorem.
- * EN: Test of the 4b router on a real D1 database of the test Worker. Checks access (401 without a session, 403 without a role or with the editorial role, letting in the Council and the administrator), the list, the detail, the stage change with history, errors (400, 404) and that the HTTP response never contains the author id, also for reports with an author.
+ * PL: Test routera podtoru 4b na prawdziwej bazie D1 z testowego Workera. Sprawdza dostęp (401 bez sesji, 403 bez roli albo z rolą redakcji, wpuszczenie Samorządu i administratora), listę, szczegół, zmianę etapu z historią, błędy (400, 404), to, że odpowiedź HTTP nie zawiera numeru autora, także dla zgłoszeń z autorem, oraz to, że zgłoszenie nieanonimowe wraca z imieniem i klasą autora, a anonimowe nie wraca z nimi wcale.
+ * EN: Test of the 4b router on a real D1 database of the test Worker. Checks access (401 without a session, 403 without a role or with the editorial role, letting in the Council and the administrator), the list, the detail, the stage change with history, errors (400, 404), that the HTTP response never contains the author id, also for reports with an author, and that a signed report comes back with the author's name and class, while an anonymous one never comes back with them.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -12,7 +12,7 @@
 
 // PL: Funkcje testowe Vitest.
 // EN: Vitest test functions.
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 // PL: Środowisko testowe Workera (baza D1 i ustawienia).
 // EN: The Worker test environment (the D1 database and the settings).
 import { env } from 'cloudflare:workers';
@@ -221,6 +221,79 @@ describe('anonimowość w odpowiedzi HTTP / anonymity in the HTTP response', () 
     // PL: Zmień etap zgłoszenia anonimowego i sprawdź odpowiedź.
     // EN: Change the stage of an anonymous report and check the response.
     await expectNoAuthor(await patchStage('seed-projektor', { stage: 'resolved' }));
+  });
+});
+
+// PL: Zgłoszenie nieanonimowe wraca z imieniem i klasą autora z profilu, a anonimowe nie dostaje żadnych danych autora, nawet gdy profil istnieje.
+// EN: A signed report comes back with the author's name and class from the profile, and an anonymous one gets no author data at all, even when a profile exists.
+describe('imię i klasa autora / the author name and class', () => {
+  // PL: Profile testowe sprzątamy po każdym teście, żeby nie zostawały w bazie.
+  // EN: We clean the test profiles after every test, so they do not stay in the database.
+  afterEach(async () => {
+    await db.prepare('DELETE FROM profiles WHERE user_id IN (?, ?)').bind(studentId, OTHER_STUDENT_ID).run();
+  });
+
+  /**
+   * PL: Zapisuje profil ucznia wprost w bazie testowej.
+   * EN: Saves a student's profile directly in the test database.
+   *
+   * @param userId - PL: numer ucznia. EN: the student id.
+   * @param name - PL: imię. EN: the name.
+   * @param className - PL: klasa. EN: the class.
+   */
+  async function saveProfile(userId: string, name: string, className: string): Promise<void> {
+    // PL: Wiersz profilu z tymi samymi kolumnami co w schemacie.
+    // EN: A profile row with the same columns as in the schema.
+    await db
+      .prepare('INSERT OR REPLACE INTO profiles (user_id, name, class_name, school, palette, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(userId, name, className, 'L', 'CE', Date.now())
+      .run();
+  }
+
+  // PL: Zgłoszenie podpisane przez innego ucznia wraca z jego imieniem i klasą, bez numeru ucznia.
+  // EN: A report signed by another student comes back with their name and class, without the student id.
+  it('zgłoszenie nieanonimowe ma imię i klasę autora / a signed report has the author name and class', async () => {
+    // PL: Zapisz profil autora i odczytaj zgłoszenie podpisane przez niego.
+    // EN: Save the author's profile and read the report they signed.
+    await saveProfile(OTHER_STUDENT_ID, 'Anna Nowak', '3B');
+    const response = await send('/seed-cudze');
+    const text = await response.text();
+
+    // PL: Odpowiedź ma imię i klasę, a numer autora nie pojawia się w tekście.
+    // EN: The response has the name and class, and the author id does not appear in the text.
+    expect(response.status).toBe(200);
+    expect((JSON.parse(text) as { student: unknown }).student).toEqual({ name: 'Anna Nowak', className: '3B' });
+    expect(text).not.toContain(OTHER_STUDENT_ID);
+  });
+
+  // PL: Podpisane zgłoszenie bez profilu autora ma `student` równe null, a napis z panelu zostaje.
+  // EN: A signed report without the author's profile has `student` equal to null, and the label in the panel stays.
+  it('zgłoszenie nieanonimowe bez profilu ma student null / a signed report without a profile has student null', async () => {
+    // PL: Nie zapisujemy profilu autora i odczytujemy zgłoszenie podpisane przez niego.
+    // EN: We do not save the author's profile and read the report they signed.
+    const response = await send('/seed-cudze');
+
+    // PL: Odpowiedź jest udana, a `student` to null.
+    // EN: The answer is successful, and `student` is null.
+    expect(response.status).toBe(200);
+    expect(((await response.json()) as { student: unknown }).student).toBeNull();
+  });
+
+  // PL: Anonimowe zgłoszenie nie dostaje danych autora, nawet gdy profil autora (tu ucznia z sesji) istnieje.
+  // EN: An anonymous report gets no author data, even when the author's profile (here the signed-in student's) exists.
+  it('zgłoszenie anonimowe nie dostaje danych autora, nawet z profilem / an anonymous report gets no author data, even with a profile', async () => {
+    // PL: Zapisz profil ucznia z sesji, który jest autorem anonimowego zgłoszenia, i odczytaj je.
+    // EN: Save the profile of the signed-in student, who is the author of the anonymous report, and read it.
+    await saveProfile(studentId, 'Jan Testowy', '2A');
+    const response = await send('/seed-projektor');
+    const text = await response.text();
+
+    // PL: `student` to null, a w tekście nie ma ani imienia, ani numeru ucznia.
+    // EN: `student` is null, and the text has neither the name nor the student id.
+    expect(response.status).toBe(200);
+    expect((JSON.parse(text) as { student: unknown }).student).toBeNull();
+    expect(text).not.toContain('Jan Testowy');
+    expect(text).not.toContain(studentId);
   });
 });
 
