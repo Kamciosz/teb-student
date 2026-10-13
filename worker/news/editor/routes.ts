@@ -1,12 +1,13 @@
 /**
- * PL: Router Hono podtoru 3b (edytor wpisów): POST /entries sprawdza wpis od telefonu (typ, tytuł, stan, treść według schematu) i zapisuje go jako szkic albo opublikowany. GET i PUT /entries/:id czytają szkic do edycji i zapisują jego zmiany (opublikowany wpis nie wraca do edycji i nie przyjmuje zmian). Zapis i odczyt chroni strażnik (sesja i rola autora). Ten sam kod przyjmuje szkic i publikację, więc podtor 3c (lista w panelu, publikacja szkicu, usuwanie) dopisuje swoje adresy w swoim routerze. Router jest podpięty pod /api/news/editor w worker/mounts.ts.
- * EN: The Hono router of subtrack 3b (entry editor): POST /entries checks an entry from the phone (type, title, status, content against the schema) and saves it as a draft or published. GET and PUT /entries/:id read a draft for editing and save its changes (a published entry does not come back for editing and takes no changes). A guard (session and author role) protects reading and writing. The same code accepts a draft and a publication, so subtrack 3c (the panel list, publishing a draft, deleting) adds its routes in its own router. The router is mounted under /api/news/editor in worker/mounts.ts.
+ * PL: Router Hono podtoru 3b (edytor wpisów): POST /entries sprawdza wpis od telefonu (typ, tytuł, stan, treść według schematu) i zapisuje go jako szkic albo opublikowany, z autorem z sesji (nie z ciała zapytania). GET i PUT /entries/:id czytają szkic do edycji i zapisują jego zmiany (opublikowany wpis nie wraca do edycji i nie przyjmuje zmian). Zapis i odczyt chroni strażnik (sesja i rola autora). Ten sam kod przyjmuje szkic i publikację, więc podtor 3c (lista w panelu, publikacja szkicu, usuwanie) dopisuje swoje adresy w swoim routerze. Router jest podpięty pod /api/news/editor w worker/mounts.ts.
+ * EN: The Hono router of subtrack 3b (entry editor): POST /entries checks an entry from the phone (type, title, status, content against the schema) and saves it as a draft or published, with the author taken from the session (not from the request body). GET and PUT /entries/:id read a draft for editing and save its changes (a published entry does not come back for editing and takes no changes). A guard (session and author role) protects reading and writing. The same code accepts a draft and a publication, so subtrack 3c (the panel list, publishing a draft, deleting) adds its routes in its own router. The router is mounted under /api/news/editor in worker/mounts.ts.
  *
  * @author Szymon
  * @since 2026-10-12
  * @uses worker/news/editor/validateEntry.ts::validateEntry
  * @uses worker/news/editor/author.ts::requireNewsAuthor
  * @uses worker/db/schema/news.ts::newsEntries
+ * @uses worker/auth/email/session.ts::Student
  * @used_by worker/news/editor/index.ts::newsEditorApp
  * @used_by worker/news/editor/routes.test.ts::createNewsEditorApp
  */
@@ -52,18 +53,19 @@ async function readJson(context: Context<StudentEnv>): Promise<{ value: unknown 
 }
 
 /**
- * PL: Zapisuje sprawdzony wpis w bazie. Publikacja dostaje chwilę publikacji, szkic jej nie ma.
- * EN: Saves a checked entry in the database. A publication gets a publication moment, a draft has none.
+ * PL: Zapisuje sprawdzony wpis w bazie. Publikacja dostaje chwilę publikacji, szkic jej nie ma. Autor to konto z sesji, przekazane przez wywołującego.
+ * EN: Saves a checked entry in the database. A publication gets a publication moment, a draft has none. The author is the account from the session, passed in by the caller.
  *
  * @param db - PL: baza D1. EN: the D1 database.
  * @param entry - PL: wpis po sprawdzeniu. EN: the checked entry.
+ * @param authorUserId - PL: numer konta autora z sesji. EN: the id of the author's account from the session.
  * @returns PL: numer nowego wpisu. EN: the id of the new entry.
  * @throws PL: błąd bazy, gdy zapis się nie uda. EN: a database error when the save fails.
  */
-async function insertEntry(db: D1Database, entry: CheckedEntry): Promise<string> {
+async function insertEntry(db: D1Database, entry: CheckedEntry, authorUserId: string): Promise<string> {
   const id = crypto.randomUUID();
   const publishedAt = entry.status === 'published' ? new Date() : null;
-  await drizzle(db).insert(newsEntries).values({ id, ...entry, source: ENTRY_SOURCE, publishedAt });
+  await drizzle(db).insert(newsEntries).values({ id, ...entry, source: ENTRY_SOURCE, authorUserId, publishedAt });
   return id;
 }
 
@@ -121,8 +123,11 @@ export function createNewsEditorApp(guard: MiddlewareHandler<StudentEnv>) {
     // EN: An entry the schema does not accept never reaches the database.
     const result = validateEntry(input.value);
     if (!result.ok) return context.json({ error: 'invalid_entry', reason: result.reason }, 422);
+    // PL: Autor to konto zalogowane w sesji (ustawia je strażnik). Pole author z ciała zapytania jest ignorowane, bo validateEntry go nie przepisuje.
+    // EN: The author is the account signed in the session (the guard sets it). An author field in the request body is ignored, because validateEntry does not copy it.
+    const { id: authorUserId } = context.get('student');
     try {
-      return context.json({ id: await insertEntry(context.env.DB, result.entry) }, 201);
+      return context.json({ id: await insertEntry(context.env.DB, result.entry, authorUserId) }, 201);
     } catch {
       // PL: Błąd bazy nie wycieka do telefonu: odpowiadamy samym kodem.
       // EN: A database error does not leak to the phone: we answer with the code only.
@@ -143,8 +148,8 @@ export function createNewsEditorApp(guard: MiddlewareHandler<StudentEnv>) {
     }
   });
 
-  // PL: Zapis zmian w szkicu, także publikacja szkicu. Ten sam wpis, bez nowego numeru. Opublikowany wpis nie przyjmuje zmian (409).
-  // EN: Saving changes to a draft, also publishing a draft. The same entry, without a new id. A published entry takes no changes (409).
+  // PL: Zapis zmian w szkicu, także publikacja szkicu. Ten sam wpis, bez nowego numeru. Opublikowany wpis nie przyjmuje zmian (409). Autor się nie zmienia: aktualizacja nie zawiera pola autora, więc zostaje ten, kto zapisał wpis jako pierwszy.
+  // EN: Saving changes to a draft, also publishing a draft. The same entry, without a new id. A published entry takes no changes (409). The author does not change: the update has no author field, so the one who first saved the entry stays.
   app.put('/entries/:id', guard, async (context) => {
     const id = context.req.param('id');
     const input = await readJson(context);
