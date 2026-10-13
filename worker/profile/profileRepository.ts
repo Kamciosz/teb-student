@@ -22,10 +22,10 @@ import { profiles } from '../db/schema/profile';
 import type { ProfileInput } from './validation';
 
 /**
- * PL: Profil, który widzi uczeń, gdy jeszcze niczego nie zapisał: puste imię i klasa oraz domyślny wygląd (liceum, paleta CE, jak w src/shared/styles/tokens.css).
- * EN: The profile a student sees before saving anything: an empty name and class and the default look (lyceum, palette CE, as in src/shared/styles/tokens.css).
+ * PL: Profil, który widzi uczeń, gdy jeszcze niczego nie zapisał: puste imię i klasa oraz domyślny wygląd (liceum, paleta CE, jak w src/shared/styles/tokens.css, tekst normalny).
+ * EN: The profile a student sees before saving anything: an empty name and class and the default look (lyceum, palette CE, as in src/shared/styles/tokens.css, normal text).
  */
-export const DEFAULT_PROFILE: ProfileInput = { name: '', className: '', school: 'L', palette: 'CE' };
+export const DEFAULT_PROFILE: ProfileInput = { name: '', className: '', school: 'L', palette: 'CE', textSize: 'normalny' };
 
 /**
  * PL: Czyta profil ucznia.
@@ -39,7 +39,7 @@ export async function getProfile(db: D1Database, userId: string): Promise<Profil
   // PL: Wybierz tylko pola profilu, bez numeru ucznia i czasu zapisu.
   // EN: Select only the profile fields, without the student id and the save time.
   const [row] = await drizzle(db)
-    .select({ name: profiles.name, className: profiles.className, school: profiles.school, palette: profiles.palette })
+    .select({ name: profiles.name, className: profiles.className, school: profiles.school, palette: profiles.palette, textSize: profiles.textSize })
     .from(profiles)
     .where(eq(profiles.userId, userId));
   return row ?? DEFAULT_PROFILE;

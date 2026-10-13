@@ -1,11 +1,13 @@
 /**
- * PL: Zapytania TanStack Query dla profilu: odczyt, zapis i usunięcie konta. Odczyt trafia do wspólnej pamięci podręcznej, więc bez internetu ekran pokazuje ostatnio pobrany profil. Pobrany i zapisany profil od razu ustawia wygląd aplikacji.
+ * PL: Zapytania TanStack Query dla profilu: odczyt, zapis i usunięcie konta. Odczyt trafia do wspólnej pamięci podręcznej, więc bez internetu ekran pokazuje ostatnio pobrany profil. Pobrany i zapisany profil od razu ustawia wygląd aplikacji (paletę, szkołę i rozmiar tekstu).
  * EN: The TanStack Query hooks for the profile: reading, saving and deleting the account. The read goes into the shared cache, so without internet the screen shows the last fetched profile. A fetched and a saved profile immediately set the app look.
  *
  * @author Jakub
  * @since 2026-10-11
  * @uses src/features/profile/api.ts::fetchProfile
  * @uses src/features/profile/look.ts::applyLook
+ * @uses src/features/profile/textSize.ts::applyTextSize
+ * @uses src/features/profile/textSize.ts::resetTextSize
  * @uses src/shared/index.ts::clearQueryData
  * @used_by src/features/profile/ProfileHome.tsx::useProfile
  * @used_by src/features/profile/SettingsScreen.tsx::useSaveProfile
@@ -25,6 +27,7 @@ import { clearQueryData } from '../../shared';
 // EN: The talk with the server and the look.
 import { deleteAccount, fetchProfile, saveProfile, type Profile } from './api';
 import { applyLook, resetLook } from './look';
+import { applyTextSize, resetTextSize } from './textSize';
 
 /** PL: Klucz zapytania o profil w pamięci podręcznej. EN: The profile query key in the cache. */
 const PROFILE_KEY = ['profile'] as const;
@@ -44,7 +47,10 @@ export function useProfile() {
   // PL: Po nadejściu danych ustaw wygląd z profilu. Serwer jest źródłem prawdy, więc nowy telefon dostaje wygląd konta.
   // EN: When the data arrives, set the look from the profile. The server is the source of truth, so a new phone gets the account's look.
   useEffect(() => {
-    if (data) applyLook({ palette: data.palette, school: data.school });
+    if (data) {
+      applyLook({ palette: data.palette, school: data.school });
+      applyTextSize(data.textSize);
+    }
   }, [data]);
 
   return query;
@@ -82,9 +88,10 @@ export function useDeleteAccount() {
     mutationFn: deleteAccount,
     networkMode: 'always',
     onSuccess: () => {
-      // PL: Konto nie istnieje, więc najpierw wróć do wyglądu domyślnego, a potem wyczyść zapisane dane (profil, zgłoszenia, sesję). clearQueryData na końcu przenosi na ekran logowania.
-      // EN: The account no longer exists, so first go back to the default look, then clear the saved data (profile, reports, session). clearQueryData finally takes the student to the sign-in screen.
+      // PL: Konto nie istnieje, więc najpierw wróć do wyglądu i zwykłego tekstu domyślnych, a potem wyczyść zapisane dane (profil, zgłoszenia, sesję). clearQueryData na końcu przenosi na ekran logowania.
+      // EN: The account no longer exists, so first go back to the default look and normal text, then clear the saved data (profile, reports, session). clearQueryData finally takes the student to the sign-in screen.
       resetLook();
+      resetTextSize();
       clearQueryData();
     },
   });
