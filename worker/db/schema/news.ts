@@ -29,10 +29,10 @@ export const NEWS_ENTRY_TYPES = ['important', 'news', 'event', 'sport'] as const
 export type NewsEntryType = (typeof NEWS_ENTRY_TYPES)[number];
 
 /**
- * PL: Stan wpisu: szkic widzi tylko Samorząd w panelu, opublikowany widzą wszyscy uczniowie.
- * EN: The entry state: only the Student Council sees a draft in the panel, every student sees a published entry.
+ * PL: Stan wpisu: szkic widzi tylko Samorząd w panelu, „in_review” (do korekty) czeka na drugiego redaktora i też nie jest widoczny dla ucznia, opublikowany widzą wszyscy uczniowie.
+ * EN: The entry state: only the Student Council sees a draft in the panel, an "in_review" entry (waiting for correction) waits for a second editor and is also hidden from the student, every student sees a published entry.
  */
-export const NEWS_ENTRY_STATUSES = ['draft', 'published'] as const;
+export const NEWS_ENTRY_STATUSES = ['draft', 'in_review', 'published'] as const;
 
 /**
  * PL: Stan wpisu: jedna z wartości NEWS_ENTRY_STATUSES.
