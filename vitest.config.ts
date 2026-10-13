@@ -40,5 +40,8 @@ export default defineConfig({
     // PL: Tylko pliki testów jednostkowych. Testy Playwright są w e2e/ i mają własne polecenie.
     // EN: Only unit test files. Playwright tests live in e2e/ and have their own command.
     include: ['worker/**/*.test.ts', 'src/**/*.test.{ts,tsx}'],
+    // PL: Domyślnie Vitest zamienia pliki CSS na pusty tekst. Testy czytają CSS jako tekst (?raw), więc prosimy o prawdziwą treść.
+    // EN: By default Vitest replaces CSS files with empty text. The tests read CSS as text (?raw), so we ask for the real content.
+    css: { include: [/\.css(\?.*)?$/] },
   },
 });
