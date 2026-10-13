@@ -73,6 +73,37 @@ describe('GET /', () => {
   });
 });
 
+// PL: Grupa testów szukania w liście (parametr q).
+// EN: A group of search tests on the list (the q parameter).
+describe('GET / z parametrem q', () => {
+  // PL: Szukany tekst trafia w treść albo w tytuł, bez względu na wielkość liter i spacje na brzegach.
+  // EN: The searched text hits the content or the title, regardless of case and spaces at the edges.
+  it.each([
+    ['piątku', 'e1'],
+    ['TURNIEJ', 'e1'],
+    ['  turniej  ', 'e1'],
+    ['nic-takiego', undefined],
+    ['Szkic', undefined],
+  ])('q=%s zwraca %s / q=%s returns %s', async (term, expected) => {
+    const response = await newsFeedApp.request(`/?q=${encodeURIComponent(term)}`, {}, env);
+    const { entries } = (await response.json()) as { entries: { id: string }[] };
+
+    expect(response.status).toBe(200);
+    expect(entries.map((entry) => entry.id)).toEqual(expected ? [expected] : []);
+  });
+
+  // PL: Za długi tekst dostaje 400 z kodem, a tekst w granicy długości przechodzi.
+  // EN: Too long a text gets 400 with a code, and a text within the length limit passes.
+  it('za długi tekst to 400, a w granicy 200 / a too long text is 400, within the limit 200', async () => {
+    const tooLong = await newsFeedApp.request(`/?q=${'a'.repeat(101)}`, {}, env);
+    const atLimit = await newsFeedApp.request(`/?q=${'a'.repeat(100)}`, {}, env);
+
+    expect(tooLong.status).toBe(400);
+    expect(await tooLong.json()).toEqual({ error: 'query_too_long' });
+    expect(atLimit.status).toBe(200);
+  });
+});
+
 // PL: Grupa testów pojedynczego wpisu.
 // EN: A group of single entry tests.
 describe('GET /:id', () => {
