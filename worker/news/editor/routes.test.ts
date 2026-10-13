@@ -5,12 +5,14 @@
  * @author Szymon
  * @since 2026-10-12
  * @uses worker/news/editor/routes.ts::createNewsEditorApp
+ * @uses worker/db/schema/auth.ts::user
  * @used_by vitest.config.ts::include
  */
 
 import { env } from 'cloudflare:workers';
 import { drizzle } from 'drizzle-orm/d1';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { user } from '../../db/schema/auth';
 import { newsEntries } from '../../db/schema/news';
 import { createNewsEditorApp, newsEditorApp } from './routes';
 import { MAX_PUBLISH_AHEAD_MS } from './validatePublishAt';
@@ -23,9 +25,17 @@ const HOUR = 60 * 60 * 1000;
 // EN: The test database.
 const db = drizzle(env.DB);
 
-// PL: Strażnik testowy, który wpuszcza każdego. Prawdziwy strażnik (sesja i rola) ma osobne sprawdzenie niżej.
-// EN: A test guard that lets everyone in. The real guard (session and role) has a separate check below.
-const app = createNewsEditorApp(async (_context, next) => next());
+// PL: Konta w bazie: autor, który zapisuje wpis przez strażnika, i drugie konto, którego numer ktoś podstawia w ciele zapytania. Autor wpisu musi być prawdziwym kontem, bo baza pilnuje klucza obcego.
+// EN: Accounts in the database: the author who saves the entry through the guard, and a second account whose id someone puts into the request body. The entry author must be a real account, because the database enforces the foreign key.
+const AUTHOR = { id: 'autor-testowy', email: 'autor.test@teb.edu.pl' };
+const OTHER = { id: 'drugi-testowy', email: 'drugi.test@teb.edu.pl' };
+
+// PL: Strażnik testowy: wpuszcza każdego i ustawia go jako ucznia z sesji (autora). Prawdziwy strażnik (sesja i rola) ma osobne sprawdzenie niżej.
+// EN: A test guard: it lets everyone in and sets them as the student from the session (the author). The real guard (session and role) has a separate check below.
+const app = createNewsEditorApp(async (context, next) => {
+  context.set('student', AUTHOR);
+  return next();
+});
 
 // PL: Poprawna treść: jeden akapit.
 // EN: Valid content: one paragraph.
@@ -43,10 +53,15 @@ function post(entry: unknown, router: { request: typeof app.request } = app) {
   return router.request('/entries', { method: 'POST', body: typeof entry === 'string' ? entry : JSON.stringify(entry) }, env);
 }
 
-// PL: Przed każdym testem tabela jest pusta.
-// EN: Before every test the table is empty.
+// PL: Przed każdym testem tabela wpisów jest pusta, a konta są takie same jak na początku.
+// EN: Before every test the entries table is empty, and the accounts are the same as at the start.
 beforeEach(async () => {
   await db.delete(newsEntries);
+  await db.delete(user);
+  await db.insert(user).values([
+    { id: AUTHOR.id, name: 'Autor Testowy', email: AUTHOR.email, emailVerified: true },
+    { id: OTHER.id, name: 'Drugi Testowy', email: OTHER.email, emailVerified: true },
+  ]);
 });
 
 // PL: Zapis poprawnych wpisów.
@@ -57,7 +72,16 @@ describe('POST /entries: zapis / saving', () => {
     expect(response.status).toBe(201);
     const { id } = (await response.json()) as { id: string };
     const [row] = await db.select().from(newsEntries);
-    expect(row).toMatchObject({ id, type: 'news', title: 'Szkic', status: 'draft', source: 'Samorząd', publishedAt: null, body: BODY });
+    expect(row).toMatchObject({ id, type: 'news', title: 'Szkic', status: 'draft', source: 'Samorząd', authorUserId: AUTHOR.id, publishedAt: null, body: BODY });
+  });
+
+  // PL: Autor pochodzi z sesji. Pola author, authorUserId i author_user_id w ciele są ignorowane, więc do bazy trafia konto z sesji, a nie podstawione.
+  // EN: The author comes from the session. The author, authorUserId and author_user_id fields in the body are ignored, so the session account reaches the database, not the one put in.
+  it('autor z sesji, pola author z ciała ignorowane / the author from the session, author fields from the body ignored', async () => {
+    const response = await post({ type: 'news', title: 'Podstawiony', status: 'draft', body: BODY, author: OTHER.id, authorUserId: OTHER.id, author_user_id: OTHER.id });
+    expect(response.status).toBe(201);
+    const [row] = await db.select().from(newsEntries);
+    expect(row?.authorUserId).toBe(AUTHOR.id);
   });
 
   it('zapisuje publikację z chwilą publikacji / saves a publication with a publication moment', async () => {
@@ -193,6 +217,17 @@ describe('GET /entries/:id: odczyt do edycji / reading for editing', () => {
 // PL: Zapis zmian w szkicu.
 // EN: Saving changes to a draft.
 describe('PUT /entries/:id: zapis zmian / saving changes', () => {
+  // PL: Zmiana szkicu nie przepisuje autora: wpis zostaje przypisany do konta, które go zapisało, nawet gdy zmianę wysyła ktoś inny (tu: strażnik podaje innego ucznia).
+  // EN: Changing a draft does not rewrite the author: the entry stays with the account that saved it, even when someone else sends the change (here the guard passes another student).
+  it('zmiana szkicu nie zmienia autora / changing a draft does not change the author', async () => {
+    const id = crypto.randomUUID();
+    await db.insert(newsEntries).values({ id, type: 'news', title: 'Stary', status: 'draft', body: BODY, source: 'Samorząd', authorUserId: OTHER.id });
+    const response = await put(id, { type: 'news', title: 'Nowy', status: 'published', body: BODY, author_user_id: AUTHOR.id });
+    expect(response.status).toBe(200);
+    const [row] = await db.select().from(newsEntries);
+    expect(row).toMatchObject({ title: 'Nowy', status: 'published', authorUserId: OTHER.id });
+  });
+
   it('zmienia ten sam szkic, bez nowego numeru / changes the same draft, without a new id', async () => {
     const id = await seed('draft', 'Stary');
     const response = await put(id, { type: 'important', title: 'Nowy', status: 'draft', body: BODY });
