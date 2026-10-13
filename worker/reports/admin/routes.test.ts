@@ -174,12 +174,25 @@ describe('odczyt / reading', () => {
     const response = await send('/seed-okno');
     const body = (await response.json()) as { report: { id: string }; history: Record<string, unknown>[] };
 
-    // PL: Historia od najnowszego etapu, a wiersz ma tylko etap i chwilę.
-    // EN: The history from the newest stage, and a row has only the stage and the moment.
+    // PL: Historia od najnowszego etapu, a wiersz ma etap, chwilę i odpowiedź dla autora. Lista kluczy jest dokładna, więc `changedBy` (numer osoby z Samorządu) nie może się tu pojawić.
+    // EN: The history from the newest stage, and a row has the stage, the moment and the answer for the author. The key list is exact, so `changedBy` (the Council member's id) cannot appear here.
     expect(response.status).toBe(200);
     expect(body.report.id).toBe('seed-okno');
     expect(body.history.map((row) => row.stage)).toEqual(['resolved', 'in_progress', 'received']);
-    expect(Object.keys(body.history[0] ?? {}).sort()).toEqual(['changedAt', 'stage']);
+    expect(Object.keys(body.history[0] ?? {}).sort()).toEqual(['changedAt', 'note', 'stage']);
+  });
+
+  // PL: Wiersz historii z odpowiedzią dla autora niesie jej tekst, a wiersz bez odpowiedzi ma `note` równe null.
+  // EN: A history row with an answer for the author carries its text, and a row without an answer has `note` equal to null.
+  it('GET /:id niesie odpowiedź dla autora w wierszu historii / GET /:id carries the answer for the author in the history row', async () => {
+    // PL: Odczytaj zgłoszenie z historią, w której jedna zmiana ma odpowiedź, a dwie nie mają.
+    // EN: Read the report whose history has one change with an answer and two without.
+    const body = (await (await send('/seed-okno')).json()) as { history: { stage: string; note: string | null }[] };
+
+    // PL: Najnowsza zmiana (załatwione) ma odpowiedź z seedu, a zgłoszenie wpłynęło bez odpowiedzi.
+    // EN: The newest change (resolved) has the seed answer, and the report's arrival (received) has none.
+    expect(body.history.find((row) => row.stage === 'resolved')?.note).toBe('Okno wymienione, domyka się bez problemu.');
+    expect(body.history.find((row) => row.stage === 'received')?.note).toBeNull();
   });
 
   // PL: Nieznane zgłoszenie to 404.
@@ -308,6 +321,24 @@ describe('imię i klasa autora / the author name and class', () => {
     expect(text).not.toContain('Jan Testowy');
     expect(text).not.toContain(studentId);
   });
+
+  // PL: Odpowiedź dla autora przy anonimowym zgłoszeniu wraca, ale razem z nią nie wraca ani numer ucznia, ani numer osoby z Samorządu, która zmieniła etap.
+  // EN: The answer for the author on an anonymous report comes back, but neither the student id nor the id of the Council member who changed the stage comes back with it.
+  it('odpowiedź w historii anonimowego zgłoszenia nie ujawnia autora / the answer in an anonymous report history reveals no author', async () => {
+    // PL: Zapisz profil ucznia z sesji (autora anonimowego zgłoszenia) i odczytaj zgłoszenie z odpowiedzią w historii.
+    // EN: Save the profile of the signed-in student (the author of the anonymous report) and read the report with the answer in its history.
+    await saveProfile(studentId, 'Jan Testowy', '2A');
+    const response = await send('/seed-projektor');
+    const text = await response.text();
+
+    // PL: Tekst odpowiedzi jest w odpowiedzi HTTP, a imienia, numeru ucznia i numeru osoby z Samorządu (`changedBy` z seedu) nie ma.
+    // EN: The answer text is in the HTTP response, and the name, the student id and the Council member's id (`changedBy` from the seed) are not.
+    expect(response.status).toBe(200);
+    expect(text).toContain('Sprawdzimy projektor na przerwie obiadowej.');
+    expect(text).not.toContain('Jan Testowy');
+    expect(text).not.toContain(studentId);
+    expect(text).not.toContain('samorzad-testowy');
+  });
 });
 
 // PL: Zmiana etapu zapisuje etap, czas i wiersz historii z numerem osoby z sesji.
@@ -334,6 +365,22 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     // PL: Dokładnie jeden wpis w dzienniku: zmiana etapu, wykonawca z sesji i id zgłoszenia, bez treści.
     // EN: Exactly one diary entry: the stage change, the actor from the session and the report id, without the content.
     expect(await diaryRows()).toEqual([{ action: 'report_stage_changed', actor_id: studentId, target_id: 'seed-projektor' }]);
+  });
+
+  // PL: Odpowiedź wysłana razem ze zmianą etapu trafia do wiersza historii i wraca w tej samej odpowiedzi.
+  // EN: An answer sent together with the stage change goes into the history row and comes back in the same response.
+  it('zapisuje odpowiedź dla autora przy zmianie etapu / saves the answer for the author with the stage change', async () => {
+    // PL: Zmień etap z odpowiedzią i sprawdź historię w odpowiedzi i w bazie.
+    // EN: Change the stage with an answer and check the history in the response and in the database.
+    const response = await patchStage('seed-projektor', { stage: 'resolved', note: 'Projektor naprawiony.' });
+    const body = (await response.json()) as { history: { stage: string; note: string | null }[] };
+    const saved = await db.prepare("SELECT note FROM report_stage_changes WHERE report_id = ? AND stage = 'resolved'").bind('seed-projektor').first();
+
+    // PL: Odpowiedź i zapis mają ten sam tekst, a najnowszy wiersz historii go niesie.
+    // EN: The response and the saved row have the same text, and the newest history row carries it.
+    expect(response.status).toBe(200);
+    expect(saved).toEqual({ note: 'Projektor naprawiony.' });
+    expect(body.history[0]?.note).toBe('Projektor naprawiony.');
   });
 
   // PL: Ten sam etap nie dopisuje historii.

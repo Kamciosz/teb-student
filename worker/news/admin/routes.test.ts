@@ -1,6 +1,6 @@
 /**
- * PL: Test routera podtoru 3c na prawdziwej bazie D1 z testowego Workera. Sprawdza listę ze szkicami, publikację szkicu (bez przesuwania wpisu już opublikowanego), usuwanie, błędy (404, 409, 500) oraz dostęp: 401 bez sesji i 403 dla ucznia bez roli na każdym adresie, bez zmian w bazie. Szkice i usunięte wpisy sprawdza na odpowiedziach HTTP routera ucznia (podtor 3a, przez jego drzwi), nie na ekranie. Rolę zastępuje zaślepka, bo role robi podtor 8.
- * EN: Test of the subtrack 3c router on a real D1 database of the test Worker. Checks the list with drafts, publishing a draft (without moving an already published entry), deleting, errors (404, 409, 500) and access: 401 without a session and 403 for a student without a role on every route, with no database change. Drafts and deleted entries are checked on the HTTP responses of the student router (subtrack 3a, through its door), not on the screen. A stub replaces the role, because subtrack 8 builds roles.
+ * PL: Test routera podtoru 3c na prawdziwej bazie D1 z testowego Workera. Sprawdza listę ze szkicami, publikację szkicu (bez przesuwania wpisu już opublikowanego), przypinanie i odpinanie (najwyżej 3 naraz, szkic nie zajmuje miejsca), usuwanie, błędy (404, 409, 500) oraz dostęp: 401 bez sesji i 403 dla ucznia bez roli na każdym adresie, bez zmian w bazie. Szkice i usunięte wpisy sprawdza na odpowiedziach HTTP routera ucznia (podtor 3a, przez jego drzwi), nie na ekranie. Rolę zastępuje zaślepka, bo role robi podtor 8.
+ * EN: Test of the subtrack 3c router on a real D1 database of the test Worker. Checks the list with drafts, publishing a draft (without moving an already published entry), pinning and unpinning (at most 3 at once, a draft takes no place), deleting, errors (404, 409, 500) and access: 401 without a session and 403 for a student without a role on every route, with no database change. Drafts and deleted entries are checked on the HTTP responses of the student router (subtrack 3a, through its door), not on the screen. A stub replaces the role, because subtrack 8 builds roles.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -14,6 +14,7 @@
 // PL: Środowisko testowe Workera (baza D1 i ustawienia).
 // EN: The Worker test environment (the D1 database and the settings).
 import { env } from 'cloudflare:workers';
+import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { beforeEach, describe, expect, it } from 'vitest';
 // PL: Logowanie ucznia w teście. To plik pomocniczy testów, więc importujemy go wprost, jak w testach podtorów 4a i 4b.
@@ -47,6 +48,9 @@ const BODY = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'te
 /** PL: Chwila publikacji wpisu testowego: 2026-10-09 10:00 UTC. EN: The publication moment of the test entry: 2026-10-09 10:00 UTC. */
 const PUBLISHED_AT = new Date(Date.UTC(2026, 9, 9, 10, 0, 0));
 
+/** PL: Chwila przypięcia wpisu ustawiana w testach dostępu: 2026-10-10 08:00 UTC. EN: The pinning moment set in the access tests: 2026-10-10 08:00 UTC. */
+const PINNED_AT = new Date(Date.UTC(2026, 9, 10, 8, 0, 0));
+
 /**
  * PL: Czyta dziennik zmian prosto z bazy: nazwa akcji, wykonawca i cel, od najstarszego wpisu.
  * EN: Reads the change diary straight from the database: the action name, the actor and the target, from the oldest entry.
@@ -75,7 +79,7 @@ async function send(path: string, method = 'GET'): Promise<Response> {
  * PL: Czyta opublikowane wpisy tak, jak widzi je uczeń: przez router podtoru 3a.
  * EN: Reads the published entries as a student sees them: through the subtrack 3a router.
  *
- * @returns PL: numery wpisów z listy ucznia. EN: the entry ids from the student list.
+ * @returns PL: numery wpisów z listy ucznia, w kolejności listy. EN: the entry ids from the student list, in the list order.
  */
 async function studentList(): Promise<string[]> {
   // PL: Zapytanie do listy ucznia i wyciągnięcie numerów.
@@ -96,8 +100,28 @@ async function rows(): Promise<[string, string][]> {
   return (await db.select().from(newsEntries)).map((row): [string, string] => [row.id, row.status]).sort();
 }
 
-// PL: Przed każdym testem są trzy wpisy: opublikowany, szkic i drugi szkic. Dziennik jest pusty.
-// EN: Before every test there are three entries: a published one, a draft and another draft. The diary is empty.
+/**
+ * PL: Czyta numery wpisów przypiętych prosto z bazy, posortowane.
+ * EN: Reads the ids of the pinned entries straight from the database, sorted.
+ *
+ * @returns PL: numery przypiętych wpisów. EN: the ids of the pinned entries.
+ */
+async function pinnedIds(): Promise<string[]> {
+  return (await db.select().from(newsEntries)).filter((row) => row.pinnedAt !== null).map((row) => row.id).sort();
+}
+
+/**
+ * PL: Dodaje opublikowane wpisy testowe o podanych numerach.
+ * EN: Adds published test entries with the given ids.
+ *
+ * @param ids - PL: numery nowych wpisów. EN: the ids of the new entries.
+ */
+async function addPublished(ids: string[]): Promise<void> {
+  await db.insert(newsEntries).values(ids.map((id) => ({ id, type: 'news' as const, status: 'published' as const, title: id, body: BODY, source: 'Samorząd', publishedAt: PUBLISHED_AT })));
+}
+
+// PL: Przed każdym testem są trzy wpisy: opublikowany, szkic i drugi szkic. Żaden nie jest przypięty, dziennik jest pusty.
+// EN: Before every test there are three entries: a published one, a draft and another draft. None is pinned, the diary is empty.
 beforeEach(async () => {
   await db.delete(diaryEntries);
   await db.delete(newsEntries);
@@ -119,10 +143,20 @@ describe('GET /', () => {
 
     expect(response.status).toBe(200);
     expect(entries.map((entry) => [entry.id, entry.status]).sort()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
-    expect(entries.at(-1)).toEqual({ id: 'opublikowany', type: 'event', status: 'published', title: 'Turniej', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z' });
+    expect(entries.at(-1)).toEqual({ id: 'opublikowany', type: 'event', status: 'published', title: 'Turniej', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null, publishAt: null });
     expect(entries.every((entry) => !('body' in entry))).toBe(true);
     expect(await studentList()).toEqual(['opublikowany']);
     expect((await newsFeedApp.request('/szkic', {}, env)).status).toBe(404);
+  });
+
+  // PL: Zaplanowany wpis ma w liście chwilę startu jako tekst ISO, a wpis bez zaplanowania ma null.
+  // EN: A scheduled entry has its start moment in the list as an ISO string, and an unscheduled entry has null.
+  it('zwraca chwilę zaplanowania jako ISO albo null / returns the scheduling moment as ISO or null', async () => {
+    await db.update(newsEntries).set({ publishAt: new Date(Date.UTC(2030, 2, 5, 7, 30, 0)) }).where(eq(newsEntries.id, 'opublikowany'));
+    const { entries } = (await (await send('/')).json()) as { entries: Record<string, unknown>[] };
+
+    expect(entries.find((entry) => entry.id === 'opublikowany')?.publishAt).toBe('2030-03-05T07:30:00.000Z');
+    expect(entries.find((entry) => entry.id === 'szkic')?.publishAt).toBeNull();
   });
 });
 
@@ -164,6 +198,108 @@ describe('POST /:id/publish', () => {
   });
 });
 
+// PL: Przypinanie opublikowanego wpisu: najwyżej trzy naraz.
+// EN: Pinning a published entry: at most three at once.
+describe('POST /:id/pin', () => {
+  // PL: Przypięcie ustawia chwilę na teraz, a wpis zostaje opublikowany.
+  // EN: Pinning sets the moment to now, and the entry stays published.
+  it('przypina opublikowany wpis z chwilą na teraz / pins a published entry with the moment set to now', async () => {
+    const before = Date.now();
+    const response = await send('/opublikowany/pin', 'POST');
+    const after = Date.now();
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ id: 'opublikowany' });
+    const pinned = (await db.select().from(newsEntries)).find((row) => row.id === 'opublikowany')?.pinnedAt;
+    expect(pinned?.getTime()).toBeGreaterThanOrEqual(before);
+    expect(pinned?.getTime()).toBeLessThanOrEqual(after);
+    expect(await rows()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
+  });
+
+  // PL: Trzy przypięcia przechodzą, czwarte dostaje czytelny błąd „pin_limit” i nie zmienia wpisu.
+  // EN: Three pins pass, the fourth gets the readable "pin_limit" error and does not change the entry.
+  it('czwarte przypięcie daje 409 pin_limit / a fourth pin gives 409 pin_limit', async () => {
+    await addPublished(['p-2', 'p-3', 'p-4']);
+
+    expect((await send('/opublikowany/pin', 'POST')).status).toBe(200);
+    expect((await send('/p-2/pin', 'POST')).status).toBe(200);
+    expect((await send('/p-3/pin', 'POST')).status).toBe(200);
+    const response = await send('/p-4/pin', 'POST');
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: 'pin_limit' });
+    expect(await pinnedIds()).toEqual(['opublikowany', 'p-2', 'p-3']);
+  });
+
+  // PL: Ponowne przypięcie wpisu już przypiętego przy komplecie daje 200 i nie zmienia jego chwili.
+  // EN: Pinning again an entry that is already pinned, with a full set, gives 200 and does not change its moment.
+  it('ponowne przypięcie przy komplecie daje 200 bez zmiany chwili / pinning again with a full set gives 200 without changing the moment', async () => {
+    await addPublished(['p-2', 'p-3']);
+    await send('/opublikowany/pin', 'POST');
+    await send('/p-2/pin', 'POST');
+    await send('/p-3/pin', 'POST');
+    const moment = (await db.select().from(newsEntries)).find((row) => row.id === 'opublikowany')?.pinnedAt;
+
+    const response = await send('/opublikowany/pin', 'POST');
+
+    expect(response.status).toBe(200);
+    expect((await db.select().from(newsEntries)).find((row) => row.id === 'opublikowany')?.pinnedAt).toEqual(moment);
+    expect(await pinnedIds()).toEqual(['opublikowany', 'p-2', 'p-3']);
+  });
+
+  // PL: Po odpięciu jednego wpisu miejsce się zwalnia i czwarty wpis można przypiąć.
+  // EN: After unpinning one entry the place frees up, and the fourth entry can be pinned.
+  it('po odpięciu jednego wpis można przypiąć / after unpinning one, another entry can be pinned', async () => {
+    await addPublished(['p-2', 'p-3', 'p-4']);
+    await send('/opublikowany/pin', 'POST');
+    await send('/p-2/pin', 'POST');
+    await send('/p-3/pin', 'POST');
+    expect((await send('/p-4/pin', 'POST')).status).toBe(409);
+    await send('/p-2/unpin', 'POST');
+
+    expect((await send('/p-4/pin', 'POST')).status).toBe(200);
+    expect(await pinnedIds()).toEqual(['opublikowany', 'p-3', 'p-4']);
+  });
+
+  // PL: Szkic nie da się przypiąć (409 „not_published”), więc nie zajmuje miejsca na liście.
+  // EN: A draft cannot be pinned (409 "not_published"), so it does not take a place on the list.
+  it('szkic daje 409 not_published i nie zajmuje miejsca / a draft gives 409 not_published and takes no place', async () => {
+    const response = await send('/szkic/pin', 'POST');
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: 'not_published' });
+    expect(await pinnedIds()).toEqual([]);
+  });
+
+  // PL: Nieznany numer to 404 i nic się nie zmienia.
+  // EN: An unknown id is 404 and nothing changes.
+  it('nieznany numer daje 404 / an unknown id gives 404', async () => {
+    expect((await send('/nie-ma/pin', 'POST')).status).toBe(404);
+    expect(await pinnedIds()).toEqual([]);
+  });
+});
+
+// PL: Odpinanie wpisu.
+// EN: Unpinning an entry.
+describe('POST /:id/unpin', () => {
+  // PL: Odpięcie czyści chwilę przypięcia, a powtórne odpięcie też daje 200.
+  // EN: Unpinning clears the pinning moment, and unpinning again also gives 200.
+  it('odpina wpis, a powtórne odpięcie też daje 200 / unpins an entry, and unpinning again also gives 200', async () => {
+    await send('/opublikowany/pin', 'POST');
+
+    expect((await send('/opublikowany/unpin', 'POST')).status).toBe(200);
+    expect(await pinnedIds()).toEqual([]);
+    expect((await send('/opublikowany/unpin', 'POST')).status).toBe(200);
+    expect(await rows()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
+  });
+
+  // PL: Nieznany numer to 404.
+  // EN: An unknown id is 404.
+  it('nieznany numer daje 404 / an unknown id gives 404', async () => {
+    expect((await send('/nie-ma/unpin', 'POST')).status).toBe(404);
+  });
+});
+
 // PL: Usuwanie wpisu.
 // EN: Deleting an entry.
 describe('DELETE /:id', () => {
@@ -196,7 +332,7 @@ describe('DELETE /:id', () => {
 // PL: Błąd bazy to 500 bez szczegółów.
 // EN: A database error is 500 without details.
 describe('błąd bazy / database error', () => {
-  it.each([['/', 'GET'], ['/szkic/publish', 'POST'], ['/szkic', 'DELETE']])('%s %s odpowiada 500 bez szczegółów / answers 500 without details', async (path, method) => {
+  it.each([['/', 'GET'], ['/szkic/publish', 'POST'], ['/opublikowany/pin', 'POST'], ['/opublikowany/unpin', 'POST'], ['/szkic', 'DELETE']])('%s %s odpowiada 500 bez szczegółów / answers 500 without details', async (path, method) => {
     const failing = { DB: { prepare: () => { throw new Error('tajny szczegół bazy'); } } };
 
     const response = await app.request(path, { method }, failing);
@@ -209,25 +345,37 @@ describe('błąd bazy / database error', () => {
   });
 });
 
-// PL: Dostęp: bez sesji 401, uczeń bez roli 403, w obu przypadkach baza bez zmian.
-// EN: Access: 401 without a session, 403 for a student without a role, and the database unchanged in both cases.
+// PL: Dostęp: bez sesji 401, uczeń bez roli 403, w obu przypadkach baza bez zmian, także przypięcia.
+// EN: Access: 401 without a session, 403 for a student without a role, and the database unchanged in both cases, pinning included.
 describe('dostęp / access', () => {
-  /** PL: Trzy adresy routera: odczyt, publikacja i usunięcie. EN: The three router routes: reading, publishing and deleting. */
-  const ROUTES: [string, string][] = [['/', 'GET'], ['/szkic/publish', 'POST'], ['/opublikowany', 'DELETE']];
+  /** PL: Adresy routera: odczyt, publikacja, przypięcie, odpięcie i usunięcie. EN: The router routes: reading, publishing, pinning, unpinning and deleting. */
+  const ROUTES: [string, string][] = [['/', 'GET'], ['/szkic/publish', 'POST'], ['/opublikowany/pin', 'POST'], ['/opublikowany/unpin', 'POST'], ['/opublikowany', 'DELETE']];
+
+  /**
+   * PL: Przypina wpis w bazie przed zapytaniem, żeby odpinanie i przypięcie miały co zmieniać i żeby sprawdzić, że odmowa tego nie rusza.
+   * EN: Pins the entry in the database before the request, so that unpinning and pinning have something to change, and to check that a refusal does not touch it.
+   */
+  async function pinBeforeRequest(): Promise<void> {
+    await db.update(newsEntries).set({ pinnedAt: PINNED_AT }).where(eq(newsEntries.id, 'opublikowany'));
+  }
 
   // PL: Bez ciasteczka każdy adres daje 401.
   // EN: Without a cookie every route gives 401.
   it.each(ROUTES)('%s %s bez sesji daje 401 / without a session gives 401', async (path, method) => {
+    await pinBeforeRequest();
+
     const response = await newsAdminApp.request(path, { method }, { ...env, BETTER_AUTH_SECRET: TEST_SECRET });
 
     expect(response.status).toBe(401);
     expect(await rows()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
+    expect(await pinnedIds()).toEqual(['opublikowany']);
     expect(await diary()).toEqual([]);
   });
 
-  // PL: Zalogowany uczeń bez roli nie dostaje ani listy szkiców, ani możliwości publikacji i usunięcia.
-  // EN: A signed-in student without a role gets neither the list of drafts nor the ability to publish or delete.
+  // PL: Zalogowany uczeń bez roli nie dostaje ani listy szkiców, ani możliwości publikacji, przypięcia, odpięcia i usunięcia.
+  // EN: A signed-in student without a role gets neither the list of drafts nor the ability to publish, pin, unpin or delete.
   it.each(ROUTES)('%s %s dla ucznia bez roli daje 403 / for a student without a role gives 403', async (path, method) => {
+    await pinBeforeRequest();
     const cookie = await signIn(createTestRuntime(), 'jan.test@teb.edu.pl');
 
     const response = await newsAdminApp.request(path, { method, headers: { cookie } }, { ...env, BETTER_AUTH_SECRET: TEST_SECRET });
@@ -235,6 +383,7 @@ describe('dostęp / access', () => {
     expect(response.status).toBe(403);
     expect(await response.text()).not.toContain('Szkic');
     expect(await rows()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
+    expect(await pinnedIds()).toEqual(['opublikowany']);
     expect(await diary()).toEqual([]);
   });
 });

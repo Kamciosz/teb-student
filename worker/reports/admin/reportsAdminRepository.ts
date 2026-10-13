@@ -58,7 +58,7 @@ export type CouncilStudent = {
   className: string;
 };
 
-/** PL: Szczegół zgłoszenia: zgłoszenie, historia i autor (tylko przy zgłoszeniu nieanonimowym). EN: The report detail: the report, the history and the author (only for a signed report). */
+/** PL: Szczegół zgłoszenia: zgłoszenie, historia z odpowiedziami dla autora i autor (tylko przy zgłoszeniu nieanonimowym). EN: The report detail: the report, the history with the answers for the author, and the author (only for a signed report). */
 export type CouncilDetail = {
   report: CouncilReport;
   history: StageChange[];
@@ -71,6 +71,8 @@ export type StageChange = {
   stage: ReportStage;
   /** PL: Chwila zmiany, milisekundy od 1970. EN: When the change happened, milliseconds since 1970. */
   changedAt: number;
+  /** PL: Odpowiedź dla autora zapisana przy tej zmianie, albo `null`, gdy jej nie było. EN: The answer for the author saved with this change, or `null` when there was none. */
+  note: string | null;
 };
 
 /** PL: Wynik zmiany etapu. EN: The result of a stage change. */
@@ -142,10 +144,10 @@ export async function getReport(db: D1Database, id: string): Promise<CouncilDeta
   const { authorId, ...report } = row;
   const student = report.isAnonymous ? null : await signedStudent(db, authorId);
 
-  // PL: Historia: etap i chwila, bez osoby, która go zmieniła.
-  // EN: The history: the stage and the moment, without the person who changed it.
+  // PL: Historia: etap, chwila i odpowiedź dla autora, bez osoby, która go zmieniła.
+  // EN: The history: the stage, the moment and the answer for the author, without the person who changed it.
   const history = await drizzle(db)
-    .select({ stage: reportStageChanges.stage, changedAt: reportStageChanges.changedAt })
+    .select({ stage: reportStageChanges.stage, changedAt: reportStageChanges.changedAt, note: reportStageChanges.note })
     .from(reportStageChanges)
     .where(eq(reportStageChanges.reportId, id))
     .orderBy(desc(reportStageChanges.changedAt));
