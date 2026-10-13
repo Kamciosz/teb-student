@@ -1,18 +1,15 @@
 /**
- * PL: Leniwe ładowanie edytora i podglądu. Tiptap waży około 130 KB po gzip (ADR 0002), więc nie wchodzi do głównej paczki: pobiera się dopiero, gdy redaktor otworzy krok z treścią. Gdy pobranie się nie uda (brak internetu, brak zapisu w telefonie), zamiast białego ekranu pojawia się komunikat z przyciskiem „Wczytaj ponownie”.
- * EN: Lazy loading of the editor and the preview. Tiptap weighs about 130 KB gzipped (ADR 0002), so it stays out of the main bundle: it downloads only when the editor opens the content step. When the download fails (no internet, nothing saved in the phone), a message with the "Wczytaj ponownie" button appears instead of a white screen.
+ * PL: Leniwe ładowanie edytora. Tiptap waży około 130 KB po gzip (ADR 0002), więc nie wchodzi do głównej paczki: pobiera się dopiero, gdy redaktor otworzy krok z treścią. Gdy pobranie się nie uda (brak internetu, brak zapisu w telefonie), zamiast białego ekranu pojawia się komunikat z przyciskiem „Wczytaj ponownie”. Podgląd (krok 3) nie potrzebuje Tiptapa, bo używa RichContent z podtoru 3a.
+ * EN: Lazy loading of the editor. Tiptap weighs about 130 KB gzipped (ADR 0002), so it stays out of the main bundle: it downloads only when the editor opens the content step. When the download fails (no internet, nothing saved in the phone), a message with the "Wczytaj ponownie" button appears instead of a white screen. The preview (step 3) does not need Tiptap, because it uses RichContent from subtrack 3a.
  *
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/news/editor/RichEditor.tsx::RichEditor
- * @uses src/features/news/editor/RichPreview.tsx::RichPreview
  * @used_by src/features/news/editor/ContentStep.tsx::LazyEditor
- * @used_by src/features/news/editor/PreviewStep.tsx::LazyPreview
  */
 
 import { useEffect, useState, type ComponentType } from 'react';
 import type { RichEditorProps } from './RichEditor';
-import type { RichPreviewProps } from './RichPreview';
 import { TO_AGREE } from './texts';
 
 /**
@@ -47,10 +44,9 @@ function LazyComponent<Props extends object>({ load, props }: { load: () => Prom
   );
 }
 
-// PL: Funkcje pobierające moduły. Stałe, żeby efekt nie startował od nowa przy każdym renderze.
-// EN: The functions that download the modules. Constants, so the effect does not restart on every render.
+// PL: Funkcja pobierająca moduł. Stała, żeby efekt nie startował od nowa przy każdym renderze.
+// EN: The function that downloads the module. A constant, so the effect does not restart on every render.
 const loadEditor = () => import('./RichEditor');
-const loadPreview = () => import('./RichPreview');
 
 /**
  * PL: Edytor ładowany leniwie.
@@ -61,15 +57,4 @@ const loadPreview = () => import('./RichPreview');
  */
 export function LazyEditor(props: RichEditorProps) {
   return <LazyComponent load={loadEditor} props={props} />;
-}
-
-/**
- * PL: Podgląd ładowany leniwie.
- * EN: The lazily loaded preview.
- *
- * @param props - PL: dane podglądu (RichPreview). EN: the preview data (RichPreview).
- * @returns PL: drzewo elementów. EN: the element tree.
- */
-export function LazyPreview(props: RichPreviewProps) {
-  return <LazyComponent load={loadPreview} props={props} />;
 }
