@@ -34,14 +34,16 @@ export const surveysAdminApp = new Hono<PanelEnv>()
 
   // PL: GET / – lista ankiet: trwające i zakończone, z liczbą odpowiedzi.
   // EN: GET / – the survey list: running and ended, with the response count.
-  .get('/', async (context) => context.json(await listPanelSurveys(drizzle(context.env.DB), warsawToday(new Date()))))
+  .get('/', async (context) => context.json(await listPanelSurveys(drizzle(context.env.DB), new Date())))
 
-  // PL: POST / – utworzenie ankiety. Ostatni dzień liczy serwer od dnia publikacji, telefon podaje tylko liczbę dni.
-  // EN: POST / – creating a survey. The server counts the last day from the publication day, the phone gives only the number of days.
+  // PL: POST / – utworzenie ankiety. Ostatni dzień liczy serwer od dnia publikacji, telefon podaje tylko liczbę dni. Termin zamknięcia musi być w przyszłości i nie może wypaść po ostatnim dniu.
+  // EN: POST / – creating a survey. The server counts the last day from the publication day, the phone gives only the number of days. The closing time must be in the future and cannot fall after the last day.
   .post('/', async (context) => {
-    const survey = parseNewSurvey(await context.req.json().catch(() => null));
+    const now = new Date();
+    const survey = parseNewSurvey(await context.req.json().catch(() => null), now);
     if (survey === null) return context.json({ error: 'invalid_survey' }, 400);
-    const endsOn = lastDayOf(warsawToday(new Date()), survey.durationDays);
+    const endsOn = lastDayOf(warsawToday(now), survey.durationDays);
+    if (survey.closesAt !== null && warsawToday(new Date(survey.closesAt)) > endsOn) return context.json({ error: 'invalid_survey' }, 400);
     return context.json({ id: await insertSurvey(drizzle(context.env.DB), survey, endsOn) }, 201);
   })
 
