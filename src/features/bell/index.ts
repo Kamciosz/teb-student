@@ -9,6 +9,7 @@
  * @uses src/features/bell/bellState.ts::getBellState
  * @uses src/features/bell/bellState.ts::currentBellState
  * @uses src/features/bell/bellState.ts::hasBellPlan
+ * @uses src/features/bell/bellDayStatus.ts::bellDayStatus
  * @used_by src/app/routes.ts::APP_ROUTES
  */
 
@@ -24,3 +25,6 @@ export { currentBellState, getBellState, type BellState, type NextLesson } from 
 // PL: Czy plan dnia ma choć jedną lekcję (pulpit: odróżnia „brak planu” od „po lekcjach”).
 // EN: Whether the day's plan has at least one lesson (the dashboard tells "no plan" from "after lessons").
 export { hasBellPlan } from './bellState';
+// PL: Stan dnia: weekend, brak planu, przed lekcjami, w trakcie albo po lekcjach (pulpit pokazuje „po lekcjach” tylko dla stanu „after”).
+// EN: The state of the day: weekend, no plan, before lessons, during them or after them (the dashboard shows "after lessons" only for the "after" state).
+export { bellDayStatus, type BellDayStatus } from './bellDayStatus';

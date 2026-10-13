@@ -10,6 +10,7 @@
  * @used_by src/features/bell/BellCountdown.tsx::BellCountdown
  * @used_by src/features/bell/index.ts::currentBellState
  * @used_by src/features/bell/index.ts::hasBellPlan
+ * @used_by src/features/bell/bellDayStatus.ts::bellDayStatus
  * @used_by src/features/bell/BellScreen.tsx::BellScreen
  */
 
@@ -23,7 +24,7 @@ const SCHOOL_TIME_ZONE = 'Europe/Warsaw';
 
 // PL: Ostatni dzień roboczy (1 = poniedziałek ... 5 = piątek). Dni 6 i 7 to weekend.
 // EN: Last working day (1 = Monday ... 5 = Friday). Days 6 and 7 are the weekend.
-const LAST_WORKING_DAY = 5;
+export const LAST_WORKING_DAY = 5;
 
 // PL: Formatowanie czasu w strefie szkoły. Godzina 0–23 (hourCycle h23), bez AM/PM.
 // EN: Time formatting in the school zone. Hour 0–23 (hourCycle h23), no AM/PM.
@@ -116,7 +117,7 @@ export function warsawClock(now: Date): WarsawClock {
  * @param time - PL: godzina w formacie HH:MM. EN: time in HH:MM format.
  * @returns PL: sekundy od północy. EN: seconds since midnight.
  */
-function parseTime(time: string): number {
+export function parseTime(time: string): number {
   // PL: Rozbij „HH:MM” na godzinę i minutę.
   // EN: Split "HH:MM" into hour and minute.
   const [hour, minute] = time.split(':').map(Number);
@@ -201,7 +202,7 @@ export function getBellState(lessons: readonly Lesson[], now: Date): BellState |
  * @param shortenedDays - PL: dni skrócone w formacie RRRR-MM-DD, czas polski. EN: the shortened days as YYYY-MM-DD, Polish time.
  * @returns PL: plan dnia. EN: the plan of the day.
  */
-function planFor(now: Date, shortenedDays: ReadonlySet<string>): readonly Lesson[] {
+export function planFor(now: Date, shortenedDays: ReadonlySet<string>): readonly Lesson[] {
   // PL: Dzień tej chwili w strefie szkoły decyduje o planie.
   // EN: The day of this moment in the school zone decides the plan.
   return shortenedDays.has(warsawDate(now)) ? SHORTENED_BELL_PLAN : BELL_PLAN;
