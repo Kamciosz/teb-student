@@ -34,8 +34,8 @@ export type PreviewStepProps = {
   isSaving: boolean;
   /** PL: Komunikat o błędzie wysyłki albo null. EN: The sending error message or null. */
   message: string | null;
-  /** PL: Zapis jako szkic albo publikacja, z chwilą zaplanowanej publikacji (albo null, gdy od razu). EN: Saving as a draft or publishing, with the scheduled publication moment (or null, when immediate). */
-  onSave: (status: 'draft' | 'published', publishAt: number | null) => void;
+  /** PL: Zapis jako szkic, wysyłka do korekty albo publikacja, z chwilą zaplanowanej publikacji (albo null, gdy od razu; tylko publikacja może mieć godzinę). EN: Saving as a draft, sending to review, or publishing, with the scheduled publication moment (or null, when immediate; only a publication can have a time). */
+  onSave: (status: 'draft' | 'in_review' | 'published', publishAt: number | null) => void;
 };
 
 /**
@@ -55,10 +55,10 @@ export function PreviewStep({ type, title, body, isSaving, message, onSave }: Pr
   // PL: Błąd terminu pokazujemy przed wysyłką, bo wtedy nic nie trafia na serwer. EN: The schedule error is shown before sending, because then nothing reaches the server.
   const [scheduleError, setScheduleError] = useState<string | null>(null);
 
-  // PL: Publikacja bierze godzinę z pól, gdy zaznaczono zaplanowanie. Szkic zawsze zapisuje się bez godziny.
-  // EN: A publication takes the time from the fields when scheduling is ticked. A draft is always saved without a time.
-  function submit(status: 'draft' | 'published') {
-    if (status === 'draft' || !scheduled) {
+  // PL: Publikacja bierze godzinę z pól, gdy zaznaczono zaplanowanie. Szkic i wysyłka do korekty zawsze zapisują się bez godziny.
+  // EN: A publication takes the time from the fields when scheduling is ticked. A draft and sending to review are always saved without a time.
+  function submit(status: 'draft' | 'in_review' | 'published') {
+    if (status !== 'published' || !scheduled) {
       setScheduleError(null);
       onSave(status, null);
       return;
@@ -98,6 +98,7 @@ export function PreviewStep({ type, title, body, isSaving, message, onSave }: Pr
         </>
       ) : null}
       <button type="button" className="editor-button editor-button--outline editor-button--wide" disabled={isSaving} onClick={() => submit('draft')}>{SCREEN.saveDraft}</button>
+      <button type="button" className="editor-button editor-button--outline editor-button--wide" disabled={isSaving} onClick={() => submit('in_review')}>{TO_AGREE.sendToReview}</button>
       <button type="button" className="editor-button editor-button--wide" disabled={isSaving} onClick={() => submit('published')}>{isSaving ? TO_AGREE.saving : SCREEN.publish}</button>
       {/* PL: Błąd zapisu albo terminu. Czytnik ekranu odczytuje go od razu. EN: The save or schedule error. A screen reader reads it at once. */}
       {shownError ? <p role="alert" className="editor-error">{shownError}</p> : null}

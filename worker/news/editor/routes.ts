@@ -17,7 +17,7 @@
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 // PL: Drizzle łączy się z D1.
 // EN: Drizzle connects to D1.
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull, ne, or } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import type { StudentEnv } from '../../auth';
 import { newsEntries, type NewsEntryRow } from '../../db/schema/news';
@@ -113,6 +113,32 @@ async function updateDraft(db: D1Database, id: string, entry: CheckedEntry): Pro
 }
 
 /**
+ * PL: Zatwierdza wpis w korekcie i publikuje go z tą samą chwilą publikacji co zwykła publikacja: zaplanowaną godziną z wpisu albo teraz. Warunki są w tym samym zapytaniu co zmiana: wpis musi czekać w korekcie, a zatwierdzający nie może być jego autorem (pusty autor = każdy redaktor). Zwraca false, gdy nic nie zmieniono.
+ * EN: Approves an entry in review and publishes it with the same publication moment as a normal publication: the scheduled time of the entry, or now. The conditions are in the same query as the change: the entry must wait in review, and the approver cannot be its author (an empty author = any editor). Returns false when nothing changed.
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @param id - PL: numer wpisu. EN: the entry id.
+ * @param approver - PL: numer zatwierdzającego redaktora. EN: the id of the approving editor.
+ * @param publishAt - PL: zaplanowana godzina wpisu albo null, gdy od razu. EN: the scheduled time of the entry, or null when immediate.
+ * @returns PL: prawda, gdy wpis został opublikowany. EN: true when the entry was published.
+ * @throws PL: błąd bazy, gdy zapis się nie uda. EN: a database error when the save fails.
+ */
+async function approveEntry(db: D1Database, id: string, approver: string, publishAt: Date | null): Promise<boolean> {
+  const changed = await drizzle(db)
+    .update(newsEntries)
+    .set({ status: 'published', publishedAt: publishAt ?? new Date() })
+    .where(
+      and(
+        eq(newsEntries.id, id),
+        eq(newsEntries.status, 'in_review'),
+        or(isNull(newsEntries.authorUserId), ne(newsEntries.authorUserId, approver)),
+      ),
+    )
+    .returning({ id: newsEntries.id });
+  return changed.length > 0;
+}
+
+/**
  * PL: Buduje router podtoru 3b z podanym strażnikiem zapisu. Strażnik jest parametrem, żeby test mógł podać własnego, bez prawdziwego logowania.
  * EN: Builds the subtrack 3b router with the given write guard. The guard is a parameter, so a test can pass its own, without a real sign-in.
  *
@@ -143,21 +169,23 @@ export function createNewsEditorApp(guard: MiddlewareHandler<StudentEnv>) {
     }
   });
 
-  // PL: Odczyt szkicu do edycji. Opublikowany wpis nie wraca do edycji (409), brak wpisu daje 404.
-  // EN: Reading a draft for editing. A published entry does not come back for editing (409), a missing entry gives 404.
+  // PL: Odczyt wpisu do edycji. Szkic wraca z danymi do kreatora. Wpis w korekcie wraca tylko do podglądu, z flagą canApprove (czy ten redaktor może go zatwierdzić). Opublikowany wpis nie wraca (409), brak wpisu daje 404.
+  // EN: Reading an entry for editing. A draft comes back with its data for the wizard. An entry in review comes back for preview only, with the canApprove flag (whether this editor may approve it). A published entry does not come back (409), a missing entry gives 404.
   app.get('/entries/:id', guard, async (context) => {
     try {
       const entry = await findEntry(context.env.DB, context.req.param('id'));
       if (!entry) return context.json({ error: 'not_found' }, 404);
-      if (entry.status !== 'draft') return context.json({ error: 'already_published' }, 409);
-      return context.json({ id: entry.id, type: entry.type, title: entry.title, status: entry.status, body: entry.body });
+      if (entry.status === 'published') return context.json({ error: 'already_published' }, 409);
+      const data = { id: entry.id, type: entry.type, title: entry.title, status: entry.status, body: entry.body };
+      if (entry.status === 'in_review') return context.json({ ...data, canApprove: entry.authorUserId !== context.get('student').id });
+      return context.json(data);
     } catch {
       return context.json({ error: 'database_error' }, 500);
     }
   });
 
-  // PL: Zapis zmian w szkicu, także publikacja szkicu. Ten sam wpis, bez nowego numeru. Opublikowany wpis nie przyjmuje zmian (409). Autor się nie zmienia: aktualizacja nie zawiera pola autora, więc zostaje ten, kto zapisał wpis jako pierwszy.
-  // EN: Saving changes to a draft, also publishing a draft. The same entry, without a new id. A published entry takes no changes (409). The author does not change: the update has no author field, so the one who first saved the entry stays.
+  // PL: Zapis zmian w szkicu, także wysłanie do korekty i publikacja szkicu. Ten sam wpis, bez nowego numeru. Wpis w korekcie i opublikowany nie przyjmują zmian (409, z powodem). Autor się nie zmienia: aktualizacja nie zawiera pola autora, więc zostaje ten, kto zapisał wpis jako pierwszy.
+  // EN: Saving changes to a draft, also sending it to review and publishing a draft. The same entry, without a new id. An entry in review and a published entry take no changes (409, with the reason). The author does not change: the update has no author field, so the one who first saved the entry stays.
   app.put('/entries/:id', guard, async (context) => {
     const id = context.req.param('id');
     const input = await readJson(context);
@@ -166,11 +194,34 @@ export function createNewsEditorApp(guard: MiddlewareHandler<StudentEnv>) {
     if (!result.ok) return context.json({ error: 'invalid_entry', reason: result.reason }, 422);
     try {
       if (await updateDraft(context.env.DB, id, result.entry)) return context.json({ id }, 200);
-      // PL: Nic nie zmieniono: sprawdzamy, czy wpisu nie ma (404), czy jest już opublikowany (409).
-      // EN: Nothing changed: we check whether the entry is missing (404) or already published (409).
+      // PL: Nic nie zmieniono: sprawdzamy, czy wpisu nie ma (404), czy czeka w korekcie (409 in_review), czy jest już opublikowany (409).
+      // EN: Nothing changed: we check whether the entry is missing (404), waits in review (409 in_review), or is already published (409).
       const entry = await findEntry(context.env.DB, id);
       if (!entry) return context.json({ error: 'not_found' }, 404);
+      if (entry.status === 'in_review') return context.json({ error: 'in_review' }, 409);
       return context.json({ error: 'already_published' }, 409);
+    } catch {
+      return context.json({ error: 'database_error' }, 500);
+    }
+  });
+
+  // PL: Zatwierdzenie wpisu w korekcie i jego publikacja. Autor nie zatwierdzi swojego wpisu (403). Wpis, który nie czeka w korekcie, daje 409.
+  // EN: Approving an entry in review and publishing it. The author cannot approve their own entry (403). An entry that does not wait in review gives 409.
+  app.post('/entries/:id/approve', guard, async (context) => {
+    const id = context.req.param('id');
+    const approver = context.get('student').id;
+    try {
+      // PL: Chwila publikacji jak przy zwykłej publikacji: zaplanowana godzina z wpisu, a bez niej teraz. Wpis w korekcie nie zmienia godziny, więc odczyt przed zatwierdzeniem nic nie gubi.
+      // EN: The publication moment as for a normal publication: the scheduled time of the entry, or now without it. An entry in review does not change its time, so reading it before approval loses nothing.
+      const entry = await findEntry(context.env.DB, id);
+      if (!entry) return context.json({ error: 'not_found' }, 404);
+      if (await approveEntry(context.env.DB, id, approver, entry.publishAt)) return context.json({ id }, 200);
+      // PL: Nic nie zmieniono: sprawdzamy ponownie, czy wpis nadal istnieje (404), nie czeka w korekcie (409), a zostaje tylko autor (403).
+      // EN: Nothing changed: we check again whether the entry still exists (404), does not wait in review (409), or only the author is left (403).
+      const current = await findEntry(context.env.DB, id);
+      if (!current) return context.json({ error: 'not_found' }, 404);
+      if (current.status !== 'in_review') return context.json({ error: 'not_in_review' }, 409);
+      return context.json({ error: 'own_entry' }, 403);
     } catch {
       return context.json({ error: 'database_error' }, 500);
     }
