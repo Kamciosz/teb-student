@@ -87,3 +87,18 @@ export function formatShortDate(isoDate: string): string {
   const [, month = '', day = ''] = isoDate.split('-');
   return `${Number(day)}.${month}`;
 }
+
+/**
+ * PL: Zamienia godzinę zamknięcia (ISO) na „Do D.MM, HH:mm” w polskim czasie, np. „Do 29.10, 20:00”. Godzinę liczymy w strefie Europe/Warsaw, a nie w strefie telefonu.
+ * EN: Turns the closing hour (ISO) into "Do D.MM, HH:mm" in Polish time, e.g. "Do 29.10, 20:00". The hour is counted in the Europe/Warsaw zone, not in the phone's zone.
+ *
+ * @param isoDateTime - PL: chwila w formacie ISO 8601. EN: a moment in ISO 8601 format.
+ * @returns PL: napis z dniem i godziną. EN: the text with the day and the hour.
+ */
+export function formatClosesAt(isoDateTime: string): string {
+  // PL: Rozbij chwilę na części w strefie Warszawy (dzień, miesiąc, godzina, minuta).
+  // EN: Split the moment into parts in the Warsaw zone (day, month, hour, minute).
+  const parts = new Intl.DateTimeFormat('pl-PL', { timeZone: 'Europe/Warsaw', day: 'numeric', month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(isoDateTime));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
+  return `Do ${part('day')}.${part('month')}, ${part('hour')}:${part('minute')}`;
+}

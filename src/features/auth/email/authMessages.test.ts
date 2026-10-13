@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { describeSendError, describeVerifyError, MESSAGES } from './authMessages';
+import { describeDeviceError, describeSendError, describeVerifyError, MESSAGES } from './authMessages';
 
 // PL: Grupa testów błędów prośby o kod.
 // EN: A group of code request error tests.
@@ -42,5 +42,20 @@ describe('describeVerifyError', () => {
     expect(describeVerifyError({ status: 403, code: 'TOO_MANY_ATTEMPTS' })).toBe(MESSAGES.codeTooManyAttempts);
     expect(describeVerifyError({ status: 0 })).toBe(MESSAGES.offline);
     expect(describeVerifyError({ status: 500 })).toBe(MESSAGES.unknown);
+  });
+});
+
+// PL: Grupa testów błędów ekranu urządzeń.
+// EN: A group of devices screen error tests.
+describe('describeDeviceError', () => {
+  // PL: Stara sesja, koniec sesji i zniknięte urządzenie mają własne teksty.
+  // EN: An old session, a session that ended and a device that is gone have their own texts.
+  it('dobiera komunikat do błędu urządzeń / picks the message for the devices error', () => {
+    expect(describeDeviceError({ status: 403, error: 'session_not_fresh' })).toBe(MESSAGES.sessionNotFresh);
+    expect(describeDeviceError({ status: 401, error: 'unauthorized' })).toBe(MESSAGES.sessionEnded);
+    expect(describeDeviceError({ status: 404, error: 'not_found' })).toBe(MESSAGES.deviceGone);
+    expect(describeDeviceError({ status: 429 })).toBe(MESSAGES.tooManyRequests);
+    expect(describeDeviceError({})).toBe(MESSAGES.offline);
+    expect(describeDeviceError({ status: 500, error: 'forbidden' })).toBe(MESSAGES.unknown);
   });
 });

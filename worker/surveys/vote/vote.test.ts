@@ -121,17 +121,21 @@ async function readCounters(): Promise<Record<string, number>> {
   return Object.fromEntries(rows.map((row) => [row.id, row.votes]));
 }
 
-// PL: Dwie ankiety testowe: trwająca do 2099 roku i zakończona w 2020.
-// EN: Two test surveys: one running until 2099 and one ended in 2020.
+// PL: Ankiety testowe: trwająca do 2099 roku (bez godziny), zakończona w 2020, oraz dwie z godziną zamknięcia: przed nią (2099) i po niej (2020).
+// EN: Test surveys: one running until 2099 (no hour), one ended in 2020, and two with a closing hour: one before it (2099) and one after it (2020).
 beforeAll(async () => {
   await db.insert(surveys).values([
-    { id: 'open', label: 'Test', title: 'Trwająca', endsOn: '2099-12-31' },
-    { id: 'closed', label: null, title: 'Zakończona', endsOn: '2020-01-01' },
+    { id: 'open', label: 'Test', title: 'Trwająca', endsOn: '2099-12-31', closesAt: null },
+    { id: 'closed', label: null, title: 'Zakończona', endsOn: '2020-01-01', closesAt: null },
+    { id: 'godzina-przed', label: null, title: 'Do godziny', endsOn: '2099-12-31', closesAt: new Date('2099-06-01T12:00:00Z') },
+    { id: 'godzina-po', label: null, title: 'Po godzinie', endsOn: '2099-12-31', closesAt: new Date('2020-06-01T10:00:00Z') },
   ]);
   await db.insert(surveyQuestions).values([
     { id: 'open-1', surveyId: 'open', position: 1, prompt: 'Pierwsze?' },
     { id: 'open-2', surveyId: 'open', position: 2, prompt: 'Drugie?' },
     { id: 'closed-1', surveyId: 'closed', position: 1, prompt: 'Zamknięte?' },
+    { id: 'godzina-przed-1', surveyId: 'godzina-przed', position: 1, prompt: 'Przed godziną?' },
+    { id: 'godzina-po-1', surveyId: 'godzina-po', position: 1, prompt: 'Po godzinie?' },
   ]);
   await db.insert(surveyOptions).values([
     { id: 'open-1-a', questionId: 'open-1', position: 1, label: 'A' },
@@ -139,6 +143,8 @@ beforeAll(async () => {
     { id: 'open-2-a', questionId: 'open-2', position: 1, label: 'C' },
     { id: 'open-2-b', questionId: 'open-2', position: 2, label: 'D' },
     { id: 'closed-1-a', questionId: 'closed-1', position: 1, label: 'E' },
+    { id: 'godzina-przed-1-a', questionId: 'godzina-przed-1', position: 1, label: 'F' },
+    { id: 'godzina-po-1-a', questionId: 'godzina-po-1', position: 1, label: 'G' },
   ]);
 });
 
@@ -170,8 +176,9 @@ describe('odczyt / reading', () => {
     const body = JSON.parse(text) as { active: { id: string; questionCount: number; hasVoted: boolean }[]; ended: { id: string }[] };
 
     expect(response.status).toBe(200);
-    expect(body.active).toMatchObject([{ id: 'open', questionCount: 2, hasVoted: false }]);
-    expect(body.ended.map((survey) => survey.id)).toEqual(['closed']);
+    expect(body.active.find((survey) => survey.id === 'open')).toMatchObject({ questionCount: 2, hasVoted: false });
+    expect(body.active.map((survey) => survey.id).sort()).toEqual(['godzina-przed', 'open']);
+    expect(body.ended.map((survey) => survey.id).sort()).toEqual(['closed', 'godzina-po']);
     expect(text).not.toContain('votes');
   });
 
@@ -186,6 +193,14 @@ describe('odczyt / reading', () => {
     expect(body.questions.map((q) => [q.id, q.options.length])).toEqual([['open-1', 2], ['open-2', 2]]);
     expect(text).not.toContain('votes');
   });
+
+  it('godzina zamknięcia przed końcem dnia: przed nią ankieta jest otwarta i pokazuje godzinę, po niej zamknięta / a closing hour: before it the survey is open and shows the hour, after it closed', async () => {
+    const before = (await (await call('/godzina-przed', 'godzina')).json()) as { isActive: boolean; closesAt: string | null };
+    const after = (await (await call('/godzina-po', 'godzina')).json()) as { isActive: boolean; closesAt: string | null };
+
+    expect(before).toMatchObject({ isActive: true, closesAt: '2099-06-01T12:00:00.000Z' });
+    expect(after).toMatchObject({ isActive: false, closesAt: '2020-06-01T10:00:00.000Z' });
+  });
 });
 
 // PL: Zapis głosu: liczniki, drugi głos i brak śladu odpowiedzi.
@@ -197,13 +212,13 @@ describe('zapis głosu / writing a vote', () => {
     const countersAfterFirst = await readCounters();
     const second = await call('/open/answers', student, OPEN_ANSWERS);
     const countersAfterSecond = await readCounters();
-    const list = (await (await call('/', student)).json()) as { active: { hasVoted: boolean }[] };
+    const list = (await (await call('/', student)).json()) as { active: { id: string; hasVoted: boolean }[] };
 
     expect(first.status).toBe(201);
     expect(countersAfterFirst).toMatchObject({ 'open-1-a': 1, 'open-1-b': 0, 'open-2-a': 0, 'open-2-b': 1 });
     expect(second.status).toBe(409);
     expect(countersAfterSecond).toEqual(countersAfterFirst);
-    expect(list.active[0]?.hasVoted).toBe(true);
+    expect(list.active.find((survey) => survey.id === 'open')?.hasVoted).toBe(true);
   });
 
   it('drugi uczeń głosuje niezależnie / another student votes independently', async () => {
@@ -213,6 +228,12 @@ describe('zapis głosu / writing a vote', () => {
 
     expect(response.status).toBe(201);
     expect(after['open-1-a']).toBe((before['open-1-a'] ?? 0) + 1);
+  });
+
+  it('ankieta z godziną w przyszłości przyjmuje głos / a survey with an hour in the future accepts a vote', async () => {
+    const response = await call('/godzina-przed/answers', 'godzina', { answers: [{ questionId: 'godzina-przed-1', optionId: 'godzina-przed-1-a' }] });
+
+    expect(response.status).toBe(201);
   });
 
   it('zapis nie zostawia śladu odpowiedzi ucznia, tylko udział / the write leaves no trace of the student answers, only participation', async () => {
@@ -235,6 +256,14 @@ describe('odrzucenia / rejections', () => {
   it('ankieta zakończona daje 410 i nie zmienia liczników / an ended survey gives 410 and changes no counters', async () => {
     const before = await readCounters();
     const response = await call('/closed/answers', 'koniec', { answers: [{ questionId: 'closed-1', optionId: 'closed-1-a' }] });
+
+    expect(response.status).toBe(410);
+    expect(await readCounters()).toEqual(before);
+  });
+
+  it('ankieta zamknięta godziną daje 410, mimo że dzień jeszcze trwa, i nie zmienia liczników / a survey closed by an hour gives 410 although the day is still running, and changes no counters', async () => {
+    const before = await readCounters();
+    const response = await call('/godzina-po/answers', 'po-godzinie', { answers: [{ questionId: 'godzina-po-1', optionId: 'godzina-po-1-a' }] });
 
     expect(response.status).toBe(410);
     expect(await readCounters()).toEqual(before);

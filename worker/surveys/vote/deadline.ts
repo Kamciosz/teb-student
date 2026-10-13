@@ -73,3 +73,50 @@ export function daysLeft(endsOn: string, today: string): number {
   // EN: Today counts as one of the days left.
   return Math.round(difference / MS_PER_DAY) + 1;
 }
+
+/**
+ * PL: Sprawdza, czy ankieta przyjmuje odpowiedzi w tej chwili. Zamknięta jest po ostatnim dniu (ends_on) albo od godziny closes_at, jeśli ją ustawiono.
+ * EN: Checks whether the survey takes answers right now. It is closed after the last day (ends_on) or from the hour closes_at, if it is set.
+ *
+ * @param endsOn - PL: ostatni dzień ankiety. EN: the last day of the survey.
+ * @param closesAt - PL: godzina zamknięcia albo null (bez godziny). EN: the closing hour, or null (no hour).
+ * @param today - PL: dzisiejsza data z warsawToday. EN: today's date from warsawToday.
+ * @param now - PL: ta sama chwila, z której wzięto today. EN: the same moment today was taken from.
+ * @returns PL: prawda, gdy ankieta jeszcze przyjmuje głosy. EN: true when the survey still takes votes.
+ */
+export function isSurveyOpen(endsOn: string, closesAt: Date | null, today: string, now: Date): boolean {
+  // PL: Po ostatnim dniu ankieta jest zamknięta bez względu na godzinę.
+  // EN: After the last day the survey is closed regardless of the hour.
+  if (!isSurveyActive(endsOn, today)) return false;
+
+  // PL: Bez godziny liczy się tylko dzień. Z godziną zamykamy w chwili closes_at (ta chwila już nie należy do otwartej ankiety).
+  // EN: Without an hour only the day counts. With an hour we close at closes_at (that moment already does not belong to the open survey).
+  return closesAt === null || now.getTime() < closesAt.getTime();
+}
+
+/**
+ * PL: Godzina zamknięcia, którą pokazujemy w aplikacji. Pokazujemy ją tylko wtedy, gdy wypada przed końcem ostatniego dnia. Późniejsza godzina nie ma znaczenia, bo ankieta i tak kończy się wcześniej, więc wtedy zwracamy null.
+ * EN: The closing hour we show in the app. We show it only when it falls before the end of the last day. A later hour does not matter, because the survey ends earlier anyway, so then we return null.
+ *
+ * @param endsOn - PL: ostatni dzień ankiety. EN: the last day of the survey.
+ * @param closesAt - PL: godzina zamknięcia albo null. EN: the closing hour, or null.
+ * @returns PL: godzina do pokazania albo null. EN: the hour to show, or null.
+ */
+export function shownClosesAt(endsOn: string, closesAt: Date | null): Date | null {
+  if (closesAt === null) return null;
+  return warsawToday(closesAt) <= endsOn ? closesAt : null;
+}
+
+/**
+ * PL: Dzień, w którym zakończona ankieta faktycznie się zamknęła. Gdy godzina zamknięcia wypadła w dniu wcześniejszym niż ends_on, to ten dzień; inaczej ends_on.
+ * EN: The day an ended survey actually closed. When the closing hour fell on a day earlier than ends_on, it is that day; otherwise ends_on.
+ *
+ * @param endsOn - PL: ostatni dzień ankiety. EN: the last day of the survey.
+ * @param closesAt - PL: godzina zamknięcia albo null. EN: the closing hour, or null.
+ * @returns PL: data RRRR-MM-DD. EN: the date, YYYY-MM-DD.
+ */
+export function closedOn(endsOn: string, closesAt: Date | null): string {
+  if (closesAt === null) return endsOn;
+  const day = warsawToday(closesAt);
+  return day < endsOn ? day : endsOn;
+}
