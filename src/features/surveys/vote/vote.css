@@ -332,3 +332,97 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* PL: Skala 1–5: pięć przycisków w jednym rzędzie, każdy co najmniej 44 px wysokości i szerokości (cel dotyku). EN: The 1–5 scale: five buttons in one row, each at least 44 px high and wide (the touch target). */
+.vote-scale {
+  margin: 24px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.vote-scale__row {
+  display: flex;
+  gap: 8px;
+}
+
+.vote-scale__item {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 44px;
+  cursor: pointer;
+}
+
+.vote-scale__item input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.vote-scale__segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+  font-weight: 700;
+}
+
+.vote-scale__item input:checked + .vote-scale__segment {
+  border-color: var(--ink);
+  background: var(--tile-2);
+}
+
+.vote-scale__item input:focus-visible + .vote-scale__segment {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.vote-scale__ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+/* PL: Pole krótkiej odpowiedzi: pole tekstowe na całą szerokość, pod nim po prawej licznik „x / 200 znaków”.
+   EN: The short-answer field: a full-width text box, with the "x / 200 characters" counter under it on the right. */
+.vote-text {
+  margin-top: 24px;
+}
+
+.vote-text__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 112px;
+  padding: 12px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+
+.vote-text__input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.vote-text__meta {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.vote-counter {
+  margin-left: auto;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}

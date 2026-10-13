@@ -4,7 +4,8 @@
  *
  * @author Szymon
  * @since 2026-10-12
- * @used_by src/features/admin/PanelHome.tsx::PANEL_SECTIONS
+ * @used_by src/features/admin/PanelHome.tsx::sectionsFor
+ * @used_by src/features/admin/PanelHome.tsx::pilotSectionsFor
  * @used_by src/features/admin/PanelGate.tsx::isLevelEnough
  * @used_by src/features/admin/InvitesScreen.tsx::formatInviteEnd
  * @used_by src/features/admin/queries.ts::panelEntryFor
@@ -33,17 +34,29 @@ export type PanelSection = {
   icon: IconName;
   /** PL: Najniższa rola, która widzi wiersz. EN: The lowest role that sees the row. */
   minimum: PanelLevel;
+  /** PL: Znacznik przy tytule wiersza (tylko przy „Role”: „Administrator”). EN: The badge next to the row title (only for "Role": "Administrator"). */
+  badge?: string;
 };
 
 /**
- * PL: Części panelu w kolejności z ekranu 6.1b. Redakcja widzi tylko Wpisy. Wiersze „Role” i „Dane z pilotażu” dojdą z ekranami 6.3 i 6.1e (czekają na eksporty modułów auth, reports i surveys).
- * EN: The panel sections in the order of screen 6.1b. The editorial team sees only Entries. The "Role" and "Dane z pilotażu" rows will come with screens 6.3 and 6.1e (they wait for exports of the auth, reports and surveys modules).
+ * PL: Części panelu w kolejności z ekranu 6.1b, w jednym kafelku. Redakcja widzi tylko Wpisy, Samorząd pięć pierwszych (z Dziennikiem zmian), administrator także „Role”.
+ * EN: The panel sections in the order of screen 6.1b, in one tile. The editorial team sees only Entries, the Council the first five (with the Change diary), the administrator also "Role".
  */
 export const PANEL_SECTIONS: readonly PanelSection[] = [
   { to: '/news/admin', title: 'Wpisy', hint: 'Pisz i publikuj aktualności.', icon: 'newspaper', minimum: 'editor' },
   { to: '/reports/admin', title: 'Zgłoszenia', hint: 'Zmieniaj etap zgłoszeń.', icon: 'clipboard-list', minimum: 'council' },
   { to: '/surveys/admin', title: 'Ankiety', hint: 'Twórz ankiety i czytaj wyniki.', icon: 'chart-column', minimum: 'council' },
   { to: '/admin/kody', title: 'Kody zaproszeń', hint: 'Wydaj kod osobie bez szkolnej skrzynki.', icon: 'ticket', minimum: 'council' },
+  { to: '/admin/dziennik', title: 'Dziennik zmian', hint: 'Kto wydał kod, nadał rolę albo pobrał plik.', icon: 'history', minimum: 'council' },
+  { to: '/admin/role', title: 'Role', hint: 'Nadaj albo odbierz rolę Samorządu i redakcji.', icon: 'users', minimum: 'admin', badge: 'Administrator' },
+];
+
+/**
+ * PL: Części pod etykietą „Pilotaż” (ekran 6.1b), w osobnym kafelku. Widzi je tylko administrator.
+ * EN: The sections under the "Pilotaż" label (screen 6.1b), in a separate tile. Only the administrator sees them.
+ */
+export const PILOT_SECTIONS: readonly PanelSection[] = [
+  { to: '/admin/pilotaz', title: 'Dane z pilotażu', hint: 'Pobierz liczby bez imion, nazwisk i adresów.', icon: 'download', minimum: 'admin' },
 ];
 
 /** PL: Kolejność ról od najniższej do najwyższej, tak jak na serwerze. EN: The roles from the lowest to the highest, as on the server. */
@@ -74,6 +87,19 @@ export function sectionsFor(level: PanelLevel): PanelSection[] {
   // PL: Zostaw tylko wiersze, do których rola wystarcza.
   // EN: Keep only the rows the role is enough for.
   return PANEL_SECTIONS.filter((section) => isLevelEnough(level, section.minimum));
+}
+
+/**
+ * PL: Wybiera wiersze pilotażu, które widzi rola (tylko administrator).
+ * EN: Picks the pilot rows a role sees (only the administrator).
+ *
+ * @param level - PL: rola ucznia. EN: the student's role.
+ * @returns PL: lista wierszy pilotażu. EN: the list of pilot rows.
+ */
+export function pilotSectionsFor(level: PanelLevel): PanelSection[] {
+  // PL: Ta sama reguła co dla głównego kafla, tylko z listy pilotażu.
+  // EN: The same rule as for the main tile, only on the pilot list.
+  return PILOT_SECTIONS.filter((section) => isLevelEnough(level, section.minimum));
 }
 
 /**

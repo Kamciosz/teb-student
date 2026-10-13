@@ -8,6 +8,12 @@
  * @used_by src/features/admin/InvitesScreen.tsx::Icon
  * @used_by src/features/admin/NoAccessScreen.tsx::Icon
  * @used_by src/features/admin/ScreenTop.tsx::Icon
+ * @used_by src/features/admin/RoleScreen.tsx::Icon
+ * @used_by src/features/admin/RoleCardScreen.tsx::Icon
+ * @used_by src/features/admin/PilotScreen.tsx::Icon
+ * @used_by src/features/admin/InviteList.tsx::Icon
+ * @used_by src/features/admin/CopyCodeButton.tsx::Icon
+ * @used_by src/features/admin/DiaryScreen.tsx::Icon
  */
 
 /** PL: Nazwy ikon, których używa panel. EN: The names of the icons the panel uses. */
@@ -24,7 +30,14 @@ export type IconName =
   | 'copy'
   | 'check'
   | 'triangle-alert'
-  | 'wifi-off';
+  | 'wifi-off'
+  | 'users'
+  | 'download'
+  | 'search'
+  | 'user-round'
+  | 'x'
+  | 'log-in'
+  | 'history';
 
 /** PL: Ścieżki SVG każdej ikony w siatce 24 na 24. EN: The SVG paths of every icon in a 24 by 24 grid. */
 const SHAPES: Record<IconName, string[]> = {
@@ -41,6 +54,13 @@ const SHAPES: Record<IconName, string[]> = {
   check: ['M20 6 9 17l-5-5'],
   'triangle-alert': ['m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3', 'M12 9v4', 'M12 17h.01'],
   'wifi-off': ['M12 20h.01', 'M8.5 16.43a5 5 0 0 1 7 0', 'M2 8.82a15 15 0 0 1 4.17-2.65', 'M10.66 5c4.01-.36 8.14.9 11.34 3.76', 'M16.85 11.25a10 10 0 0 1 2.22 1.68', 'M5 13a10 10 0 0 1 5.24-2.76', 'm2 2 20 20'],
+  users: ['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8', 'M22 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
+  download: ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'm7 10 5 5 5-5', 'M12 15V3'],
+  search: ['m21 21-4.34-4.34', 'M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16'],
+  'user-round': ['M18 20a6 6 0 0 0-12 0', 'M12 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8'],
+  x: ['M18 6 6 18', 'm6 6 12 12'],
+  'log-in': ['m10 17 5-5-5-5', 'M15 12H3', 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4'],
+  history: ['M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5', 'M12 7v5l4 2'],
 };
 
 /**

@@ -22,6 +22,7 @@ describe('parseYouTubeId', () => {
     `https://youtu.be/${id}?si=abc`,
     `https://m.youtube.com/watch?v=${id}`,
     `https://www.youtube.com/shorts/${id}`,
+    `https://youtube.com/shorts/${id}?feature=share`,
     `https://www.youtube-nocookie.com/embed/${id}`,
     `  https://youtu.be/${id}  `,
   ])('wyciąga identyfikator z %s / extracts the id from %s', (url) => {

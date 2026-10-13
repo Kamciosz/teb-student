@@ -29,6 +29,8 @@ export type EntryToSend = {
   status: 'draft' | 'in_review' | 'published';
   /** PL: Treść: dokument JSON z edytora. EN: The content: the JSON document from the editor. */
   body: unknown;
+  /** PL: Chwila zaplanowanej publikacji (milisekundy) albo null, gdy od razu. EN: The scheduled publication moment (milliseconds), or null for an immediate one. */
+  publishAt?: number | null;
 };
 
 /**

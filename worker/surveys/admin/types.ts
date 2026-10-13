@@ -9,7 +9,12 @@
  * @used_by worker/surveys/admin/queries.ts::listPanelSurveys
  * @used_by worker/surveys/admin/results.ts::buildResults
  * @used_by worker/surveys/admin/routes.ts::surveysAdminApp
+ * @uses worker/db/schema/surveys.ts::QUESTION_TYPES
  */
+
+// PL: Lista rodzajów pytań z tabeli pytań (typy, nie wartości, więc nic nie trafia do kodu wykonywanego).
+// EN: The list of question types from the questions table (types only, so nothing lands in the running code).
+import type { QUESTION_TYPES } from '../../db/schema/surveys';
 
 /**
  * PL: Jedna ankieta na liście w panelu.
@@ -24,6 +29,8 @@ export type PanelSurvey = {
   questionCount: number;
   /** PL: Ostatni dzień ankiety, RRRR-MM-DD (czas polski). EN: The last day of the survey, YYYY-MM-DD (Polish time). */
   endsOn: string;
+  /** PL: Chwila zamknięcia w milisekundach UTC albo null, gdy ankieta kończy się tylko ostatnim dniem. EN: The closing moment in UTC milliseconds, or null when the survey ends only on its last day. */
+  closesAt: number | null;
   /** PL: Ile osób wypełniło ankietę (osób, a nie głosów). EN: How many people filled the survey in (people, not votes). */
   responseCount: number;
 };
@@ -53,14 +60,26 @@ export type OptionResult = {
 };
 
 /**
+ * PL: Rodzaj pytania z listy QUESTION_TYPES (schemat podtoru 5a): jednokrotny wybór, wielokrotny wybór albo skala 1–5.
+ * EN: The question type from the QUESTION_TYPES list (the schema of subtrack 5a): single choice, multiple choice or the 1–5 scale.
+ */
+export type QuestionType = (typeof QUESTION_TYPES)[number];
+
+/**
  * PL: Jedno pytanie w wynikach.
  * EN: One question in the results.
  */
 export type QuestionResult = {
   /** PL: Treść pytania. EN: The question text. */
   prompt: string;
+  /** PL: Rodzaj pytania: od niego zależy, czy wynik to osoby, czy zaznaczenia. EN: The question type: it decides whether the result counts people or checked boxes. */
+  type: QuestionType;
   /** PL: Odpowiedzi w kolejności A, B, C, D, E. EN: The options in the order A, B, C, D, E. */
   options: OptionResult[];
+  /** PL: Średnia ze skali 1–5 (pozycja 1…5 ważona głosami), zaokrąglona do jednego miejsca po przecinku. Tylko przy scale_1_5 i gdy ktoś głosował. EN: The average of the 1–5 scale (the position 1…5 weighted by the votes), rounded to one decimal place. Only for scale_1_5 and when somebody voted. */
+  average?: number;
+  /** PL: Krótkie odpowiedzi w porządku alfabetycznym (nie w kolejności zapisu, bez autora). Tylko przy short_text. EN: The short answers in alphabetical order (not in the order written, no author). Only for short_text. */
+  texts?: string[];
 };
 
 /**
