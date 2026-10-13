@@ -96,10 +96,10 @@ surveysVoteApp.post('/:surveyId/answers', async (context) => {
   const check = answers === null ? null : checkAnswers(questions.map((q) => ({ questionId: q.id, type: q.type, optionIds: q.options.map((o) => o.id) })), answers);
   if (check === null || !check.ok) return context.json({ error: 'invalid_answers' }, 400);
 
-  // PL: Zapisz głos. Drugi głos tego ucznia (także równoległy) kończy się 409, a liczniki zostają nietknięte.
-  // EN: Write the vote. A second vote from this student (also a parallel one) ends with 409, and the counters stay untouched.
+  // PL: Zapisz głos. Drugi głos tego ucznia (także równoległy) kończy się 409, a liczniki i teksty zostają nietknięte.
+  // EN: Write the vote. A second vote from this student (also a parallel one) ends with 409, and the counters and the texts stay untouched.
   try {
-    await recordVote(db, { surveyId: survey.id, userId, optionIds: check.optionIds });
+    await recordVote(db, { surveyId: survey.id, userId, optionIds: check.optionIds, texts: check.texts });
   } catch (error) {
     if (error instanceof AlreadyVotedError) return context.json({ error: 'already_voted' }, 409);
     throw error;

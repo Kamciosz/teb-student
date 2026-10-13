@@ -30,6 +30,13 @@ const MULTI_QUESTIONS = [{ questionId: 'm1', type: 'multiple_choice' as const, o
 // EN: A survey with a 1–5 scale: five ordinary options "1"…"5", one is picked, like a single choice.
 const SCALE_QUESTIONS = [{ questionId: 's1', type: 'scale_1_5' as const, optionIds: ['s1-1', 's1-2', 's1-3', 's1-4', 's1-5'] }];
 
+// PL: Ankieta z pytaniem krótkiej odpowiedzi (bez odpowiedzi do wyboru) i jednym wyborem obok.
+// EN: A survey with a short-answer question (no options to pick) and a single choice next to it.
+const TEXT_QUESTIONS = [
+  { questionId: 't1', type: 'short_text' as const, optionIds: [] },
+  { questionId: 'q1', type: 'single_choice' as const, optionIds: ['q1-a', 'q1-b'] },
+];
+
 // PL: Grupa testów kształtu danych.
 // EN: A group of tests for the data shape.
 describe('parseAnswersBody', () => {
@@ -55,12 +62,24 @@ describe('parseAnswersBody', () => {
     ['za długi numer', { answers: [{ questionId: 'q'.repeat(65), optionIds: ['a'] }] }],
     ['za dużo odpowiedzi w pytaniu', { answers: [{ questionId: 'q1', optionIds: Array.from({ length: 51 }, (_, i) => `o${i}`) }] }],
     ['za dużo pytań', { answers: Array.from({ length: 51 }, () => ({ questionId: 'q1', optionIds: ['q1-a'] })) }],
+    ['tekst nie jest tekstem', { answers: [{ questionId: 't1', optionIds: [], text: 5 }] }],
+    ['tekst jest tablicą', { answers: [{ questionId: 't1', optionIds: [], text: ['a'] }] }],
+    ['surowy tekst za długi', { answers: [{ questionId: 't1', optionIds: [], text: 'a'.repeat(1001) }] }],
   ])('odrzuca: %s / rejects: %s', (_name, body) => {
     expect(parseAnswersBody(body)).toBeNull();
   });
 
   it('przepuszcza pustą listę wyborów, odrzuca ją dopiero checkAnswers / passes an empty list of picks, checkAnswers rejects it', () => {
     expect(parseAnswersBody({ answers: [{ questionId: 'q1', optionIds: [] }] })).toEqual([{ questionId: 'q1', optionIds: [] }]);
+  });
+
+  it('zostawia tekst bez przycinania, a brak tekstu albo null znaczy brak pola / keeps the text untrimmed, a missing or null text means no field', () => {
+    const body = { answers: [{ questionId: 't1', optionIds: [], text: '  abc  ' }, { questionId: 'q1', optionIds: ['q1-a'], text: null }] };
+
+    expect(parseAnswersBody(body)).toEqual([
+      { questionId: 't1', optionIds: [], text: '  abc  ' },
+      { questionId: 'q1', optionIds: ['q1-a'] },
+    ]);
   });
 });
 
@@ -73,13 +92,13 @@ describe('checkAnswers', () => {
       { questionId: 'q1', optionIds: ['q1-a'] },
     ];
 
-    expect(checkAnswers(QUESTIONS, answers)).toEqual({ ok: true, optionIds: ['q2-b', 'q1-a'] });
+    expect(checkAnswers(QUESTIONS, answers)).toEqual({ ok: true, optionIds: ['q2-b', 'q1-a'], texts: [] });
   });
 
   it('przyjmuje kilka odpowiedzi w pytaniu wielokrotnego wyboru / accepts several options in a multiple-choice question', () => {
     const answers = [{ questionId: 'm1', optionIds: ['m1-a', 'm1-c'] }];
 
-    expect(checkAnswers(MULTI_QUESTIONS, answers)).toEqual({ ok: true, optionIds: ['m1-a', 'm1-c'] });
+    expect(checkAnswers(MULTI_QUESTIONS, answers)).toEqual({ ok: true, optionIds: ['m1-a', 'm1-c'], texts: [] });
   });
 
   it('odrzuca brakujące pytanie / rejects a missing question', () => {
@@ -129,7 +148,7 @@ describe('checkAnswers', () => {
   it('przyjmuje jedną wybraną wartość skali / accepts one picked scale value', () => {
     const answers = [{ questionId: 's1', optionIds: ['s1-3'] }];
 
-    expect(checkAnswers(SCALE_QUESTIONS, answers)).toEqual({ ok: true, optionIds: ['s1-3'] });
+    expect(checkAnswers(SCALE_QUESTIONS, answers)).toEqual({ ok: true, optionIds: ['s1-3'], texts: [] });
   });
 
   it('odrzuca dwie wartości skali / rejects two scale values', () => {
@@ -154,5 +173,86 @@ describe('checkAnswers', () => {
     const answers = [{ questionId: 'm1', optionIds: ['m1-a', 'q1-a'] }];
 
     expect(checkAnswers(MULTI_QUESTIONS, answers)).toEqual({ ok: false, reason: 'unknown_option' });
+  });
+});
+
+// PL: Grupa testów krótkiej odpowiedzi: długość liczona w znakach po przycięciu, pusty tekst odrzucany, tekst i odpowiedzi nie mieszają się.
+// EN: A group of tests for the short answer: the length counted in characters after trimming, an empty text rejected, text and options never mixed.
+describe('checkAnswers, krótka odpowiedź / short answer', () => {
+  it('przyjmuje tekst i oddaje go przycięty / accepts the text and returns it trimmed', () => {
+    const answers = [
+      { questionId: 't1', optionIds: [], text: '  Więcej sportu  ' },
+      { questionId: 'q1', optionIds: ['q1-a'] },
+    ];
+
+    expect(checkAnswers(TEXT_QUESTIONS, answers)).toEqual({
+      ok: true,
+      optionIds: ['q1-a'],
+      texts: [{ questionId: 't1', text: 'Więcej sportu' }],
+    });
+  });
+
+  it('przyjmuje dokładnie 200 znaków / accepts exactly 200 characters', () => {
+    const answers = [{ questionId: 't1', optionIds: [], text: 'a'.repeat(200) }];
+
+    expect(checkAnswers([TEXT_QUESTIONS[0]], answers)).toEqual({ ok: true, optionIds: [], texts: [{ questionId: 't1', text: 'a'.repeat(200) }] });
+  });
+
+  it('odrzuca 201 znaków / rejects 201 characters', () => {
+    const answers = [{ questionId: 't1', optionIds: [], text: 'a'.repeat(201) }];
+
+    expect(checkAnswers([TEXT_QUESTIONS[0]], answers)).toEqual({ ok: false, reason: 'text_too_long' });
+  });
+
+  it('liczy znaki, nie jednostki kodu: 200 emoji przechodzi, 201 nie / counts characters, not code units: 200 emoji pass, 201 do not', () => {
+    const ok = [{ questionId: 't1', optionIds: [], text: '🙂'.repeat(200) }];
+    const tooLong = [{ questionId: 't1', optionIds: [], text: '🙂'.repeat(201) }];
+
+    expect(checkAnswers([TEXT_QUESTIONS[0]], ok).ok).toBe(true);
+    expect(checkAnswers([TEXT_QUESTIONS[0]], tooLong)).toEqual({ ok: false, reason: 'text_too_long' });
+  });
+
+  it('spacje z obu stron nie wliczają się w limit / spaces on both ends do not count toward the limit', () => {
+    const answers = [{ questionId: 't1', optionIds: [], text: `  ${'a'.repeat(200)}  ` }];
+
+    expect(checkAnswers([TEXT_QUESTIONS[0]], answers)).toEqual({ ok: true, optionIds: [], texts: [{ questionId: 't1', text: 'a'.repeat(200) }] });
+  });
+
+  it('odrzuca tekst z samych białych znaków / rejects a text of whitespace only', () => {
+    const answers = [{ questionId: 't1', optionIds: [], text: ' \t \n ' }];
+
+    expect(checkAnswers([TEXT_QUESTIONS[0]], answers)).toEqual({ ok: false, reason: 'empty_text' });
+  });
+
+  it('odrzuca brak tekstu w pytaniu krótkiej odpowiedzi / rejects a missing text in a short-answer question', () => {
+    const answers = [{ questionId: 't1', optionIds: [] }];
+
+    expect(checkAnswers([TEXT_QUESTIONS[0]], answers)).toEqual({ ok: false, reason: 'empty_text' });
+  });
+
+  it('odrzuca odpowiedź do wyboru w pytaniu krótkiej odpowiedzi / rejects an option in a short-answer question', () => {
+    const answers = [{ questionId: 't1', optionIds: ['q1-a'], text: 'abc' }];
+
+    expect(checkAnswers(TEXT_QUESTIONS, answers)).toEqual({ ok: false, reason: 'unexpected_option' });
+  });
+
+  it('odrzuca tekst w pytaniu wyboru, nawet pusty / rejects text in a choice question, even an empty one', () => {
+    const withText = [
+      { questionId: 't1', optionIds: [], text: 'abc' },
+      { questionId: 'q1', optionIds: ['q1-a'], text: 'abc' },
+    ];
+    const withEmpty = [
+      { questionId: 't1', optionIds: [], text: 'abc' },
+      { questionId: 'q1', optionIds: ['q1-a'], text: '' },
+    ];
+
+    expect(checkAnswers(TEXT_QUESTIONS, withText)).toEqual({ ok: false, reason: 'unexpected_text' });
+    expect(checkAnswers(TEXT_QUESTIONS, withEmpty)).toEqual({ ok: false, reason: 'unexpected_text' });
+  });
+
+  it('odrzuca brakujące pytanie krótkiej odpowiedzi / rejects a missing short-answer question', () => {
+    const answers = [{ questionId: 'q1', optionIds: ['q1-a'] }];
+
+    expect(checkAnswers(TEXT_QUESTIONS, answers)).toEqual({ ok: false, reason: 'missing_question' });
   });
 });

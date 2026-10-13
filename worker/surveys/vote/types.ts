@@ -76,8 +76,8 @@ export type SurveyOption = {
 export type SurveyQuestion = {
   /** PL: Numer pytania. EN: The question id. */
   id: string;
-  /** PL: Rodzaj pytania: jedna odpowiedź (jednokrotny wybór, skala 1–5) albo kilka. EN: The question type: one answer (single choice, 1–5 scale) or several. */
-  type: 'single_choice' | 'multiple_choice' | 'scale_1_5';
+  /** PL: Rodzaj pytania: jedna odpowiedź (jednokrotny wybór, skala 1–5), kilka (wielokrotny wybór) albo tekst (krótka odpowiedź, bez odpowiedzi do wyboru). EN: The question type: one answer (single choice, 1–5 scale), several (multiple choice) or text (short answer, no options). */
+  type: 'single_choice' | 'multiple_choice' | 'scale_1_5' | 'short_text';
   /** PL: Treść pytania. EN: The question text. */
   prompt: string;
   /** PL: Odpowiedzi w kolejności A, B, C, D. EN: The options in the order A, B, C, D. */
