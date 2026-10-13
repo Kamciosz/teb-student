@@ -1,6 +1,6 @@
 /**
- * PL: Testy górnego rzędu pulpitu: licznik pokazuje minuty, gdy stan jest, a bez stanu zostaje kreska i napis: „Brak planu dzwonków” bez planu albo „Po lekcjach” z planem. Stan dzwonka i sprawdzenie planu są podstawione, a czas udawany.
- * EN: Tests of the dashboard top row: the countdown shows minutes when there is a state, and without a state a dash stays with "Brak planu dzwonków" (no plan) or "Po lekcjach" (a plan). The bell state and the plan check are substituted and the time is faked.
+ * PL: Testy górnego rzędu pulpitu: licznik pokazuje minuty, gdy stan jest, a bez stanu zostaje kreska i napis zależny od stanu dnia: „Brak planu dzwonków” bez planu, „Dziś nie ma lekcji” w dzień wolny, „Lekcje jeszcze się nie zaczęły” przed lekcjami, „Trwa lekcja” w trakcie i „Po lekcjach” po nich. Stan dzwonka i stan dnia są podstawione, a czas udawany.
+ * EN: Tests of the dashboard top row: the countdown shows minutes when there is a state, and without a state a dash stays with a text that depends on the day's state: "Brak planu dzwonków" without a plan, "Dziś nie ma lekcji" on a day off, "Lekcje jeszcze się nie zaczęły" before the lessons, "Trwa lekcja" during them and "Po lekcjach" after them. The bell state and the day state are substituted and the time is faked.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-13
@@ -15,17 +15,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // EN: Rendering to text and the router that Link needs.
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
-// PL: Testowany komponent i odczyt stanu dzwonka (podstawiony poniżej).
-// EN: The tested component and the bell state read (substituted below).
+// PL: Testowany komponent i odczyt stanu dzwonka oraz stanu dnia (podstawione poniżej).
+// EN: The tested component and the bell state and the day state reads (substituted below).
 import { DashboardHeader } from './DashboardHeader';
-import { currentBellState, hasBellPlan } from '../bell';
-import type { BellState } from '../bell';
+import { bellDayStatus, currentBellState } from '../bell';
+import type { BellDayStatus, BellState } from '../bell';
 
-// PL: Podstawiamy tylko odczyt stanu i sprawdzenie planu, bo plan w main jest pusty. Reszta modułu bell nie jest potrzebna.
-// EN: We substitute only the state read and the plan check, because the plan in main is empty. The rest of the bell module is not needed.
+// PL: Podstawiamy tylko odczyt stanu i stan dnia, bo plan w main jest pusty. Reszta modułu bell nie jest potrzebna.
+// EN: We substitute only the state read and the day state, because the plan in main is empty. The rest of the bell module is not needed.
 vi.mock('../bell', () => ({
   currentBellState: vi.fn(() => null),
-  hasBellPlan: vi.fn(() => false),
+  bellDayStatus: vi.fn((): BellDayStatus => 'no-plan'),
 }));
 
 // PL: Przykładowy stan: trwa lekcja, zostało 12 minut.
@@ -56,12 +56,13 @@ describe('DashboardHeader: licznik do dzwonka', () => {
     vi.useRealTimers();
     vi.mocked(currentBellState).mockReset();
     vi.mocked(currentBellState).mockReturnValue(null);
-    vi.mocked(hasBellPlan).mockReset();
-    vi.mocked(hasBellPlan).mockReturnValue(false);
+    vi.mocked(bellDayStatus).mockReset();
+    vi.mocked(bellDayStatus).mockReturnValue('no-plan');
   });
 
   it('pokazuje minuty i „do dzwonka”, gdy trwa lekcja / shows the minutes and "do dzwonka" during a lesson', () => {
     vi.mocked(currentBellState).mockReturnValue(LESSON);
+    vi.mocked(bellDayStatus).mockReturnValue('during');
 
     const html = renderHeader();
 
@@ -69,11 +70,11 @@ describe('DashboardHeader: licznik do dzwonka', () => {
     expect(html).toContain('>min<');
     expect(html).toContain('do dzwonka');
     expect(html).not.toContain('Brak planu dzwonków');
+    expect(html).not.toContain('Trwa lekcja');
   });
 
   it('bez planu pokazuje kreskę i „Brak planu dzwonków” / without a plan shows the dash and "Brak planu dzwonków"', () => {
-    vi.mocked(currentBellState).mockReturnValue(null);
-    vi.mocked(hasBellPlan).mockReturnValue(false);
+    vi.mocked(bellDayStatus).mockReturnValue('no-plan');
 
     const html = renderHeader();
 
@@ -83,10 +84,41 @@ describe('DashboardHeader: licznik do dzwonka', () => {
     expect(html).not.toContain('>min<');
   });
 
-  it('z planu poza lekcjami pokazuje „Po lekcjach” / with a plan outside lessons shows "Po lekcjach"', () => {
+  it('w dzień wolny pokazuje „Dziś nie ma lekcji” / on a day off shows "Dziś nie ma lekcji"', () => {
+    vi.mocked(bellDayStatus).mockReturnValue('day-off');
+
+    const html = renderHeader();
+
+    expect(html).toContain('Dziś nie ma lekcji');
+    expect(html).not.toContain('Po lekcjach');
+    expect(html).not.toContain('Brak planu dzwonków');
+    expect(html).not.toContain('>min<');
+  });
+
+  it('przed lekcjami pokazuje „Lekcje jeszcze się nie zaczęły” / before the lessons shows "Lekcje jeszcze się nie zaczęły"', () => {
+    vi.mocked(bellDayStatus).mockReturnValue('before');
+
+    const html = renderHeader();
+
+    expect(html).toContain('Lekcje jeszcze się nie zaczęły');
+    expect(html).not.toContain('Po lekcjach');
+    expect(html).not.toContain('Brak planu dzwonków');
+    expect(html).not.toContain('>min<');
+  });
+
+  it('w trakcie bez stanu licznika pokazuje „Trwa lekcja” / during the lessons without a countdown state shows "Trwa lekcja"', () => {
+    vi.mocked(bellDayStatus).mockReturnValue('during');
+
+    const html = renderHeader();
+
+    expect(html).toContain('Trwa lekcja');
+    expect(html).not.toContain('Po lekcjach');
+    expect(html).not.toContain('>min<');
+  });
+
+  it('po lekcjach pokazuje „Po lekcjach” / after the lessons shows "Po lekcjach"', () => {
     vi.setSystemTime(new Date('2026-10-23T17:00:00Z'));
-    vi.mocked(currentBellState).mockReturnValue(null);
-    vi.mocked(hasBellPlan).mockReturnValue(true);
+    vi.mocked(bellDayStatus).mockReturnValue('after');
 
     const html = renderHeader();
 
