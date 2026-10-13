@@ -1,11 +1,14 @@
 /**
- * PL: Router Hono podtoru 1a (logowanie kodem z maila). Przepuszcza do Better Auth tylko cztery adresy: wyślij kod, zaloguj kodem, pokaż sesję, wyloguj. Pilnuje domeny szkolnej, zanim kod w ogóle powstanie. Router jest podpięty pod /api/auth/email w worker/mounts.ts.
- * EN: The Hono router of subtrack 1a (sign-in with an e-mail code). It lets only four routes through to Better Auth: send a code, sign in with a code, show the session, sign out. It checks the school domain before a code is even created. The router is mounted under /api/auth/email in worker/mounts.ts.
+ * PL: Router Hono podtoru 1a (logowanie kodem z maila). Przepuszcza do Better Auth tylko cztery adresy: wyślij kod, zaloguj kodem, pokaż sesję, wyloguj. Pilnuje domeny szkolnej, zanim kod w ogóle powstanie. Dodatkowo wystawia trzy adresy urządzeń (lista, wylogowanie jednego, wylogowanie innych), które wołają wbudowane funkcje Better Auth. Router jest podpięty pod /api/auth/email w worker/mounts.ts.
+ * EN: The Hono router of subtrack 1a (sign-in with an e-mail code). It lets only four routes through to Better Auth: send a code, sign in with a code, show the session, sign out. It checks the school domain before a code is even created. It also exposes three device routes (list, sign out one, sign out the others), which call the built-in Better Auth functions. The router is mounted under /api/auth/email in worker/mounts.ts.
  *
  * @author Szymon
  * @since 2026-10-09
  * @uses worker/auth/email/runtimeAuth.ts::getRuntimeAuth
  * @uses worker/auth/email/schoolEmail.ts::isSchoolEmail
+ * @uses worker/auth/email/devices.ts::listDevices
+ * @uses worker/auth/email/devices.ts::revokeDevice
+ * @uses worker/auth/email/devices.ts::revokeOtherDevices
  * @used_by worker/auth/email/index.ts::authEmailApp
  * @used_by worker/auth/email/routes.test.ts::createAuthEmailApp
  */
@@ -13,12 +16,18 @@
 // PL: Hono to router serwera. Dopasowuje adres zapytania do funkcji, która odpowie.
 // EN: Hono is the server router. It matches the request URL to the function that answers.
 import { Hono, type Context } from 'hono';
+// PL: Dozwolony kod HTTP z treścią JSON (używany przy błędach urządzeń).
+// EN: An HTTP status code allowed with a JSON body (used for device errors).
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 // PL: Typ środowiska Workera (baza DB i sekrety).
 // EN: The Worker environment type (the DB database and secrets).
 import type { Env } from '../../shared';
 // PL: Obiekt logowania i błąd braku ustawień.
 // EN: The sign-in object and the missing-settings error.
 import { AuthNotConfiguredError, getRuntimeAuth, type RuntimeAuth } from './runtimeAuth';
+// PL: Lista i wylogowanie urządzeń.
+// EN: The device list and device sign-out.
+import { listDevices, revokeDevice, revokeOtherDevices, type DeviceOutcome } from './devices';
 // PL: Sprawdzanie adresu szkolnego.
 // EN: The school address check.
 import { isSchoolEmail, normalizeSchoolEmail } from './schoolEmail';
@@ -61,6 +70,20 @@ async function readTextFields(request: Request, fields: readonly string[]): Prom
     result[field] = value;
   }
   return result;
+}
+
+/**
+ * PL: Zamienia wynik urządzeń na odpowiedź dla telefonu: sukces z treścią albo kod HTTP i kod błędu.
+ * EN: Turns a device result into a response for the phone: success with a body, or an HTTP status and an error code.
+ *
+ * @param context - PL: zapytanie Hono. EN: the Hono context.
+ * @param outcome - PL: wynik z devices.ts. EN: the result from devices.ts.
+ * @param toBody - PL: treść przy sukcesie. EN: the body on success.
+ * @returns PL: odpowiedź dla telefonu. EN: the response for the phone.
+ */
+function deviceResponse<T>(context: AuthContext, outcome: DeviceOutcome<T>, toBody: (value: T) => unknown): Response {
+  if (!outcome.ok) return context.json({ error: outcome.error }, outcome.status as ContentfulStatusCode);
+  return context.json(toBody(outcome.value));
 }
 
 /**
@@ -148,6 +171,23 @@ export function createAuthEmailApp(options: AuthEmailAppOptions): Hono<{ Binding
   app.post('/sign-in/email-otp', (context) => handleSignIn(context, options.getRuntime));
   app.get('/get-session', (context) => Promise.resolve(options.getRuntime(context.env).auth.handler(context.req.raw)));
   app.post('/sign-out', (context) => Promise.resolve(options.getRuntime(context.env).auth.handler(context.req.raw)));
+
+  // PL: Urządzenia: lista, wylogowanie jednego (po id z listy), wylogowanie wszystkich innych. Logika sesji siedzi w devices.ts i u Better Auth.
+  // EN: Devices: the list, signing out one (by the id from the list), signing out all others. The session logic lives in devices.ts and in Better Auth.
+  app.get('/devices', async (context) => {
+    const outcome = await listDevices(options.getRuntime(context.env), context.req.raw);
+    return deviceResponse(context, outcome, (devices) => ({ devices }));
+  });
+  app.post('/devices/revoke', async (context) => {
+    const fields = await readTextFields(context.req.raw, ['id']);
+    if (!fields) return context.json({ error: 'invalid_request' }, 400);
+    const outcome = await revokeDevice(options.getRuntime(context.env), context.req.raw, fields.id);
+    return deviceResponse(context, outcome, () => ({ ok: true }));
+  });
+  app.post('/devices/revoke-others', async (context) => {
+    const outcome = await revokeOtherDevices(options.getRuntime(context.env), context.req.raw);
+    return deviceResponse(context, outcome, () => ({ ok: true }));
+  });
   return app;
 }
 

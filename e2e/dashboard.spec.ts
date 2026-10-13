@@ -61,8 +61,8 @@ test('kafelki pokazują ważny wpis, ankietę, zgłoszenie i trzy ogłoszenia / 
   await expect(page.locator('[data-subtrack="9"]')).toBeVisible();
 });
 
-// PL: Licznik do dzwonka nie ma jeszcze modułu, więc pokazuje pusty stan.
-// EN: The bell countdown has no module yet, so it shows the empty state.
+// PL: Plan dzwonków jest pusty, a pulpit go nie widzi, więc licznik pokazuje pusty stan.
+// EN: The bell plan is empty and the dashboard cannot see it, so the countdown shows the empty state.
 test('licznik do dzwonka pokazuje pusty stan / the bell countdown shows the empty state', async ({ page }) => {
   await mockDashboard(page, FULL);
   await page.goto('/');
@@ -83,6 +83,7 @@ test('kafelki prowadzą do właściwych ekranów / the tiles lead to the right s
     { name: 'Zgłoszenia', open: () => page.getByRole('link', { name: /Nie działa projektor/ }).click(), path: '/reports/student/moje' },
     { name: 'wiersz ogłoszenia', open: () => page.getByRole('link', { name: /Próbny egzamin/ }).click(), path: '/news/feed/egzamin' },
     { name: 'nagłówek Ogłoszenia', open: () => page.getByRole('link', { name: 'Ogłoszenia', exact: true }).click(), path: '/news/feed' },
+    { name: 'licznik do dzwonka', open: () => page.getByLabel('Licznik do dzwonka').click(), path: '/bell' },
   ];
 
   for (const item of cases) {

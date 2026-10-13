@@ -1,18 +1,19 @@
 /**
- * PL: Sprawdzanie danych profilu z telefonu. Serwer nie ufa telefonowi: sprawdza typ, długość i dozwolone wartości szkoły oraz palety.
+ * PL: Sprawdzanie danych profilu z telefonu. Serwer nie ufa telefonowi: sprawdza typ, długość i dozwolone wartości szkoły, palety oraz rozmiaru tekstu.
  * EN: Checking the profile data from the phone. The server does not trust the phone: it checks the type, the length and the allowed values of the school and the palette.
  *
  * @author Jakub
  * @since 2026-10-11
  * @uses worker/db/schema/profile.ts::PROFILE_SCHOOLS
  * @uses worker/db/schema/profile.ts::PROFILE_PALETTES
+ * @uses worker/db/schema/profile.ts::PROFILE_TEXT_SIZES
  * @used_by worker/profile/routes.ts::profileApp
  * @used_by worker/profile/validation.test.ts::parseProfileInput
  */
 
 // PL: Dozwolone szkoły i palety oraz ich typy.
 // EN: The allowed schools and palettes and their types.
-import { PROFILE_PALETTES, PROFILE_SCHOOLS, type ProfilePalette, type ProfileSchool } from '../db/schema/profile';
+import { PROFILE_PALETTES, PROFILE_SCHOOLS, PROFILE_TEXT_SIZES, type ProfilePalette, type ProfileSchool, type ProfileTextSize } from '../db/schema/profile';
 
 /** PL: Najwięcej znaków w imieniu. EN: The most characters in the name. */
 export const MAX_NAME_LENGTH = 40;
@@ -33,6 +34,8 @@ export type ProfileInput = {
   school: ProfileSchool;
   /** PL: Paleta: CA do CH. EN: The palette: CA to CH. */
   palette: ProfilePalette;
+  /** PL: Rozmiar tekstu: normalny albo duzy. EN: The text size: normalny or duzy. */
+  textSize: ProfileTextSize;
 };
 
 /**
@@ -77,6 +80,7 @@ export function parseProfileInput(body: unknown): ParsedProfile {
   const className = parseText(record.className, MAX_CLASS_LENGTH);
   const school = PROFILE_SCHOOLS.find((code) => code === record.school);
   const palette = PROFILE_PALETTES.find((code) => code === record.palette);
+  const textSize = PROFILE_TEXT_SIZES.find((size) => size === record.textSize);
 
   // PL: Zbierz nazwy pól, które się nie zgadzają.
   // EN: Collect the names of the fields that do not match.
@@ -85,9 +89,10 @@ export function parseProfileInput(body: unknown): ParsedProfile {
   if (className === undefined) fields.push('className');
   if (school === undefined) fields.push('school');
   if (palette === undefined) fields.push('palette');
-  if (name === undefined || className === undefined || school === undefined || palette === undefined) return { ok: false, fields };
+  if (textSize === undefined) fields.push('textSize');
+  if (name === undefined || className === undefined || school === undefined || palette === undefined || textSize === undefined) return { ok: false, fields };
 
   // PL: Wszystko się zgadza.
   // EN: Everything matches.
-  return { ok: true, value: { name, className, school, palette } };
+  return { ok: true, value: { name, className, school, palette, textSize } };
 }

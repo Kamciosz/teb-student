@@ -53,6 +53,22 @@ describe('deleteReportsStudentData', () => {
     ]);
   });
 
+  // PL: Dołączenia ucznia znikają, a dołączenia innych uczniów zostają.
+  // EN: The student's joins disappear, and other students' joins stay.
+  it('usuwa dołączenia ucznia i nie rusza cudzych / deletes the student joins and leaves others', async () => {
+    // PL: Usuń dane ucznia testowego.
+    // EN: Delete the test student's data.
+    await deleteReportsStudentData({ userId: SEED_STUDENT_ID, db });
+
+    // PL: Odczytaj wszystkie dołączenia po zgłoszeniu.
+    // EN: Read all joins by report.
+    const rows = await db.prepare('SELECT report_id, user_id FROM report_joins ORDER BY report_id').all();
+
+    // PL: Zostało tylko dołączenie innego ucznia; dołączenie ucznia do cudzego zgłoszenia zniknęło.
+    // EN: Only the other student's join is left; the student's join to someone else's report is gone.
+    expect(rows.results).toEqual([{ report_id: 'seed-projektor', user_id: 'seed-user-2' }]);
+  });
+
   // PL: Uczeń bez zgłoszeń to nie błąd.
   // EN: A student without reports is not an error.
   it('nie psuje się dla ucznia bez zgłoszeń / does not fail for a student without reports', async () => {
