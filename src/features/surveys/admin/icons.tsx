@@ -34,14 +34,6 @@ export const ArrowLeftIcon = () => (
   </Icon>
 );
 
-/** PL: Strzałka w prawo (przycisk „Wróć na pulpit”). EN: The right arrow (the "Wróć na pulpit" button). */
-export const ArrowRightIcon = () => (
-  <Icon size={20}>
-    <path d="M5 12h14" />
-    <path d="m12 5 7 7-7 7" />
-  </Icon>
-);
-
 /** PL: Szewron w prawo na kaflu ankiety. EN: The right chevron on a survey tile. */
 export const ChevronRightIcon = () => (
   <Icon size={20}>

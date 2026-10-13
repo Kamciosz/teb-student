@@ -12,8 +12,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router';
 import { describeQuestions, describeResponses, formatShortDate, OPTION_LETTERS } from './format';
 import { LockIcon } from './icons';
-import { ErrorMessage, NoAccess, PanelNote, ScreenTop } from './PanelParts';
-import { ApiError } from './surveyApi';
+import { ErrorMessage, PanelNote, ScreenTop } from './PanelParts';
 import { useSurveyResults } from './surveyQueries';
 import type { OptionResult, SurveyResults } from './types';
 
@@ -121,8 +120,8 @@ function QuestionResults({ results }: { results: SurveyResults }) {
 }
 
 /**
- * PL: Rysuje ekran wyników dla ankiety z adresu. Wybiera 6.5c albo 6.5d według tego, czy serwer przysłał rozkład głosów. Osobie bez roli (403) pokazuje „Tylko dla Samorządu”.
- * EN: Draws the results screen for the survey from the address. Picks 6.5c or 6.5d by whether the server sent the vote distribution. For a person without a role (403) it shows "Tylko dla Samorządu".
+ * PL: Rysuje ekran wyników dla ankiety z adresu. Wybiera 6.5c albo 6.5d według tego, czy serwer przysłał rozkład głosów.
+ * EN: Draws the results screen for the survey from the address. Picks 6.5c or 6.5d by whether the server sent the vote distribution.
  *
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
@@ -130,9 +129,6 @@ export function ResultsScreen() {
   const { surveyId = '' } = useParams();
   const query = useSurveyResults(surveyId);
 
-  // PL: 403 to brak roli: komunikat z ekranu 6.1d.
-  // EN: 403 is a missing role: the message of screen 6.1d.
-  if (query.error instanceof ApiError && query.error.status === 403) return <NoAccess />;
   if (query.data?.questions !== undefined) return <QuestionResults key={surveyId} results={query.data} />;
   if (query.data !== undefined) return <TooFewResults results={query.data} />;
 

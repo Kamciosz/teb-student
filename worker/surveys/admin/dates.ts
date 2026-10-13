@@ -6,7 +6,7 @@
  *
  * @author Jakub
  * @since 2026-10-12
- * @used_by worker/surveys/admin/routes.ts::createSurveysAdminApp
+ * @used_by worker/surveys/admin/routes.ts::surveysAdminApp
  * @used_by worker/surveys/admin/queries.ts::listPanelSurveys
  * @used_by worker/surveys/admin/dates.test.ts::lastDayOf
  */

@@ -4,6 +4,7 @@
  *
  * @author Jakub
  * @since 2026-10-12
+ * @uses src/features/admin/index.ts::PanelGate
  * @uses src/features/surveys/admin/SurveyListScreen.tsx::SurveyListScreen
  * @uses src/features/surveys/admin/NewSurveyScreen.tsx::NewSurveyScreen
  * @uses src/features/surveys/admin/ResultsScreen.tsx::ResultsScreen
@@ -11,6 +12,9 @@
  */
 
 import { Route, Routes } from 'react-router';
+// PL: Bramka roli podtoru 8: Samorząd wchodzi, reszta widzi ekran 6.1d „Tylko dla Samorządu”.
+// EN: The role gate of subtrack 8: the Council enters, everyone else sees screen 6.1d "Tylko dla Samorządu".
+import { PanelGate } from '../../admin';
 // PL: Style ekranów ankiet w panelu. Kolory tylko ze zmiennych w tokens.css.
 // EN: The survey panel screen styles. Colors only from the variables in tokens.css.
 import './admin.css';
@@ -28,10 +32,12 @@ export function SurveysAdminScreen() {
   // PL: „new” jest stałym adresem, więc wygrywa z numerem ankiety.
   // EN: "new" is a fixed address, so it wins over a survey id.
   return (
-    <Routes>
-      <Route index element={<SurveyListScreen />} />
-      <Route path="new" element={<NewSurveyScreen />} />
-      <Route path=":surveyId" element={<ResultsScreen />} />
-    </Routes>
+    <PanelGate minimum="council">
+      <Routes>
+        <Route index element={<SurveyListScreen />} />
+        <Route path="new" element={<NewSurveyScreen />} />
+        <Route path=":surveyId" element={<ResultsScreen />} />
+      </Routes>
+    </PanelGate>
   );
 }

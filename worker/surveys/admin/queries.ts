@@ -8,7 +8,7 @@
  * @since 2026-10-12
  * @uses worker/db/schema/surveys.ts::surveys
  * @uses worker/surveys/admin/results.ts::shapeResults
- * @used_by worker/surveys/admin/routes.ts::createSurveysAdminApp
+ * @used_by worker/surveys/admin/routes.ts::surveysAdminApp
  */
 
 import { asc, eq, inArray, sql } from 'drizzle-orm';

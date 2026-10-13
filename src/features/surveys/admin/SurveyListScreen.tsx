@@ -11,8 +11,7 @@
 import { Link } from 'react-router';
 import { ChevronRightIcon, PlusIcon, WifiOffIcon } from './icons';
 import { describeQuestions, describeResponses, formatShortDate, MIN_RESPONSES } from './format';
-import { ErrorMessage, NoAccess, PanelNote, ScreenTop } from './PanelParts';
-import { ApiError } from './surveyApi';
+import { ErrorMessage, PanelNote, ScreenTop } from './PanelParts';
 import { useIsOnline, usePanelSurveys } from './surveyQueries';
 import type { PanelSurvey } from './types';
 
@@ -94,8 +93,8 @@ function NewSurveyButton({ isOnline }: { isOnline: boolean }) {
 }
 
 /**
- * PL: Rysuje ekran listy ankiet. Pokazuje ostatnio zapisaną listę od razu i odświeża ją z serwera. Osobie bez roli (403) pokazuje ekran „Tylko dla Samorządu”.
- * EN: Draws the survey list screen. Shows the last saved list at once and refreshes it from the server. For a person without a role (403) it shows the "Tylko dla Samorządu" screen.
+ * PL: Rysuje ekran listy ankiet. Pokazuje ostatnio zapisaną listę od razu i odświeża ją z serwera.
+ * EN: Draws the survey list screen. Shows the last saved list at once and refreshes it from the server.
  *
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
@@ -103,10 +102,6 @@ export function SurveyListScreen() {
   const query = usePanelSurveys();
   const isOnline = useIsOnline();
   const list = query.data;
-
-  // PL: 403 to brak roli, a nie awaria: pokaż komunikat z ekranu 6.1d.
-  // EN: 403 is a missing role, not a failure: show the message of screen 6.1d.
-  if (query.error instanceof ApiError && query.error.status === 403) return <NoAccess />;
 
   return (
     <main className="sa sa--flow" data-subtrack="5b" aria-busy={query.isPending}>

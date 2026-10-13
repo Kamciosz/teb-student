@@ -29,10 +29,6 @@
   min-height: 100vh;
 }
 
-.sa--center {
-  justify-content: space-between;
-}
-
 /* PL: Górny pasek: „Wstecz” i tytuł.
    EN: The top bar: "Wstecz" and the title. */
 .sa-top {
@@ -452,31 +448,4 @@
   height: 100%;
   border-radius: 999px;
   background: var(--ink);
-}
-
-/* PL: Ekran „Tylko dla Samorządu”: treść na środku, kółko z kłódką.
-   EN: The "Tylko dla Samorządu" screen: content in the middle, a circle with a lock. */
-.sa-done {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
-  margin-top: 80px;
-  text-align: center;
-}
-
-.sa-done__badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 88px;
-  height: 88px;
-  margin-bottom: 16px;
-  border-radius: 999px;
-  background: var(--tile-2);
-}
-
-.sa-done__title {
-  font-size: var(--t-xl);
-  font-weight: 800;
 }

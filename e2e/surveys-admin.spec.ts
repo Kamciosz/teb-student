@@ -1,8 +1,8 @@
 /**
- * PL: Test ekranów ankiet w panelu (podtor 5b) na atrapie serwera: lista z liczbą odpowiedzi, tworzenie ankiety (błędy pól, limity od 2 do 5 odpowiedzi, czas trwania, wysłanie, błąd zapisu), wyniki poniżej progu (tylko liczba) i od progu (udziały), brak roli (403), widok bez internetu i szerokość 320 px.
- *     Ekrany sprawdzamy na atrapie (page.route), bo prawdziwy serwer do czasu podtoru 8 nie ma ról i odmawia każdemu uczniowi. Jeden test odpytuje prawdziwy serwer i sprawdza, że bez sesji odpowiada 401 i nic nie zdradza. Próg 5 odpowiedzi i walidację sprawdzają testy serwera na prawdziwej D1 (worker/surveys/admin/routes.test.ts).
- * EN: Test of the survey panel screens (subtrack 5b) against a mock server: the list with the response count, creating a survey (field errors, the 2 to 5 option limits, the duration, sending, a write error), results below the threshold (the count only) and from it (shares), no role (403), the offline view and the 320 px width.
- *     The screens are checked against a mock (page.route), because until subtrack 8 the real server has no roles and refuses every student. One test queries the real server and checks that without a session it answers 401 and reveals nothing. The 5-response threshold and the validation are checked by the server tests on a real D1 (worker/surveys/admin/routes.test.ts).
+ * PL: Test ekranów ankiet w panelu (podtor 5b) na atrapie serwera: lista z liczbą odpowiedzi, tworzenie ankiety (błędy pól, limity od 2 do 5 odpowiedzi, czas trwania, wysłanie, błąd zapisu), wyniki poniżej progu (tylko liczba) i od progu (udziały), brak roli (bramka podtoru 8), widok bez internetu i szerokość 320 px.
+ *     Ekrany sprawdzamy na atrapie (page.route), bo prawdziwa sesja z rolą wymaga logowania kodem z maila. Jeden test odpytuje prawdziwy serwer i sprawdza, że bez sesji odpowiada 401 i nic nie zdradza. Próg 5 odpowiedzi, role i walidację sprawdzają testy serwera na prawdziwej D1 (worker/surveys/admin/routes.test.ts).
+ * EN: Test of the survey panel screens (subtrack 5b) against a mock server: the list with the response count, creating a survey (field errors, the 2 to 5 option limits, the duration, sending, a write error), results below the threshold (the count only) and from it (shares), no role (the subtrack 8 gate), the offline view and the 320 px width.
+ *     The screens are checked against a mock (page.route), because a real session with a role needs signing in with an e-mail code. One test queries the real server and checks that without a session it answers 401 and reveals nothing. The 5-response threshold, the roles and the validation are checked by the server tests on a real D1 (worker/surveys/admin/routes.test.ts).
  *
  * @author Jakub
  * @since 2026-10-12
@@ -36,9 +36,9 @@ const FULL_RESULTS = {
 // EN: The results of a survey with 3 responses: the server sends no distribution (mockup 6.5c).
 const FEW_RESULTS = { id: 'dodatkowe', title: 'Zajęcia dodatkowe w II semestrze', endsOn: '2026-10-15', questionCount: 3, responseCount: 3, minResponses: 5 };
 
-// PL: Ustawienia atrapy: kod odpowiedzi serwera dla listy i dla zapisu oraz treści wysłane przez telefon.
-// EN: The mock settings: the server response status for the list and for the write, and the bodies the phone sent.
-type Mock = { listStatus: number; publishStatus: number; posted: unknown[] };
+// PL: Ustawienia atrapy: rola ucznia (odpowiedź bramki panelu), kod odpowiedzi serwera dla listy i dla zapisu oraz treści wysłane przez telefon.
+// EN: The mock settings: the student's role (the panel gate answer), the server response status for the list and for the write, and the bodies the phone sent.
+type Mock = { level: 'editor' | 'council' | null; listStatus: number; publishStatus: number; posted: unknown[] };
 
 /**
  * PL: Podłącza atrapę serwera ankiet w panelu pod /api/surveys/admin.
@@ -49,7 +49,10 @@ type Mock = { listStatus: number; publishStatus: number; posted: unknown[] };
  * @returns PL: stan atrapy do sprawdzenia w teście. EN: the mock state to check in the test.
  */
 async function mockPanelServer(page: Page, overrides: Partial<Mock> = {}): Promise<Mock> {
-  const mock: Mock = { listStatus: 200, publishStatus: 201, posted: [], ...overrides };
+  const mock: Mock = { level: 'council', listStatus: 200, publishStatus: 201, posted: [], ...overrides };
+  // PL: Bramka roli podtoru 8 pyta o rolę ucznia pod /api/admin/me.
+  // EN: The role gate of subtrack 8 asks for the student's role under /api/admin/me.
+  await page.route('**/api/admin/me', (route) => route.fulfill({ json: { level: mock.level } }));
   await page.route('**/api/surveys/admin/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/api/surveys/admin', '');
@@ -57,7 +60,7 @@ async function mockPanelServer(page: Page, overrides: Partial<Mock> = {}): Promi
       mock.posted.push(request.postDataJSON());
       return route.fulfill({ status: mock.publishStatus, json: { id: 'nowa' } });
     }
-    if (mock.listStatus !== 200) return route.fulfill({ status: mock.listStatus, json: { error: 'forbidden' } });
+    if (mock.listStatus !== 200) return route.fulfill({ status: mock.listStatus, json: { error: 'server_error' } });
     if (path === '/stolowka/results') return route.fulfill({ json: FULL_RESULTS });
     if (path === '/dodatkowe/results') return route.fulfill({ json: FEW_RESULTS });
     return route.fulfill({ json: LIST });
@@ -83,6 +86,9 @@ test('lista pokazuje ankiety z liczbą odpowiedzi i przycisk „Nowa ankieta” 
 // PL: Pusta lista z makiety 6.5a.
 // EN: The empty list from mockup 6.5a.
 test('pusta lista pokazuje podpowiedź / an empty list shows the hint', async ({ page }) => {
+  // PL: Bramka roli podtoru 8 najpierw pyta o rolę ucznia, więc atrapa odpowiada także na /api/admin/me.
+  // EN: The role gate of subtrack 8 asks for the student's role first, so the mock answers /api/admin/me too.
+  await page.route('**/api/admin/me', (route) => route.fulfill({ json: { level: 'council' } }));
   await page.route('**/api/surveys/admin/**', (route) => route.fulfill({ json: { active: [], ended: [] } }));
   await page.goto('/surveys/admin');
 
@@ -120,16 +126,18 @@ test('błąd pobrania pokazuje komunikat na liście i w wynikach / a fetch error
   await expect(page.getByText('Nie udało się pobrać wyników. Spróbuj ponownie za chwilę.')).toBeVisible();
 });
 
-// PL: Osoba bez roli (403) widzi ekran z makiety 6.1d, a nie błąd.
-// EN: A person without a role (403) sees the screen from mockup 6.1d, not an error.
-test('odpowiedź 403 pokazuje „Tylko dla Samorządu” / a 403 response shows "Tylko dla Samorządu"', async ({ page }) => {
-  await mockPanelServer(page, { listStatus: 403 });
-  await page.goto('/surveys/admin');
+// PL: Uczeń bez roli i redakcja (rola „editor”) widzą ekran 6.1d z bramki podtoru 8, a nie listę ankiet.
+// EN: A student without a role and the editorial team ("editor" role) see screen 6.1d from the subtrack 8 gate, not the survey list.
+for (const level of [null, 'editor'] as const) {
+  test(`rola ${String(level)} widzi „Tylko dla Samorządu” / role ${String(level)} sees "Tylko dla Samorządu"`, async ({ page }) => {
+    await mockPanelServer(page, { level });
+    await page.goto('/surveys/admin');
 
-  await expect(page.getByRole('heading', { name: 'Tylko dla Samorządu' })).toBeVisible();
-  await expect(page.getByText('Ten panel jest dla Samorządu i redakcji gazetki. Jeśli to pomyłka, zgłoś ją Samorządowi.')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Wróć na pulpit' })).toBeVisible();
-});
+    await expect(page.getByRole('heading', { name: 'Tylko dla Samorządu' })).toBeVisible();
+    await expect(page.getByText('Ten panel jest dla Samorządu i redakcji gazetki. Jeśli to pomyłka, zgłoś ją Samorządowi.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Ankiety', level: 1 })).toHaveCount(0);
+  });
+}
 
 // PL: Formularz: błędy pól, limity odpowiedzi, czas trwania i wysłanie.
 // EN: The form: field errors, option limits, the duration and sending.
@@ -188,6 +196,9 @@ test('błąd zapisu pokazuje komunikat, a przycisk zostaje aktywny / a write err
 test('bez internetu „Opublikuj ankietę” jest nieaktywne / without internet "Opublikuj ankietę" is inactive', async ({ page, context }) => {
   await mockPanelServer(page);
   await page.goto('/surveys/admin/new');
+  // PL: Najpierw czekamy na formularz (rola ucznia wczytana), dopiero potem wyłączamy sieć.
+  // EN: First we wait for the form (the student's role loaded), and only then switch the network off.
+  await expect(page.getByRole('button', { name: 'Opublikuj ankietę' })).toBeEnabled();
 
   await context.setOffline(true);
 

@@ -14,20 +14,9 @@ import type { NewSurveyBody, PanelSurveyList, SurveyResults } from './types';
 // EN: The start of the survey panel server addresses. Matches worker/mounts.ts.
 const API_BASE = '/api/surveys/admin';
 
-/** PL: Błąd rozmowy z serwerem. Niesie kod odpowiedzi, żeby ekran odróżnił 403 (brak roli). EN: An error in the talk with the server. Carries the response status, so the screen can tell 403 (no role). */
-export class ApiError extends Error {
-  /** PL: Kod odpowiedzi serwera. EN: The server response status. */
-  readonly status: number;
-
-  constructor(status: number) {
-    super(`Serwer odpowiedział ${status} / The server answered ${status}`);
-    this.status = status;
-  }
-}
-
 /**
- * PL: Wysyła zapytanie i odczytuje JSON. Rzuca ApiError, gdy odpowiedź nie jest udana.
- * EN: Sends a request and parses the JSON. Throws ApiError when the response is not successful.
+ * PL: Wysyła zapytanie i odczytuje JSON. Rzuca błąd, gdy odpowiedź nie jest udana.
+ * EN: Sends a request and parses the JSON. Throws an error when the response is not successful.
  *
  * @param path - PL: adres po /api/surveys/admin. EN: the address after /api/surveys/admin.
  * @param init - PL: ustawienia zapytania (metoda, treść). EN: the request settings (method, body).
@@ -37,7 +26,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   // PL: Brak internetu rzuca TypeError, a ekran pokaże błąd.
   // EN: No internet throws a TypeError, and the screen shows an error.
   const response = await fetch(`${API_BASE}${path}`, { ...init, headers: { 'Content-Type': 'application/json' } });
-  if (!response.ok) throw new ApiError(response.status);
+  if (!response.ok) throw new Error(`Serwer odpowiedział ${response.status} / The server answered ${response.status}`);
   return (await response.json()) as T;
 }
 
