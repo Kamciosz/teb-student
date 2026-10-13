@@ -34,12 +34,18 @@ const clockFormat = new Intl.DateTimeFormat('en-US', {
 });
 
 /**
- * PL: Stan licznika: trwa lekcja (z numerem od 1) albo przerwa. Brak stanu (null) znaczy, że licznika nie pokazujemy.
- * EN: Countdown state: a lesson (numbered from 1) or a break. No state (null) means the countdown is not shown.
+ * PL: Następna lekcja: numer (od 1) i godzina początku z planu (HH:MM).
+ * EN: The next lesson: number (from 1) and its start time from the plan (HH:MM).
+ */
+export type NextLesson = { lessonNo: number; start: string };
+
+/**
+ * PL: Stan licznika: trwa lekcja (z numerem od 1) albo przerwa. Oba stany znają następną lekcję; w czasie ostatniej lekcji dnia następnej nie ma (null). Brak stanu (null) znaczy, że licznika nie pokazujemy.
+ * EN: Countdown state: a lesson (numbered from 1) or a break. Both states know the next lesson; during the last lesson of the day there is no next one (null). No state (null) means the countdown is not shown.
  */
 export type BellState =
-  | { kind: 'lesson'; lessonNo: number; minutesLeft: number }
-  | { kind: 'break'; minutesLeft: number };
+  | { kind: 'lesson'; lessonNo: number; minutesLeft: number; next: NextLesson | null }
+  | { kind: 'break'; minutesLeft: number; next: NextLesson };
 
 /**
  * PL: Zegar w strefie szkoły: dzień tygodnia (1 = poniedziałek ... 7 = niedziela) i sekundy od północy.
@@ -112,6 +118,21 @@ function minutesCeil(seconds: number): number {
 }
 
 /**
+ * PL: Wylicza następną lekcję po lekcji o podanym indeksie. Po ostatniej lekcji dnia następnej nie ma.
+ * EN: Works out the lesson after the one at the given index. After the last lesson of the day there is none.
+ *
+ * @param lessons - PL: plan lekcji. EN: the lesson plan.
+ * @param index - PL: indeks bieżącej lekcji (od 0). EN: index of the current lesson (from 0).
+ * @returns PL: następna lekcja albo null. EN: the next lesson or null.
+ */
+function nextLessonAfter(lessons: readonly Lesson[], index: number): NextLesson | null {
+  // PL: Numer lekcji to indeks + 1, więc następna ma indeks + 2.
+  // EN: The lesson number is the index + 1, so the next one is index + 2.
+  const next = lessons.at(index + 1);
+  return next ? { lessonNo: index + 2, start: next.start } : null;
+}
+
+/**
  * PL: Wylicza stan licznika dla danego zegara. Lekcja trwa od początku (włącznie) do końca (wyłącznie). Przerwa to czas między końcem lekcji a początkiem następnej. Przed pierwszą i po ostatniej lekcji oraz w weekend stanu nie ma.
  * EN: Works out the countdown state for a given clock. A lesson runs from its start (inclusive) to its end (exclusive). A break is the time between the end of a lesson and the start of the next one. Before the first lesson, after the last one, and at the weekend there is no state.
  *
@@ -128,14 +149,14 @@ export function bellStateAt(lessons: readonly Lesson[], clock: WarsawClock): Bel
     // EN: Start and end of the current lesson in seconds since midnight.
     const start = parseTime(lesson.start);
     const end = parseTime(lesson.end);
+    const next = nextLessonAfter(lessons, index);
     if (clock.secondsOfDay >= start && clock.secondsOfDay < end) {
-      return { kind: 'lesson', lessonNo: index + 1, minutesLeft: minutesCeil(end - clock.secondsOfDay) };
+      return { kind: 'lesson', lessonNo: index + 1, minutesLeft: minutesCeil(end - clock.secondsOfDay), next };
     }
     // PL: Przerwa to czas po końcu tej lekcji, przed początkiem następnej. Po ostatniej lekcji nie ma następnej, więc nic się nie pokazuje.
     // EN: A break is the time after the end of this lesson and before the start of the next one. After the last lesson there is no next one, so nothing shows.
-    const next = lessons.at(index + 1);
     if (next && clock.secondsOfDay >= end && clock.secondsOfDay < parseTime(next.start)) {
-      return { kind: 'break', minutesLeft: minutesCeil(parseTime(next.start) - clock.secondsOfDay) };
+      return { kind: 'break', minutesLeft: minutesCeil(parseTime(next.start) - clock.secondsOfDay), next };
     }
   }
   return null;
