@@ -68,3 +68,62 @@
 .ad-menu ul { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
 .ad-menu-link { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 16px; border-radius: var(--r-sm); background: var(--tile); color: var(--ink); font-size: var(--t-sm); font-weight: 600; text-decoration: none; }
 .ad-menu-link.active { background: var(--accent); color: var(--on-accent); }
+
+/* PL: Nagłówek nad kaflem z odstępem 8 pod nim: „Pilotaż”, „Wydane wcześniej”, „Ważne kody”.
+   EN: A heading above a tile with 8 below it: "Pilotaż", "Wydane wcześniej", "Ważne kody". */
+.ad-label-below { display: block; margin-bottom: 8px; }
+
+/* PL: Tytuł wiersza z możliwym znacznikiem obok, na przykład „Role” i „Administrator”.
+   EN: The row title with a possible badge next to it, for example "Role" and "Administrator". */
+.ad-row-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ad-badge { padding: 3px 8px; border-radius: 6px; background: var(--line); color: var(--ink); font-size: var(--t-xs); font-weight: 600; }
+
+/* PL: Kod w wierszu listy i pusty stan z ikoną biletu.
+   EN: The code in a list row and the empty state with the ticket icon. */
+.ad-code-row { display: block; font-size: var(--t-md); font-weight: 800; letter-spacing: .02em; user-select: all; }
+.ad-empty-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 12px; padding: 24px 16px; border-radius: var(--r); background: var(--tile); text-align: center; }
+.ad-empty-tile .ad-icon { width: 28px; height: 28px; color: var(--ink-2); }
+.ad-empty-tile h2 { font-size: var(--t-lg); font-weight: 700; }
+.ad-empty-tile small { color: var(--ink-2); font-size: var(--t-sm); }
+
+/* PL: Przycisk tylko z ikoną (kopiowanie w wierszu): okrąg co najmniej 44 px.
+   EN: A button with only an icon (copying in a row): a circle at least 44 px. */
+.ad-btn-icon { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--tile-2); color: var(--ink); cursor: pointer; flex: none; }
+
+/* PL: Formularz wyszukiwania ucznia: mniejszy odstęp pod opisem, pole z obrysem i komunikat pod polem.
+   EN: The student search form: a smaller gap under the lead, the outlined field and the message under it. */
+.ad-lead-tight { margin-bottom: 16px; }
+.ad-form { display: flex; flex-direction: column; flex: 1; }
+.ad-input { width: 100%; min-height: 48px; padding: 12px 16px; border: 1.5px solid var(--ink); border-radius: var(--r); background: var(--tile); color: var(--ink); font: inherit; }
+.ad-field-error { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; margin-bottom: 12px; font-size: var(--t-sm); }
+.ad-field-error .ad-icon { margin-top: 1px; }
+
+/* PL: Awatar z inicjałem w wierszu i na karcie roli (48 px).
+   EN: The avatar with the initial in a row and on the role card (48 px). */
+.ad-avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--tile-2); color: var(--ink); font-size: var(--t-md); font-weight: 700; flex: none; }
+.ad-avatar-big { width: 48px; height: 48px; font-size: var(--t-lg); }
+.ad-person { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.ad-person h2 { font-size: var(--t-lg); font-weight: 700; }
+.ad-person small { color: var(--ink-2); font-size: var(--t-sm); }
+
+/* PL: Przełączniki ról: wiersz z tytułem i opisem, a po lewej przełącznik o obszarze dotyku 44 px.
+   EN: Role switches: a row with the title and the description, and on the left a switch with a 44 px touch area. */
+.ad-switch-list { list-style: none; background: var(--tile); border-radius: var(--r); overflow: hidden; margin-bottom: 12px; }
+.ad-switch-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 16px; }
+.ad-switch-row + .ad-switch-row { border-top: 1px solid var(--line); }
+.ad-switch { position: relative; width: 52px; height: 44px; flex: none; border: 0; background: none; cursor: pointer; }
+.ad-switch::before { content: ''; position: absolute; left: 0; top: 6px; width: 52px; height: 32px; border-radius: 16px; background: var(--line); }
+.ad-switch[aria-checked='true']::before { background: var(--accent); }
+.ad-switch-knob { position: absolute; left: 4px; top: 10px; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.ad-switch[aria-checked='true'] .ad-switch-knob { transform: translateX(20px); background: var(--on-accent); }
+
+/* PL: Arkusz potwierdzenia: przyciemnione tło i arkusz przyklejony do dołu ekranu.
+   EN: The confirmation sheet: a dimmed background and a sheet stuck to the bottom of the screen. */
+.ad-sheet-overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: flex-end; background: color-mix(in srgb, var(--bg-deep) 72%, transparent); }
+.ad-sheet { width: 100%; max-width: 430px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; padding: 24px 24px 64px; border-radius: 24px 24px 0 0; background: var(--tile-2); }
+.ad-sheet h2 { font-size: var(--t-xl); font-weight: 700; }
+.ad-sheet .ad-lead { margin-bottom: 12px; }
+
+/* PL: Nagłówek ekranu z planszy, na przykład „Liczby z pilotażu”.
+   EN: The screen heading from the design, for example "Liczby z pilotażu". */
+.ad-h1 { font-size: var(--t-xl); font-weight: 700; margin-bottom: 8px; }
