@@ -56,7 +56,10 @@ export type DiaryAction =
   | 'council_revoked'
   | 'editor_granted'
   | 'editor_revoked'
-  | 'pilot_downloaded';
+  | 'pilot_downloaded'
+  | 'news_published'
+  | 'news_deleted'
+  | 'report_stage_changed';
 
 /** PL: Jeden wpis dziennika zmian. EN: One change diary entry. */
 export type DiaryEntry = {

@@ -27,6 +27,10 @@ const ACTION_NAMES: Record<DiaryAction, string> = {
   editor_granted: 'Nadano rolę redakcji',
   editor_revoked: 'Odebrano rolę redakcji',
   pilot_downloaded: 'Pobrano dane z pilotażu',
+  // TO_AGREE: poniższe teksty do uzgodnienia z Samorządem.
+  news_published: 'Opublikowano wpis w Samorządzie',
+  news_deleted: 'Usunięto wpis w Samorządzie',
+  report_stage_changed: 'Zmieniono etap zgłoszenia',
 };
 
 /**
