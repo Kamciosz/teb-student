@@ -14,7 +14,7 @@
 
 // PL: Tabele (wartości, bo trafiają do zestawów) i ich typy wierszy.
 // EN: The tables (values, because they go into the sets) and their row types.
-import { reportStageChanges, reports } from '../schema/reports';
+import { reportJoins, reportStageChanges, reports } from '../schema/reports';
 // PL: Typ zestawu danych testowych, wspólny dla modułów.
 // EN: The test data set type shared by the modules.
 import type { SeedSet } from '../../shared';
@@ -81,10 +81,20 @@ export const REPORT_STAGE_CHANGES_SEED: (typeof reportStageChanges.$inferInsert)
 ];
 
 /**
- * PL: Zestawy danych testowych modułu reports dla `npm run db:seed` i testów serwera: zgłoszenia i ich historia.
- * EN: The test data sets of the reports module for `npm run db:seed` and the server tests: the reports and their history.
+ * PL: Dołączenia „Mnie też” do zgłoszeń testowych: inny uczeń dołączył do zgłoszenia ucznia, a uczeń do cudzego zgłoszenia otwartego.
+ * EN: The "Me too" joins on the test reports: another student joined the student's report, and the student joined someone else's open report.
+ */
+export const REPORT_JOINS_SEED: (typeof reportJoins.$inferInsert)[] = [
+  { reportId: 'seed-projektor', userId: OTHER_STUDENT_ID, createdAt: Date.UTC(2026, 9, 6, 9, 0) },
+  { reportId: 'seed-cudze', userId: SEED_STUDENT_ID, createdAt: Date.UTC(2026, 9, 8, 9, 0) },
+];
+
+/**
+ * PL: Zestawy danych testowych modułu reports dla `npm run db:seed` i testów serwera: zgłoszenia, ich historia i dołączenia.
+ * EN: The test data sets of the reports module for `npm run db:seed` and the server tests: the reports, their history and the joins.
  */
 export const REPORTS_SEED_SETS: SeedSet[] = [
   { table: reports, rows: REPORTS_SEED },
   { table: reportStageChanges, rows: REPORT_STAGE_CHANGES_SEED },
+  { table: reportJoins, rows: REPORT_JOINS_SEED },
 ];

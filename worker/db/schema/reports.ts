@@ -12,7 +12,7 @@
 
 // PL: Funkcje Drizzle do opisu tabel SQLite (D1 to SQLite).
 // EN: Drizzle functions that describe SQLite tables (D1 is SQLite).
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 /**
  * PL: Czego dotyczy zgłoszenie. Kody są stałe i po angielsku, polskie nazwy są tylko na ekranie (docs/projekt/EKRANY.md, ekran 3.1).
@@ -98,4 +98,32 @@ export const reportStageChanges = sqliteTable(
   // PL: Indeks po zgłoszeniu, bo historię zawsze czytamy dla jednego zgłoszenia.
   // EN: An index on the report, because we always read the history of one report.
   (table) => [index('report_stage_changes_report_idx').on(table.reportId)],
+);
+
+/**
+ * PL: Dołączenie ucznia do zgłoszenia („Mnie też”). Jeden wiersz na ucznia i zgłoszenie, więc jeden głos na ucznia. Numer ucznia nie jest pokazywany nikomu poza nim samym: licznik to liczba wierszy.
+ * EN: A student's "Me too" join on a report. One row per student and report, so one vote per student. The student's id is never shown to anyone but the student: the counter is the number of rows.
+ *
+ * @invariant PL: Para (zgłoszenie, uczeń) jest unikalna, bo to klucz główny. EN: The pair (report, student) is unique, because it is the primary key.
+ */
+export const reportJoins = sqliteTable(
+  'report_joins',
+  {
+    /** PL: Zgłoszenie, do którego uczeń dołączył. Usunięcie zgłoszenia usuwa dołączenia. EN: The report the student joined. Deleting the report deletes the joins. */
+    reportId: text('report_id')
+      .notNull()
+      .references(() => reports.id, { onDelete: 'cascade' }),
+    /** PL: Numer ucznia, który dołączył. Bez klucza obcego, bo tabele kont należą do podtoru 1a. EN: The id of the student who joined. No foreign key, because the account tables belong to subtrack 1a. */
+    userId: text('user_id').notNull(),
+    /** PL: Chwila dołączenia, milisekundy od 1970. EN: When the student joined, milliseconds since 1970. */
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [
+    // PL: Klucz złożony pilnuje jednego głosu na ucznia i zgłoszenie.
+    // EN: The composite key enforces one vote per student and report.
+    primaryKey({ columns: [table.reportId, table.userId] }),
+    // PL: Indeks po uczniu, bo usuwanie konta i „czy już dołączyłem” szukają po numerze ucznia.
+    // EN: An index on the student, because account deletion and "have I joined" search by the student id.
+    index('report_joins_user_idx').on(table.userId),
+  ],
 );
