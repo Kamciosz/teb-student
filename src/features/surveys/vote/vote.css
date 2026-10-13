@@ -388,3 +388,41 @@
   font-size: var(--t-sm);
   color: var(--ink-2);
 }
+
+/* PL: Pole krótkiej odpowiedzi: pole tekstowe na całą szerokość, pod nim po prawej licznik „x / 200 znaków”.
+   EN: The short-answer field: a full-width text box, with the "x / 200 characters" counter under it on the right. */
+.vote-text {
+  margin-top: 24px;
+}
+
+.vote-text__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 112px;
+  padding: 12px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+
+.vote-text__input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.vote-text__meta {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.vote-counter {
+  margin-left: auto;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}

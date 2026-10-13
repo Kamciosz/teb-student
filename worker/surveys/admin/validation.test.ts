@@ -38,6 +38,13 @@ describe('parseNewSurvey', () => {
     for (const type of ['open_text', 'Multiple_Choice', 'multiple_choice ', '', 1, ['single_choice']]) expect(parseNewSurvey(withType(type), now)).toBeNull();
   });
 
+  it('skala 1–5 tworzy pięć odpowiedzi 1…5 niezależnie od body / the 1–5 scale makes five options 1…5 whatever the body says', () => {
+    const scale = (options: unknown) => ({ ...valid, questions: [{ prompt: 'Jak oceniasz?', type: 'scale_1_5', options }] });
+    expect(parseNewSurvey(scale(['A', 'B']), now)?.questions[0]).toEqual({ prompt: 'Jak oceniasz?', type: 'scale_1_5', options: ['1', '2', '3', '4', '5'] });
+    expect(parseNewSurvey(scale(undefined), now)?.questions[0]?.options).toEqual(['1', '2', '3', '4', '5']);
+    expect(parseNewSurvey(scale([]), now)?.questions[0]?.options).toEqual(['1', '2', '3', '4', '5']);
+  });
+
   it('odrzuca ankietę bez tytułu albo z samymi spacjami / rejects a survey without a title or with spaces only', () => {
     expect(parseNewSurvey({ ...valid, title: '' }, now)).toBeNull();
     expect(parseNewSurvey({ ...valid, title: '   ' }, now)).toBeNull();
@@ -90,5 +97,18 @@ describe('parseNewSurvey: termin zamknięcia / closing time', () => {
     expect(parseNewSurvey({ ...valid, closesAt: 'jutro' }, now)).toBeNull();
     expect(parseNewSurvey({ ...valid, closesAt: 5 }, now)).toBeNull();
     expect(parseNewSurvey({ ...valid, closesAt: '2030-02-30T12:00' }, now)).toBeNull();
+  });
+});
+
+describe('parseNewSurvey: krótka odpowiedź / short answer', () => {
+  it('krótka odpowiedź nie ma odpowiedzi do wyboru, a te z telefonu są ignorowane / a short answer has no options, and the ones from the phone are ignored', () => {
+    const shortText = (options: unknown) => ({ ...valid, questions: [{ prompt: 'Co zjesz?', type: 'short_text', options }] });
+    expect(parseNewSurvey(shortText(undefined), now)?.questions[0]).toEqual({ prompt: 'Co zjesz?', type: 'short_text', options: [] });
+    expect(parseNewSurvey(shortText([]), now)?.questions[0]?.options).toEqual([]);
+    expect(parseNewSurvey(shortText(['A', 'B']), now)?.questions[0]?.options).toEqual([]);
+  });
+
+  it('krótka odpowiedź bez treści pytania odpada / a short answer without question text is rejected', () => {
+    expect(parseNewSurvey({ ...valid, questions: [{ prompt: '  ', type: 'short_text', options: [] }] }, now)).toBeNull();
   });
 });

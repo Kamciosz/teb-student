@@ -9,6 +9,7 @@
  * @uses src/features/admin/RoleScreen.tsx::RoleScreen
  * @uses src/features/admin/RoleCardScreen.tsx::RoleCardScreen
  * @uses src/features/admin/PilotScreen.tsx::PilotScreen
+ * @uses src/features/admin/DiaryScreen.tsx::DiaryScreen
  * @used_by playwright.config.ts::testDir
  */
 
@@ -59,6 +60,11 @@ async function stubServer(page: Page, level: Level, options: StubOptions = {}): 
   // EN: The pilot file as a CSV to download.
   await page.route('**/api/admin/pilot', (route) =>
     route.fulfill({ status: 200, contentType: 'text/csv', headers: { 'content-disposition': 'attachment; filename="pilotaz.csv"' }, body: PILOT_CSV }),
+  );
+  // PL: Dziennik zmian: jeden wpis o wydanym kodzie, od osoby o imieniu Ola.
+  // EN: The change diary: one entry about an issued code, from a person named Ola.
+  await page.route('**/api/admin/diary**', (route) =>
+    route.fulfill({ json: { entries: [{ id: 1, action: 'invite_issued', at: new Date().toISOString(), actorName: 'Ola' }], hasNext: false } }),
   );
 }
 
@@ -139,8 +145,8 @@ async function expectNoHorizontalScroll(page: Page, label: string): Promise<void
   expect(overflow, label).toBeLessThanOrEqual(0);
 }
 
-// PL: Samorząd widzi cztery części z opisami z projektu, podpis roli i brak wierszy, których jeszcze nie ma.
-// EN: The Council sees four sections with the descriptions from the design, the role caption and none of the rows that do not exist yet.
+// PL: Samorząd widzi pięć części z opisami z projektu, podpis roli i brak wierszy, których jeszcze nie ma.
+// EN: The Council sees five sections with the descriptions from the design, the role caption and none of the rows that do not exist yet.
 test('Samorząd widzi ekran główny panelu / the Council sees the panel main screen', async ({ page }) => {
   await stubServer(page, 'council');
   await page.goto('/admin');
@@ -153,7 +159,8 @@ test('Samorząd widzi ekran główny panelu / the Council sees the panel main sc
   await expect(page.getByRole('link', { name: /Zgłoszenia Zmieniaj etap zgłoszeń\./ })).toHaveAttribute('href', '/reports/admin');
   await expect(page.getByRole('link', { name: /Ankiety Twórz ankiety i czytaj wyniki\./ })).toHaveAttribute('href', '/surveys/admin');
   await expect(page.getByRole('link', { name: /Kody zaproszeń Wydaj kod osobie bez szkolnej skrzynki\./ })).toHaveAttribute('href', '/admin/kody');
-  await expect(page.locator('.ad-tile li')).toHaveCount(4);
+  await expect(page.getByRole('link', { name: /Dziennik zmian Kto wydał kod, nadał rolę albo pobrał plik\./ })).toHaveAttribute('href', '/admin/dziennik');
+  await expect(page.locator('.ad-tile li')).toHaveCount(5);
 });
 
 // PL: Redakcja widzi tylko Wpisy z notatką, a adres kodów kończy się ekranem 6.1d.
@@ -191,10 +198,31 @@ test('administrator widzi role i pilotaż na ekranie głównym / the administrat
   await page.goto('/admin');
 
   await expect(page.getByText('Twoja rola: administrator')).toBeVisible();
-  await expect(page.locator('.ad-tile').first().locator('li')).toHaveCount(5);
+  await expect(page.locator('.ad-tile').first().locator('li')).toHaveCount(6);
   await expect(page.getByRole('link', { name: /Role Administrator Nadaj albo odbierz rolę Samorządu i redakcji\./ })).toHaveAttribute('href', '/admin/role');
   await expect(page.getByText('Pilotaż', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: /Dane z pilotażu Pobierz liczby bez imion, nazwisk i adresów\./ })).toHaveAttribute('href', '/admin/pilotaz');
+});
+
+// PL: Samorząd otwiera dziennik zmian i widzi wpis o wydanym kodzie z imieniem osoby.
+// EN: The Council opens the change diary and sees the entry about an issued code with the person's name.
+test('Samorząd czyta dziennik zmian / the Council reads the change diary', async ({ page }) => {
+  await stubServer(page, 'council');
+  await page.goto('/admin/dziennik');
+
+  await expect(page.getByRole('heading', { name: 'Dziennik zmian', exact: true })).toBeVisible();
+  await expect(page.getByText('Wydano kod zaproszenia')).toBeVisible();
+  await expect(page.getByText(/^Ola · /)).toBeVisible();
+});
+
+// PL: Redakcja nie widzi dziennika zmian: ręcznie wpisany adres daje ekran 6.1d, a wpisów nie ma.
+// EN: The editorial team does not see the change diary: a hand-typed address gives screen 6.1d, and no entries show.
+test('redakcja nie widzi dziennika zmian / the editorial team does not see the change diary', async ({ page }) => {
+  await stubServer(page, 'editor');
+  await page.goto('/admin/dziennik');
+
+  await expect(page.getByRole('heading', { name: 'Tylko dla Samorządu' })).toBeVisible();
+  await expect(page.getByText('Wydano kod zaproszenia')).toHaveCount(0);
 });
 
 // PL: Rama panelu bramkuje też ekrany innych części: uczeń bez roli nie widzi wpisów (3c) i dostaje ekran 6.1d.

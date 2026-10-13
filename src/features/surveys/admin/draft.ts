@@ -31,6 +31,10 @@ export const MAX_TITLE_LENGTH = 120;
 export const MAX_PROMPT_LENGTH = 200;
 export const MAX_OPTION_LENGTH = 100;
 
+// PL: Odpowiedzi skali 1–5. Panel ich nie pokazuje ani nie edytuje, tylko wysyła; serwer tworzy te same (worker/surveys/admin/validation.ts).
+// EN: The options of the 1–5 scale. The panel does not show or edit them, it only sends them; the server makes the same ones (worker/surveys/admin/validation.ts).
+export const SCALE_LABELS = ['1', '2', '3', '4', '5'];
+
 /** PL: Pytanie w szkicu. EN: A question in the draft. */
 export type DraftQuestion = {
   /** PL: Stały numer pytania w szkicu (klucz listy w Reakcie), nie zmienia się przy usuwaniu innych pytań. EN: The question's stable number in the draft (the React list key), it does not change when other questions are removed. */
@@ -146,6 +150,9 @@ export function removeOption(question: DraftQuestion, index: number): DraftQuest
  * @returns PL: błędy pól. EN: the field errors.
  */
 function checkQuestion(question: DraftQuestion): QuestionErrors {
+  // PL: Przy skali 1–5 odpowiedzi wpisuje sama skala, a przy krótkiej odpowiedzi ich nie ma, więc ich nie sprawdzamy.
+  // EN: With the 1–5 scale the options are set by the scale itself, and a short answer has no options, so we do not check them.
+  if (question.type === 'scale_1_5' || question.type === 'short_text') return { prompt: question.prompt.trim() === '' ? 'Wpisz pytanie.' : null, options: null };
   const filled = question.options.filter((option) => option.trim() !== '').length;
   return {
     prompt: question.prompt.trim() === '' ? 'Wpisz pytanie.' : null,
@@ -207,7 +214,9 @@ export function toRequestBody(draft: Draft): NewSurveyBody {
     questions: draft.questions.map((question) => ({
       prompt: question.prompt.trim(),
       type: question.type,
-      options: question.options.map((option) => option.trim()).filter((option) => option !== ''),
+      // PL: Skala 1–5 wysyła stałe odpowiedzi „1”…„5”, krótka odpowiedź nie wysyła żadnych, a pozostałe typy wysyłają to, co jest w szkicu.
+      // EN: The 1–5 scale sends the fixed options "1"…"5", a short answer sends none, and the other types send what is in the draft.
+      options: question.type === 'scale_1_5' ? [...SCALE_LABELS] : question.type === 'short_text' ? [] : question.options.map((option) => option.trim()).filter((option) => option !== ''),
     })),
   };
 }

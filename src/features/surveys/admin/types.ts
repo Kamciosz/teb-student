@@ -43,8 +43,8 @@ export type OptionResult = {
   percent: number;
 };
 
-/** PL: Rodzaj pytania: jeden wybór albo wiele wyborów. EN: The question type: single or multiple choice. */
-export type QuestionType = 'single_choice' | 'multiple_choice';
+/** PL: Rodzaj pytania: jeden wybór, wiele wyborów albo skala 1–5. EN: The question type: single choice, multiple choice or the 1–5 scale. */
+export type QuestionType = 'single_choice' | 'multiple_choice' | 'scale_1_5' | 'short_text';
 
 /** PL: Jedno pytanie w wynikach. EN: One question in the results. */
 export type QuestionResult = {
@@ -54,6 +54,10 @@ export type QuestionResult = {
   type: QuestionType;
   /** PL: Odpowiedzi w kolejności A, B, C, D, E. EN: The options in the order A, B, C, D, E. */
   options: OptionResult[];
+  /** PL: Średnia ze skali 1–5, zaokrąglona do jednego miejsca. Tylko przy skali i gdy ktoś głosował. EN: The average of the 1–5 scale, rounded to one decimal place. Only for the scale and when somebody voted. */
+  average?: number;
+  /** PL: Krótkie odpowiedzi w porządku alfabetycznym, bez autorów. Tylko przy krótkiej odpowiedzi. EN: The short answers in alphabetical order, without authors. Only for a short answer. */
+  texts?: string[];
 };
 
 /** PL: Wyniki jednej ankiety. EN: The results of one survey. */

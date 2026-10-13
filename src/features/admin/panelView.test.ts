@@ -19,14 +19,14 @@ describe('sectionsFor', () => {
     expect(sectionsFor('editor').map((section) => section.title)).toEqual(['Wpisy']);
   });
 
-  it('Samorząd widzi cztery części w kolejności z projektu / the Council sees four sections in the design order', () => {
-    expect(sectionsFor('council').map((section) => section.title)).toEqual(['Wpisy', 'Zgłoszenia', 'Ankiety', 'Kody zaproszeń']);
+  it('Samorząd widzi pięć części w kolejności z projektu / the Council sees five sections in the design order', () => {
+    expect(sectionsFor('council').map((section) => section.title)).toEqual(['Wpisy', 'Zgłoszenia', 'Ankiety', 'Kody zaproszeń', 'Dziennik zmian']);
   });
 
-  it('administrator widzi te cztery i „Role” z podpisem Administrator / the administrator sees those four and "Role" with the Administrator badge', () => {
+  it('administrator widzi te pięć i „Role” z podpisem Administrator / the administrator sees those five and "Role" with the Administrator badge', () => {
     const rows = sectionsFor('admin');
-    expect(rows.map((section) => section.title)).toEqual(['Wpisy', 'Zgłoszenia', 'Ankiety', 'Kody zaproszeń', 'Role']);
-    expect(rows[4].badge).toBe('Administrator');
+    expect(rows.map((section) => section.title)).toEqual(['Wpisy', 'Zgłoszenia', 'Ankiety', 'Kody zaproszeń', 'Dziennik zmian', 'Role']);
+    expect(rows[5].badge).toBe('Administrator');
   });
 });
 

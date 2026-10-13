@@ -1,7 +1,7 @@
 /**
- * PL: Test ekranów ankiet dla ucznia (podtor 5a) na atrapie serwera: lista z dniami do końca, jedno pytanie na ekranie, „Dalej” po wyborze, wysłanie głosu, brak drugiego wypełnienia, błąd bez internetu, lista z zapisu w telefonie, skala 1–5 jako przyciski i szerokość 320 px.
+ * PL: Test ekranów ankiet dla ucznia (podtor 5a) na atrapie serwera: lista z dniami do końca, jedno pytanie na ekranie, „Dalej” po wyborze, wysłanie głosu, brak drugiego wypełnienia, błąd bez internetu, lista z zapisu w telefonie, skala 1–5 jako przyciski, krótka odpowiedź z licznikiem znaków i szerokość 320 px.
  *     Ekrany sprawdzamy na atrapie serwera (page.route), bo atrapa nie zależy od dnia uruchomienia (termin ankiety). Jeden test odpytuje prawdziwy serwer i sprawdza, że bez sesji ucznia odpowiada 401. Zasadę „jeden głos na ucznia” sprawdzają testy serwera na prawdziwej D1 (worker/surveys/vote/vote.test.ts).
- * EN: Test of the survey screens for the student (subtrack 5a) against a mock server: the list with the days left, one question per screen, "Dalej" after a choice, sending the vote, no second filling, the offline error, the list from the phone's saved data, the 1–5 scale as buttons and the 320 px width.
+ * EN: Test of the survey screens for the student (subtrack 5a) against a mock server: the list with the days left, one question per screen, "Dalej" after a choice, sending the vote, no second filling, the offline error, the list from the phone's saved data, the 1–5 scale as buttons, a short answer with a character counter and the 320 px width.
  *     The screens are checked against a mock server (page.route), because a mock does not depend on the day of the run (the survey deadline). One test queries the real server and checks that it answers 401 without a student session. The "one vote per student" rule is checked by the server tests on a real D1 (worker/surveys/vote/vote.test.ts).
  *
  * @author Jakub
@@ -52,6 +52,15 @@ const SCALE_SURVEY = {
   ].map((question) => ({ ...question, options: question.options.map((label, index) => ({ id: `${question.id}-${index}`, label })) })),
 };
 
+// PL: Ankieta z pytaniem krótkiej odpowiedzi: pole tekstowe bez wyborów, odpowiedź to tekst od 1 do 200 znaków.
+// EN: A survey with a short-answer question: a text field with no choices, the answer is a text of 1 to 200 characters.
+const SHORT_SURVEY = {
+  ...SURVEY,
+  id: 'krotka',
+  title: 'Uwagi do zajęć dodatkowych',
+  questions: [{ id: 'k1', type: 'short_text', prompt: 'Co chcesz zmienić w zajęciach dodatkowych?', options: [] }],
+};
+
 // PL: Stan atrapy serwera: czy uczeń już zagłosował i jakie odpowiedzi wysłał.
 // EN: The state of the mock server: whether the student has voted and which answers were sent.
 type MockServer = { voted: boolean; received: unknown[] };
@@ -64,7 +73,7 @@ type MockServer = { voted: boolean; received: unknown[] };
  * @param options - PL: godzina zamknięcia (ISO) albo null, czy ankieta jest już zamknięta i którą ankietę pokazać. EN: the closing hour (ISO) or null, whether the survey is already closed, and which survey to show.
  * @returns PL: stan atrapy do sprawdzenia w teście. EN: the mock state to check in the test.
  */
-async function mockSurveyServer(page: Page, options: { closesAt?: string | null; closed?: boolean; survey?: typeof SURVEY | typeof MULTI_SURVEY | typeof SCALE_SURVEY } = {}): Promise<MockServer> {
+async function mockSurveyServer(page: Page, options: { closesAt?: string | null; closed?: boolean; survey?: typeof SURVEY | typeof MULTI_SURVEY | typeof SCALE_SURVEY | typeof SHORT_SURVEY } = {}): Promise<MockServer> {
   const { closesAt = null, closed = false, survey = SURVEY } = options;
   const server: MockServer = { voted: false, received: [] };
   await page.route('**/api/surveys/vote/**', async (route) => {
@@ -276,6 +285,38 @@ test('prawdziwy serwer: bez sesji ucznia 401 na każdym adresie / the real serve
     expect(response.status()).toBe(401);
     expect(await response.text()).not.toContain('Zajęcia dodatkowe');
   }
+});
+
+// PL: Pytanie krótkiej odpowiedzi: podpowiedź o anonimowości pod polem połączona z nim, licznik „x / 200 znaków”, „Wyślij” zablokowane przy pustym, samych spacjach i za długim tekście, a wysłany jest tekst przycięty z obu stron.
+// EN: A short-answer question: the anonymity hint under the field tied to it, the "x / 200 characters" counter, "Wyślij" blocked for an empty or spaces-only text and for a text that is too long, and the text sent is trimmed at both ends.
+test('krótka odpowiedź: licznik, blokada przy pustym i za długim tekście, wysłany tekst przycięty / a short answer: counter, blocked when empty or too long, the trimmed text is sent', async ({ page }) => {
+  const server = await mockSurveyServer(page, { survey: SHORT_SURVEY });
+  await page.goto('/surveys/vote/krotka');
+
+  const field = page.getByLabel('Twoja odpowiedź');
+  const send = page.getByRole('button', { name: 'Wyślij odpowiedzi' });
+  await expect(field).toBeVisible();
+  await expect(page.getByText('Nie wpisuj imienia ani klasy. Odpowiedź jest anonimowa.')).toBeVisible();
+  await expect(field).toHaveAccessibleDescription(/Nie wpisuj imienia ani klasy\. Odpowiedź jest anonimowa\./);
+  await expect(page.getByText('0 / 200 znaków')).toBeVisible();
+  await expect(send).toBeDisabled();
+
+  await field.fill('   ');
+  await expect(page.getByText('0 / 200 znaków')).toBeVisible();
+  await expect(send).toBeDisabled();
+
+  await field.fill('a'.repeat(201));
+  await expect(page.getByText('201 / 200 znaków')).toBeVisible();
+  await expect(page.getByText('Za dużo znaków. Skróć odpowiedź.')).toBeVisible();
+  await expect(send).toBeDisabled();
+
+  await field.fill('  Chcę więcej gier i robotyki  ');
+  await expect(page.getByText('27 / 200 znaków')).toBeVisible();
+  await expect(send).toBeEnabled();
+  await send.click();
+
+  await expect(page.getByRole('heading', { name: 'Odpowiedzi wysłane' })).toBeVisible();
+  expect(server.received).toEqual([{ answers: [{ questionId: 'k1', optionIds: [], text: 'Chcę więcej gier i robotyki' }] }]);
 });
 
 // PL: Telefon o szerokości 320 px: bez przewijania w bok, przycisk „Dalej” w całości na ekranie.

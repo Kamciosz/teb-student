@@ -8,6 +8,7 @@
  * @used_by worker/admin/panelRoles.ts::panelRoles
  * @used_by worker/admin/deleteStudentData.ts::panelRoles
  * @used_by worker/db/seed/admin.ts::panelRoles
+ * @used_by worker/admin/diary.ts::diaryEntries
  */
 
 // PL: Funkcje Drizzle do opisu tabel SQLite (D1 to SQLite).
@@ -39,3 +40,29 @@ export const panelRoles = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.userId, table.role] })],
 );
+
+/**
+ * PL: Akcje, które trafiają do dziennika zmian: wydanie kodu zaproszenia, nadanie i odebranie roli Samorządu albo redakcji, pobranie pliku z pilotażu. Wpis nie ma treści, tylko nazwę akcji.
+ * EN: The actions that go into the change diary: issuing an invitation code, granting and revoking the Council or editorial role, downloading the pilot file. An entry has no content, only the action name.
+ */
+export const DIARY_ACTIONS = ['invite_issued', 'council_granted', 'council_revoked', 'editor_granted', 'editor_revoked', 'pilot_downloaded'] as const;
+
+/** PL: Jedna akcja w dzienniku. EN: One action in the diary. */
+export type DiaryAction = (typeof DIARY_ACTIONS)[number];
+
+/**
+ * PL: Dziennik zmian w panelu: jeden wiersz na jedną akcję. Kto zrobił (actorId), co (action), czego dotyczyła (targetId, numer ucznia albo pusty dla kodu i pliku) i kiedy (at). Bez treści i bez adresów e-mail. Wpisy zostają po odebraniu roli, a znikają z kontem (oba numery, actorId i targetId, kasuje deleteAdminStudentData).
+ * EN: The change diary of the panel: one row per action. Who did it (actorId), what (action), what it concerned (targetId, the student id, or empty for a code and a file) and when (at). No content and no e-mail addresses. Entries stay after a role is revoked, and go with the account (deleteAdminStudentData deletes both ids, actorId and targetId).
+ */
+export const diaryEntries = sqliteTable('diary_entries', {
+  /** PL: Numer wpisu, rośnie z kolejnymi wpisami. EN: The entry id, grows with each entry. */
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  /** PL: Numer konta, które wykonało akcję. Zwykły tekst bez klucza obcego, jak panel_roles.user_id. EN: The id of the account that did the action. Plain text with no foreign key, like panel_roles.user_id. */
+  actorId: text('actor_id').notNull(),
+  /** PL: Nazwa akcji z DIARY_ACTIONS. EN: The action name from DIARY_ACTIONS. */
+  action: text('action', { enum: DIARY_ACTIONS }).notNull(),
+  /** PL: Numer ucznia, którego dotyczy akcja, albo pusty dla kodu zaproszenia i pliku. Kod nie trafia tu, bo to sekret. EN: The id of the student the action concerns, or empty for an invitation code and a file. A code does not go here, because it is a secret. */
+  targetId: text('target_id'),
+  /** PL: Chwila akcji, milisekundy od 1970. EN: When the action happened, milliseconds since 1970. */
+  at: integer('at').notNull(),
+});

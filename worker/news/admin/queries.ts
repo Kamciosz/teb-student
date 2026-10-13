@@ -49,6 +49,8 @@ export type PanelEntry = {
   publishedAt: string | null;
   /** PL: Chwila przypięcia jako tekst ISO 8601 albo null, gdy wpis nie jest przypięty. EN: The pinning moment as an ISO 8601 string, or null when the entry is not pinned. */
   pinnedAt: string | null;
+  /** PL: Chwila, od której uczeń widzi wpis, jako tekst ISO 8601 albo null, gdy nie ma zaplanowania. EN: The moment from which the student sees the entry, as an ISO 8601 string, or null when it is not scheduled. */
+  publishAt: string | null;
 };
 
 /**
@@ -89,6 +91,7 @@ export async function listPanelEntries(db: D1Database): Promise<PanelEntry[]> {
       source: newsEntries.source,
       publishedAt: newsEntries.publishedAt,
       pinnedAt: newsEntries.pinnedAt,
+      publishAt: newsEntries.publishAt,
     })
     .from(newsEntries)
     .orderBy(asc(newsEntries.status), desc(newsEntries.publishedAt))
@@ -99,6 +102,7 @@ export async function listPanelEntries(db: D1Database): Promise<PanelEntry[]> {
     ...row,
     publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
     pinnedAt: row.pinnedAt ? row.pinnedAt.toISOString() : null,
+    publishAt: row.publishAt ? row.publishAt.toISOString() : null,
   }));
 }
 

@@ -123,10 +123,20 @@ describe('GET /', () => {
 
     expect(response.status).toBe(200);
     expect(entries.map((entry) => [entry.id, entry.status]).sort()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
-    expect(entries.at(-1)).toEqual({ id: 'opublikowany', type: 'event', status: 'published', title: 'Turniej', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null });
+    expect(entries.at(-1)).toEqual({ id: 'opublikowany', type: 'event', status: 'published', title: 'Turniej', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null, publishAt: null });
     expect(entries.every((entry) => !('body' in entry))).toBe(true);
     expect(await studentList()).toEqual(['opublikowany']);
     expect((await newsFeedApp.request('/szkic', {}, env)).status).toBe(404);
+  });
+
+  // PL: Zaplanowany wpis ma w liście chwilę startu jako tekst ISO, a wpis bez zaplanowania ma null.
+  // EN: A scheduled entry has its start moment in the list as an ISO string, and an unscheduled entry has null.
+  it('zwraca chwilę zaplanowania jako ISO albo null / returns the scheduling moment as ISO or null', async () => {
+    await db.update(newsEntries).set({ publishAt: new Date(Date.UTC(2030, 2, 5, 7, 30, 0)) }).where(eq(newsEntries.id, 'opublikowany'));
+    const { entries } = (await (await send('/')).json()) as { entries: Record<string, unknown>[] };
+
+    expect(entries.find((entry) => entry.id === 'opublikowany')?.publishAt).toBe('2030-03-05T07:30:00.000Z');
+    expect(entries.find((entry) => entry.id === 'szkic')?.publishAt).toBeNull();
   });
 });
 

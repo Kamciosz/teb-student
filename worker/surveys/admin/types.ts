@@ -60,8 +60,8 @@ export type OptionResult = {
 };
 
 /**
- * PL: Rodzaj pytania z listy QUESTION_TYPES (schemat podtoru 5a): jednokrotny albo wielokrotny wybór.
- * EN: The question type from the QUESTION_TYPES list (the schema of subtrack 5a): single or multiple choice.
+ * PL: Rodzaj pytania z listy QUESTION_TYPES (schemat podtoru 5a): jednokrotny wybór, wielokrotny wybór albo skala 1–5.
+ * EN: The question type from the QUESTION_TYPES list (the schema of subtrack 5a): single choice, multiple choice or the 1–5 scale.
  */
 export type QuestionType = (typeof QUESTION_TYPES)[number];
 
@@ -76,6 +76,10 @@ export type QuestionResult = {
   type: QuestionType;
   /** PL: Odpowiedzi w kolejności A, B, C, D, E. EN: The options in the order A, B, C, D, E. */
   options: OptionResult[];
+  /** PL: Średnia ze skali 1–5 (pozycja 1…5 ważona głosami), zaokrąglona do jednego miejsca po przecinku. Tylko przy scale_1_5 i gdy ktoś głosował. EN: The average of the 1–5 scale (the position 1…5 weighted by the votes), rounded to one decimal place. Only for scale_1_5 and when somebody voted. */
+  average?: number;
+  /** PL: Krótkie odpowiedzi w porządku alfabetycznym (nie w kolejności zapisu, bez autora). Tylko przy short_text. EN: The short answers in alphabetical order (not in the order written, no author). Only for short_text. */
+  texts?: string[];
 };
 
 /**

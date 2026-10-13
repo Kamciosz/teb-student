@@ -11,6 +11,7 @@
 import { Link } from 'react-router';
 import type { PanelEntry } from './api';
 import { Icon } from './icons';
+import { scheduledLabel } from './schedule';
 import { SCREEN, TO_AGREE } from './texts';
 
 /**
@@ -53,6 +54,7 @@ export function EntryTile({ entry, isLocked, onPublish, onTogglePin, onDelete }:
   const isDraft = entry.status === 'draft';
   const isPinned = entry.pinnedAt !== null;
   const pinAction = isPinned ? TO_AGREE.unpin : TO_AGREE.pin;
+  const scheduled = scheduledLabel(entry);
   // PL: Znaczniki, źródło z datą (szkic nie ma daty), tytuł i rząd przycisków.
   // EN: The tags, the source with the date (a draft has no date), the title and the row of buttons.
   return (
@@ -60,6 +62,7 @@ export function EntryTile({ entry, isLocked, onPublish, onTogglePin, onDelete }:
       <div className="na-tile-head">
         <span className="na-tag">{SCREEN.types[entry.type] ?? entry.type}</span>
         <span className="na-tag na-tag-status">{isDraft ? TO_AGREE.draft : TO_AGREE.published}</span>
+        {scheduled && <span className="na-tag">{scheduled}</span>}
         <span className="na-small">{entry.publishedAt ? `${entry.source} · ${shortDate(entry.publishedAt)}` : entry.source}</span>
       </div>
       <h2 className="na-title">{entry.title}</h2>

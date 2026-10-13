@@ -56,13 +56,13 @@ const MULTI_RESULTS = {
 
 // PL: Plik CSV z wynikami ankiety „stolowka”: nagłówek, wiersz na każdą odpowiedź, BOM na początku i CRLF na końcu wierszy.
 // EN: The CSV file with the results of the "stolowka" survey: the header, a row for every option, the BOM at the start and CRLF at the end of rows.
-const FULL_CSV = '\uFEFFPytanie,Odpowiedź,Liczba głosów,Procent\r\n' + [
-  'Jak oceniasz obiady w stołówce?,Dobrze,5,42',
-  'Jak oceniasz obiady w stołówce?,Różnie,4,33',
-  'Jak oceniasz obiady w stołówce?,Słabo,2,17',
-  'Jak oceniasz obiady w stołówce?,Nie jadam w stołówce,1,8',
-  'Co poprawić?,Porcje,7,58',
-  'Co poprawić?,Smak,5,42',
+const FULL_CSV = '\uFEFFPytanie,Odpowiedź,Liczba głosów,Procent,Średnia\r\n' + [
+  'Jak oceniasz obiady w stołówce?,Dobrze,5,42,',
+  'Jak oceniasz obiady w stołówce?,Różnie,4,33,',
+  'Jak oceniasz obiady w stołówce?,Słabo,2,17,',
+  'Jak oceniasz obiady w stołówce?,Nie jadam w stołówce,1,8,',
+  'Co poprawić?,Porcje,7,58,',
+  'Co poprawić?,Smak,5,42,',
 ].join('\r\n') + '\r\n';
 
 // PL: Wyniki ankiety z 3 odpowiedziami: serwer nie wysyła rozkładu (makieta 6.5c).
@@ -81,6 +81,13 @@ type Mock = { level: 'editor' | 'council' | null; listStatus: number; publishSta
  * @param overrides - PL: zmienione ustawienia atrapy. EN: the changed mock settings.
  * @returns PL: stan atrapy do sprawdzenia w teście. EN: the mock state to check in the test.
  */
+// PL: Wyniki krótkiej odpowiedzi: 5 odpowiedzi, treści w kolejności alfabetycznej (tak wysyła serwer), bez autorów.
+// EN: The results of a short answer: 5 responses, the texts in alphabetical order (as the server sends them), without authors.
+const SHORT_RESULTS = {
+  id: 'krotka', title: 'Co zjadłeś?', endsOn: '2026-10-18', questionCount: 1, responseCount: 5, minResponses: 5,
+  questions: [{ prompt: 'Co zjadłeś?', type: 'short_text', options: [], texts: ['Arbuz', 'Lody', 'Łosoś', 'Mleko', 'Zupa'] }],
+};
+
 async function mockPanelServer(page: Page, overrides: Partial<Mock> = {}): Promise<Mock> {
   const mock: Mock = { level: 'council', listStatus: 200, publishStatus: 201, posted: [], ...overrides };
   // PL: Bramka roli podtoru 8 pyta o rolę ucznia pod /api/admin/me.
@@ -98,6 +105,7 @@ async function mockPanelServer(page: Page, overrides: Partial<Mock> = {}): Promi
     if (path === '/stolowka/results/csv') return route.fulfill({ headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="ankieta-stolowka-wyniki.csv"' }, body: FULL_CSV });
     if (path === '/dodatkowe/results') return route.fulfill({ json: FEW_RESULTS });
     if (path === '/wielokrotna/results') return route.fulfill({ json: MULTI_RESULTS });
+    if (path === '/krotka/results') return route.fulfill({ json: SHORT_RESULTS });
     return route.fulfill({ json: LIST });
   });
   return mock;
@@ -257,6 +265,42 @@ test('rodzaj pytania „Wiele wyborów” idzie na serwer / the question type "W
   expect(mock.posted).toEqual([{ title: 'Wybory klasowe', durationDays: 7, questions: [{ prompt: 'Co lubisz jeść?', type: 'multiple_choice', options: ['Pizzę', 'Sałatkę'] }], closesAt: null }]);
 });
 
+// PL: Skala 1–5 nie pokazuje pól odpowiedzi, a panel sam wysyła odpowiedzi „1”…„5”.
+// EN: The 1–5 scale shows no option fields, and the panel sends the options "1"…"5" itself.
+test('skala 1–5 idzie na serwer z odpowiedziami 1…5 / the 1–5 scale goes to the server with the options 1…5', async ({ page }) => {
+  const mock = await mockPanelServer(page);
+  await page.goto('/surveys/admin/new');
+  await page.getByLabel('Tytuł ankiety', { exact: true }).fill('Ocena stołówki');
+  await page.getByLabel('Pytanie 1', { exact: true }).fill('Jak oceniasz obiady?');
+
+  await page.getByText('Skala 1–5', { exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Skala 1–5' })).toBeChecked();
+  await expect(page.getByLabel('Odpowiedź A', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Dodaj odpowiedź' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
+
+  await expect(page).toHaveURL(/\/surveys\/admin$/);
+  expect(mock.posted).toEqual([{ title: 'Ocena stołówki', durationDays: 7, questions: [{ prompt: 'Jak oceniasz obiady?', type: 'scale_1_5', options: ['1', '2', '3', '4', '5'] }], closesAt: null }]);
+});
+
+// PL: Krótka odpowiedź nie pokazuje pól odpowiedzi, a panel wysyła pustą listę odpowiedzi.
+// EN: The short answer shows no option fields, and the panel sends an empty list of options.
+test('krótka odpowiedź idzie na serwer bez odpowiedzi / the short answer goes to the server without options', async ({ page }) => {
+  const mock = await mockPanelServer(page);
+  await page.goto('/surveys/admin/new');
+  await page.getByLabel('Tytuł ankiety', { exact: true }).fill('Co zjadłeś?');
+  await page.getByLabel('Pytanie 1', { exact: true }).fill('Co zjadłeś na obiad?');
+
+  await page.getByText('Krótka odpowiedź', { exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Krótka odpowiedź' })).toBeChecked();
+  await expect(page.getByLabel('Odpowiedź A', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Dodaj odpowiedź' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
+
+  await expect(page).toHaveURL(/\/surveys\/admin$/);
+  expect(mock.posted).toEqual([{ title: 'Co zjadłeś?', durationDays: 7, questions: [{ prompt: 'Co zjadłeś na obiad?', type: 'short_text', options: [] }], closesAt: null }]);
+});
+
 // PL: Błąd zapisu: komunikat nad przyciskiem, a przycisk zostaje aktywny, żeby ponowić.
 // EN: A write error: the message above the button, and the button stays active to retry.
 test('błąd zapisu pokazuje komunikat, a przycisk zostaje aktywny / a write error shows the message and the button stays active', async ({ page }) => {
@@ -329,6 +373,19 @@ test('wyniki wielokrotnego wyboru pokazują zaznaczenia i dopisek / multiple cho
   await expect(page.getByText('Zaznaczeń: 4', { exact: true })).toBeVisible();
   await expect(page.getByText('Uczeń mógł zaznaczyć kilka odpowiedzi.')).toBeVisible();
   for (const share of ['3 · 75%', '1 · 25%']) await expect(page.getByText(share, { exact: true })).toBeVisible();
+});
+
+// PL: Krótka odpowiedź od progu pokazuje listę treści w porządku alfabetycznym, bez udziałów i z dopiskiem.
+// EN: The short answer from the threshold shows the list of texts in alphabetical order, without shares, and with the note.
+test('wyniki krótkiej odpowiedzi pokazują treści alfabetycznie / short answer results show the texts alphabetically', async ({ page }) => {
+  await mockPanelServer(page);
+  await page.goto('/surveys/admin/krotka');
+
+  await expect(page.getByText('Co zjadłeś?').first()).toBeVisible();
+  await expect(page.getByText('Odpowiedzi są w kolejności alfabetycznej. Nie widać, kto je napisał.')).toBeVisible();
+  const items = await page.locator('ul.sa-results li').allTextContents();
+  expect(items).toEqual(['Arbuz', 'Lody', 'Łosoś', 'Mleko', 'Zupa']);
+  await expect(page.getByText('%')).toHaveCount(0);
 });
 
 // PL: „Pobierz CSV” zapisuje plik z nazwą z serwera i treścią z BOM-em.

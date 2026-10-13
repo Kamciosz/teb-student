@@ -153,6 +153,40 @@ function MultipleChoiceNote({ question }: { question: QuestionResult }) {
 }
 
 /**
+ * PL: Przy skali 1–5 pokazuje średnią, jeśli serwer ją przysłał (dopiero od progu odpowiedzi i gdy ktoś głosował). Przy innych typach nic nie rysuje.
+ * EN: With the 1–5 scale it shows the average, if the server sent it (only from the response threshold and when somebody voted). With other types it draws nothing.
+ *
+ * @param props - PL: pytanie z wynikami. EN: the question with its results.
+ * @returns PL: notatka albo nic. EN: the note or nothing.
+ */
+function AverageNote({ question }: { question: QuestionResult }) {
+  if (question.average === undefined) return null;
+  return <p className="sa-small">{TO_AGREE.average(question.average)}</p>;
+}
+
+/**
+ * PL: Lista krótkich odpowiedzi jednego pytania: same teksty, bez procentów i bez autorów. Serwer już je posortował alfabetycznie.
+ * EN: The list of short answers of one question: the texts only, without percentages and without authors. The server has already sorted them alphabetically.
+ *
+ * @param props - PL: teksty odpowiedzi. EN: the answer texts.
+ * @returns PL: notatka i lista. EN: the note and the list.
+ */
+function TextAnswers({ texts }: { texts: string[] }) {
+  return (
+    <>
+      <p className="sa-small">{TO_AGREE.textsNote}</p>
+      <ul className="sa-tile sa-results">
+        {texts.map((text, place) => (
+          <li key={place} className="sa-result__label">
+            {text}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/**
  * PL: Rysuje ekran 6.5d dla jednego pytania. Przy kilku pytaniach „Następne pytanie” przełącza je, a „Wstecz” wraca do poprzedniego.
  * EN: Draws screen 6.5d for one question. With several questions "Następne pytanie" switches them, and "Wstecz" returns to the previous one.
  *
@@ -172,11 +206,16 @@ function QuestionResults({ results }: { results: SurveyResults }) {
       <p className="sa-label sa-label--tight">{`Pytanie ${index + 1}`}</p>
       <h2 className="sa-h2">{question.prompt}</h2>
       <MultipleChoiceNote question={question} />
-      <ul className="sa-tile sa-results">
-        {question.options.map((option, place) => (
-          <ResultBar key={place} letter={OPTION_LETTERS[place] ?? ''} option={option} />
-        ))}
-      </ul>
+      <AverageNote question={question} />
+      {question.type === 'short_text' ? (
+        <TextAnswers texts={question.texts ?? []} />
+      ) : (
+        <ul className="sa-tile sa-results">
+          {question.options.map((option, place) => (
+            <ResultBar key={place} letter={question.type === 'scale_1_5' ? '' : OPTION_LETTERS[place] ?? ''} option={option} />
+          ))}
+        </ul>
+      )}
       <PanelNote icon={<LockIcon />} text="Wyniki są zbiorcze. Nie widać, kto co wybrał." />
       <DownloadCsvButton surveyId={results.id} />
       {index < questions.length - 1 ? (

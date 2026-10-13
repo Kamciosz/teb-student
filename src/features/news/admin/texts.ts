@@ -31,6 +31,8 @@ export const TO_AGREE = {
   listLabel: 'Wpisy',
   draft: 'Szkic',
   published: 'Opublikowany',
+  /** PL: Znacznik wpisu opublikowanego z chwilą startu w przyszłości; argument to „dzień.miesiąc, godzina:minuta”. EN: The tag of a published entry with a start moment in the future; the argument is "day.month, hour:minute". */
+  scheduled: (when: string) => `Zaplanowany na ${when}`,
   delete: 'Usuń',
   edit: 'Edytuj',
   emptyTitle: 'Nie ma jeszcze wpisów',
