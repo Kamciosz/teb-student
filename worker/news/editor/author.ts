@@ -1,29 +1,25 @@
 /**
- * PL: Sprawdzanie, kto może pisać wpisy. Wpisy tworzy tylko Samorząd i redakcja gazetki (docs/PLAN_APLIKACJI.md, część 3, „Bezpieczeństwo”), a uczeń nie może dodać wpisu. Role nie istnieją jeszcze w aplikacji (konto zna tylko numer i adres, a role nadaje panel, podtor 8), więc ten strażnik odpowiada 403 każdemu zalogowanemu. To celowo zamknięta furtka: otwiera się jedną zmianą w tym pliku, gdy podtor 8 da sposób sprawdzenia roli.
- * EN: The check of who may write entries. Only the Student Council and the newspaper team create entries (docs/PLAN_APLIKACJI.md, part 3, "Bezpieczeństwo"), and a student cannot add an entry. Roles do not exist in the app yet (an account knows only an id and an address, and the panel, subtrack 8, grants roles), so this guard answers 403 to every signed-in user. It is a deliberately closed door: it opens with one change in this file once subtrack 8 provides a way to check the role.
+ * PL: Sprawdzanie, kto może pisać wpisy. Wpisy tworzy tylko Samorząd i redakcja gazetki (docs/PLAN_APLIKACJI.md, część 3, „Bezpieczeństwo”), a uczeń nie może dodać wpisu. Rolę sprawdza middleware podtoru 8: zapisać wpis może redakcja (`editor`) i role wyższe (Samorząd, administrator), uczeń bez roli dostaje 403, a bez sesji 401.
+ * EN: The check of who may write entries. Only the Student Council and the newspaper team create entries (docs/PLAN_APLIKACJI.md, part 3, "Bezpieczeństwo"), and a student cannot add an entry. The role is checked by the middleware of subtrack 8: the editorial team (`editor`) and higher roles (the Council, the administrator) may save an entry, a student without a role gets 403, and without a session 401.
  *
  * @author Szymon
  * @since 2026-10-12
- * @uses worker/auth/index.ts::requireStudent
+ * @uses worker/admin/index.ts::requirePanelRole
  * @used_by worker/news/editor/routes.ts::requireNewsAuthor
  */
 
-// PL: Łączy kilka middleware w jeden, wykonywany po kolei.
-// EN: Combines several middleware into one, run in order.
-import { every } from 'hono/combine';
+// PL: Typ middleware Hono i typ środowiska z uczniem (sesja).
+// EN: The Hono middleware type and the environment type with the student (session).
 import type { MiddlewareHandler } from 'hono';
-// PL: Sesja ucznia z drzwi modułu auth.
-// EN: The student session from the auth module door.
-import { requireStudent, type StudentEnv } from '../../auth';
+import type { StudentEnv } from '../../auth';
+// PL: Sprawdzanie roli w panelu, przez drzwi modułu admin (worker/admin/index.ts).
+// EN: The panel role check, through the door of the admin module (worker/admin/index.ts).
+import { requirePanelRole } from '../../admin';
 
 /**
- * PL: Odrzuca zalogowanego użytkownika, bo aplikacja nie ma jeszcze ról. Gdy podtor 8 doda role, tu będzie sprawdzenie roli Samorządu albo redakcji, a reszta dostanie 403.
- * EN: Rejects the signed-in user, because the app has no roles yet. When subtrack 8 adds roles, the check for the Student Council or newspaper role goes here, and everyone else gets 403.
+ * PL: Strażnik zapisu wpisów: sesja (401 bez niej) i rola co najmniej redakcji (403 bez niej). Nazwa i miejsce zostają, bo używa go też router podtoru 3c.
+ * Zawężenie typu jest celowe: requirePanelRole zwraca środowisko z `panelLevel`, a routery wpisów go nie czytają, więc bezpiecznie oddajemy im typ z samym uczniem (bez tego TypeScript odrzuca przekazanie do createNewsAdminApp/createNewsEditorApp).
+ * EN: The entry write guard: a session (401 without it) and at least the editorial role (403 without it). The name and place stay, because the subtrack 3c router uses it too.
+ * The type narrowing is deliberate: requirePanelRole returns an environment with `panelLevel`, and the entry routers do not read it, so we hand them the type with only the student (without it TypeScript rejects passing it to createNewsAdminApp/createNewsEditorApp).
  */
-const denyUntilRolesExist: MiddlewareHandler<StudentEnv> = async (context) => context.json({ error: 'role_required' }, 403);
-
-/**
- * PL: Strażnik zapisu wpisów: najpierw sesja (401 bez niej), potem rola (dziś zawsze 403).
- * EN: The entry write guard: first the session (401 without it), then the role (always 403 today).
- */
-export const requireNewsAuthor: MiddlewareHandler<StudentEnv> = every(requireStudent, denyUntilRolesExist);
+export const requireNewsAuthor = requirePanelRole('editor') as unknown as MiddlewareHandler<StudentEnv>;

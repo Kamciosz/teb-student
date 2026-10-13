@@ -6,7 +6,9 @@
  * @since 2026-10-09
  * @uses worker/reports/student/routes.ts::reportsStudentApp
  * @uses worker/reports/student/deleteStudentData.ts::deleteReportsStudentData
+ * @uses worker/reports/student/countReports.ts::countReports
  * @used_by worker/reports/index.ts::reportsStudentApp
+ * @used_by worker/reports/index.ts::countReports
  */
 
 // PL: Router podtoru 4a.
@@ -16,3 +18,7 @@ export { reportsStudentApp } from './routes';
 // PL: Funkcja kasująca dane ucznia z modułu reports. Zbiera ją worker/shared/accountDeletion.ts.
 // EN: The function that deletes the student's data from the reports module. worker/shared/accountDeletion.ts collects it.
 export { deleteReportsStudentData } from './deleteStudentData';
+
+// PL: Liczba wszystkich zgłoszeń (także anonimowych) dla ekranu „Dane z pilotażu” w panelu Samorządu. Zbiera ją worker/reports/index.ts.
+// EN: The number of all reports (anonymous ones too) for the "Pilot data" screen in the Student Council panel. worker/reports/index.ts collects it.
+export { countReports } from './countReports';

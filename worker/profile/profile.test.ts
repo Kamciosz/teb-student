@@ -30,6 +30,9 @@ import { createTestRuntime, signIn } from '../auth/email/testRuntime';
 // PL: Cała aplikacja Workera, razem z routerem profilu pod /api/profile.
 // EN: The whole Worker app, with the profile router under /api/profile.
 import app from '../index';
+// PL: Funkcja dla panelu zgłoszeń z drzwi modułu (#70), importowana tak, jak zrobi to podtor 4b.
+// EN: The function for the reports panel from the module door (#70), imported the way subtrack 4b does it.
+import { getStudentNames } from './index';
 
 /** PL: Sekret podpisu sesji z testRuntime.ts. EN: The session signing secret from testRuntime.ts. */
 const TEST_SECRET = 'test-secret-test-secret-test-secret-00';
@@ -206,5 +209,37 @@ describe('DELETE: usunięcie konta / account deletion', () => {
 
     const rows = await drizzle(env.DB).select({ userId: profiles.userId }).from(profiles).where(eq(profiles.userId, PROFILE_OTHER_STUDENT_ID));
     expect(rows).toHaveLength(1);
+  });
+});
+
+// PL: Grupa testów imion i klas dla panelu zgłoszeń (#70).
+// EN: A group of tests for the names and classes for the reports panel (#70).
+describe('getStudentNames: imiona i klasy dla panelu / names and classes for the panel', () => {
+  // PL: Oddaje imię i klasę tylko tych, którzy mają profil; uczeń bez profilu i obcy numer nie trafiają do wyniku.
+  // EN: Returns the name and class only of those who have a profile; a student without a profile and an unknown id are not in the result.
+  it('oddaje imię i klasę tych, którzy mają profil / returns the name and class of those who have a profile', async () => {
+    const janId = (await accountId(JAN)) ?? '';
+    const annaId = (await accountId(ANNA)) ?? '';
+    await send('PUT', janCookie, BODY);
+
+    const names = await getStudentNames(env.DB, [janId, annaId, 'nie-ma-takiego-konta']);
+
+    expect(names).toEqual([{ userId: janId, name: 'Jan', className: '2LB' }]);
+  });
+
+  // PL: Pusta lista daje pusty wynik bez zapytania do bazy.
+  // EN: An empty list gives an empty result without a database query.
+  it('pusta lista daje pusty wynik / an empty list gives an empty result', async () => {
+    expect(await getStudentNames(env.DB, [])).toEqual([]);
+  });
+
+  // PL: Długa lista jest dzielona na części, a wynik z ostatniej części też wraca.
+  // EN: A long list is split into chunks, and the result from the last chunk comes back too.
+  it('długa lista też działa / a long list works too', async () => {
+    const janId = (await accountId(JAN)) ?? '';
+    await send('PUT', janCookie, BODY);
+    const ids = [...Array.from({ length: 200 }, (_, index) => `fałszywy-${index}`), janId];
+
+    expect(await getStudentNames(env.DB, ids)).toEqual([{ userId: janId, name: 'Jan', className: '2LB' }]);
   });
 });

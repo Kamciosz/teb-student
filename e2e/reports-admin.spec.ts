@@ -1,5 +1,5 @@
 /**
- * PL: Test ścieżki Samorządu w podtorze 4b: lista zgłoszeń z filtrem po etapie, stany puste, szczegół (anonimowe i z autorem), zmiana etapu z historią, błąd zapisu, błąd pobrania, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga roli z podtoru 8 i zalogowania); serwer sprawdzają testy Vitest (worker/reports/admin/routes.test.ts), także to, że odpowiedź nie zawiera autora.
+ * PL: Test ścieżki Samorządu w podtorze 4b: lista zgłoszeń z filtrem po etapie, stany puste, szczegół (anonimowe i z autorem), zmiana etapu z historią, błąd zapisu, błąd pobrania, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga zalogowania i roli Samorządu), także rola ucznia z bramki PanelGate; serwer sprawdzają testy Vitest (worker/reports/admin/routes.test.ts), także to, że odpowiedź nie zawiera autora.
  * EN: Test of the Student Council path in subtrack 4b: the report list with the stage filter, the empty states, the detail (anonymous and with an author), the stage change with history, the save error, the fetch error, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/reports/admin/routes.test.ts), including that the response contains no author.
  *
  * @author Szymon
@@ -40,6 +40,19 @@ function sampleReports(): StubReport[] {
 }
 
 /**
+ * PL: Podstawia rolę ucznia w panelu, którą czyta bramka PanelGate.
+ * EN: Stubs the student's panel role, which the PanelGate gate reads.
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ * @param level - PL: rola albo null (uczeń bez roli). EN: the role or null (a student without a role).
+ */
+async function stubPanelLevel(page: Page, level: 'editor' | 'council' | 'admin' | null): Promise<void> {
+  // PL: Serwer panelu oddaje rolę w polu level.
+  // EN: The panel server returns the role in the level field.
+  await page.route('**/api/admin/me', (route) => route.fulfill({ json: { level } }));
+}
+
+/**
  * PL: Podstawia API Samorządu z pamięcią: GET oddaje listę, GET /:id szczegół z historią, PATCH /:id zmienia etap i dopisuje historię. Tak jak serwer, nie wysyła numeru autora.
  * EN: Stubs the Student Council API with memory: GET returns the list, GET /:id the detail with history, PATCH /:id changes the stage and appends the history. Like the server, it sends no author id.
  *
@@ -47,6 +60,9 @@ function sampleReports(): StubReport[] {
  * @param reports - PL: zgłoszenia na start. EN: the reports to start with.
  */
 async function stubAdminApi(page: Page, reports: StubReport[] = sampleReports()): Promise<void> {
+  // PL: Uczeń jest w Samorządzie, więc bramka roli przepuszcza ekran.
+  // EN: The student is in the Council, so the role gate lets the screen through.
+  await stubPanelLevel(page, 'council');
   // PL: Historia każdego zgłoszenia, najnowszy etap pierwszy.
   // EN: The history of every report, newest stage first.
   const history = new Map(reports.map((item) => [item.id, [{ stage: item.stage, changedAt: item.updatedAt }]]));
@@ -169,13 +185,36 @@ test('błąd zapisu zostawia przycisk aktywny / a save error leaves the button a
 // PL: Odmowa serwera (403 bez roli) pokazuje komunikat błędu pobrania, a nie dane.
 // EN: A server refusal (403 without a role) shows the fetch error message, not data.
 test('odmowa serwera pokazuje błąd pobrania / a server refusal shows the fetch error', async ({ page }) => {
-  // PL: Serwer odmawia dostępu uczniowi bez roli.
-  // EN: The server refuses access to a student without a role.
+  // PL: Bramka przepuszcza (rola w telefonie), ale serwer odmawia dostępu.
+  // EN: The gate lets through (the role on the phone), but the server refuses access.
+  await stubPanelLevel(page, 'council');
   await page.route(/\/api\/reports\/admin$/, (route) => route.fulfill({ status: 403, json: { error: 'forbidden' } }));
   await page.goto('/reports/admin');
   await expect(page.getByRole('alert')).toContainText('Nie udało się pobrać zgłoszeń. Spróbuj ponownie za chwilę.');
   await expect(items(page)).toHaveCount(0);
 });
+
+// PL: Uczeń bez roli i członek redakcji widzą „Tylko dla Samorządu”, a zgłoszenia nie są nawet pobierane.
+// EN: A student without a role and an editorial team member see "Tylko dla Samorządu", and the reports are not even fetched.
+for (const level of [null, 'editor'] as const) {
+  test(`rola ${level ?? 'brak'}: bramka pokazuje „Tylko dla Samorządu” / role ${level ?? 'none'}: the gate shows "Tylko dla Samorządu"`, async ({ page }) => {
+    // PL: Zlicz zapytania o zgłoszenia i podstaw rolę ucznia.
+    // EN: Count the report requests and stub the student's role.
+    let reportRequests = 0;
+    await page.route(/\/api\/reports\/admin(\/.*)?$/, (route) => {
+      reportRequests += 1;
+      return route.fulfill({ status: 403, json: { error: 'forbidden' } });
+    });
+    await stubPanelLevel(page, level);
+
+    // PL: Ekran odmowy jest widoczny, a lista i zapytanie o zgłoszenia nie.
+    // EN: The refusal screen is visible, and the list and the report request are not.
+    await page.goto('/reports/admin');
+    await expect(page.getByRole('heading', { name: 'Tylko dla Samorządu' })).toBeVisible();
+    await expect(items(page)).toHaveCount(0);
+    expect(reportRequests).toBe(0);
+  });
+}
 
 // PL: Przy 320 px lista i szczegół nie przewijają się w poziomie, a dolny przycisk mieści się w oknie.
 // EN: At 320 px the list and the detail do not scroll horizontally, and the bottom button fits in the window.
