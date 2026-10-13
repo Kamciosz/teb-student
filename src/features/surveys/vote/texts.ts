@@ -19,6 +19,8 @@ export const TO_AGREE = {
   scaleHighest: 'bardzo',
   /** PL: Nazwa pola krótkiej odpowiedzi dla czytnika ekranu (w widoku niewidoczna). EN: The name of the short-answer field for a screen reader (hidden on screen). */
   shortTextLabel: 'Twoja odpowiedź',
+  /** PL: Podpowiedź pod polem krótkiej odpowiedzi o anonimowości, zawsze widoczna. EN: The anonymity hint under the short-answer field, always shown. */
+  shortTextHint: 'Nie wpisuj imienia ani klasy. Odpowiedź jest anonimowa.',
   /** PL: Podpowiedź, gdy tekst jest za długi i nie da się wysłać. EN: The hint shown when the text is too long to send. */
   shortTextTooLong: 'Za dużo znaków. Skróć odpowiedź.',
 } as const;

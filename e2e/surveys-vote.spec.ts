@@ -287,8 +287,8 @@ test('prawdziwy serwer: bez sesji ucznia 401 na każdym adresie / the real serve
   }
 });
 
-// PL: Pytanie krótkiej odpowiedzi: licznik „x / 200 znaków”, „Wyślij” zablokowane przy pustym, samych spacjach i za długim tekście, a wysłany jest tekst przycięty z obu stron.
-// EN: A short-answer question: the "x / 200 characters" counter, "Wyślij" blocked for an empty or spaces-only text and for a text that is too long, and the text sent is trimmed at both ends.
+// PL: Pytanie krótkiej odpowiedzi: podpowiedź o anonimowości pod polem połączona z nim, licznik „x / 200 znaków”, „Wyślij” zablokowane przy pustym, samych spacjach i za długim tekście, a wysłany jest tekst przycięty z obu stron.
+// EN: A short-answer question: the anonymity hint under the field tied to it, the "x / 200 characters" counter, "Wyślij" blocked for an empty or spaces-only text and for a text that is too long, and the text sent is trimmed at both ends.
 test('krótka odpowiedź: licznik, blokada przy pustym i za długim tekście, wysłany tekst przycięty / a short answer: counter, blocked when empty or too long, the trimmed text is sent', async ({ page }) => {
   const server = await mockSurveyServer(page, { survey: SHORT_SURVEY });
   await page.goto('/surveys/vote/krotka');
@@ -296,6 +296,8 @@ test('krótka odpowiedź: licznik, blokada przy pustym i za długim tekście, wy
   const field = page.getByLabel('Twoja odpowiedź');
   const send = page.getByRole('button', { name: 'Wyślij odpowiedzi' });
   await expect(field).toBeVisible();
+  await expect(page.getByText('Nie wpisuj imienia ani klasy. Odpowiedź jest anonimowa.')).toBeVisible();
+  await expect(field).toHaveAccessibleDescription(/Nie wpisuj imienia ani klasy\. Odpowiedź jest anonimowa\./);
   await expect(page.getByText('0 / 200 znaków')).toBeVisible();
   await expect(send).toBeDisabled();
 

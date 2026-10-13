@@ -1,6 +1,6 @@
 /**
- * PL: Jedno pytanie ankiety na ekranie: numer pytania, treść, odpowiedzi z literami A–D (albo skala 1–5, albo pole krótkiej odpowiedzi) i notatka o anonimowości (ekrany 4.2 i 4.3 w docs/projekt/EKRANY.md). Pytanie jednokrotnego wyboru ma pola radio, wielokrotnego wyboru pola wyboru, skala 1–5 przyciski (ScaleOptions), krótka odpowiedź pole tekstowe z licznikiem znaków. Sam niczego nie zapisuje, tylko zgłasza wybór wyżej.
- * EN: One survey question on the screen: the question number, the text, the options with letters A–D (or the 1–5 scale, or the short-answer field) and the anonymity note (screens 4.2 and 4.3 in docs/projekt/EKRANY.md). A single-choice question has radio inputs, a multiple-choice one has checkboxes, the 1–5 scale has buttons (ScaleOptions), a short answer is a text field with a character counter. It stores nothing itself, it only reports the choice upward.
+ * PL: Jedno pytanie ankiety na ekranie: numer pytania, treść, odpowiedzi z literami A–D (albo skala 1–5, albo pole krótkiej odpowiedzi) i notatka o anonimowości (ekrany 4.2 i 4.3 w docs/projekt/EKRANY.md). Pytanie jednokrotnego wyboru ma pola radio, wielokrotnego wyboru pola wyboru, skala 1–5 przyciski (ScaleOptions), krótka odpowiedź pole tekstowe z podpowiedzią o anonimowości pod spodem i licznikiem znaków. Sam niczego nie zapisuje, tylko zgłasza wybór wyżej.
+ * EN: One survey question on the screen: the question number, the text, the options with letters A–D (or the 1–5 scale, or the short-answer field) and the anonymity note (screens 4.2 and 4.3 in docs/projekt/EKRANY.md). A single-choice question has radio inputs, a multiple-choice one has checkboxes, the 1–5 scale has buttons (ScaleOptions), a short answer is a text field with the anonymity hint under it and a character counter. It stores nothing itself, it only reports the choice upward.
  *
  * @author Jakub
  * @since 2026-10-09
@@ -9,6 +9,7 @@
  * @uses src/features/surveys/vote/shortText.ts::SHORT_TEXT_MAX_LENGTH
  * @uses src/features/surveys/vote/texts.ts::TO_AGREE
  * @used_by src/features/surveys/vote/SurveyFlowScreen.tsx::SurveyFlowScreen
+ * @used_by src/features/surveys/vote/QuestionStep.test.tsx::QuestionStep
  */
 
 // PL: Haki referencji, efektu i identyfikatorów Reacta.
@@ -56,6 +57,9 @@ export function QuestionStep({ question, number, selectedIds, onChange, text, on
   // EN: The ids of the field and the counter, so the label and the counter are tied to the field.
   const inputId = useId();
   const counterId = useId();
+  // PL: Identyfikator podpowiedzi o anonimowości, żeby pole ją czytało razem z licznikiem.
+  // EN: The id of the anonymity hint, so the field reads it together with the counter.
+  const hintId = useId();
 
   // PL: Przy wielokrotnym wyborze klik dodaje albo usuwa odpowiedź z zestawu. Przy jednokrotnym wyborze i skali zostaje tylko kliknięta.
   // EN: With multiple choice a click adds or removes the option from the set. With single choice and the scale only the clicked option stays.
@@ -84,7 +88,10 @@ export function QuestionStep({ question, number, selectedIds, onChange, text, on
           <label className="vote-sr-only" htmlFor={inputId}>
             {TO_AGREE.shortTextLabel}
           </label>
-          <textarea id={inputId} className="vote-text__input" rows={4} value={text} onChange={(event) => onTextChange(event.target.value)} aria-describedby={counterId} />
+          <textarea id={inputId} className="vote-text__input" rows={4} value={text} onChange={(event) => onTextChange(event.target.value)} aria-describedby={`${hintId} ${counterId}`} />
+          <p id={hintId} className="vote-small">
+            {TO_AGREE.shortTextHint}
+          </p>
           <div className="vote-text__meta">
             {tooLong ? <span className="vote-small">{TO_AGREE.shortTextTooLong}</span> : null}
             <span id={counterId} className="vote-counter">
