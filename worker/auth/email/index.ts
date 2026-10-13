@@ -10,10 +10,12 @@
  * @uses worker/auth/email/studentLookup.ts::findStudentByEmail
  * @uses worker/auth/email/studentLookup.ts::listStudentsByIds
  * @uses worker/auth/email/studentLookup.ts::countStudents
+ * @uses worker/auth/email/accountCreatedAt.ts::getAccountCreatedAt
  * @used_by worker/auth/index.ts::authEmailApp
  * @used_by worker/auth/index.ts::findStudentByEmail
  * @used_by worker/auth/index.ts::listStudentsByIds
  * @used_by worker/auth/index.ts::countStudents
+ * @used_by worker/auth/index.ts::getAccountCreatedAt
  */
 
 // PL: Router podtoru 1a.
@@ -31,3 +33,7 @@ export { requireStudent, type Student, type StudentEnv } from './session';
 // PL: Wyszukiwanie uczniów dla panelu Samorządu: findStudentByEmail(env.DB, adres) → { id, name, email } | null, listStudentsByIds(env.DB, numery) → { id, name, email }[], countStudents(env.DB) → liczba kont.
 // EN: The student lookup for the Student Council panel: findStudentByEmail(env.DB, address) → { id, name, email } | null, listStudentsByIds(env.DB, ids) → { id, name, email }[], countStudents(env.DB) → the number of accounts.
 export { countStudents, findStudentByEmail, listStudentsByIds, type StudentSummary } from './studentLookup';
+
+// PL: Data założenia konta ucznia dla eksportu danych RODO „Pobierz moje dane” (podtor 7): getAccountCreatedAt(env.DB, numer) → milisekundy od 1970 | null, gdy konta nie ma. Zbiera ją worker/auth/index.ts.
+// EN: The date the student's account was created for the GDPR data export "Download my data" (subtrack 7): getAccountCreatedAt(env.DB, id) → milliseconds since 1970 | null when there is no account. worker/auth/index.ts collects it.
+export { getAccountCreatedAt } from './accountCreatedAt';
