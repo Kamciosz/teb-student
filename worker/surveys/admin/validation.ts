@@ -103,6 +103,10 @@ function parseQuestion(value: unknown): NewSurvey['questions'][number] | null {
   // EN: The 1–5 scale does not take options from the phone: the server gives the five fixed ones and ignores whatever came in options.
   if (type === 'scale_1_5') return { prompt, type, options: [...SCALE_LABELS] };
 
+  // PL: Krótka odpowiedź nie ma odpowiedzi do wyboru. Odpowiedzi z telefonu są ignorowane, a zapisuje się pusta lista.
+  // EN: A short answer has no options to pick. Options from the phone are ignored, and an empty list is stored.
+  if (type === 'short_text') return { prompt, type, options: [] };
+
   if (!Array.isArray(raw?.options)) return null;
   if (raw.options.length < MIN_OPTIONS || raw.options.length > MAX_OPTIONS) return null;
 

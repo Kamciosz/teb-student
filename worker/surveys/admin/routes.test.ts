@@ -20,7 +20,7 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { panelRoles } from '../../db/schema/admin';
 import { user } from '../../db/schema/auth';
-import { surveyOptions, surveyParticipation, surveyQuestions, surveys } from '../../db/schema/surveys';
+import { surveyOptions, surveyParticipation, surveyQuestions, surveyTextAnswers, surveys } from '../../db/schema/surveys';
 // PL: Router logowania kodem z drzwi modułu auth, żeby zalogować ucznia tak jak w aplikacji.
 // EN: The code sign-in router from the auth module door, to sign a student in the way the app does.
 import { authEmailApp } from '../../auth';
@@ -162,6 +162,26 @@ beforeAll(async () => {
     { id: 'mieszana-o3', questionId: 'mieszana-q2', position: 1, label: 'Kawa', votes: 6 },
     { id: 'mieszana-o4', questionId: 'mieszana-q2', position: 2, label: 'Herbata', votes: 3 },
   ]);
+  // PL: Krótka odpowiedź: ankieta z 4 osobami (poniżej progu) i z 5 (od progu). Odpowiedzi wpisane w kolejności od najmniej alfabetycznej, żeby sortowanie było widać.
+  // EN: A short answer: a survey with 4 people (below the threshold) and one with 5 (from the threshold). The answers are inserted in an order that is not alphabetical, so the sorting shows.
+  await db.insert(surveys).values([
+    { id: 'krotka-niska', title: 'Ankieta krótka niska', endsOn: '2099-12-31' },
+    { id: 'krotka', title: 'Ankieta krótka', endsOn: '2099-12-31' },
+  ]);
+  await db.insert(surveyQuestions).values([
+    { id: 'krotka-niska-q', surveyId: 'krotka-niska', position: 1, prompt: 'Co zjadłeś?', type: 'short_text' },
+    { id: 'krotka-q', surveyId: 'krotka', position: 1, prompt: 'Co zjadłeś?', type: 'short_text' },
+  ]);
+  await db.insert(surveyTextAnswers).values([
+    { questionId: 'krotka-niska-q', text: 'Tajna-odpowiedz-niska' },
+    { questionId: 'krotka-q', text: 'Mleko' },
+    { questionId: 'krotka-q', text: 'Zupa' },
+    { questionId: 'krotka-q', text: 'Arbuz' },
+    { questionId: 'krotka-q', text: 'Łosoś' },
+    { questionId: 'krotka-q', text: 'Lody' },
+  ]);
+  await db.insert(surveyParticipation).values(['k1', 'k2', 'k3', 'k4'].map((userId) => ({ surveyId: 'krotka-niska', userId })));
+  await db.insert(surveyParticipation).values(['k1', 'k2', 'k3', 'k4', 'k5'].map((userId) => ({ surveyId: 'krotka', userId })));
 });
 
 describe('dostęp / access', () => {
@@ -254,6 +274,30 @@ describe('wielokrotny wybór / multiple choice', () => {
   });
 });
 
+describe('krótka odpowiedź / short answer', () => {
+  it('poniżej progu nie ma żadnej treści odpowiedzi w odpowiedzi HTTP / below the threshold there is no answer text in the HTTP response', async () => {
+    const response = await asStaff('/krotka-niska/results', {});
+    const text = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(JSON.parse(text)).toMatchObject({ responseCount: 4, minResponses: 5 });
+    expect(text).not.toContain('Tajna-odpowiedz-niska');
+    expect(text).not.toContain('texts');
+  });
+
+  it('od progu lista jest alfabetyczna, niezależna od kolejności wpisania, i bez danych autora / from the threshold the list is alphabetical, independent of the insertion order, and has no author data', async () => {
+    const response = await asStaff('/krotka/results', {});
+    const text = await response.text();
+    const body = JSON.parse(text) as { responseCount: number; questions: unknown[] };
+
+    expect(body.responseCount).toBe(5);
+    // PL: Dokładny kształt pytania: bez identyfikatorów wierszy i bez czasu, same treści w porządku alfabetycznym.
+    // EN: The exact shape of the question: no row identifiers and no time, only the texts in alphabetical order.
+    expect(body.questions).toEqual([{ prompt: 'Co zjadłeś?', type: 'short_text', options: [], texts: ['Arbuz', 'Lody', 'Łosoś', 'Mleko', 'Zupa'] }]);
+    for (const forbidden of ['userId', 'createdAt']) expect(text).not.toContain(`"${forbidden}"`);
+  });
+});
+
 describe('lista / the list', () => {
   it('dzieli ankiety na trwające i zakończone i podaje liczbę odpowiedzi, bez liczników głosów / splits surveys into running and ended and gives the response count, without vote counters', async () => {
     const response = await asStaff('/', {});
@@ -316,6 +360,16 @@ describe('tworzenie ankiety / creating a survey', () => {
     expect(response.status).toBe(201);
     const questions = await db.select().from(surveyQuestions).where(eq(surveyQuestions.surveyId, id)).orderBy(surveyQuestions.position);
     expect(questions.map((question) => [question.prompt, question.type])).toEqual([['Wiele', 'multiple_choice'], ['Jeden', 'single_choice']]);
+  });
+
+  it('krótka odpowiedź zapisuje się bez odpowiedzi do wyboru, nawet gdy telefon je przysłał / a short answer is stored without options, even when the phone sent them', async () => {
+    const response = await publish({ title: 'Krótka', questions: [{ prompt: 'Co zjadłeś?', type: 'short_text', options: ['A', 'B'] }], durationDays: 7 });
+    const { id } = (await response.json()) as { id: string };
+
+    expect(response.status).toBe(201);
+    const [question] = await db.select().from(surveyQuestions).where(eq(surveyQuestions.surveyId, id));
+    expect([question?.type, question?.prompt]).toEqual(['short_text', 'Co zjadłeś?']);
+    expect(await db.select().from(surveyOptions).where(eq(surveyOptions.questionId, question!.id))).toEqual([]);
   });
 
   it('zapisuje termin zamknięcia jako chwilę UTC / writes the closing time as a UTC moment', async () => {

@@ -17,7 +17,7 @@ import { asc, eq, inArray, sql } from 'drizzle-orm';
 // PL: Typ bazy D1 w Drizzle.
 // EN: The D1 database type in Drizzle.
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
-import { surveyOptions, surveyParticipation, surveyQuestions, surveys } from '../../db/schema/surveys';
+import { surveyOptions, surveyParticipation, surveyQuestions, surveyTextAnswers, surveys } from '../../db/schema/surveys';
 import { isRunning, warsawToday } from './dates';
 import { shapeResults, toQuestionResult } from './results';
 import type { PanelSurvey, PanelSurveyList, SurveyResults } from './types';
@@ -126,9 +126,21 @@ async function loadQuestionResults(db: PanelDatabase, surveyId: string) {
     .where(inArray(surveyOptions.questionId, questions.map((question) => question.id)))
     .orderBy(asc(surveyOptions.position));
 
-  // PL: Dopasuj odpowiedzi do pytań i policz udziały.
-  // EN: Match the options to the questions and count the shares.
-  return questions.map((question) => toQuestionResult(question.prompt, question.type, options.filter((option) => option.questionId === question.id)));
+  // PL: Krótkie odpowiedzi tych pytań. Pobieramy tylko numer pytania i tekst: numer wiersza (kolejność zapisu) i czas zostają w bazie. Sortowanie robi kod, nie zapytanie.
+  // EN: The short answers of those questions. We fetch only the question id and the text: the row id (the order written) and the time stay in the database. The code sorts, not the query.
+  const shortTextIds = questions.filter((question) => question.type === 'short_text').map((question) => question.id);
+  const texts = shortTextIds.length === 0 ? [] : await db.select({ questionId: surveyTextAnswers.questionId, text: surveyTextAnswers.text }).from(surveyTextAnswers).where(inArray(surveyTextAnswers.questionId, shortTextIds));
+
+  // PL: Dopasuj odpowiedzi i teksty do pytań i policz udziały.
+  // EN: Match the options and the texts to the questions and count the shares.
+  return questions.map((question) =>
+    toQuestionResult(
+      question.prompt,
+      question.type,
+      options.filter((option) => option.questionId === question.id),
+      texts.filter((text) => text.questionId === question.id).map((text) => text.text),
+    ),
+  );
 }
 
 /**
@@ -167,8 +179,10 @@ export async function insertSurvey(db: PanelDatabase, survey: NewSurvey, endsOn:
   // EN: The server assigns the ids, the phone does not give them.
   const surveyId = crypto.randomUUID();
   const questionRows = survey.questions.map((question, index) => ({ id: crypto.randomUUID(), surveyId, position: index + 1, prompt: question.prompt, type: question.type }));
-  const optionInserts = survey.questions.map((question, index) =>
-    db.insert(surveyOptions).values(question.options.map((label, position) => ({ id: crypto.randomUUID(), questionId: questionRows[index]!.id, position: position + 1, label }))),
+  // PL: Pytanie bez odpowiedzi do wyboru (krótka odpowiedź) nie dostaje wierszy odpowiedzi: pusta paczka wstawień nie przechodzi w D1.
+  // EN: A question without options to pick (a short answer) gets no option rows: an empty insert batch does not go through in D1.
+  const optionInserts = survey.questions.flatMap((question, index) =>
+    question.options.length === 0 ? [] : [db.insert(surveyOptions).values(question.options.map((label, position) => ({ id: crypto.randomUUID(), questionId: questionRows[index]!.id, position: position + 1, label })))],
   );
 
   // PL: Ankieta, pytania i odpowiedzi w jednej transakcji: albo wszystko, albo nic.

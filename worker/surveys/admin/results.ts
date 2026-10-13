@@ -46,16 +46,36 @@ export function scaleAverage(options: { votes: number }[]): number | undefined {
   return Math.round((weighted / total) * 10) / 10;
 }
 
+// PL: Porównywarka polska: „Ł” stoi po „L”, a nie na końcu alfabetu. Ustawiona raz, bo tworzenie jej przy każdym sortowaniu jest zbędne.
+// EN: The Polish collator: "Ł" sits after "L", not at the end of the alphabet. Made once, because making it on every sort is wasteful.
+const polishCollator = new Intl.Collator('pl');
+
 /**
- * PL: Dodaje udział w procentach do odpowiedzi jednego pytania.
- * EN: Adds the percent share to the options of one question.
+ * PL: Sortuje krótkie odpowiedzi alfabetycznie po polsku. Kolejność nie zdradza, kiedy kto napisał: wejście z bazy nie jest uporządkowane, a remis rozstrzyga zwykłe porównanie, więc wynik zawsze jest ten sam. Zwraca nową tablicę.
+ * EN: Sorts the short answers alphabetically in Polish. The order does not reveal when anyone wrote: the input from the database is not ordered, and a tie is settled by a plain comparison, so the result is always the same. Returns a new array.
+ *
+ * @param texts - PL: teksty w dowolnej kolejności. EN: the texts in any order.
+ * @returns PL: posortowane teksty. EN: the sorted texts.
+ */
+export function sortTexts(texts: string[]): string[] {
+  return [...texts].sort((a, b) => polishCollator.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0));
+}
+
+/**
+ * PL: Dodaje udział w procentach do odpowiedzi jednego pytania. Przy krótkiej odpowiedzi dokłada posortowane teksty zamiast udziałów.
+ * EN: Adds the percent share to the options of one question. For a short answer it adds the sorted texts instead of shares.
  *
  * @param prompt - PL: treść pytania. EN: the question text.
  * @param type - PL: rodzaj pytania. EN: the question type.
  * @param options - PL: odpowiedzi z liczbą głosów, w kolejności. EN: the options with their vote counts, in order.
- * @returns PL: pytanie z udziałami. EN: the question with shares.
+ * @param texts - PL: teksty krótkiej odpowiedzi w dowolnej kolejności (tylko przy short_text). EN: the short-answer texts in any order (only for short_text).
+ * @returns PL: pytanie z udziałami albo tekstami. EN: the question with shares or texts.
  */
-export function toQuestionResult(prompt: string, type: QuestionType, options: { label: string; votes: number }[]): QuestionResult {
+export function toQuestionResult(prompt: string, type: QuestionType, options: { label: string; votes: number }[], texts: string[] = []): QuestionResult {
+  // PL: Krótka odpowiedź nie ma odpowiedzi do wyboru, więc zwracamy tylko teksty, już posortowane.
+  // EN: A short answer has no options to pick, so we return only the texts, already sorted.
+  if (type === 'short_text') return { prompt, type, options: [], texts: sortTexts(texts) };
+
   // PL: Udział liczymy od sumy głosów tego pytania. Przy wielokrotnym wyborze to suma zaznaczeń, więc udziały nie sumują się do 100 w osobach.
   // EN: The share is counted from the vote sum of this question. With multiple choice it is the sum of checked boxes, so the shares do not add up to 100 in people.
   const total = options.reduce((sum, option) => sum + option.votes, 0);

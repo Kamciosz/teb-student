@@ -107,3 +107,17 @@ describe('skala 1–5 / the 1–5 scale', () => {
     expect(toRequestBody(scale).questions).toEqual([{ prompt: 'P', type: 'scale_1_5', options: ['1', '2', '3', '4', '5'] }]);
   });
 });
+
+// PL: Krótka odpowiedź nie ma odpowiedzi do wyboru, więc szkic bez nich jest poprawny, a ciało zapytania wysyła pustą listę.
+// EN: A short answer has no options to pick, so a draft without them is valid, and the request body sends an empty list.
+describe('krótka odpowiedź / short answer', () => {
+  const shortText = updateQuestion({ ...newDraft(), title: 'T' }, 1, (question) => ({ ...question, prompt: 'P', type: 'short_text', options: [] }));
+
+  it('bez odpowiedzi nie daje błędu / without options it gives no error', () => {
+    expect(hasErrors(validateDraft(shortText, now))).toBe(false);
+  });
+
+  it('wysyła pustą listę odpowiedzi / sends an empty list of options', () => {
+    expect(toRequestBody(shortText).questions).toEqual([{ prompt: 'P', type: 'short_text', options: [] }]);
+  });
+});
