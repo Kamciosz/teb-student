@@ -1,0 +1,49 @@
+/*
+ * PL: Żeton wyboru. Wysokość i szerokość dotyku co najmniej 44 px, kolory tylko przez var(--...).
+ *     Stan włączenia rysuje atrybut aria-pressed, a nie klasa, więc wygląd zgadza się z czytnikiem.
+ * EN: The choice chip. Touch height and width at least 44 px, colors only through var(--...).
+ *     The on state is drawn by the aria-pressed attribute, not a class, so the look matches the screen reader.
+ */
+
+/* PL: Żeton: zaokrąglony, z miejscem na palec i tekstem w jednej linii.
+   EN: The chip: rounded, with room for a finger and the text in one line. */
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  max-width: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--tile-2);
+  color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-align: center;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+/* PL: Włączony żeton w kolorze akcentu szkoły.
+   EN: A chip that is on, in the school accent color. */
+.ui-chip[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: none;
+}
+
+/* PL: Wciśnięty żeton lekko się kurczy.
+   EN: A pressed chip shrinks a little. */
+.ui-chip:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* PL: Wyłączony żeton jest przygaszony.
+   EN: A disabled chip is faded. */
+.ui-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
