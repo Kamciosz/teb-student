@@ -8,12 +8,13 @@
  * @uses worker/db/schema/auth.ts::verification
  * @used_by worker/auth/invite/createInviteAuth.ts::createInviteAuth
  * @used_by worker/auth/invite/index.ts::issueInviteCode
+ * @used_by worker/auth/invite/index.ts::listInviteCodes
  * @used_by worker/auth/invite/routes.test.ts::issueInviteCode
  */
 
 // PL: Drizzle: warunki zapytań i zapytania na D1.
 // EN: Drizzle: query conditions and queries on D1.
-import { and, eq, gt } from 'drizzle-orm';
+import { and, asc, eq, gt, like } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 // PL: Tabela, w której leżą kody.
 // EN: The table where the codes live.
@@ -125,4 +126,24 @@ export async function restoreInviteCode(db: D1Database, code: string, row: Consu
   await drizzle(db)
     .insert(verification)
     .values({ id: row.id, identifier: `${INVITE_IDENTIFIER_PREFIX}${code}`, value: '', expiresAt: row.expiresAt });
+}
+
+/**
+ * PL: Lista kodów, które jeszcze działają: niezużyte i niewygasłe, od najkrócej ważnego. Zużyty kod znika z bazy, więc nie ma go na liście. Panel Samorządu (podtor 8) pokazuje tę listę.
+ * EN: The list of codes that still work: not used and not expired, from the one valid for the shortest time. A used code disappears from the database, so it is not on the list. The Student Council panel (subtrack 8) shows this list.
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @param now - PL: chwila sprawdzenia (domyślnie teraz). EN: the moment of the check (now by default).
+ * @returns PL: kody z datami wygaśnięcia. EN: the codes with their expiry dates.
+ * @throws PL: błąd bazy. EN: a database error.
+ */
+export async function listInviteCodes(db: D1Database, now = new Date()): Promise<{ code: string; expiresAt: Date }[]> {
+  // PL: Wybierz wiersze z prefiksem kodu, których termin jeszcze nie minął, od najwcześniejszego terminu.
+  // EN: Pick the rows with the code prefix whose deadline has not passed yet, from the earliest deadline.
+  const rows = await drizzle(db)
+    .select({ identifier: verification.identifier, expiresAt: verification.expiresAt })
+    .from(verification)
+    .where(and(like(verification.identifier, `${INVITE_IDENTIFIER_PREFIX}%`), gt(verification.expiresAt, now)))
+    .orderBy(asc(verification.expiresAt));
+  return rows.map((row) => ({ code: row.identifier.slice(INVITE_IDENTIFIER_PREFIX.length), expiresAt: row.expiresAt }));
 }

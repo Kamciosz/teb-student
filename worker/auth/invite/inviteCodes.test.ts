@@ -1,15 +1,17 @@
 /**
- * PL: Testy kodów zaproszeń: kształt kodu, ważność 14 dni, normalizacja wpisu ucznia, zużycie dokładnie raz, kod po terminie i oddanie kodu. Działają na prawdziwej bazie D1 testów.
- * EN: Tests of the invitation codes: the code shape, the 14-day validity, normalizing the student's input, using a code exactly once, an expired code and giving a code back. They run on the real test D1 database.
+ * PL: Testy kodów zaproszeń: kształt kodu, ważność 14 dni, normalizacja wpisu ucznia, zużycie dokładnie raz, kod po terminie, oddanie kodu i lista kodów, które jeszcze działają. Działają na prawdziwej bazie D1 testów. Listę sprawdzamy przez drzwi modułu, tak jak bierze ją panel.
+ * EN: Tests of the invitation codes: the code shape, the 14-day validity, normalizing the student's input, using a code exactly once, an expired code, giving a code back and the list of codes that still work. They run on the real test D1 database. The list is checked through the module door, the way the panel takes it.
  *
  * @author Szymon
  * @since 2026-10-11
  * @uses worker/auth/invite/inviteCodes.ts::issueInviteCode
+ * @uses worker/auth/index.ts::listInviteCodes
  * @used_by vitest.config.ts::include
  */
 
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
+import { listInviteCodes } from '../index';
 import { consumeInviteCode, issueInviteCode, normalizeInviteCode, restoreInviteCode } from './inviteCodes';
 
 /** PL: Ile milisekund ma doba. EN: How many milliseconds a day has. */
@@ -97,5 +99,45 @@ describe('zużycie kodu / using a code', () => {
   // EN: A code that does not exist is not used.
   it('nie zna nieistniejącego kodu / does not know a code that does not exist', async () => {
     expect(await consumeInviteCode(env.DB, 'TEB-AAAA-AA')).toBeNull();
+  });
+});
+
+// PL: Grupa testów listy kodów, które jeszcze działają.
+// EN: A group of tests of the list of codes that still work.
+describe('lista kodów / list of codes', () => {
+  // PL: Lista pokazuje kod ważny, a nie pokazuje kodu po terminie ani zużytego.
+  // EN: The list shows a valid code, and does not show an expired or a used code.
+  it('pokazuje tylko kody ważne i niezużyte / shows only valid and unused codes', async () => {
+    const now = new Date('2026-10-20T10:00:00Z');
+    const valid = await issueInviteCode(env.DB, now);
+    const expired = await issueInviteCode(env.DB, new Date('2026-10-01T00:00:00Z'));
+    const used = await issueInviteCode(env.DB, now);
+    await consumeInviteCode(env.DB, used.code, now);
+    const codes = (await listInviteCodes(env.DB, now)).map((item) => item.code);
+    expect(codes).toContain(valid.code);
+    expect(codes).not.toContain(expired.code);
+    expect(codes).not.toContain(used.code);
+  });
+
+  // PL: Lista idzie od najkrócej ważnego, więc kod wydany wcześniej stoi przed nowszym.
+  // EN: The list runs from the code valid for the shortest time, so a code issued earlier stands before a newer one.
+  it('sortuje od najkrótszego terminu / sorts from the shortest deadline', async () => {
+    const now = new Date('2026-10-20T10:00:00Z');
+    const earlier = await issueInviteCode(env.DB, new Date('2026-10-18T10:00:00Z'));
+    const later = await issueInviteCode(env.DB, new Date('2026-10-20T09:00:00Z'));
+    const items = await listInviteCodes(env.DB, now);
+    const codes = items.map((item) => item.code);
+    expect(codes.indexOf(earlier.code)).toBeLessThan(codes.indexOf(later.code));
+    const times = items.map((item) => item.expiresAt.getTime());
+    expect([...times].sort((a, b) => a - b)).toEqual(times);
+  });
+
+  // PL: Termin na liście to ten sam termin, który dostał kod przy tworzeniu.
+  // EN: The deadline on the list is the same deadline the code got when it was created.
+  it('podaje termin z chwili tworzenia / gives the deadline from the moment of creation', async () => {
+    const now = new Date('2026-10-20T10:00:00Z');
+    const { code, expiresAt } = await issueInviteCode(env.DB, now);
+    const item = (await listInviteCodes(env.DB, now)).find((entry) => entry.code === code);
+    expect(item?.expiresAt.getTime()).toBe(expiresAt.getTime());
   });
 });
