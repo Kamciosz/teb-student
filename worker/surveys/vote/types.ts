@@ -76,6 +76,8 @@ export type SurveyOption = {
 export type SurveyQuestion = {
   /** PL: Numer pytania. EN: The question id. */
   id: string;
+  /** PL: Rodzaj pytania: jedna odpowiedź albo kilka. EN: The question type: one answer or several. */
+  type: 'single_choice' | 'multiple_choice';
   /** PL: Treść pytania. EN: The question text. */
   prompt: string;
   /** PL: Odpowiedzi w kolejności A, B, C, D. EN: The options in the order A, B, C, D. */

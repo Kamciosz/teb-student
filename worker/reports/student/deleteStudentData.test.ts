@@ -1,6 +1,6 @@
 /**
- * PL: Test funkcji deleteReportsStudentData na prawdziwej bazie D1 z testowego Workera. Sprawdza, że zgłoszenia ucznia zostają bez autora, a cudze nie są ruszone.
- * EN: Test of the deleteReportsStudentData function on a real D1 database of the test Worker. Checks that the student's reports stay without an author and other people's reports are untouched.
+ * PL: Test funkcji deleteReportsStudentData na prawdziwej bazie D1 z testowego Workera. Sprawdza, że zgłoszenia ucznia zostają bez autora, jego numer znika z historii zmian etapu, a cudze nie są ruszone.
+ * EN: Test of the deleteReportsStudentData function on a real D1 database of the test Worker. Checks that the student's reports stay without an author, their id disappears from the stage history, and other people's reports are untouched.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -67,6 +67,31 @@ describe('deleteReportsStudentData', () => {
     // PL: Zostało tylko dołączenie innego ucznia; dołączenie ucznia do cudzego zgłoszenia zniknęło.
     // EN: Only the other student's join is left; the student's join to someone else's report is gone.
     expect(rows.results).toEqual([{ report_id: 'seed-projektor', user_id: 'seed-user-2' }]);
+  });
+
+  // PL: Numer ucznia znika z historii zmian etapu, a cudzy wpis zostaje z numerem członka Samorządu.
+  // EN: The student's id disappears from the stage history, and someone else's entry stays with its member id.
+  it('zeruje numer ucznia w historii zmian etapu i nie rusza cudzych / clears the student id in the stage history and leaves others', async () => {
+    // PL: Wstaw wpis historii, w którym uczeń testowy jest członkiem Samorządu, obok wpisu innej osoby.
+    // EN: Insert a history entry where the test student is the Student Council member, next to another person's entry.
+    await db.prepare(
+      "INSERT INTO report_stage_changes (id, report_id, stage, changed_by, changed_at) VALUES ('test-moj-wpis', 'seed-okno', 'in_progress', ?, 1), ('test-cudzy-wpis', 'seed-okno', 'in_progress', 'seed-user-2', 2)",
+    ).bind(SEED_STUDENT_ID).run();
+
+    // PL: Usuń dane ucznia testowego.
+    // EN: Delete the test student's data.
+    await deleteReportsStudentData({ userId: SEED_STUDENT_ID, db });
+
+    // PL: Odczytaj numery członków Samorządu w wpisach dodanych w teście.
+    // EN: Read the Student Council member ids in the entries added by the test.
+    const rows = await db.prepare("SELECT id, changed_by FROM report_stage_changes WHERE id IN ('test-moj-wpis', 'test-cudzy-wpis') ORDER BY id").all();
+
+    // PL: Wpis ucznia ma null, cudzy zostaje z numerem autora wpisu.
+    // EN: The student's entry has null, the other one keeps its id.
+    expect(rows.results).toEqual([
+      { id: 'test-cudzy-wpis', changed_by: 'seed-user-2' },
+      { id: 'test-moj-wpis', changed_by: null },
+    ]);
   });
 
   // PL: Uczeń bez zgłoszeń to nie błąd.

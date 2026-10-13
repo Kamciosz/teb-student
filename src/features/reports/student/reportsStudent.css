@@ -96,6 +96,11 @@
 .rs-stages i.rs-on { background: var(--ink); }
 .rs-captions { display: flex; justify-content: space-between; gap: 4px; font-size: var(--t-xs); font-weight: 600; color: var(--ink-2); }
 .rs-captions .rs-now { color: var(--ink); }
+.rs-history { list-style: none; display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.rs-history li { display: grid; gap: 2px; }
+.rs-history-stage { font-size: var(--t-sm); font-weight: 600; }
+.rs-note { background: var(--tile-2); border-radius: var(--r-sm); padding: 8px 10px; font-size: var(--t-sm); line-height: 1.35; overflow-wrap: anywhere; }
+.rs-note-label { display: block; font-size: var(--t-xs); font-weight: 700; color: var(--ink-2); }
 
 /* PL: Pasek „brak internetu”, pusta lista i błąd.
    EN: The "no internet" banner, the empty list and the error. */

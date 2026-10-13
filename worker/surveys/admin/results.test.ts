@@ -17,7 +17,7 @@ const survey = { id: 's1', title: 'Obiad w stołówce', endsOn: '2026-10-18', qu
 
 describe('toQuestionResult', () => {
   it('liczy udziały jak w przykładzie ekranu 6.5d / counts shares as in the screen 6.5d example', () => {
-    const result = toQuestionResult('Jak oceniasz obiady?', [
+    const result = toQuestionResult('Jak oceniasz obiady?', 'single_choice', [
       { label: 'Dobrze', votes: 5 },
       { label: 'Różnie', votes: 4 },
       { label: 'Słabo', votes: 2 },
@@ -26,8 +26,14 @@ describe('toQuestionResult', () => {
     expect(result.options.map((option) => option.percent)).toEqual([42, 33, 17, 8]);
   });
 
+  it('przy wielokrotnym wyborze liczy udziały od zaznaczeń i zachowuje typ / with multiple choice counts shares from the checked boxes and keeps the type', () => {
+    const result = toQuestionResult('Co lubisz?', 'multiple_choice', [{ label: 'A', votes: 3 }, { label: 'B', votes: 1 }]);
+    expect(result.type).toBe('multiple_choice');
+    expect(result.options.map((option) => option.percent)).toEqual([75, 25]);
+  });
+
   it('pytanie bez głosów daje same zera / a question without votes gives zeros only', () => {
-    const result = toQuestionResult('Pytanie', [{ label: 'A', votes: 0 }, { label: 'B', votes: 0 }]);
+    const result = toQuestionResult('Pytanie', 'single_choice', [{ label: 'A', votes: 0 }, { label: 'B', votes: 0 }]);
     expect(result.options.map((option) => option.percent)).toEqual([0, 0]);
   });
 });
@@ -41,7 +47,7 @@ describe('shapeResults', () => {
   });
 
   it('od progu dopisuje pytania / from the threshold adds the questions', async () => {
-    const questions = [toQuestionResult('P', [{ label: 'A', votes: 3 }, { label: 'B', votes: 2 }])];
+    const questions = [toQuestionResult('P', 'single_choice', [{ label: 'A', votes: 3 }, { label: 'B', votes: 2 }])];
     const result = await shapeResults(survey, MIN_RESPONSES, async () => questions);
     expect(result.questions).toEqual(questions);
   });
