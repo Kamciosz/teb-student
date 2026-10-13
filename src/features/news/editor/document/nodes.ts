@@ -11,7 +11,7 @@
 // PL: Node to definicja własnego węzła dokumentu w Tiptap.
 // EN: Node is the definition of a custom document node in Tiptap.
 import { Node } from '@tiptap/core';
-import { socialNetworkName } from './urls';
+import { YOUTUBE_ID_PATTERN, socialNetworkName } from './urls';
 
 // PL: Miniatura filmu z YouTube, ta sama co w czytniku (podtor 3a) i w odtwarzaczu.
 // EN: The YouTube video thumbnail, the same as in the reader (subtrack 3a) and in the player.
@@ -32,15 +32,24 @@ export const YouTubeVideo = Node.create({
     return { videoId: { default: null } };
   },
   parseHTML() {
-    // PL: Wklejony HTML jest rozpoznawany tylko w naszym własnym kształcie. Obce ramki są pomijane.
-    // EN: Pasted HTML is recognised only in our own shape. Foreign frames are skipped.
-    return [{ tag: 'div[data-youtube-video]', getAttrs: (element) => ({ videoId: element.getAttribute('data-youtube-video') }) }];
+    // PL: Wklejony HTML jest rozpoznawany tylko w naszym własnym kształcie. Obce ramki są pomijane, a wartość spoza wzoru identyfikatora (na przykład adres) nie tworzy węzła, więc do dokumentu nigdy nie trafia adres.
+    // EN: Pasted HTML is recognised only in our own shape. Foreign frames are skipped, and a value outside the id pattern (for example an address) creates no node, so an address never reaches the document.
+    return [
+      {
+        tag: 'div[data-youtube-video]',
+        getAttrs: (element) => {
+          const videoId = element.getAttribute('data-youtube-video') ?? '';
+          return YOUTUBE_ID_PATTERN.test(videoId) ? { videoId } : false;
+        },
+      },
+    ];
   },
   renderHTML({ node }) {
-    // PL: W edytorze film to miniatura. Prawdziwy odtwarzacz jest tylko u ucznia i dopiero po kliknięciu.
-    // EN: In the editor a video is a thumbnail. The real player exists only for the student and only after a click.
+    // PL: W edytorze film to miniatura z napisem. Prawdziwy odtwarzacz jest tylko u ucznia i dopiero po kliknięciu. Napis jest widoczny, a obraz ma pusty opis, żeby czytnik ekranu nie czytał go dwa razy.
+    // EN: In the editor a video is a thumbnail with a label. The real player exists only for the student and only after a click. The label is visible, and the image has an empty description so a screen reader does not read it twice.
     const videoId = String(node.attrs.videoId);
-    return ['div', { 'data-youtube-video': videoId, class: 'editor-video' }, ['img', { src: `${THUMB_URL}/${videoId}/hqdefault.jpg`, alt: 'Film z YouTube', width: '480', height: '360' }]];
+    const image = ['img', { src: `${THUMB_URL}/${videoId}/hqdefault.jpg`, alt: '', width: '480', height: '360' }];
+    return ['div', { 'data-youtube-video': videoId, class: 'editor-video' }, image, ['span', { class: 'editor-video__label' }, 'Film z YouTube']];
   },
 });
 

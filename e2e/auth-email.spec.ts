@@ -1,6 +1,6 @@
 /**
- * PL: Testy logowania kodem z maila (podtor 1a). Serwer jest podstawiony (page.route), bo prawdziwy kod trafia tylko do terminala serwera deweloperskiego. Sprawdzają adres spoza szkoły, ścieżkę udaną, zły kod, ekran 320 px i odliczanie ponownego wysłania.
- * EN: Tests of sign-in with an e-mail code (subtrack 1a). The server is stubbed (page.route), because the real code goes only to the dev server terminal. They check an address outside the school, the happy path, a wrong code, the 320 px screen and the resend countdown.
+ * PL: Testy logowania kodem z maila (podtor 1a). Serwer jest podstawiony (page.route), bo prawdziwy kod trafia tylko do terminala serwera deweloperskiego. Sprawdzają adres spoza szkoły, ścieżkę udaną, zły kod, ekran 320 px, odliczanie ponownego wysłania oraz ekran „Moje urządzenia”.
+ * EN: Tests of sign-in with an e-mail code (subtrack 1a). The server is stubbed (page.route), because the real code goes only to the dev server terminal. They check an address outside the school, the happy path, a wrong code, the 320 px screen, the resend countdown and the "My devices" screen.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -125,5 +125,112 @@ test.describe('krok kodu / code step', () => {
     await requestCodeFor(page);
     await expect(page.getByText(/Nie dotarł\? Wyślij ponownie za 0:\d\d/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Wyślij kod ponownie' })).toHaveCount(0);
+  });
+});
+
+// PL: Jedno urządzenie z listy tak, jak zwraca je serwer (bez tokenu i adresu IP).
+// EN: One device from the list, as the server returns it (no token and no IP address).
+type StubDevice = { id: string; browser: string; system: string; lastActiveAt: string; current: boolean };
+
+/**
+ * PL: Podstawia API urządzeń. Uczeń jest zalogowany; lista zmienia się, gdy wylogowano urządzenie. Gdy `freshness` to false, lista zwraca 403 session_not_fresh.
+ * EN: Stubs the device API. The student is signed in; the list changes when a device is signed out. When `freshness` is false, the list returns 403 session_not_fresh.
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ * @param options - PL: początkowa lista i czy sesja jest świeża. EN: the starting list and whether the session is fresh.
+ */
+async function stubDevicesApi(page: Page, options: { devices: StubDevice[]; freshness: boolean; signedIn?: boolean }): Promise<void> {
+  let devices = options.devices;
+  const user = { id: 'stub-1', email: EMAIL, emailVerified: true, name: 'Ola', createdAt: new Date(), updatedAt: new Date() };
+  await page.route('**/api/auth/email/get-session', (route) =>
+    route.fulfill({ json: options.signedIn === false ? null : { session: { id: 's1', userId: user.id, token: 't', expiresAt: new Date(Date.now() + 1e9) }, user } }),
+  );
+  await page.route('**/api/auth/email/devices', (route) => {
+    if (!options.freshness) return route.fulfill({ status: 403, json: { error: 'session_not_fresh', code: 'SESSION_NOT_FRESH' } });
+    return route.fulfill({ json: { devices } });
+  });
+  await page.route('**/api/auth/email/devices/revoke', (route) => {
+    const body = route.request().postDataJSON() as { id: string };
+    devices = devices.filter((device) => device.id !== body.id);
+    return route.fulfill({ json: { ok: true } });
+  });
+  await page.route('**/api/auth/email/devices/revoke-others', (route) => {
+    devices = devices.filter((device) => device.current);
+    return route.fulfill({ json: { ok: true } });
+  });
+}
+
+// PL: Dwa urządzenia: to, z którego idzie test (Chrome na Androidzie), i drugie (Safari na iPhonie).
+// EN: Two devices: the one the test runs on (Chrome on Android), and a second one (Safari on iPhone).
+const TWO_DEVICES: StubDevice[] = [
+  { id: 'd1', browser: 'Chrome', system: 'Android', lastActiveAt: '2026-10-13T08:00:00.000Z', current: true },
+  { id: 'd2', browser: 'Safari', system: 'iPhone', lastActiveAt: '2026-10-12T18:30:00.000Z', current: false },
+];
+
+// PL: Grupa testów ekranu urządzeń (adres /auth/email/urzadzenia).
+// EN: A group of tests of the devices screen (the /auth/email/urzadzenia address).
+test.describe('moje urządzenia / my devices', () => {
+  // PL: Lista pokazuje urządzenia; bieżące ma znacznik, a inne przycisk wylogowania.
+  // EN: The list shows the devices; the current one has a mark, and the others have a sign-out button.
+  test('lista pokazuje bieżące urządzenie i przycisk dla innych / the list shows the current device and a button for the others', async ({ page }) => {
+    await stubDevicesApi(page, { devices: TWO_DEVICES, freshness: true });
+    await page.goto('/auth/email/urzadzenia');
+    await expect(page.getByRole('heading', { name: 'Moje urządzenia' })).toBeVisible();
+    await expect(page.getByText('Chrome na Android')).toBeVisible();
+    await expect(page.getByText('To urządzenie')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Wyloguj: Safari na iPhone' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Wyloguj: Chrome na Android' })).toHaveCount(0);
+  });
+
+  // PL: Wylogowanie jednego urządzenia usuwa je z listy i pokazuje potwierdzenie.
+  // EN: Signing out one device removes it from the list and shows a confirmation.
+  test('wylogowanie jednego urządzenia / signing out one device', async ({ page }) => {
+    await stubDevicesApi(page, { devices: TWO_DEVICES, freshness: true });
+    await page.goto('/auth/email/urzadzenia');
+    await page.getByRole('button', { name: 'Wyloguj: Safari na iPhone' }).click();
+    await expect(page.getByRole('status')).toContainText('Urządzenie zostało wylogowane.');
+    await expect(page.getByRole('button', { name: 'Wyloguj: Safari na iPhone' })).toHaveCount(0);
+  });
+
+  // PL: „Wyloguj z innych urządzeń” zostawia tylko bieżące urządzenie.
+  // EN: "Wyloguj z innych urządzeń" leaves only the current device.
+  test('wylogowanie innych urządzeń / signing out the other devices', async ({ page }) => {
+    await stubDevicesApi(page, { devices: TWO_DEVICES, freshness: true });
+    await page.goto('/auth/email/urzadzenia');
+    await page.getByRole('button', { name: 'Wyloguj z innych urządzeń' }).click();
+    await expect(page.getByRole('status')).toContainText('Wylogowano wszystkie inne urządzenia.');
+    await expect(page.getByRole('button', { name: /^Wyloguj: / })).toHaveCount(0);
+  });
+
+  // PL: Stara sesja: lista nie działa i pokazuje prośbę o ponowne logowanie, ale „Wyloguj z innych urządzeń” zostaje.
+  // EN: An old session: the list does not work and asks to sign in again, but "Wyloguj z innych urządzeń" stays.
+  test('stara sesja prosi o ponowne logowanie / an old session asks to sign in again', async ({ page }) => {
+    await stubDevicesApi(page, { devices: TWO_DEVICES, freshness: false });
+    await page.goto('/auth/email/urzadzenia');
+    await expect(page.getByRole('alert')).toContainText('wyloguj się i zaloguj ponownie');
+    await expect(page.getByRole('button', { name: 'Wyloguj z innych urządzeń' })).toBeEnabled();
+  });
+
+  // PL: Na 320 px lista urządzeń nie przewija się w poziomie, a przycisk „Wyloguj” ma co najmniej 44 px wysokości.
+  // EN: At 320 px the device list does not scroll horizontally, and the "Wyloguj" button is at least 44 px tall.
+  test('lista urządzeń 320 px mieści się bez przewijania / the device list at 320 px fits without scrolling', async ({ page }) => {
+    await stubDevicesApi(page, { devices: TWO_DEVICES, freshness: true });
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/auth/email/urzadzenia');
+    const button = page.getByRole('button', { name: 'Wyloguj: Safari na iPhone' });
+    await expect(button).toBeVisible();
+    const scrolls = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(scrolls).toBe(false);
+    const box = await button.boundingBox();
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  });
+
+  // PL: Niezalogowany uczeń trafia z listy urządzeń na ekran logowania.
+  // EN: A signed-out student is sent from the device list to the sign-in screen.
+  test('niezalogowany wraca do logowania / a signed-out student goes back to sign-in', async ({ page }) => {
+    await stubDevicesApi(page, { devices: TWO_DEVICES, freshness: true, signedIn: false });
+    await page.goto('/auth/email/urzadzenia');
+    await expect(page.getByLabel('Szkolny e-mail')).toBeVisible();
+    await expect(page).toHaveURL(/\/auth\/email$/);
   });
 });

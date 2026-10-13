@@ -1,10 +1,11 @@
 /**
- * PL: Formularz zgłoszenia w trzech krokach (ekrany 3.1–3.4): kategoria, miejsce, opis, potem potwierdzenie. Szkic trzyma się w stanie ekranu, więc „Wstecz” niczego nie kasuje. Zgłoszenie idzie na serwer dopiero po ostatnim kroku.
- * EN: The report form in three steps (screens 3.1–3.4): category, place, description, then the confirmation. The draft lives in the screen state, so "Wstecz" erases nothing. The report goes to the server only after the last step.
+ * PL: Formularz zgłoszenia w trzech krokach (ekrany 3.1–3.4): kategoria, miejsce, opis, potem potwierdzenie. Między miejscem a opisem pokazuje krok „Ktoś już to zgłosił?”, żeby uczeń mógł dołączyć zamiast tworzyć duplikat. Szkic trzyma się w stanie ekranu, więc „Wstecz” niczego nie kasuje. Zgłoszenie idzie na serwer dopiero po ostatnim kroku.
+ * EN: The report form in three steps (screens 3.1–3.4): category, place, description, then the confirmation. Between the place and the description it shows the step "Ktoś już to zgłosił?", so the student can join instead of making a duplicate. The draft lives in the screen state, so "Wstecz" erases nothing. The report goes to the server only after the last step.
  *
  * @author Szymon
  * @since 2026-10-09
  * @uses src/features/reports/student/ReportSteps.tsx::StepCategory
+ * @uses src/features/reports/student/SimilarReports.tsx::SimilarReports
  * @uses src/features/reports/student/queries.ts::useSendReport
  * @used_by src/features/reports/student/ReportsStudentScreen.tsx::ReportForm
  */
@@ -18,6 +19,9 @@ import { FlowTop } from './FlowTop';
 import { Icon } from './icons';
 import { StepCategory, StepDescription, StepPlace, type Draft } from './ReportSteps';
 import { ReportSent } from './ReportSent';
+// PL: Krok z listą podobnych zgłoszeń („Mnie też”).
+// EN: The step with the list of similar reports ("Me too").
+import { SimilarReports } from './SimilarReports';
 // PL: Wysyłanie zgłoszenia.
 // EN: Sending the report.
 import { useSendReport } from './queries';
@@ -25,8 +29,8 @@ import { useSendReport } from './queries';
 /** PL: Pusty szkic: nic nie wybrane, anonimowo włączone. EN: The empty draft: nothing chosen, anonymity on. */
 const EMPTY_DRAFT: Draft = { category: '', place: '', placeDetail: '', description: '', isAnonymous: true };
 
-/** PL: Kroki formularza; 'done' to potwierdzenie. EN: The form steps; 'done' is the confirmation. */
-type Step = 1 | 2 | 3 | 'done';
+/** PL: Kroki formularza; 'similar' to lista podobnych zgłoszeń, 'done' to potwierdzenie. EN: The form steps; 'similar' is the list of similar reports, 'done' is the confirmation. */
+type Step = 1 | 2 | 'similar' | 3 | 'done';
 
 /**
  * PL: Mówi, czy bieżący krok ma komplet danych, żeby przycisk „Dalej” mógł działać.
@@ -113,9 +117,23 @@ export function ReportForm() {
   // EN: After sending we show the confirmation alone.
   if (step === 'done') return <ReportSent />;
 
-  // PL: Na ostatnim kroku wyślij zgłoszenie, w pozostałych przejdź dalej.
-  // EN: On the last step send the report, in the others move on.
-  const onNext = () => (step === 3 ? send.mutate(draft, { onSuccess: () => setStep('done') }) : setStep(step === 1 ? 2 : 3));
+  // PL: Krok podobnych zgłoszeń ma własne przyciski, więc formularz i dolny pasek go nie obejmują.
+  // EN: The similar-reports step has its own buttons, so the form and the bottom bar do not cover it.
+  if (step === 'similar') {
+    return (
+      <>
+        <FlowTop title="Zgłoś problem" step={2} to="/" button={{ icon: 'x', label: 'Zamknij' }} />
+        <SimilarReports category={draft.category} place={draft.place} onBack={() => setStep(2)} onNewReport={() => setStep(3)} />
+      </>
+    );
+  }
+
+  // PL: Na ostatnim kroku wyślij zgłoszenie, po miejscu pokaż podobne, a po kategorii przejdź do miejsca.
+  // EN: On the last step send the report, after the place show the similar ones, after the category go to the place.
+  const onNext = () => {
+    if (step === 3) send.mutate(draft, { onSuccess: () => setStep('done') });
+    else setStep(step === 1 ? 2 : 'similar');
+  };
   const CurrentStep = STEP_COMPONENTS[step];
   return (
     <>

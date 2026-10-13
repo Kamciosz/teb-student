@@ -166,6 +166,22 @@ test('uczeń bez roli nie widzi wiersza panelu / a student without a role does n
   await expect(page.getByRole('link', { name: /Panel/ })).toHaveCount(0);
 });
 
+// PL: Wiersz „Moje urządzenia” w ustawieniach ma cel dotyku co najmniej 44 px i prowadzi pod adres /auth/email/urzadzenia. Sprawdzamy adres, nie treść ekranu, bo ekran urządzeń powstaje w osobnym podtorze.
+// EN: The row "Moje urządzenia" in the settings has a touch target of at least 44 px and leads to /auth/email/urzadzenia. We check the address, not the screen content, because the devices screen is made in a separate subtrack.
+test('wiersz „Moje urządzenia” prowadzi do /auth/email/urzadzenia / the row "Moje urządzenia" leads to /auth/email/urzadzenia', async ({ page }) => {
+  await stubServer(page);
+  await page.goto('/profile/ustawienia');
+
+  const row = page.getByRole('link', { name: 'Moje urządzenia' });
+  await expect(row).toBeVisible();
+  const box = await row.boundingBox();
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+  // PL: Czekamy na adres, który kliknięcie wpisuje do historii. Nie patrzymy na adres końcowy, bo na main zalogowanego ucznia przekierowuje AuthEmailScreen na „/”.
+  // EN: We wait for the address the click puts into the history. We do not look at the final address, because on main AuthEmailScreen redirects a signed-in student to "/".
+  await Promise.all([page.waitForURL(/\/auth\/email\/urzadzenia$/, { waitUntil: 'commit' }), row.click()]);
+});
+
 // PL: Wybrana paleta zostaje po ponownym uruchomieniu: na innym ekranie, po przeładowaniu i gdy serwer profilu nie odpowiada.
 // EN: The chosen palette stays after a restart: on another screen, after a reload and when the profile server does not answer.
 test('wybrana paleta zostaje po ponownym uruchomieniu / the chosen palette stays after a restart', async ({ page }) => {

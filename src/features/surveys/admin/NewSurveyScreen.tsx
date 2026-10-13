@@ -69,6 +69,11 @@ export function NewSurveyScreen() {
           Dodaj pytanie
         </button>
         <DurationPicker value={draft.durationDays} onChange={(durationDays) => setDraft({ ...draft, durationDays })} />
+        {/* PL: Termin jest nieobowiązkowy. Bez niego ankieta kończy się tylko ostatniego dnia. EN: The closing time is optional. Without it the survey ends only on its last day. */}
+        <label className="sa-label sa-label--tight" htmlFor="sa-closes-at">Zamknij ankietę (data i godzina)</label>
+        <p className="sa-small" id="sa-closes-at-hint">Nieobowiązkowe. Bez terminu ankieta kończy się ostatniego dnia.</p>
+        <input id="sa-closes-at" type="datetime-local" className="sa-input" value={draft.closesAt} aria-invalid={errors?.closesAt != null} aria-describedby="sa-closes-at-hint sa-closes-at-error" onChange={(event) => setDraft({ ...draft, closesAt: event.target.value })} />
+        <FieldError id="sa-closes-at-error" text={errors?.closesAt} />
         <PublishFooter form={form} />
       </form>
     </main>

@@ -96,11 +96,24 @@
 .rs-stages i.rs-on { background: var(--ink); }
 .rs-captions { display: flex; justify-content: space-between; gap: 4px; font-size: var(--t-xs); font-weight: 600; color: var(--ink-2); }
 .rs-captions .rs-now { color: var(--ink); }
+.rs-history { list-style: none; display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.rs-history li { display: grid; gap: 2px; }
+.rs-history-stage { font-size: var(--t-sm); font-weight: 600; }
+.rs-note { background: var(--tile-2); border-radius: var(--r-sm); padding: 8px 10px; font-size: var(--t-sm); line-height: 1.35; overflow-wrap: anywhere; }
+.rs-note-label { display: block; font-size: var(--t-xs); font-weight: 700; color: var(--ink-2); }
 
 /* PL: Pasek „brak internetu”, pusta lista i błąd.
    EN: The "no internet" banner, the empty list and the error. */
 .rs-empty { background: var(--tile); border-radius: var(--r); padding: 24px 16px; text-align: center; color: var(--ink-2); }
 .rs-empty p + .rs-btn { margin-top: 16px; }
+
+/* PL: Krok „Ktoś już to zgłosił?”: karty podobnych zgłoszeń z przyciskiem „Mnie też”.
+   EN: The "Ktoś już to zgłosił?" step: cards of similar reports with the "Mnie też" button. */
+.rs-similar { list-style: none; display: grid; gap: 12px; margin-bottom: 16px; }
+.rs-similar-item { background: var(--tile); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.rs-similar-text { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.rs-similar-item small { color: var(--ink-2); font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
+.rs-similar-join { align-self: flex-start; min-height: 44px; padding: 8px 16px; }
 
 /* PL: Dotyk: lekkie zmniejszenie przycisku (wyłączone przy ograniczeniu ruchu w base.css).
    EN: Touch: a slight shrink of the button (turned off for reduced motion in base.css). */
