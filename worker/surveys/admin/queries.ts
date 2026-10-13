@@ -16,7 +16,7 @@ import { asc, eq, inArray, sql } from 'drizzle-orm';
 // EN: The D1 database type in Drizzle.
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
 import { surveyOptions, surveyQuestions, surveys } from '../../db/schema/surveys';
-import { isRunning } from './dates';
+import { isRunning, warsawToday } from './dates';
 import { shapeResults, toQuestionResult } from './results';
 import type { PanelSurvey, PanelSurveyList, SurveyResults } from './types';
 import type { NewSurvey } from './validation';
@@ -51,14 +51,14 @@ async function countBySurvey(db: PanelDatabase): Promise<Map<string, { questionC
 }
 
 /**
- * PL: Podaje listę ankiet dla panelu: trwające (najwcześniej kończące się pierwsze) i zakończone (najnowsza pierwsza). Bez rozkładu głosów.
- * EN: Gives the survey list for the panel: running (the earliest ending first) and ended (the newest first). Without the vote distribution.
+ * PL: Podaje listę ankiet dla panelu: trwające (najwcześniej kończące się pierwsze) i zakończone (najnowsza pierwsza). Ankieta z terminem zamknięcia, który minął, jest zakończona. Bez rozkładu głosów.
+ * EN: Gives the survey list for the panel: running (the earliest ending first) and ended (the newest first). A survey whose closing time has passed is ended. Without the vote distribution.
  *
  * @param db - PL: baza. EN: the database.
- * @param today - PL: dzisiejsza data, RRRR-MM-DD. EN: today's date, YYYY-MM-DD.
+ * @param now - PL: chwila sprawdzenia (dzień i godzina). EN: the moment of the check (day and hour).
  * @returns PL: lista ankiet. EN: the survey list.
  */
-export async function listPanelSurveys(db: PanelDatabase, today: string): Promise<PanelSurveyList> {
+export async function listPanelSurveys(db: PanelDatabase, now: Date): Promise<PanelSurveyList> {
   // PL: Wszystkie ankiety i ich liczby. Tabela jest mała (kilka ankiet w semestrze).
   // EN: All the surveys and their counts. The table is small (a few surveys a semester).
   const rows = await db.select().from(surveys).orderBy(asc(surveys.endsOn));
@@ -67,15 +67,22 @@ export async function listPanelSurveys(db: PanelDatabase, today: string): Promis
     id: row.id,
     title: row.title,
     endsOn: row.endsOn,
+    closesAt: row.closesAt?.getTime() ?? null,
     questionCount: counts.get(row.id)?.questionCount ?? 0,
     responseCount: counts.get(row.id)?.responseCount ?? 0,
   }));
 
+  // PL: Ankieta jest zakończona, gdy minął dzień ostatni albo jej termin zamknięcia.
+  // EN: A survey is ended when its last day has passed or its closing time has come.
+  const today = warsawToday(now);
+  const nowMs = now.getTime();
+  const isEnded = (item: PanelSurvey) => !isRunning(item.endsOn, today) || (item.closesAt !== null && item.closesAt <= nowMs);
+
   // PL: Podziel na trwające i zakończone. Zakończone odwracamy, żeby najnowsza była pierwsza.
   // EN: Split into running and ended. The ended ones are reversed so the newest comes first.
   return {
-    active: items.filter((item) => isRunning(item.endsOn, today)),
-    ended: items.filter((item) => !isRunning(item.endsOn, today)).reverse(),
+    active: items.filter((item) => !isEnded(item)),
+    ended: items.filter(isEnded).reverse(),
   };
 }
 
@@ -149,7 +156,7 @@ export async function insertSurvey(db: PanelDatabase, survey: NewSurvey, endsOn:
   // PL: Ankieta, pytania i odpowiedzi w jednej transakcji: albo wszystko, albo nic.
   // EN: The survey, questions and options in one transaction: all or nothing.
   await db.batch([
-    db.insert(surveys).values({ id: surveyId, title: survey.title, endsOn }),
+    db.insert(surveys).values({ id: surveyId, title: survey.title, endsOn, closesAt: survey.closesAt === null ? null : new Date(survey.closesAt) }),
     db.insert(surveyQuestions).values(questionRows),
     ...optionInserts,
   ]);

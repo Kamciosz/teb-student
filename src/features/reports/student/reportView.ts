@@ -1,12 +1,13 @@
 /**
- * PL: Czyste funkcje widoku „Moje zgłoszenia”: które segmenty paska etapu świecą i jak pokazać krótką datę. Bez Reacta, żeby dało się je sprawdzić testem.
- * EN: Pure functions of the "Moje zgłoszenia" view: which segments of the stage bar light up and how to show a short date. No React, so a test can check them.
+ * PL: Czyste funkcje widoku „Moje zgłoszenia”: które segmenty paska etapu świecą, jak pokazać nazwę etapu i krótką datę. Bez Reacta, żeby dało się je sprawdzić testem.
+ * EN: Pure functions of the "Moje zgłoszenia" view: which segments of the stage bar light up, how to show the stage name and a short date. No React, so a test can check them.
  *
  * @author Szymon
  * @since 2026-10-09
  * @uses src/features/reports/student/reportOptions.ts::STAGE_ORDER
  * @used_by src/features/reports/student/MyReports.tsx::stageSegments
  * @used_by src/features/reports/student/MyReports.tsx::formatShortDate
+ * @used_by src/features/reports/student/MyReports.tsx::stageLabel
  * @used_by src/features/reports/student/reportView.test.ts::stageSegments
  */
 
@@ -31,6 +32,19 @@ export function stageSegments(stage: string): boolean[] {
   // PL: Segment świeci, gdy jego numer nie przekracza numeru etapu.
   // EN: A segment is lit when its position does not exceed the stage position.
   return STAGE_ORDER.map((_item, position) => position <= index);
+}
+
+/**
+ * PL: Podaje nazwę etapu do pokazania uczniowi (na przykład „W trakcie”). Nieznany kod wraca bez zmian.
+ * EN: Gives the stage name to show the student (for example "W trakcie"). An unknown code comes back unchanged.
+ *
+ * @param stage - PL: kod etapu z serwera. EN: the stage code from the server.
+ * @returns PL: nazwa etapu albo sam kod, gdy nie ma go na liście. EN: the stage name, or the code itself when it is not on the list.
+ */
+export function stageLabel(stage: string): string {
+  // PL: Szukamy etapu na liście; brak wyniku oznacza nieznany kod.
+  // EN: Look the stage up in the list; no result means an unknown code.
+  return STAGE_ORDER.find((item) => item.code === stage)?.label ?? stage;
 }
 
 /**

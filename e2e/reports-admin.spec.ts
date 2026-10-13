@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżki Samorządu w podtorze 4b: lista zgłoszeń z filtrem po etapie, stany puste, szczegół (anonimowe i z autorem), zmiana etapu z historią, błąd zapisu, błąd pobrania, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga zalogowania i roli Samorządu), także rola ucznia z bramki PanelGate; serwer sprawdzają testy Vitest (worker/reports/admin/routes.test.ts), także to, że odpowiedź nie zawiera autora.
- * EN: Test of the Student Council path in subtrack 4b: the report list with the stage filter, the empty states, the detail (anonymous and with an author), the stage change with history, the save error, the fetch error, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/reports/admin/routes.test.ts), including that the response contains no author.
+ * PL: Test ścieżki Samorządu w podtorze 4b: lista zgłoszeń z filtrem po etapie, stany puste, szczegół (anonimowe i z autorem), zmiana etapu z odpowiedzią dla autora (licznik i limit 500 znaków) i historią, błąd zapisu, błąd pobrania, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga zalogowania i roli Samorządu), także rola ucznia z bramki PanelGate; serwer sprawdzają testy Vitest (worker/reports/admin/routes.test.ts), także to, że odpowiedź nie zawiera autora.
+ * EN: Test of the Student Council path in subtrack 4b: the report list with the stage filter, the empty states, the detail (anonymous and with an author), the stage change with the answer for the author (counter and 500-character limit) and history, the save error, the fetch error, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/reports/admin/routes.test.ts), including that the response contains no author.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -77,7 +77,7 @@ async function stubAdminApi(page: Page, reports: StubReport[] = sampleReports())
     // PL: Zmiana etapu dopisuje wiersz historii.
     // EN: A stage change appends a history row.
     if (request.method() === 'PATCH') {
-      found.stage = (request.postDataJSON() as { stage: string }).stage;
+      found.stage = (request.postDataJSON() as { stage: string; note: string | null }).stage;
       found.updatedAt = Date.UTC(2026, 9, 12, 8);
       history.get(id)?.unshift({ stage: found.stage, changedAt: found.updatedAt });
     }
@@ -165,6 +165,45 @@ test('Samorząd zmienia etap i widzi historię / the Student Council changes the
   // EN: After going back the list shows the new stage.
   await page.getByRole('link', { name: 'Wróć' }).click();
   await expect(page.getByRole('link', { name: /Nie działa projektor/ })).toContainText('Załatwione');
+});
+
+// PL: Odpowiedź dla autora ma licznik i limit 500 znaków; pole nie przyjmie więcej.
+// EN: The answer for the author has a counter and a 500-character limit; the field takes no more.
+test('odpowiedź dla autora: licznik i limit 500 znaków / answer for the author: counter and the 500-character limit', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.goto('/reports/admin/r3');
+  const note = page.getByRole('textbox', { name: 'Odpowiedź dla autora' });
+  await expect(page.getByText('0/500')).toBeVisible();
+
+  // PL: Wpisz 500 znaków i jeszcze jeden; pole ma `maxLength`, więc dodatkowy znak nie wchodzi.
+  // EN: Type 500 characters and one more; the field has `maxLength`, so the extra character does not go in.
+  await note.fill('ą'.repeat(500));
+  await note.pressSequentially('x');
+  await expect(note).toHaveValue('ą'.repeat(500));
+  await expect(page.getByText('500/500')).toBeVisible();
+});
+
+// PL: Odpowiedź wysyła się razem z etapem, a po zapisie pole się czyści.
+// EN: The answer is sent together with the stage, and the field clears after saving.
+test('odpowiedź dla autora trafia do zapisu i znika po zapisie / the answer for the author goes to the save and clears after it', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.goto('/reports/admin/r3');
+  const note = page.getByRole('textbox', { name: 'Odpowiedź dla autora' });
+  const text = 'Projektor naprawiony, dziękujemy.';
+
+  // PL: Wybierz etap i wpisz odpowiedź; licznik pokazuje długość tekstu.
+  // EN: Choose the stage and type the answer; the counter shows the length of the text.
+  await page.getByRole('radio', { name: 'Załatwione' }).click();
+  await note.fill(text);
+  await expect(page.getByText(`${text.length}/500`)).toBeVisible();
+
+  // PL: Zapis wysyła etap i tekst; po udanym zapisie pole jest puste.
+  // EN: Saving sends the stage and the text; after a successful save the field is empty.
+  const patch = page.waitForRequest((request) => request.method() === 'PATCH' && request.url().endsWith('/r3'));
+  await page.getByRole('button', { name: 'Zapisz etap' }).click();
+  expect((await patch).postDataJSON()).toEqual({ stage: 'resolved', note: text });
+  await expect(note).toHaveValue('');
+  await expect(page.getByText('0/500')).toBeVisible();
 });
 
 // PL: Błąd zapisu pokazuje komunikat, a przycisk zostaje aktywny, żeby ponowić.

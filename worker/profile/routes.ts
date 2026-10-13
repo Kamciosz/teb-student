@@ -44,8 +44,8 @@ export const profileApp = new Hono<StudentEnv>().use(requireStudent);
 // EN: GET / returns the student's profile (the default one when the student saved nothing).
 profileApp.get('/', async (context) => context.json(await getProfile(context.env.DB, context.get('student').id)));
 
-// PL: GET /export oddaje plik JSON z danymi konta i profilu do pobrania („Pobierz moje dane”). Dane bierzemy tylko z sesji.
-// EN: GET /export returns a JSON file with the account and profile data to download ("Pobierz moje dane"). The data comes only from the session.
+// PL: GET /export oddaje plik JSON z danymi konta, profilu, zgłoszeń i ankiet do pobrania („Pobierz moje dane”). Dane bierzemy tylko z sesji.
+// EN: GET /export returns a JSON file with the account, profile, reports and surveys data to download ("Pobierz moje dane"). The data comes only from the session.
 profileApp.get('/export', async (context) => {
   const data = await exportStudentData(context.env.DB, context.get('student'));
   context.header('Content-Disposition', 'attachment; filename="moje-dane-teb.json"');

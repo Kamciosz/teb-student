@@ -10,17 +10,30 @@
  * @used_by playwright.config.ts::testDir
  */
 
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 
 // PL: Lista z makiety 6.5a: ankieta z 3 odpowiedziami (wyniki jeszcze ukryte), ankieta z 12 i zakończona z 21.
 // EN: The list from mockup 6.5a: a survey with 3 responses (results still hidden), one with 12 and an ended one with 21.
+// PL: Pierwsza ankieta ma termin zamknięcia 15.10 o 12:00 (czas polski), a „wybor-klasy” zamknięta przez termin przed końcem dnia.
+// EN: The first survey has a closing time of 15.10 at 12:00 (Polish time), and "wybor-klasy" was closed by its time before the last day.
 const LIST = {
   active: [
-    { id: 'dodatkowe', title: 'Zajęcia dodatkowe w II semestrze', questionCount: 3, endsOn: '2026-10-15', responseCount: 3 },
-    { id: 'stolowka', title: 'Obiad w stołówce', questionCount: 1, endsOn: '2026-10-18', responseCount: 12 },
+    { id: 'dodatkowe', title: 'Zajęcia dodatkowe w II semestrze', questionCount: 3, endsOn: '2026-10-15', responseCount: 3, closesAt: Date.parse('2026-10-15T10:00:00Z') },
+    { id: 'stolowka', title: 'Obiad w stołówce', questionCount: 1, endsOn: '2026-10-18', responseCount: 12, closesAt: null },
   ],
-  ended: [{ id: 'dzwonki', title: 'Plan dzwonków', questionCount: 1, endsOn: '2026-09-30', responseCount: 21 }],
+  ended: [
+    { id: 'wybor-klasy', title: 'Wybór klasy na wycieczkę', questionCount: 2, endsOn: '2026-10-20', responseCount: 9, closesAt: Date.parse('2026-10-10T08:00:00Z') },
+    { id: 'dzwonki', title: 'Plan dzwonków', questionCount: 1, endsOn: '2026-09-30', responseCount: 21, closesAt: null },
+  ],
 };
+
+// PL: Termin zamknięcia za dwa dni o 12:00 czasu polskiego: zawsze w przyszłości i w 7-dniowym oknie ankiety.
+// EN: A closing time two days from now at 12:00 Polish time: always in the future and inside the 7-day window of the survey.
+function closingSoonWarsaw(): string {
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() + 2 * 86_400_000));
+  return `${day}T12:00`;
+}
 
 // PL: Wyniki z makiety 6.5d: dwa pytania, pierwsze z udziałami 42, 33, 17 i 8 procent.
 // EN: The results from mockup 6.5d: two questions, the first with shares of 42, 33, 17 and 8 percent.
@@ -31,6 +44,17 @@ const FULL_RESULTS = {
     { prompt: 'Co poprawić?', options: [{ label: 'Porcje', votes: 7, percent: 58 }, { label: 'Smak', votes: 5, percent: 42 }] },
   ],
 };
+
+// PL: Plik CSV z wynikami ankiety „stolowka”: nagłówek, wiersz na każdą odpowiedź, BOM na początku i CRLF na końcu wierszy.
+// EN: The CSV file with the results of the "stolowka" survey: the header, a row for every option, the BOM at the start and CRLF at the end of rows.
+const FULL_CSV = '\uFEFFPytanie,Odpowiedź,Liczba głosów,Procent\r\n' + [
+  'Jak oceniasz obiady w stołówce?,Dobrze,5,42',
+  'Jak oceniasz obiady w stołówce?,Różnie,4,33',
+  'Jak oceniasz obiady w stołówce?,Słabo,2,17',
+  'Jak oceniasz obiady w stołówce?,Nie jadam w stołówce,1,8',
+  'Co poprawić?,Porcje,7,58',
+  'Co poprawić?,Smak,5,42',
+].join('\r\n') + '\r\n';
 
 // PL: Wyniki ankiety z 3 odpowiedziami: serwer nie wysyła rozkładu (makieta 6.5c).
 // EN: The results of a survey with 3 responses: the server sends no distribution (mockup 6.5c).
@@ -62,6 +86,7 @@ async function mockPanelServer(page: Page, overrides: Partial<Mock> = {}): Promi
     }
     if (mock.listStatus !== 200) return route.fulfill({ status: mock.listStatus, json: { error: 'server_error' } });
     if (path === '/stolowka/results') return route.fulfill({ json: FULL_RESULTS });
+    if (path === '/stolowka/results/csv') return route.fulfill({ headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="ankieta-stolowka-wyniki.csv"' }, body: FULL_CSV });
     if (path === '/dodatkowe/results') return route.fulfill({ json: FEW_RESULTS });
     return route.fulfill({ json: LIST });
   });
@@ -75,10 +100,11 @@ test('lista pokazuje ankiety z liczbą odpowiedzi i przycisk „Nowa ankieta” 
   await page.goto('/surveys/admin');
 
   await expect(page.getByRole('heading', { name: 'Ankiety', level: 1 })).toBeVisible();
-  await expect(page.getByText('3 pytania · do 15.10')).toBeVisible();
+  await expect(page.getByText('3 pytania · do 15.10, 12:00')).toBeVisible();
   await expect(page.getByText('Wyniki zobaczysz od 5 odpowiedzi. Teraz: 3.')).toBeVisible();
   await expect(page.getByText('1 pytanie · do 18.10')).toBeVisible();
   await expect(page.getByText('12 odpowiedzi', { exact: true })).toBeVisible();
+  await expect(page.getByText('Zamknięta · 9 odpowiedzi')).toBeVisible();
   await expect(page.getByText('Zakończona 30.09 · 21 odpowiedzi')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Nowa ankieta' })).toBeVisible();
 });
@@ -173,7 +199,33 @@ test('nowa ankieta: błędy, limity od 2 do 5 odpowiedzi i wysłanie / a new sur
   await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
 
   await expect(page).toHaveURL(/\/surveys\/admin$/);
-  expect(mock.posted).toEqual([{ title: 'Dzień sportu', durationDays: 14, questions: [{ prompt: 'W co chcesz zagrać na dniu sportu?', options: ['Siatkówka', 'Koszykówka', 'Piłka nożna'] }] }]);
+  expect(mock.posted).toEqual([{ title: 'Dzień sportu', durationDays: 14, questions: [{ prompt: 'W co chcesz zagrać na dniu sportu?', options: ['Siatkówka', 'Koszykówka', 'Piłka nożna'] }], closesAt: null }]);
+});
+
+// PL: Termin zamknięcia: przeszłość daje błąd i nic nie idzie na serwer, a przyszły termin trafia do zapisu.
+// EN: The closing time: the past gives an error and nothing goes to the server, and a future time goes into the write.
+test('termin zamknięcia: przeszłość daje błąd, przyszłość idzie na serwer / closing time: the past gives an error, the future goes to the server', async ({ page }) => {
+  const mock = await mockPanelServer(page);
+  await page.goto('/surveys/admin/new');
+  await page.getByLabel('Tytuł ankiety', { exact: true }).fill('Wycieczka');
+  await page.getByLabel('Pytanie 1', { exact: true }).fill('Dokąd jedziemy?');
+  await page.getByLabel('Odpowiedź A', { exact: true }).fill('Muzeum');
+  await page.getByLabel('Odpowiedź B', { exact: true }).fill('Zoo');
+
+  // PL: Termin z 2020 roku jest na pewno w przeszłości, więc test nie zależy od dzisiejszej daty.
+  // EN: A time from 2020 is surely in the past, so the test does not depend on today's date.
+  await page.getByLabel('Zamknij ankietę (data i godzina)', { exact: true }).fill('2020-01-01T09:00');
+  await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
+  await expect(page.getByText('Termin musi być w przyszłości.')).toBeVisible();
+  expect(mock.posted).toHaveLength(0);
+
+  const closing = closingSoonWarsaw();
+  await page.getByLabel('Zamknij ankietę (data i godzina)', { exact: true }).fill(closing);
+  await expect(page.getByText('Termin musi być w przyszłości.')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
+
+  await expect(page).toHaveURL(/\/surveys\/admin$/);
+  expect(mock.posted).toEqual([{ title: 'Wycieczka', durationDays: 7, questions: [{ prompt: 'Dokąd jedziemy?', options: ['Muzeum', 'Zoo'] }], closesAt: closing }]);
 });
 
 // PL: Błąd zapisu: komunikat nad przyciskiem, a przycisk zostaje aktywny, żeby ponowić.
@@ -216,6 +268,7 @@ test('wyniki poniżej 5 odpowiedzi pokazują tylko liczbę / results below 5 res
   await expect(page.getByText('z 5 odpowiedzi', { exact: true })).toBeVisible();
   await expect(page.getByText('Przy mniejszej liczbie łatwo rozpoznać, kto głosował.')).toBeVisible();
   await expect(page.getByText('%')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Pobierz CSV' })).toHaveCount(0);
 });
 
 // PL: Wyniki od progu z makiety 6.5d i przełączanie pytań.
@@ -237,10 +290,40 @@ test('wyniki od 5 odpowiedzi: udziały i „Następne pytanie” / results from 
   await expect(page.getByText('Pytanie 1')).toBeVisible();
 });
 
+// PL: „Pobierz CSV” zapisuje plik z nazwą z serwera i treścią z BOM-em.
+// EN: "Pobierz CSV" saves the file with the name from the server and the content with the BOM.
+test('„Pobierz CSV” zapisuje plik z wynikami / "Pobierz CSV" saves the file with the results', async ({ page }) => {
+  await mockPanelServer(page);
+  await page.goto('/surveys/admin/stolowka');
+  await expect(page.getByText('Jak oceniasz obiady w stołówce?')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Pobierz CSV' }).click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toBe('ankieta-stolowka-wyniki.csv');
+  expect(await readFile((await download.path())!, 'utf8')).toBe(FULL_CSV);
+});
+
+// PL: Bez internetu „Pobierz CSV” jest nieaktywne, a obok stoi notatka. Wyniki zostają na ekranie.
+// EN: Without internet "Pobierz CSV" is inactive, with a note beside it. The results stay on the screen.
+test('bez internetu „Pobierz CSV” jest nieaktywne / without internet "Pobierz CSV" is inactive', async ({ page, context }) => {
+  await mockPanelServer(page);
+  await page.goto('/surveys/admin/stolowka');
+  await expect(page.getByRole('button', { name: 'Pobierz CSV' })).toBeEnabled();
+
+  await context.setOffline(true);
+
+  await expect(page.getByText('Pobranie wymaga internetu.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pobierz CSV' })).toBeDisabled();
+  await expect(page.getByText('Jak oceniasz obiady w stołówce?')).toBeVisible();
+  await context.setOffline(false);
+});
+
 // PL: Prawdziwy serwer z bazą D1: bez sesji każdy adres panelu ankiet odpowiada 401 i nie oddaje żadnych danych.
 // EN: The real server with the D1 database: without a session every survey panel route answers 401 and returns no data.
 test('prawdziwy serwer: bez sesji 401 na każdym adresie / the real server: 401 on every route without a session', async ({ request }) => {
-  const responses = [await request.get('/api/surveys/admin'), await request.get('/api/surveys/admin/dodatkowe/results'), await request.post('/api/surveys/admin', { data: {} })];
+  const responses = [await request.get('/api/surveys/admin'), await request.get('/api/surveys/admin/dodatkowe/results'), await request.get('/api/surveys/admin/dodatkowe/results/csv'), await request.post('/api/surveys/admin', { data: {} })];
   for (const response of responses) {
     expect(response.status()).toBe(401);
     expect(await response.text()).not.toContain('Zajęcia dodatkowe');

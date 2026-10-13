@@ -184,3 +184,36 @@ test('na lokalnej bazie: wpisy z bazy, ankieta i zgłoszenia puste bez sesji / o
   await expect(page.getByRole('region', { name: 'Ankieta' })).toContainText('Nie ma ankiet do wypełnienia.');
   await expect(page.getByRole('region', { name: 'Zgłoszenia' })).toContainText('Nie masz jeszcze żadnych zgłoszeń.');
 });
+
+// PL: Zmiana kolejności kafelków w trybie edycji przetrwa przeładowanie strony, a tryb edycji po przeładowaniu jest wyłączony.
+// EN: A change of the tile order in edit mode survives a page reload, and the edit mode is off after the reload.
+test('zmiana kolejności kafelków przetrwa przeładowanie / a tile order change survives a reload', async ({ page }) => {
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  // PL: Domyślnie „Ważne” stoi nad „Ankietą”.
+  // EN: By default "Ważne" stands above the "Ankieta".
+  const importantBox = page.getByText('Jutro 3TA zaczyna o 9:50');
+  await expect(importantBox).toBeVisible();
+
+  await page.getByRole('button', { name: 'Zmień układ' }).click();
+  // PL: Przycisk „Wyżej” ma pole dotyku co najmniej 44×44 px.
+  // EN: The "Wyżej" button has a touch area of at least 44×44 px.
+  const up = page.getByRole('button', { name: 'Wyżej: Ankieta' });
+  const box = await up.boundingBox();
+  expect(box?.width).toBeGreaterThanOrEqual(44);
+  expect(box?.height).toBeGreaterThanOrEqual(44);
+  await up.click();
+  await page.getByRole('button', { name: 'Gotowe' }).click();
+
+  const survey = await page.getByRole('region', { name: 'Ankieta' }).boundingBox();
+  expect(survey!.y).toBeLessThan((await importantBox.boundingBox())!.y);
+
+  await page.reload();
+
+  // PL: Po przeładowaniu kolejność nadal jest ta sama, a tryb edycji wrócił wyłączony.
+  // EN: After the reload the order is still the same, and the edit mode is off again.
+  await expect(page.getByRole('button', { name: 'Zmień układ' })).toBeVisible();
+  const surveyAfter = await page.getByRole('region', { name: 'Ankieta' }).boundingBox();
+  expect(surveyAfter!.y).toBeLessThan((await importantBox.boundingBox())!.y);
+});

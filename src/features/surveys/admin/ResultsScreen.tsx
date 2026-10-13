@@ -5,15 +5,18 @@
  * @author Jakub
  * @since 2026-10-12
  * @uses src/features/surveys/admin/surveyQueries.ts::useSurveyResults
+ * @uses src/features/surveys/admin/surveyQueries.ts::useIsOnline
+ * @uses src/features/surveys/admin/surveyApi.ts::fetchResultsCsv
  * @used_by src/features/surveys/admin/SurveysAdminScreen.tsx::SurveysAdminScreen
  */
 
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { describeQuestions, describeResponses, formatShortDate, OPTION_LETTERS } from './format';
-import { LockIcon } from './icons';
+import { LockIcon, WifiOffIcon } from './icons';
 import { ErrorMessage, PanelNote, ScreenTop } from './PanelParts';
-import { useSurveyResults } from './surveyQueries';
+import { fetchResultsCsv } from './surveyApi';
+import { useIsOnline, useSurveyResults } from './surveyQueries';
 import type { OptionResult, SurveyResults } from './types';
 
 /**
@@ -86,6 +89,51 @@ function ResultBar({ letter, option }: { letter: string; option: OptionResult })
 }
 
 /**
+ * PL: Przycisk „Pobierz CSV” pod wynikami. Pobiera plik z serwera i zapisuje go w telefonie. Bez internetu jest nieaktywny, a obok stoi notatka.
+ * EN: The "Pobierz CSV" button under the results. It fetches the file from the server and saves it on the phone. Without internet it is inactive, with a note beside it.
+ *
+ * @param props - PL: numer ankiety. EN: the survey id.
+ * @returns PL: przycisk, notatka i ewentualny błąd. EN: the button, the note and a possible error.
+ */
+function DownloadCsvButton({ surveyId }: { surveyId: string }) {
+  const isOnline = useIsOnline();
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  /**
+   * PL: Pobiera plik i uruchamia zapis w przeglądarce. Tymczasowy adres zwalniamy po chwili, żeby pobranie zdążyło ruszyć.
+   * EN: Fetches the file and starts the save in the browser. The temporary address is released after a moment, so the download has time to start.
+   */
+  async function download() {
+    setBusy(true);
+    setFailed(false);
+    try {
+      const { file, filename } = await fetchResultsCsv(surveyId);
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button type="button" className="sa-button sa-button--outline" disabled={!isOnline || busy} onClick={() => void download()}>
+        Pobierz CSV
+      </button>
+      {isOnline ? null : <PanelNote icon={<WifiOffIcon />} text="Pobranie wymaga internetu." />}
+      {failed ? <ErrorMessage text="Nie udało się pobrać pliku. Spróbuj ponownie za chwilę." /> : null}
+    </>
+  );
+}
+
+/**
  * PL: Rysuje ekran 6.5d dla jednego pytania. Przy kilku pytaniach „Następne pytanie” przełącza je, a „Wstecz” wraca do poprzedniego.
  * EN: Draws screen 6.5d for one question. With several questions "Następne pytanie" switches them, and "Wstecz" returns to the previous one.
  *
@@ -110,6 +158,7 @@ function QuestionResults({ results }: { results: SurveyResults }) {
         ))}
       </ul>
       <PanelNote icon={<LockIcon />} text="Wyniki są zbiorcze. Nie widać, kto co wybrał." />
+      <DownloadCsvButton surveyId={results.id} />
       {index < questions.length - 1 ? (
         <button type="button" className="sa-button sa-button--outline" onClick={() => setIndex(index + 1)}>
           Następne pytanie

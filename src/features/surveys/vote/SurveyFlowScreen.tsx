@@ -25,7 +25,7 @@ import { useVoteSubmit } from './useVoteSubmit';
 // EN: The messages about a sending problem that replace the question screen.
 const BLOCKING_MESSAGES = {
   already_voted: { title: 'Już wypełniona', text: 'Ta ankieta jest już wypełniona. Nie można jej wypełnić drugi raz.' },
-  ended: { title: 'Ankieta zakończona', text: 'Ta ankieta już się skończyła, więc nie przyjmujemy odpowiedzi.' },
+  ended: { title: 'Ankieta zamknięta', text: 'Ta ankieta jest już zamknięta, więc nie przyjmujemy odpowiedzi.' },
 } as const;
 
 /**

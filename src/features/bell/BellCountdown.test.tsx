@@ -52,13 +52,30 @@ describe('BellCountdown', () => {
     expect(html).toContain('do dzwonka');
   });
 
+  it('w czasie lekcji pokazuje następną lekcję z godziną', () => {
+    // PL: 08:10 w Warszawie to pierwsza lekcja z przykładu; następna jest lekcja 2 o 8:55 (bez zera z przodu).
+    // EN: 08:10 in Warsaw is the first example lesson; the next one is lesson 2 at 8:55 (no leading zero).
+    vi.setSystemTime(new Date('2026-10-23T06:10:00Z'));
+    const html = renderToString(<BellCountdown lessons={EXAMPLE_PLAN} />);
+    expect(html).toContain('Następna: lekcja 2 o 8:55');
+  });
+
+  it('w ostatniej lekcji dnia nie pokazuje następnej lekcji', () => {
+    // PL: 09:10 w Warszawie to ostatnia lekcja przykładu: po niej nie ma następnej, więc tekstu „Następna” nie ma.
+    // EN: 09:10 in Warsaw is the last example lesson: nothing follows it, so there is no "Następna" text.
+    vi.setSystemTime(new Date('2026-10-23T07:10:00Z'));
+    const html = renderToString(<BellCountdown lessons={EXAMPLE_PLAN} />);
+    expect(html).toContain('do dzwonka');
+    expect(html).not.toContain('Następna');
+  });
+
   it('w przerwie pokazuje minuty do lekcji', () => {
-    // PL: 08:50 w Warszawie to przerwa między lekcjami z przykładu: 5 minut do następnej.
-    // EN: 08:50 in Warsaw is the break between the example lessons: 5 minutes to the next one.
+    // PL: 08:50 w Warszawie to przerwa między lekcjami z przykładu: 5 minut do następnej, czyli do lekcji 2.
+    // EN: 08:50 in Warsaw is the break between the example lessons: 5 minutes to the next one, that is lesson 2.
     vi.setSystemTime(new Date('2026-10-23T06:50:00Z'));
     const html = renderToString(<BellCountdown lessons={EXAMPLE_PLAN} />);
     expect(html).toContain('>5<');
-    expect(html).toContain('do lekcji');
+    expect(html).toContain('Przerwa, do lekcji 2');
   });
 
   it('w weekend nic nie rysuje', () => {
