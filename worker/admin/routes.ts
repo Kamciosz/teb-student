@@ -1,6 +1,6 @@
 /**
- * PL: Router Hono podtoru 8 (panel Samorządu: rama, role, wydawanie kodów, dane z pilotażu), podpięty pod /api/admin w worker/mounts.ts. Adresy: GET /me (rola ucznia w panelu), GET /invites i POST /invites (kody zaproszeń, od Samorządu), /roles (role, tylko administrator) i GET /pilot (plik z pilotażu, tylko administrator).
- * EN: The Hono router of subtrack 8 (Student Council panel: frame, roles, issuing codes, pilot data), mounted under /api/admin in worker/mounts.ts. Routes: GET /me (the student's panel role), GET /invites and POST /invites (invitation codes, from the Council), /roles (roles, administrator only) and GET /pilot (the pilot file, administrator only).
+ * PL: Router Hono podtoru 8 (panel Samorządu: rama, role, wydawanie kodów, dane z pilotażu, dziennik zmian), podpięty pod /api/admin w worker/mounts.ts. Adresy: GET /me (rola ucznia w panelu), GET /invites i POST /invites (kody zaproszeń, od Samorządu), /roles (role, tylko administrator), GET /pilot (plik z pilotażu, tylko administrator) i GET /diary (dziennik zmian, od Samorządu). Wydanie kodu zapisuje wpis w dzienniku.
+ * EN: The Hono router of subtrack 8 (Student Council panel: frame, roles, issuing codes, pilot data, change diary), mounted under /api/admin in worker/mounts.ts. Routes: GET /me (the student's panel role), GET /invites and POST /invites (invitation codes, from the Council), /roles (roles, administrator only), GET /pilot (the pilot file, administrator only) and GET /diary (the change diary, from the Council). Issuing a code records an entry in the diary.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -11,6 +11,8 @@
  * @uses worker/admin/panelRoles.ts::getPanelLevel
  * @uses worker/admin/roleRoutes.ts::rolesApp
  * @uses worker/admin/pilotRoutes.ts::pilotApp
+ * @uses worker/admin/diaryRoutes.ts::diaryApp
+ * @uses worker/admin/diary.ts::recordDiaryEntry
  * @used_by worker/admin/index.ts::adminApp
  * @used_by worker/admin/routes.test.ts::adminApp
  */
@@ -29,6 +31,10 @@ import { requirePanelRole, type PanelEnv } from './requirePanelRole';
 // EN: The roles router (administrator) and the pilot file router (administrator).
 import { rolesApp } from './roleRoutes';
 import { pilotApp } from './pilotRoutes';
+// PL: Dziennik zmian: router odczytu i zapis wpisu przy wydaniu kodu.
+// EN: The change diary: the read router and recording an entry when a code is issued.
+import { diaryApp } from './diaryRoutes';
+import { recordDiaryEntry } from './diary';
 
 /**
  * PL: Router roli ucznia: adres /me odpowiada każdemu zalogowanemu uczniowi. Uczeń bez roli dostaje null, a ekran pokazuje wtedy „Tylko dla Samorządu”.
@@ -59,11 +65,19 @@ const invitesApp = new Hono<PanelEnv>()
   // EN: Issue the code in the database and return it together with the expiry date.
   .post('/', async (context) => {
     const { code, expiresAt } = await issueInviteCode(context.env.DB);
+    // PL: Zapisz w dzienniku, kto wydał kod. Sam kod do dziennika nie trafia, bo to sekret.
+    // EN: Record in the diary who issued the code. The code itself does not go into the diary, because it is a secret.
+    await recordDiaryEntry(context.env.DB, { actorId: context.get('student').id, action: 'invite_issued', targetId: null });
     return context.json({ code, expiresAt: expiresAt.toISOString() }, 201);
   });
 
 /**
- * PL: Router podtoru 8 pod /api/admin: /me, /invites, /roles i /pilot.
- * EN: The router of subtrack 8 under /api/admin: /me, /invites, /roles and /pilot.
+ * PL: Router podtoru 8 pod /api/admin: /me, /invites, /roles, /pilot i /diary.
+ * EN: The router of subtrack 8 under /api/admin: /me, /invites, /roles, /pilot and /diary.
  */
-export const adminApp = new Hono().route('/me', meApp).route('/invites', invitesApp).route('/roles', rolesApp).route('/pilot', pilotApp);
+export const adminApp = new Hono()
+  .route('/me', meApp)
+  .route('/invites', invitesApp)
+  .route('/roles', rolesApp)
+  .route('/pilot', pilotApp)
+  .route('/diary', diaryApp);
