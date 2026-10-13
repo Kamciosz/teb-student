@@ -1,6 +1,6 @@
 /**
- * PL: Hooki TanStack Query dla ekranu „Wpisy”: lista, publikacja, usunięcie i stan połączenia. Po publikacji i usunięciu odświeżamy listę (także po błędzie, bo wpis mógł zmienić się na serwerze).
- * EN: TanStack Query hooks for the "Wpisy" screen: the list, publishing, deleting and the connection state. After publishing and deleting we refresh the list (also after an error, because the entry may have changed on the server).
+ * PL: Hooki TanStack Query dla ekranu „Wpisy”: lista, publikacja, usunięcie i stan połączenia. Po publikacji i usunięciu odświeżamy listę (także po błędzie, bo wpis mógł zmienić się na serwerze). Przy każdym wejściu na ekran pobieramy listę od nowa, bo szkic mógł się zmienić w kreatorze.
+ * EN: TanStack Query hooks for the "Wpisy" screen: the list, publishing, deleting and the connection state. After publishing and deleting we refresh the list (also after an error, because the entry may have changed on the server). Every entry to the screen fetches the list again, because a draft may have changed in the wizard.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -33,9 +33,11 @@ const RETRIES = 1;
  * @returns PL: wynik zapytania (dane, stan ładowania, błąd). EN: the query result (data, loading state, error).
  */
 export function usePanelEntries() {
-  // PL: Lista jest świeża 30 sekund; zapis w telefonie robi wspólny dostawca zapytań.
-  // EN: The list is fresh for 30 seconds; saving on the phone is done by the shared query provider.
-  return useQuery({ queryKey: LIST_KEY, queryFn: fetchPanelEntries, staleTime: 30_000, retry: RETRIES });
+  // PL: Lista jest świeża 30 sekund, ale przy każdym wejściu na ekran (np. po powrocie z kreatora) pobieramy ją od nowa, bo szkic mógł się zmienić na serwerze. Wzorzec: opcja `refetchOnMount` w dokumentacji TanStack Query.
+  // EN: The list is fresh for 30 seconds, but on every entry to the screen (e.g. after returning from the wizard) we fetch it again, because a draft may have changed on the server. Pattern: the `refetchOnMount` option in the TanStack Query docs.
+  // PL: Zapis w telefonie robi wspólny dostawca zapytań.
+  // EN: Saving on the phone is done by the shared query provider.
+  return useQuery({ queryKey: LIST_KEY, queryFn: fetchPanelEntries, staleTime: 30_000, refetchOnMount: 'always', retry: RETRIES });
 }
 
 /**
