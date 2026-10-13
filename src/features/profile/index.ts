@@ -6,12 +6,16 @@
  * @since 2026-10-09
  * @uses src/features/profile/ProfileScreen.tsx::ProfileScreen
  * @uses src/features/profile/look.ts::applyStoredLook
+ * @uses src/features/profile/textSize.ts::applyStoredTextSize
  * @used_by src/app/routes.ts::APP_ROUTES
  */
 
 // PL: Wygląd zapisany w telefonie.
 // EN: The look saved on the phone.
 import { applyStoredLook } from './look';
+// PL: Rozmiar tekstu zapisany w telefonie.
+// EN: The text size saved on the phone.
+import { applyStoredTextSize } from './textSize';
 
 // PL: Ekran podtoru 7.
 // EN: The screen of subtrack 7.
@@ -20,3 +24,4 @@ export { ProfileScreen } from './ProfileScreen';
 // PL: Ustaw zapisany wygląd od razu przy wczytaniu modułu, jeszcze przed pierwszym narysowaniem ekranu.
 // EN: Set the saved look right when the module loads, before the first screen is drawn.
 applyStoredLook();
+applyStoredTextSize();
