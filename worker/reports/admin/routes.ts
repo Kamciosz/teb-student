@@ -19,18 +19,18 @@ import { bodyLimit } from 'hono/body-limit';
 // PL: Sprawdzanie roli w panelu (401 bez sesji, 403 bez roli), przez drzwi modułu admin (worker/admin/index.ts).
 // EN: The panel role check (401 without a session, 403 without a role), through the door of the admin module (worker/admin/index.ts).
 import { requirePanelRole, type PanelEnv } from '../../admin';
-// PL: Etapy zgłoszenia ze schematu.
-// EN: The report stages from the schema.
-import { REPORT_STAGES, type ReportStage } from '../../db/schema/reports';
+// PL: Etapy zgłoszenia i najwyższy limit odpowiedzi ze schematu.
+// EN: The report stages and the answer length limit from the schema.
+import { MAX_STAGE_NOTE_LENGTH, REPORT_STAGES, type ReportStage } from '../../db/schema/reports';
 // PL: Odczyt zgłoszeń i zmiana etapu.
 // EN: Reading reports and changing the stage.
 import { changeReportStage, getReport, listReports } from './reportsAdminRepository';
 
 /**
- * PL: Najwięcej bajtów, jakie przyjmuje zapytanie o zmianę etapu. Treść to jedno krótkie pole, więc 1 KB to duży zapas.
- * EN: The most bytes a stage-change request may have. The body is one short field, so 1 KB is a large margin.
+ * PL: Najwięcej bajtów, jakie przyjmuje zapytanie o zmianę etapu. Odpowiedź ma do 500 znaków, a polskie litery to po dwa bajty w UTF-8, więc 500 znaków to około 1000 bajtów. Dlatego limit to 4 KB, a nie 1 KB.
+ * EN: The most bytes a stage-change request may have. The answer has up to 500 characters, and Polish letters take two bytes in UTF-8, so 500 characters are about 1000 bytes. That is why the limit is 4 KB, not 1 KB.
  */
-const MAX_BODY_BYTES = 1024;
+const MAX_BODY_BYTES = 4096;
 
 /**
  * PL: Sprawdza, czy wartość jest etapem zgłoszenia.
@@ -43,6 +43,26 @@ function isReportStage(value: unknown): value is ReportStage {
   // PL: Porównaj ze stałą listą etapów ze schematu.
   // EN: Compare with the constant list of stages from the schema.
   return REPORT_STAGES.some((stage) => stage === value);
+}
+
+/**
+ * PL: Sprawdza odpowiedź dla autora z treści zapytania. Brak pola albo `null` to brak odpowiedzi. Tekst jest przycięty z obu stron, a pusty po przycięciu to też brak odpowiedzi. Za długa odpowiedź albo wartość, która nie jest tekstem, to `'invalid'`.
+ * EN: Checks the answer for the author from the request body. A missing field or `null` means no answer. The text is trimmed on both ends, and an empty text after trimming is also no answer. A too long answer, or a value that is not text, is `'invalid'`.
+ *
+ * @param value - PL: wartość pola `note` z treści zapytania. EN: the value of the `note` field from the request body.
+ * @returns PL: przycięta odpowiedź, `null` albo `'invalid'`. EN: the trimmed answer, `null`, or `'invalid'`.
+ */
+function parseNote(value: unknown): string | null | 'invalid' {
+  // PL: Brak pola i `null` znaczą to samo: nie ma odpowiedzi.
+  // EN: A missing field and `null` mean the same: there is no answer.
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string') return 'invalid';
+
+  // PL: Długość liczymy w znakach (punktach kodowych), tak jak baza w `length(note)`, a nie w jednostkach UTF-16.
+  // EN: The length is counted in characters (code points), as the database does in `length(note)`, not in UTF-16 units.
+  const trimmed = value.trim();
+  if (trimmed === '') return null;
+  return Array.from(trimmed).length > MAX_STAGE_NOTE_LENGTH ? 'invalid' : trimmed;
 }
 
 /**
@@ -68,18 +88,20 @@ reportsAdminApp.get('/:id', async (context) => {
   return found ? context.json(found) : context.json({ error: 'not_found' }, 404);
 });
 
-// PL: PATCH /:id zmienia etap. Zwraca zgłoszenie z historią, 400 przy złym etapie albo 404.
-// EN: PATCH /:id changes the stage. Returns the report with its history, 400 for a bad stage, or 404.
+// PL: PATCH /:id zmienia etap i zapisuje odpowiedź dla autora (opcjonalną). Zwraca zgłoszenie z historią, 400 przy złym etapie albo złej odpowiedzi, 404 albo 413.
+// EN: PATCH /:id changes the stage and saves the answer for the author (optional). Returns the report with its history, 400 for a bad stage or a bad answer, 404, or 413.
 reportsAdminApp.patch('/:id', bodyLimit({ maxSize: MAX_BODY_BYTES, onError: (context) => context.json({ error: 'payload_too_large' }, 413) }), async (context) => {
-  // PL: Odczytaj JSON i sprawdź etap. Zepsuty JSON to błąd telefonu (400).
-  // EN: Read the JSON and check the stage. Broken JSON is the phone's error (400).
-  const body = (await context.req.json().catch(() => undefined)) as { stage?: unknown } | undefined;
+  // PL: Odczytaj JSON i sprawdź etap i odpowiedź. Zepsuty JSON to błąd telefonu (400).
+  // EN: Read the JSON and check the stage and the answer. Broken JSON is the phone's error (400).
+  const body = (await context.req.json().catch(() => undefined)) as { stage?: unknown; note?: unknown } | undefined;
   if (!isReportStage(body?.stage)) return context.json({ error: 'invalid_stage' }, 400);
+  const note = parseNote(body?.note);
+  if (note === 'invalid') return context.json({ error: 'invalid_note' }, 400);
 
   // PL: Zmień etap jako osoba z sesji, a nie ta z treści zapytania.
   // EN: Change the stage as the person from the session, not the one from the request body.
   const id = context.req.param('id');
-  const result = await changeReportStage(context.env.DB, { id, stage: body.stage, memberId: context.get('student').id });
+  const result = await changeReportStage(context.env.DB, { id, stage: body.stage, note, memberId: context.get('student').id });
   if (result === 'not_found') return context.json({ error: 'not_found' }, 404);
 
   // PL: Oddaj aktualny stan zgłoszenia, żeby telefon pokazał historię bez drugiego zapytania.

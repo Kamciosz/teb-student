@@ -15,6 +15,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { user } from '../../db/schema/auth';
 import { newsEntries } from '../../db/schema/news';
 import { createNewsEditorApp, newsEditorApp } from './routes';
+import { MAX_PUBLISH_AHEAD_MS } from './validatePublishAt';
+
+// PL: Godzina w milisekundach, do wyliczania terminów publikacji.
+// EN: An hour in milliseconds, for working out publication times.
+const HOUR = 60 * 60 * 1000;
 
 // PL: Baza testowa.
 // EN: The test database.
@@ -86,6 +91,13 @@ describe('POST /entries: zapis / saving', () => {
     expect(row?.status).toBe('published');
     expect(row?.publishedAt).toBeInstanceOf(Date);
   });
+
+  it('zaplanowana publikacja dostaje wpisaną godzinę / a scheduled publication gets the time entered', async () => {
+    const publishAt = Date.now() + HOUR;
+    expect((await post({ type: 'news', title: 'Później', status: 'published', body: BODY, publishAt })).status).toBe(201);
+    const [row] = await db.select().from(newsEntries);
+    expect(row?.publishedAt?.getTime()).toBe(publishAt);
+  });
 });
 
 // PL: Odrzucenia: nic nie trafia do bazy.
@@ -106,6 +118,9 @@ describe('POST /entries: odrzucenia / rejections', () => {
     ['pusty tytuł / an empty title', { type: 'news', title: '   ', status: 'draft', body: BODY }, 'bad_title'],
     ['za długi tytuł / a too long title', { type: 'news', title: 'a'.repeat(121), status: 'draft', body: BODY }, 'bad_title'],
     ['brak treści / no content', { type: 'news', title: 'T', status: 'draft' }, 'not_a_document'],
+    ['godzina w przeszłości / a time in the past', { type: 'news', title: 'T', status: 'published', body: BODY, publishAt: Date.now() - HOUR }, 'publish_past'],
+    ['godzina dalej niż 30 dni / a time more than 30 days ahead', { type: 'news', title: 'T', status: 'published', body: BODY, publishAt: Date.now() + MAX_PUBLISH_AHEAD_MS + HOUR }, 'publish_too_far'],
+    ['godzina przy szkicu / a time for a draft', { type: 'news', title: 'T', status: 'draft', body: BODY, publishAt: Date.now() + HOUR }, 'bad_publish_at'],
   ])('%s daje 422 / gives 422', async (_name, entry, reason) => {
     const response = await post(entry);
     expect(response.status).toBe(422);

@@ -25,7 +25,7 @@ import { useVoteSubmit } from './useVoteSubmit';
 // EN: The messages about a sending problem that replace the question screen.
 const BLOCKING_MESSAGES = {
   already_voted: { title: 'Już wypełniona', text: 'Ta ankieta jest już wypełniona. Nie można jej wypełnić drugi raz.' },
-  ended: { title: 'Ankieta zakończona', text: 'Ta ankieta już się skończyła, więc nie przyjmujemy odpowiedzi.' },
+  ended: { title: 'Ankieta zamknięta', text: 'Ta ankieta jest już zamknięta, więc nie przyjmujemy odpowiedzi.' },
 } as const;
 
 /**
@@ -45,15 +45,15 @@ function SurveyQuestions({ survey }: { survey: SurveyDetail }) {
   if (question === undefined) return <FlowNotice title="Brak pytań" text="Ta ankieta nie ma jeszcze pytań." />;
 
   const isLast = step === survey.questions.length - 1;
-  const selectedId = answers[question.id];
+  const selectedIds = answers[question.id] ?? [];
 
   return (
     <main className="vote vote--flow" data-subtrack="5a">
       <FlowTop title={survey.title} step={step + 1} total={survey.questions.length} onBack={step === 0 ? null : () => setStep(step - 1)} />
-      <QuestionStep question={question} number={step + 1} selectedId={selectedId} onSelect={(optionId) => setAnswers({ ...answers, [question.id]: optionId })} />
+      <QuestionStep question={question} number={step + 1} selectedIds={selectedIds} onChange={(optionIds) => setAnswers({ ...answers, [question.id]: optionIds })} />
       <div className="vote-footer">
         {problem === 'failed' ? <p className="vote-error" role="alert">Nie udało się wysłać odpowiedzi. Sprawdź połączenie z internetem i spróbuj jeszcze raz.</p> : null}
-        <button type="button" className="vote-button vote-button--primary" disabled={selectedId === undefined || sending} onClick={isLast ? submit : () => setStep(step + 1)}>
+        <button type="button" className="vote-button vote-button--primary" disabled={selectedIds.length === 0 || sending} onClick={isLast ? submit : () => setStep(step + 1)}>
           {sending ? 'Wysyłam…' : isLast ? 'Wyślij odpowiedzi' : 'Dalej'}
         </button>
       </div>

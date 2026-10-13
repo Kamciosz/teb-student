@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { describeQuestions, describeResponses, formatShortDate, lastDayLabel } from './format';
+import { describeQuestions, describeResponses, formatClosesAt, formatShortDate, lastDayLabel, warsawWallClock } from './format';
 
 describe('odmiana / plural forms', () => {
   it('pytania: 1 pytanie, 3 pytania, 5 pytań, 12 pytań, 22 pytania / questions', () => {
@@ -33,5 +33,17 @@ describe('daty / dates', () => {
 
   it('liczy dzień w Polsce: po północy w Polsce to już następny dzień / counts the day in Poland: after midnight in Poland it is the next day', () => {
     expect(lastDayLabel(new Date('2026-10-12T22:30:00Z'), 3)).toBe('16.10.2026');
+  });
+});
+
+describe('czas polski / Polish time', () => {
+  it('czas ścienny w Warszawie z zerami i bez „24” o północy / the Warsaw wall-clock time with zeros and no "24" at midnight', () => {
+    expect(warsawWallClock(new Date('2026-10-13T10:00:00Z'))).toBe('2026-10-13T12:00');
+    expect(warsawWallClock(new Date('2026-10-19T22:05:00Z'))).toBe('2026-10-20T00:05');
+  });
+
+  it('termin zamknięcia po polsku: dzień i godzina w czasie polskim, latem i zimą / the closing time in Polish: day and hour in Polish time, in summer and winter', () => {
+    expect(formatClosesAt(Date.parse('2026-10-15T10:00:00Z'))).toBe('15.10, 12:00');
+    expect(formatClosesAt(Date.parse('2026-11-20T11:00:00Z'))).toBe('20.11, 12:00');
   });
 });

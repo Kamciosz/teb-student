@@ -6,9 +6,12 @@
  *
  * @author Jakub
  * @since 2026-10-12
+ * @uses worker/surveys/admin/dates.ts::warsawToUtcMs
  * @used_by worker/surveys/admin/routes.ts::surveysAdminApp
  * @used_by worker/surveys/admin/validation.test.ts::parseNewSurvey
  */
+
+import { warsawToUtcMs } from './dates';
 
 // PL: Dozwolone czasy trwania ankiety w dniach (pasek wyboru „3 dni”, „7 dni”, „14 dni” z ekranu 6.5b).
 // EN: The allowed survey durations in days (the "3 dni", "7 dni", "14 dni" choice bar of screen 6.5b).
@@ -40,6 +43,8 @@ export type NewSurvey = {
   questions: { prompt: string; options: string[] }[];
   /** PL: Czas trwania w dniach, jeden z DURATIONS_DAYS. EN: The duration in days, one of DURATIONS_DAYS. */
   durationDays: number;
+  /** PL: Chwila zamknięcia w milisekundach UTC albo null, gdy ankieta kończy się tylko ostatnim dniem. EN: The closing moment in UTC milliseconds, or null when the survey ends only on its last day. */
+  closesAt: number | null;
 };
 
 /**
@@ -83,24 +88,47 @@ function parseQuestion(value: unknown): NewSurvey['questions'][number] | null {
 }
 
 /**
- * PL: Zamienia dane z telefonu na nową ankietę. Oczekiwany kształt: { title, questions: [{ prompt, options: [tekst, ...] }], durationDays }.
- * EN: Turns the data from the phone into a new survey. Expected shape: { title, questions: [{ prompt, options: [text, ...] }], durationDays }.
+ * PL: Czyta pole „Zamknij ankietę”: brak albo pusty tekst to brak terminu (null), a poprawny czas w przyszłości to chwila w milisekundach. Zły zapis, data nie istniejąca i czas przeszły to błąd (undefined).
+ * EN: Reads the "Zamknij ankietę" field: a missing or empty text means no closing time (null), and a valid time in the future is a moment in milliseconds. A bad text, a date that does not exist and a past time are an error (undefined).
+ *
+ * @param value - PL: pole z danych telefonu. EN: the field from the phone's data.
+ * @param now - PL: chwila sprawdzenia. EN: the moment of the check.
+ * @returns PL: chwila w ms, null (bez terminu) albo undefined (błąd). EN: the moment in ms, null (no closing time) or undefined (an error).
+ */
+function parseClosesAt(value: unknown, now: Date): number | null | undefined {
+  // PL: Puste pole to brak terminu.
+  // EN: An empty field means no closing time.
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value !== 'string') return undefined;
+
+  // PL: Termin musi istnieć i być w przyszłości.
+  // EN: The time must exist and be in the future.
+  const closesAt = warsawToUtcMs(value);
+  return closesAt === null || closesAt <= now.getTime() ? undefined : closesAt;
+}
+
+/**
+ * PL: Zamienia dane z telefonu na nową ankietę. Oczekiwany kształt: { title, questions: [{ prompt, options: [tekst, ...] }], durationDays, closesAt }, gdzie closesAt jest czasem polskim RRRR-MM-DDTHH:mm albo pusty.
+ * EN: Turns the data from the phone into a new survey. Expected shape: { title, questions: [{ prompt, options: [text, ...] }], durationDays, closesAt }, where closesAt is the Polish time YYYY-MM-DDTHH:mm or empty.
  *
  * @param body - PL: odczytany JSON zapytania (dowolna wartość). EN: the parsed JSON of the request (any value).
+ * @param now - PL: chwila, od której termin musi być w przyszłości. EN: the moment from which the closing time must be in the future.
  * @returns PL: poprawna ankieta albo null, gdy cokolwiek jest złe. EN: the valid survey, or null when anything is wrong.
  */
-export function parseNewSurvey(body: unknown): NewSurvey | null {
-  // PL: Tytuł, lista pytań w dozwolonej liczbie i czas trwania z listy.
-  // EN: The title, a question list of an allowed size and a duration from the list.
-  const raw = body as { title?: unknown; questions?: unknown; durationDays?: unknown } | null;
+export function parseNewSurvey(body: unknown, now: Date): NewSurvey | null {
+  // PL: Tytuł, lista pytań w dozwolonej liczbie, czas trwania z listy i termin zamknięcia.
+  // EN: The title, a question list of an allowed size, a duration from the list and the closing time.
+  const raw = body as { title?: unknown; questions?: unknown; durationDays?: unknown; closesAt?: unknown } | null;
   const title = cleanText(raw?.title, MAX_TITLE_LENGTH);
   const { questions, durationDays } = raw ?? {};
   if (title === null || !Array.isArray(questions) || questions.length < 1 || questions.length > MAX_QUESTIONS) return null;
   if (!DURATIONS_DAYS.some((allowed) => allowed === durationDays)) return null;
+  const closesAt = parseClosesAt(raw?.closesAt, now);
+  if (closesAt === undefined) return null;
 
   // PL: Każde pytanie musi być poprawne.
   // EN: Every question must be valid.
   const parsed = questions.map(parseQuestion);
   if (!parsed.every((question) => question !== null)) return null;
-  return { title, questions: parsed, durationDays: durationDays as number };
+  return { title, questions: parsed, durationDays: durationDays as number, closesAt };
 }

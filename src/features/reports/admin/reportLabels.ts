@@ -7,7 +7,9 @@
  * @used_by src/features/reports/admin/reportView.ts::placeText
  * @used_by src/features/reports/admin/ReportsList.tsx::FILTERS
  * @used_by src/features/reports/admin/ReportDetail.tsx::STAGES
+ * @used_by src/features/reports/admin/ReportDetail.tsx::STAGE_NOTE_MAX_LENGTH
  * @used_by worker/reports/admin/contract.test.ts::CATEGORY_LABELS
+ * @used_by worker/reports/admin/contract.test.ts::STAGE_NOTE_MAX_LENGTH
  */
 
 /** PL: Nazwy kategorii z ekranu 3.1. EN: The category names of screen 3.1. */
@@ -40,3 +42,9 @@ export const ALL_STAGES = 'all';
 
 /** PL: Chipy filtra z ekranu 6.4a: „Wszystkie” i trzy etapy. EN: The filter chips of screen 6.4a: "Wszystkie" and the three stages. */
 export const FILTERS: readonly { code: string; label: string }[] = [{ code: ALL_STAGES, label: 'Wszystkie' }, ...STAGES];
+
+/**
+ * PL: Najwięcej znaków w odpowiedzi dla autora przy zmianie etapu. To kopia `MAX_STAGE_NOTE_LENGTH` z worker/db/schema/reports.ts (src nie importuje z worker); worker/reports/admin/contract.test.ts pilnuje, żeby obie wartości były równe.
+ * EN: The most characters in the answer for the author when the stage changes. It is a copy of `MAX_STAGE_NOTE_LENGTH` from worker/db/schema/reports.ts (src does not import from worker); worker/reports/admin/contract.test.ts guards that both values are equal.
+ */
+export const STAGE_NOTE_MAX_LENGTH = 500;
