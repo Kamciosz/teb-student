@@ -9,7 +9,7 @@
 - Szukanie i lista ról: `GET /api/admin/roles/search?email=` i `GET /api/admin/roles`. Odpowiedź zawiera zamaskowany adres (`a***@teb.edu.pl`), nie pełny.
 - Dane z pilotażu (6.1e): ekran „Dane z pilotażu” i `GET /api/admin/pilot`. Plik CSV `pilotaz.csv` z trzema liczbami: zalogowania, zgłoszenia, odpowiedzi z ankiet. Bez imion, nazwisk i adresów. Plik ma znak BOM i końce linii CRLF.
 - Ekran główny panelu (6.1b, 6.1c): pod etykietą „Pilotaż” wiersze „Role” (ikona `users`, odznaka „Administrator”) i „Dane z pilotażu” (ikona `download`), tylko dla administratora.
-- Testy: `worker/admin/roles.test.ts`, `worker/admin/pilot.test.ts`, rozszerzony `e2e/admin.spec.ts` (20 testów, w tym przy szerokości 320 px).
+- Testy: `worker/admin/roles.test.ts`, `worker/admin/pilot.test.ts`, rozszerzony `e2e/admin.spec.ts` (testy podtoru 8, w tym przy szerokości 320 px).
 
 ### Zmienione
 
