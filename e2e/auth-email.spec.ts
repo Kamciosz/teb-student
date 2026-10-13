@@ -211,6 +211,20 @@ test.describe('moje urządzenia / my devices', () => {
     await expect(page.getByRole('button', { name: 'Wyloguj z innych urządzeń' })).toBeEnabled();
   });
 
+  // PL: Na 320 px lista urządzeń nie przewija się w poziomie, a przycisk „Wyloguj” ma co najmniej 44 px wysokości.
+  // EN: At 320 px the device list does not scroll horizontally, and the "Wyloguj" button is at least 44 px tall.
+  test('lista urządzeń 320 px mieści się bez przewijania / the device list at 320 px fits without scrolling', async ({ page }) => {
+    await stubDevicesApi(page, { devices: TWO_DEVICES, freshness: true });
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/auth/email/urzadzenia');
+    const button = page.getByRole('button', { name: 'Wyloguj: Safari na iPhone' });
+    await expect(button).toBeVisible();
+    const scrolls = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(scrolls).toBe(false);
+    const box = await button.boundingBox();
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  });
+
   // PL: Niezalogowany uczeń trafia z listy urządzeń na ekran logowania.
   // EN: A signed-out student is sent from the device list to the sign-in screen.
   test('niezalogowany wraca do logowania / a signed-out student goes back to sign-in', async ({ page }) => {

@@ -196,6 +196,34 @@ describe('wylogowanie urządzeń / signing out devices', () => {
     expect((await listWith(test, third)).status).toBe(401);
   });
 
+  // PL: Sesja starsza niż 24 h nadal wylogowuje wszystkie inne urządzenia: Better Auth nie wymaga świeżości do tej operacji. Na tym opiera się przycisk, gdy lista jest niedostępna.
+  // EN: A session older than 24 h still signs out all other devices: Better Auth does not require freshness for this operation. The button relies on this when the list is unavailable.
+  it('stara sesja wylogowuje inne urządzenia / an old session signs out the other devices', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-09T10:00:00Z'));
+    const { test, mine, other } = await twoDevices();
+
+    vi.setSystemTime(new Date('2026-10-10T10:00:01Z'));
+    const response = await call(test.app, REVOKE_OTHERS, { cookie: mine, body: {} });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+    expect((await listWith(test, other)).status).toBe(401);
+  });
+
+  // PL: Sesja starsza niż 24 h nie wylogowuje jednego urządzenia z listy: 403 z kodem „zaloguj się ponownie”, a drugie urządzenie zostaje zalogowane.
+  // EN: A session older than 24 h does not sign out one device from the list: 403 with the "sign in again" code, and the other device stays signed in.
+  it('stara sesja nie wylogowuje jednego urządzenia / an old session does not sign out one device', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-09T10:00:00Z'));
+    const { test, mine, other, otherId } = await twoDevices();
+
+    vi.setSystemTime(new Date('2026-10-10T10:00:01Z'));
+    const response = await call(test.app, REVOKE, { cookie: mine, body: { id: otherId } });
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: 'session_not_fresh' });
+    expect((await call(test.app, '/get-session', { cookie: other })).status).toBe(200);
+  });
+
   // PL: Bez nagłówka Origin Better Auth odrzuca zapytanie o wylogowanie. Test sprawdza, że trasa przekazuje to dalej i nie omija tej ochrony.
   // EN: Without an Origin header Better Auth rejects the sign-out request. The test checks that the route passes it on and does not skip this protection.
   it('bez nagłówka Origin nie wylogowuje innych / without an Origin header it does not sign out the others', async () => {
