@@ -1,6 +1,6 @@
 /**
- * PL: Schemat bazy modułu news (tabele Drizzle): wpisy aktualności. Tabelę czytają podtory 3a (lista i wpis ucznia), 3b (edytor) i 3c (panel), ale schemat należy do 3a, bo to pierwszy podtor modułu (docs/PODZIAL_PRACY.md, część 2). Tabela nie ma kolumny z numerem ucznia: wpis niesie tylko napis źródła („Samorząd”), więc przy usunięciu konta nie ma czego kasować.
- * EN: The database schema of the news module (Drizzle tables): news entries. Subtracks 3a (student list and entry), 3b (editor) and 3c (panel) read the table, but the schema belongs to 3a, because it is the module's first subtrack (docs/PODZIAL_PRACY.md, part 2). The table has no student id column: an entry carries only a source label ("Samorząd"), so there is nothing to delete when an account is removed.
+ * PL: Schemat bazy modułu news (tabele Drizzle): wpisy aktualności. Tabelę czytają podtory 3a (lista i wpis ucznia), 3b (edytor) i 3c (panel), ale schemat należy do 3a, bo to pierwszy podtor modułu (docs/PODZIAL_PRACY.md, część 2). Wpis niesie napis źródła („Samorząd”) i opcjonalny autor z kontem (author_user_id). Przy usunięciu konta autor zostaje pusty, a wpis zostaje.
+ * EN: The database schema of the news module (Drizzle tables): news entries. Subtracks 3a (student list and entry), 3b (editor) and 3c (panel) read the table, but the schema belongs to 3a, because it is the module's first subtrack (docs/PODZIAL_PRACY.md, part 2). An entry carries a source label ("Samorząd") and an optional author with an account (author_user_id). When the account is deleted the author becomes empty and the entry stays.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -12,6 +12,9 @@
 // PL: Funkcje Drizzle do opisu tabeli SQLite (D1 to SQLite).
 // EN: Drizzle functions that describe a SQLite table (D1 is SQLite).
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+// PL: Tabela kont, do której wskazuje autor wpisu.
+// EN: The accounts table the entry author points to.
+import { user } from './auth';
 
 /**
  * PL: Cztery typy wpisu z planu (docs/PLAN_APLIKACJI.md, część 2, punkt 3). Wartości są po angielsku, napisy dla ucznia („Ważne”, „News”, „Wydarzenie”, „Sport”) dopisuje telefon.
@@ -56,8 +59,14 @@ export const newsEntries = sqliteTable(
     body: text('body', { mode: 'json' }).notNull(),
     /** PL: Kto wydaje wpis, na przykład „Samorząd” albo „Sekretariat”. To napis, nie konto. EN: Who issues the entry, for example "Samorząd" or "Sekretariat". A label, not an account. */
     source: text('source').notNull(),
+    /** PL: Konto autora wpisu. Puste, gdy wpis nie ma autora albo konto zostało usunięte. EN: The entry author's account. Empty when the entry has no author or the account was deleted. */
+    authorUserId: text('author_user_id').references(() => user.id, { onDelete: 'set null' }),
     /** PL: Chwila publikacji w milisekundach od 1970 roku. Pusta dla szkicu. EN: The publication moment in milliseconds since 1970. Empty for a draft. */
     publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
+    /** PL: Chwila przypięcia wpisu na górze listy. Pusta, gdy wpis nie jest przypięty. Przypięte są na górze od najnowszego przypięcia. EN: The moment the entry was pinned to the top of the list. Empty when the entry is not pinned. Pinned entries come first, the latest pin on top. */
+    pinnedAt: integer('pinned_at', { mode: 'timestamp_ms' }),
+    /** PL: Chwila, od której uczeń widzi wpis, gdy jest zaplanowany. Pusta znaczy „od razu”. Wpis z chwilą w przyszłości jest niewidoczny dla ucznia. EN: The moment from which the student sees a scheduled entry. Empty means "right away". An entry with a moment in the future is invisible to the student. */
+    publishAt: integer('publish_at', { mode: 'timestamp_ms' }),
     /** PL: Adres https, który otwiera przycisk pod wpisem. Pusty, gdy wpis nie ma linku. EN: The https address the button under the entry opens. Empty when the entry has no link. */
     linkUrl: text('link_url'),
     /** PL: Napis na przycisku z linkiem, na przykład „Zobacz regulamin turnieju”. EN: The label on the link button, for example "Zobacz regulamin turnieju". */

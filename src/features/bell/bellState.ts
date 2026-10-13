@@ -1,16 +1,19 @@
 /**
- * PL: Logika licznika do dzwonka. Z czasu warszawskiego i planu lekcji wylicza, czy trwa lekcja, czy przerwa, i ile minut zostało. Czysta funkcja (bez przeglądarki), więc test może podać dzień i godzinę.
- * EN: Logic of the bell countdown. From Warsaw time and the lesson plan it works out whether a lesson or a break is on, and how many minutes are left. A pure function (no browser), so a test can give the day and the time.
+ * PL: Logika licznika do dzwonka. Z czasu warszawskiego i planu lekcji wylicza, czy trwa lekcja, czy przerwa, i ile minut zostało. Wybiera plan dnia: zwykły albo skrócony (dni skrócone podaje pulpit i ekran dzwonka). Czysta funkcja (bez przeglądarki), więc test może podać dzień i godzinę.
+ * EN: Logic of the bell countdown. From Warsaw time and the lesson plan it works out whether a lesson or a break is on, and how many minutes are left. It picks the plan of the day: regular or shortened (the shortened days come from the dashboard and the bell screen). A pure function (no browser), so a test can give the day and the time.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-13
+ * @uses src/features/bell/bellPlan.ts::BELL_PLAN
+ * @uses src/features/bell/bellPlan.ts::SHORTENED_BELL_PLAN
  * @uses src/features/bell/bellPlan.ts::Lesson
  * @used_by src/features/bell/BellCountdown.tsx::BellCountdown
+ * @used_by src/features/bell/index.ts::currentBellState
  */
 
 // PL: Typ lekcji z planu.
 // EN: The lesson type from the plan.
-import type { Lesson } from './bellPlan';
+import { BELL_PLAN, SHORTENED_BELL_PLAN, type Lesson } from './bellPlan';
 
 // PL: Strefa czasu szkoły. Telefon może być w innej strefie, więc czas liczymy zawsze stąd.
 // EN: The school's time zone. The phone may be in another zone, so time is always counted from here.
@@ -52,6 +55,20 @@ export type BellState =
  * EN: Clock in the school zone: day of week (1 = Monday ... 7 = Sunday) and seconds since midnight.
  */
 export type WarsawClock = { weekday: number; secondsOfDay: number };
+
+/**
+ * PL: Dzień w strefie szkoły w formacie RRRR-MM-DD. Po nim sprawdzamy, czy dzień jest skrócony.
+ * EN: The day in the school zone as YYYY-MM-DD. It is used to check whether the day is shortened.
+ *
+ * @param now - PL: chwila w czasie. EN: the moment in time.
+ * @returns PL: dzień RRRR-MM-DD. EN: the day as YYYY-MM-DD.
+ */
+export function warsawDate(now: Date): string {
+  // PL: Rozbij wynik Intl na części po nazwie, tak jak w zegarze.
+  // EN: Split the Intl result into parts by name, as in the clock.
+  const parts = Object.fromEntries(clockFormat.formatToParts(now).map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
 
 /**
  * PL: Zamienia godzinę, minutę i sekundę na sekundy od północy.
@@ -172,4 +189,19 @@ export function bellStateAt(lessons: readonly Lesson[], clock: WarsawClock): Bel
  */
 export function getBellState(lessons: readonly Lesson[], now: Date): BellState | null {
   return bellStateAt(lessons, warsawClock(now));
+}
+
+/**
+ * PL: Wylicza stan licznika dla danej chwili: wybiera plan dnia (skrócony, gdy dzień jest na liście dni skróconych, inaczej zwykły) i z niego stan. Zwraca null, gdy planu nie ma (pusty plan) albo nie trwa lekcja ani przerwa.
+ * EN: Works out the countdown state for a given moment: picks the plan of the day (the shortened one when the day is on the list of shortened days, otherwise the regular one) and the state from it. Returns null when there is no plan (empty plan) or no lesson or break is on.
+ *
+ * @param now - PL: chwila w czasie (domyślnie teraz). EN: the moment in time (default: now).
+ * @param shortenedDays - PL: dni skrócone w formacie RRRR-MM-DD, czas polski (domyślnie żaden). EN: the shortened days as YYYY-MM-DD, Polish time (none by default).
+ * @returns PL: stan licznika albo null. EN: the countdown state or null.
+ */
+export function currentBellState(now: Date = new Date(), shortenedDays: ReadonlySet<string> = new Set()): BellState | null {
+  // PL: Wybór planu według dnia tej chwili w strefie szkoły.
+  // EN: Choose the plan by the day of this moment in the school zone.
+  const plan = shortenedDays.has(warsawDate(now)) ? SHORTENED_BELL_PLAN : BELL_PLAN;
+  return getBellState(plan, now);
 }

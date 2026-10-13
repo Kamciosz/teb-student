@@ -6,9 +6,14 @@
  *
  * @author Jakub
  * @since 2026-10-12
+ * @uses worker/surveys/admin/dates.ts::warsawToUtcMs
  * @used_by worker/surveys/admin/routes.ts::surveysAdminApp
  * @used_by worker/surveys/admin/validation.test.ts::parseNewSurvey
  */
+
+import { QUESTION_TYPES } from '../../db/schema/surveys';
+import { warsawToUtcMs } from './dates';
+import type { QuestionType } from './types';
 
 // PL: Dozwolone czasy trwania ankiety w dniach (pasek wyboru „3 dni”, „7 dni”, „14 dni” z ekranu 6.5b).
 // EN: The allowed survey durations in days (the "3 dni", "7 dni", "14 dni" choice bar of screen 6.5b).
@@ -36,10 +41,12 @@ export const MAX_OPTION_LENGTH = 100;
 export type NewSurvey = {
   /** PL: Tytuł bez spacji na brzegach. EN: The title without edge spaces. */
   title: string;
-  /** PL: Pytania w kolejności, każde z odpowiedziami w kolejności. EN: The questions in order, each with its options in order. */
-  questions: { prompt: string; options: string[] }[];
+  /** PL: Pytania w kolejności, każde z typem i odpowiedziami w kolejności. EN: The questions in order, each with its type and its options in order. */
+  questions: { prompt: string; type: QuestionType; options: string[] }[];
   /** PL: Czas trwania w dniach, jeden z DURATIONS_DAYS. EN: The duration in days, one of DURATIONS_DAYS. */
   durationDays: number;
+  /** PL: Chwila zamknięcia w milisekundach UTC albo null, gdy ankieta kończy się tylko ostatnim dniem. EN: The closing moment in UTC milliseconds, or null when the survey ends only on its last day. */
+  closesAt: number | null;
 };
 
 /**
@@ -62,45 +69,81 @@ function cleanText(value: unknown, maxLength: number): string | null {
 }
 
 /**
- * PL: Sprawdza jedno pytanie: treść i od 2 do 5 odpowiedzi.
- * EN: Checks one question: the text and 2 to 5 options.
+ * PL: Czyta typ pytania. Brak typu to „Jeden wybór” (single_choice), a wartość spoza QUESTION_TYPES to błąd (undefined).
+ * EN: Reads the question type. A missing type is "Jeden wybór" (single_choice), and a value outside QUESTION_TYPES is an error (undefined).
+ *
+ * @param value - PL: pole typu z danych telefonu. EN: the type field from the phone's data.
+ * @returns PL: typ pytania albo undefined, gdy typ jest zły. EN: the question type, or undefined when the type is bad.
+ */
+function parseQuestionType(value: unknown): QuestionType | undefined {
+  if (value === undefined || value === null) return 'single_choice';
+  return (QUESTION_TYPES as readonly unknown[]).includes(value) ? (value as QuestionType) : undefined;
+}
+
+/**
+ * PL: Sprawdza jedno pytanie: treść, typ i od 2 do 5 odpowiedzi.
+ * EN: Checks one question: the text, the type and 2 to 5 options.
  *
  * @param value - PL: pytanie z danych telefonu. EN: a question from the phone's data.
  * @returns PL: poprawne pytanie albo null. EN: the valid question, or null.
  */
 function parseQuestion(value: unknown): NewSurvey['questions'][number] | null {
-  // PL: Pytanie to obiekt z treścią i tablicą odpowiedzi w dozwolonej liczbie.
-  // EN: A question is an object with a text and an options array of an allowed size.
-  const raw = value as { prompt?: unknown; options?: unknown } | null;
+  // PL: Pytanie to obiekt z treścią, typem i tablicą odpowiedzi w dozwolonej liczbie.
+  // EN: A question is an object with a text, a type and an options array of an allowed size.
+  const raw = value as { prompt?: unknown; type?: unknown; options?: unknown } | null;
   const prompt = cleanText(raw?.prompt, MAX_PROMPT_LENGTH);
-  if (prompt === null || !Array.isArray(raw?.options)) return null;
+  const type = parseQuestionType(raw?.type);
+  if (prompt === null || type === undefined || !Array.isArray(raw?.options)) return null;
   if (raw.options.length < MIN_OPTIONS || raw.options.length > MAX_OPTIONS) return null;
 
   // PL: Każda odpowiedź musi mieć treść. Jedna pusta odrzuca całe pytanie.
   // EN: Every option must have a text. One blank option rejects the whole question.
   const options = raw.options.map((option) => cleanText(option, MAX_OPTION_LENGTH));
-  return options.every((option) => option !== null) ? { prompt, options } : null;
+  return options.every((option) => option !== null) ? { prompt, type, options } : null;
 }
 
 /**
- * PL: Zamienia dane z telefonu na nową ankietę. Oczekiwany kształt: { title, questions: [{ prompt, options: [tekst, ...] }], durationDays }.
- * EN: Turns the data from the phone into a new survey. Expected shape: { title, questions: [{ prompt, options: [text, ...] }], durationDays }.
+ * PL: Czyta pole „Zamknij ankietę”: brak albo pusty tekst to brak terminu (null), a poprawny czas w przyszłości to chwila w milisekundach. Zły zapis, data nie istniejąca i czas przeszły to błąd (undefined).
+ * EN: Reads the "Zamknij ankietę" field: a missing or empty text means no closing time (null), and a valid time in the future is a moment in milliseconds. A bad text, a date that does not exist and a past time are an error (undefined).
+ *
+ * @param value - PL: pole z danych telefonu. EN: the field from the phone's data.
+ * @param now - PL: chwila sprawdzenia. EN: the moment of the check.
+ * @returns PL: chwila w ms, null (bez terminu) albo undefined (błąd). EN: the moment in ms, null (no closing time) or undefined (an error).
+ */
+function parseClosesAt(value: unknown, now: Date): number | null | undefined {
+  // PL: Puste pole to brak terminu.
+  // EN: An empty field means no closing time.
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value !== 'string') return undefined;
+
+  // PL: Termin musi istnieć i być w przyszłości.
+  // EN: The time must exist and be in the future.
+  const closesAt = warsawToUtcMs(value);
+  return closesAt === null || closesAt <= now.getTime() ? undefined : closesAt;
+}
+
+/**
+ * PL: Zamienia dane z telefonu na nową ankietę. Oczekiwany kształt: { title, questions: [{ prompt, type, options: [tekst, ...] }], durationDays, closesAt }, gdzie type to single_choice albo multiple_choice (brak typu = single_choice), a closesAt jest czasem polskim RRRR-MM-DDTHH:mm albo pusty.
+ * EN: Turns the data from the phone into a new survey. Expected shape: { title, questions: [{ prompt, type, options: [text, ...] }], durationDays, closesAt }, where type is single_choice or multiple_choice (no type = single_choice), and closesAt is the Polish time YYYY-MM-DDTHH:mm or empty.
  *
  * @param body - PL: odczytany JSON zapytania (dowolna wartość). EN: the parsed JSON of the request (any value).
+ * @param now - PL: chwila, od której termin musi być w przyszłości. EN: the moment from which the closing time must be in the future.
  * @returns PL: poprawna ankieta albo null, gdy cokolwiek jest złe. EN: the valid survey, or null when anything is wrong.
  */
-export function parseNewSurvey(body: unknown): NewSurvey | null {
-  // PL: Tytuł, lista pytań w dozwolonej liczbie i czas trwania z listy.
-  // EN: The title, a question list of an allowed size and a duration from the list.
-  const raw = body as { title?: unknown; questions?: unknown; durationDays?: unknown } | null;
+export function parseNewSurvey(body: unknown, now: Date): NewSurvey | null {
+  // PL: Tytuł, lista pytań w dozwolonej liczbie, czas trwania z listy i termin zamknięcia.
+  // EN: The title, a question list of an allowed size, a duration from the list and the closing time.
+  const raw = body as { title?: unknown; questions?: unknown; durationDays?: unknown; closesAt?: unknown } | null;
   const title = cleanText(raw?.title, MAX_TITLE_LENGTH);
   const { questions, durationDays } = raw ?? {};
   if (title === null || !Array.isArray(questions) || questions.length < 1 || questions.length > MAX_QUESTIONS) return null;
   if (!DURATIONS_DAYS.some((allowed) => allowed === durationDays)) return null;
+  const closesAt = parseClosesAt(raw?.closesAt, now);
+  if (closesAt === undefined) return null;
 
   // PL: Każde pytanie musi być poprawne.
   // EN: Every question must be valid.
   const parsed = questions.map(parseQuestion);
   if (!parsed.every((question) => question !== null)) return null;
-  return { title, questions: parsed, durationDays: durationDays as number };
+  return { title, questions: parsed, durationDays: durationDays as number, closesAt };
 }
