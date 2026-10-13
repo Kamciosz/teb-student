@@ -112,6 +112,16 @@ describe('listPublishedEntries', () => {
     expect(rows.map((entry) => entry.id)).toEqual(['opublikowany']);
   });
 
+  // PL: Wpis do korekty ma datę publikacji w przeszłości i pustą chwilę zaplanowania, więc widoczność wynika tylko ze statusu. Ukrywa go filtr statusu, nie data: lista i wpis po numerze go pomijają.
+  // EN: An entry in review has a publication date in the past and an empty scheduled moment, so its visibility comes only from the status. The status filter hides it, not the date: the list and the entry by id both skip it.
+  it('pomija wpis do korekty, nawet z datą publikacji / skips an entry in review, even with a publication date', async () => {
+    await db.insert(newsEntries).values([row('opublikowany'), row('do-korekty', { status: 'in_review', title: 'Zapisy do korekty' })]);
+
+    expect(ids(await listPublishedEntries(db, '', NOW))).toEqual(['opublikowany']);
+    expect(ids(await listPublishedEntries(db, 'zapisy', NOW))).toEqual([]);
+    expect(await findPublishedEntry(db, 'do-korekty', NOW)).toBeUndefined();
+  });
+
   // PL: Najnowszy wpis jest pierwszy.
   // EN: The newest entry comes first.
   it('sortuje od najnowszego / sorts newest first', async () => {
