@@ -25,8 +25,8 @@ export type EntryToSend = {
   type: string;
   /** PL: Tytuł. EN: The title. */
   title: string;
-  /** PL: Szkic czy publikacja. EN: A draft or a publication. */
-  status: 'draft' | 'published';
+  /** PL: Szkic, wysłanie do korekty albo publikacja. EN: A draft, sending to review, or a publication. */
+  status: 'draft' | 'in_review' | 'published';
   /** PL: Treść: dokument JSON z edytora. EN: The content: the JSON document from the editor. */
   body: unknown;
 };
@@ -42,8 +42,10 @@ export type DraftToEdit = {
   type: string;
   /** PL: Tytuł. EN: The title. */
   title: string;
-  /** PL: Zawsze szkic: opublikowanego wpisu serwer nie oddaje do edycji. EN: Always a draft: the server does not give a published entry for editing. */
-  status: 'draft';
+  /** PL: Szkic do edycji albo wpis w korekcie (tylko do podglądu). Opublikowanego wpisu serwer nie oddaje. EN: A draft for editing, or an entry in review (preview only). The server does not give a published entry. */
+  status: 'draft' | 'in_review';
+  /** PL: Tylko dla wpisu w korekcie: czy ten redaktor może go zatwierdzić (nie jest jego autorem). EN: Only for an entry in review: whether this editor may approve it (is not its author). */
+  canApprove?: boolean;
   /** PL: Treść: dokument JSON. EN: The content: a JSON document. */
   body: unknown;
 };
@@ -81,10 +83,22 @@ function entryUrl(id: string): string {
  */
 async function messageForError(response: Response, fallback: string): Promise<string> {
   if (response.status === 401) return TO_AGREE.signedOut;
-  if (response.status === 403) return TO_AGREE.forbidden;
   if (response.status === 404) return TO_AGREE.draftNotFound;
-  if (response.status === 409) return TO_AGREE.alreadyPublished;
   if (response.status === 413) return TO_AGREE.rejected.too_large ?? fallback;
+  if (response.status === 403) {
+    // PL: Autor, który chce zatwierdzić własny wpis, dostaje osobny komunikat. Brak roli dostaje ogólny.
+    // EN: An author who wants to approve their own entry gets a separate message. A missing role gets the general one.
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    return data.error === 'own_entry' ? TO_AGREE.ownEntry : TO_AGREE.forbidden;
+  }
+  if (response.status === 409) {
+    // PL: Serwer podaje, dlaczego zmiana nie przeszła: wpis w korekcie, już nie w korekcie, albo już opublikowany.
+    // EN: The server says why the change did not go through: the entry is in review, no longer in review, or already published.
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    if (data.error === 'in_review') return TO_AGREE.inReview;
+    if (data.error === 'not_in_review') return TO_AGREE.notInReview;
+    return TO_AGREE.alreadyPublished;
+  }
   if (response.status === 422) {
     // PL: Serwer podaje powód odrzucenia. Nieznany powód daje ogólny komunikat.
     // EN: The server gives the rejection reason. An unknown reason gives the general message.
@@ -138,7 +152,25 @@ export function updateEntry(id: string, entry: EntryToSend): Promise<SendResult>
 }
 
 /**
- * PL: Wczytuje szkic do edycji. Opublikowany wpis albo brak wpisu daje komunikat zamiast szkicu.
+ * PL: Zatwierdza wpis w korekcie: serwer sprawdza, że nie jest to autor, i publikuje wpis. Własny wpis daje komunikat o zakazie.
+ * EN: Approves an entry in review: the server checks that the editor is not its author, and publishes the entry. An own entry gives the prohibition message.
+ *
+ * @param id - PL: numer wpisu w korekcie. EN: the id of the entry in review.
+ * @returns PL: sukces albo komunikat błędu. EN: success or an error message.
+ */
+export async function approveEntry(id: string): Promise<SendResult> {
+  try {
+    const response = await fetch(`${entryUrl(id)}/approve`, { method: 'POST' });
+    return response.ok ? { ok: true } : { ok: false, message: await messageForError(response, TO_AGREE.failed) };
+  } catch {
+    // PL: Brak internetu: zatwierdzenie nie doszło, wpis zostaje w korekcie.
+    // EN: No internet: the approval did not arrive, the entry stays in review.
+    return { ok: false, message: TO_AGREE.offline };
+  }
+}
+
+/**
+ * PL: Wczytuje szkic do edycji albo wpis w korekcie do podglądu. Opublikowany wpis albo brak wpisu daje komunikat zamiast wpisu.
  * EN: Loads a draft for editing. A published entry or a missing entry gives a message instead of a draft.
  *
  * @param id - PL: numer szkicu. EN: the draft id.

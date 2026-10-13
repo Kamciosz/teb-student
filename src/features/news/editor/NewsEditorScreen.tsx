@@ -10,6 +10,7 @@
  * @uses src/features/news/editor/TypeStep.tsx::TypeStep
  * @uses src/features/news/editor/ContentStep.tsx::ContentStep
  * @uses src/features/news/editor/PreviewStep.tsx::PreviewStep
+ * @uses src/features/news/editor/ReviewStep.tsx::ReviewStep
  * @used_by src/features/news/editor/index.ts::NewsEditorScreen
  */
 
@@ -20,6 +21,7 @@ import { loadDraft, sendEntry, updateEntry, type DraftToEdit } from './api';
 import { ContentStep } from './ContentStep';
 import './editor.css';
 import { PreviewStep } from './PreviewStep';
+import { ReviewStep } from './ReviewStep';
 import { TO_AGREE } from './texts';
 import { TypeStep, type EntryType } from './TypeStep';
 import { WizardTop } from './WizardTop';
@@ -107,6 +109,9 @@ function DraftLoader({ draftId }: { draftId: string }) {
   }
 
   const { draft } = state;
+  // PL: Wpis w korekcie nie jest już szkicem do edycji: pokazujemy go do podglądu i zatwierdzenia.
+  // EN: An entry in review is no longer a draft to edit: we show it for preview and approval.
+  if (draft.status === 'in_review') return <ReviewStep draft={draft} />;
   return <EntryWizard draftId={draftId} start={{ type: draft.type as EntryType, title: draft.title, body: draft.body as JSONContent }} />;
 }
 
@@ -129,11 +134,11 @@ function EntryWizard({ draftId, start }: { draftId?: string; start?: StartData }
   // EN: The sending state: in progress, the error message and the result after success.
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [savedStatus, setSavedStatus] = useState<'draft' | 'published' | null>(null);
+  const [savedStatus, setSavedStatus] = useState<'draft' | 'in_review' | 'published' | null>(null);
 
   // PL: Wysyła wpis: nowy albo zmiany w szkicu. Błąd zostawia wpis w edytorze i pokazuje komunikat, sukces pokazuje potwierdzenie.
   // EN: Sends the entry: a new one or changes to the draft. An error leaves the entry in the editor and shows a message, success shows the confirmation.
-  async function save(status: 'draft' | 'published'): Promise<void> {
+  async function save(status: 'draft' | 'in_review' | 'published'): Promise<void> {
     if (body === null || isSaving) return;
     setIsSaving(true);
     setMessage(null);
@@ -149,7 +154,7 @@ function EntryWizard({ draftId, start }: { draftId?: string; start?: StartData }
   if (savedStatus) {
     return (
       <main className="editor-screen" data-subtrack="3b">
-        <p role="status" className="editor-done">{savedStatus === 'draft' ? TO_AGREE.savedDraft : TO_AGREE.savedPublished}</p>
+        <p role="status" className="editor-done">{savedStatus === 'draft' ? TO_AGREE.savedDraft : savedStatus === 'in_review' ? TO_AGREE.sentToReview : TO_AGREE.savedPublished}</p>
         <Link className="editor-button editor-button--wide" to="/news/admin">{TO_AGREE.goToPanel}</Link>
       </main>
     );

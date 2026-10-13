@@ -1,5 +1,5 @@
 /**
- * PL: Test kreatora „Nowy wpis” (podtor 3b) w przeglądarce: trzy kroki z ekranów 5.1–5.3, formatowanie, link, film z YouTube, wklejanie z Worda, zapis szkicu i publikacji, błędy serwera, brak internetu (wpis zostaje w edytorze), szerokość 320 px i zamknięty zapis bez sesji na prawdziwym serwerze. Odpowiedzi serwera są podstawione (page.route), bo logowanie na porcie podtoru nie działa lokalnie (403). Test oblewa na gałęzi bez zmiany, bo tam adres /news/editor pokazuje tylko „W budowie”.
+ * PL: Test kreatora „Nowy wpis” (podtor 3b) w przeglądarce: trzy kroki z ekranów 5.1–5.3, formatowanie, link, film z YouTube, wklejanie z Worda, zapis szkicu, wysyłka do korekty i publikacja, zatwierdzenie wpisu w korekcie przez redaktora, który nie jest autorem, błędy serwera, brak internetu (wpis zostaje w edytorze), szerokość 320 px i zamknięty zapis bez sesji na prawdziwym serwerze. Odpowiedzi serwera są podstawione (page.route), bo logowanie na porcie podtoru nie działa lokalnie (403). Test oblewa na gałęzi bez zmiany, bo tam adres /news/editor pokazuje tylko „W budowie”.
  * EN: Test of the "Nowy wpis" wizard (subtrack 3b) in the browser: three steps from screens 5.1–5.3, formatting, a link, a YouTube video, pasting from Word, saving a draft and a publication, server errors, no internet (the entry stays in the editor), the 320 px width and writing closed without a session on the real server. The server answers are stubbed (page.route), because sign-in on the subtrack port does not work locally (403). The test fails on a branch without the change, because there the /news/editor address shows only "W budowie".
  *
  * @author Szymon
@@ -393,6 +393,51 @@ test('brak internetu przy wczytaniu pokazuje komunikat / no internet while loadi
   await page.goto('/news/editor/d3');
   await expect(page.getByRole('alert')).toHaveText('Nie udało się wczytać szkicu. Spróbuj ponownie za chwilę.');
   await expect(page.getByRole('link', { name: 'Przejdź do wpisów w panelu' })).toBeVisible();
+});
+
+// PL: Wysyłka do korekty z nowego wpisu: serwer dostaje status in_review, a ekran potwierdza wysyłkę.
+// EN: Sending to review from a new entry: the server gets the in_review status, and the screen confirms the sending.
+test('wysyłka do korekty zapisuje wpis ze statusem in_review / sending to review saves the entry with in_review', async ({ page }) => {
+  let sent: Record<string, unknown> | null = null;
+  await page.route(ENTRIES, (route) => {
+    sent = route.request().postDataJSON();
+    return route.fulfill({ status: 201, json: { id: 'nowy' } });
+  });
+  await fillEntry(page, 'Zawody w szachach.');
+  await openPreview(page);
+  await page.getByRole('button', { name: 'Wyślij do korekty' }).click();
+  await expect(page.getByText('Wpis wysłany do korekty. Zatwierdzi go inny redaktor.')).toBeVisible();
+  expect(sent).toMatchObject({ status: 'in_review' });
+});
+
+// PL: Wpis w korekcie: redaktor, który nie jest autorem, widzi podgląd i zatwierdza go. Zatwierdzenie idzie pod adres /approve.
+// EN: An entry in review: an editor who is not the author sees the preview and approves it. The approval goes to the /approve address.
+test('redaktor zatwierdza wpis w korekcie / an editor approves an entry in review', async ({ page }) => {
+  const calls: string[] = [];
+  const body = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Treść do korekty.' }] }] };
+  await page.route(ENTRY_BY_ID, (route) => {
+    calls.push(`${route.request().method()} ${new URL(route.request().url()).pathname}`);
+    return route.fulfill({ status: 200, json: { id: 'k1', type: 'news', title: 'Wpis do korekty', status: 'in_review', canApprove: true, body } });
+  });
+  await page.route('**/api/news/editor/entries/*/approve', (route) => {
+    calls.push(`${route.request().method()} ${new URL(route.request().url()).pathname}`);
+    return route.fulfill({ status: 200, json: { id: 'k1' } });
+  });
+  await page.goto('/news/editor/k1');
+  await expect(page.getByRole('heading', { name: 'Wpis czeka na korektę' })).toBeVisible();
+  await page.getByRole('button', { name: 'Zatwierdź i opublikuj' }).click();
+  await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
+  expect(calls).toContain('POST /api/news/editor/entries/k1/approve');
+});
+
+// PL: Autor swojego wpisu w korekcie nie widzi przycisku zatwierdzenia, tylko komunikat, że czeka na innego redaktora.
+// EN: The author of an entry in review does not see the approval button, only a message that it waits for another editor.
+test('autor nie widzi przycisku zatwierdzenia / the author does not see the approval button', async ({ page }) => {
+  const body = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Mój tekst.' }] }] };
+  await page.route(ENTRY_BY_ID, (route) => route.fulfill({ status: 200, json: { id: 'k2', type: 'news', title: 'Mój wpis', status: 'in_review', canApprove: false, body } }));
+  await page.goto('/news/editor/k2');
+  await expect(page.getByText('Ten wpis czeka na korektę. Zatwierdzi go inny redaktor, nie jego autor.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Zatwierdź i opublikuj' })).toHaveCount(0);
 });
 
 // PL: Na prawdziwym serwerze odczyt szkicu jest zamknięty bez sesji.

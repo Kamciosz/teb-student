@@ -11,6 +11,7 @@
 import { env } from 'cloudflare:workers';
 import { drizzle } from 'drizzle-orm/d1';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { user } from '../../db/schema/auth';
 import { newsEntries } from '../../db/schema/news';
 import { createNewsEditorApp, newsEditorApp } from './routes';
 
@@ -18,9 +19,23 @@ import { createNewsEditorApp, newsEditorApp } from './routes';
 // EN: The test database.
 const db = drizzle(env.DB);
 
-// PL: Strażnik testowy, który wpuszcza każdego. Prawdziwy strażnik (sesja i rola) ma osobne sprawdzenie niżej.
-// EN: A test guard that lets everyone in. The real guard (session and role) has a separate check below.
-const app = createNewsEditorApp(async (_context, next) => next());
+/**
+ * PL: Strażnik testowy: wpuszcza każdego i ustawia zalogowanego redaktora o podanym numerze, tak jak prawdziwy strażnik. Prawdziwy strażnik (sesja i rola) ma osobne sprawdzenie niżej.
+ * EN: A test guard: lets everyone in and sets the signed-in editor with the given id, as the real guard does. The real guard (session and role) has a separate check below.
+ *
+ * @param id - PL: numer redaktora. EN: the editor id.
+ * @returns PL: router z tym strażnikiem. EN: the router with this guard.
+ */
+function guardAs(id: string) {
+  return createNewsEditorApp(async (context, next) => {
+    context.set('student', { id, email: `${id}@example.com` });
+    return next();
+  });
+}
+
+// PL: Domyślny redaktor testów.
+// EN: The default editor of the tests.
+const app = guardAs('redaktor-a');
 
 // PL: Poprawna treść: jeden akapit.
 // EN: Valid content: one paragraph.
@@ -120,13 +135,23 @@ describe('strażnik / guard', () => {
  *
  * @param status - PL: stan wpisu. EN: the entry status.
  * @param title - PL: tytuł wpisu. EN: the entry title.
+ * @param authorUserId - PL: autor wpisu albo null, gdy brak autora. EN: the entry author, or null when there is none.
  * @returns PL: numer wpisu. EN: the entry id.
  */
-async function seed(status: 'draft' | 'published', title = 'Szkic'): Promise<string> {
+async function seed(status: 'draft' | 'in_review' | 'published', title = 'Szkic', authorUserId: string | null = null): Promise<string> {
   const id = crypto.randomUUID();
-  await db.insert(newsEntries).values({ id, type: 'news', title, status, body: BODY, source: 'Samorząd', publishedAt: status === 'published' ? new Date() : null });
+  await db.insert(newsEntries).values({ id, type: 'news', title, status, body: BODY, source: 'Samorząd', authorUserId, publishedAt: status === 'published' ? new Date() : null });
   return id;
 }
+
+// PL: Konta autorów i redaktorów, na które wskazują wpisy (klucz obcy).
+// EN: The author and editor accounts that the entries point to (a foreign key).
+beforeEach(async () => {
+  await db.insert(user).values([
+    { id: 'autor-ada', name: 'Ada', email: 'ada@example.com', emailVerified: true },
+    { id: 'redaktor-b', name: 'Bartek', email: 'bartek@example.com', emailVerified: true },
+  ]).onConflictDoNothing();
+});
 
 /**
  * PL: Odczytuje wpis o podanym numerze z routera.
@@ -237,5 +262,120 @@ describe('PUT /entries/:id: zapis zmian / saving changes', () => {
     const id = await seed('draft');
     expect([401, 503]).toContain((await get(id, newsEditorApp)).status);
     expect([401, 503]).toContain((await put(id, { type: 'news', title: 'T', status: 'draft', body: BODY }, newsEditorApp)).status);
+  });
+});
+
+/**
+ * PL: Zatwierdza wpis w korekcie przez router jako redaktor o podanym numerze.
+ * EN: Approves the entry in review through the router as the editor with the given id.
+ *
+ * @param id - PL: numer wpisu. EN: the entry id.
+ * @param editor - PL: router zalogowanego redaktora. EN: the router of the signed-in editor.
+ * @returns PL: odpowiedź serwera. EN: the server response.
+ */
+function approve(id: string, editor: { request: typeof app.request } = app) {
+  return editor.request(`/entries/${id}/approve`, { method: 'POST' }, env);
+}
+
+// PL: Wysyłka do korekty: szkic zmienia stan na in_review, bez chwili publikacji.
+// EN: Sending to review: a draft changes its status to in_review, without a publication moment.
+describe('wysyłka do korekty / sending to review', () => {
+  it('szkic wysłany do korekty dostaje stan in_review bez chwili publikacji / a draft sent to review gets in_review without a publication moment', async () => {
+    const id = await seed('draft', 'Do korekty');
+    expect((await put(id, { type: 'news', title: 'Do korekty', status: 'in_review', body: BODY })).status).toBe(200);
+    const [row] = await db.select().from(newsEntries);
+    expect(row).toMatchObject({ id, status: 'in_review', publishedAt: null });
+  });
+
+  it('zapis nowego wpisu jako in_review nie ustawia chwili publikacji / saving a new entry as in_review sets no publication moment', async () => {
+    expect((await post({ type: 'news', title: 'Nowy', status: 'in_review', body: BODY })).status).toBe(201);
+    const [row] = await db.select().from(newsEntries);
+    expect(row).toMatchObject({ status: 'in_review', publishedAt: null });
+  });
+
+  it('wpis w korekcie nie przyjmuje zmian: 409 in_review i baza bez zmian / an entry in review takes no changes: 409 in_review and the database unchanged', async () => {
+    const id = await seed('draft', 'Zostaje', 'autor-ada');
+    await put(id, { type: 'news', title: 'Do korekty', status: 'in_review', body: BODY });
+    const response = await put(id, { type: 'news', title: 'Zmiana', status: 'draft', body: BODY });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: 'in_review' });
+    const [row] = await db.select().from(newsEntries);
+    expect(row).toMatchObject({ title: 'Do korekty', status: 'in_review' });
+  });
+
+  it('odczyt wpisu w korekcie zwraca canApprove: false dla autora / reading an entry in review gives canApprove: false to its author', async () => {
+    const id = await seed('in_review', 'W korekcie', 'autor-ada');
+    const response = await get(id, guardAs('autor-ada'));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ id, type: 'news', title: 'W korekcie', status: 'in_review', body: BODY, canApprove: false });
+  });
+
+  it('odczyt wpisu w korekcie zwraca canApprove: true dla innego redaktora / reading an entry in review gives canApprove: true to another editor', async () => {
+    const id = await seed('in_review', 'W korekcie', 'autor-ada');
+    const body = (await (await get(id, guardAs('redaktor-b'))).json()) as { canApprove: boolean };
+    expect(body.canApprove).toBe(true);
+  });
+});
+
+// PL: Zatwierdzenie wpisu w korekcie: autor nie zatwierdzi swojego, inny redaktor zatwierdzi, zła zmiana stanu daje 409.
+// EN: Approving an entry in review: the author cannot approve their own, another editor can, a wrong status change gives 409.
+describe('POST /entries/:id/approve: zatwierdzenie / approval', () => {
+  it('autor nie zatwierdzi swojego wpisu: 403 i wpis dalej czeka w korekcie / the author cannot approve their own entry: 403 and the entry still waits in review', async () => {
+    const id = await seed('in_review', 'Mój', 'autor-ada');
+    const response = await approve(id, guardAs('autor-ada'));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: 'own_entry' });
+    const [row] = await db.select().from(newsEntries);
+    expect(row).toMatchObject({ status: 'in_review', publishedAt: null });
+  });
+
+  it('inny redaktor zatwierdza: 200 i wpis opublikowany z chwilą publikacji / another editor approves: 200 and the entry is published with a publication moment', async () => {
+    const id = await seed('in_review', 'Do publikacji', 'autor-ada');
+    const response = await approve(id, guardAs('redaktor-b'));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ id });
+    const [row] = await db.select().from(newsEntries);
+    expect(row).toMatchObject({ id, status: 'published', title: 'Do publikacji' });
+    expect(row?.publishedAt).toBeInstanceOf(Date);
+  });
+
+  it('wpis bez autora zatwierdza każdy redaktor / an entry without an author can be approved by any editor', async () => {
+    const id = await seed('in_review', 'Bez autora');
+    expect((await approve(id)).status).toBe(200);
+    const [row] = await db.select().from(newsEntries);
+    expect(row?.status).toBe('published');
+  });
+
+  it('drugie zatwierdzenie tego samego wpisu daje 409 i nie zmienia chwili publikacji / a second approval of the same entry gives 409 and does not change the publication moment', async () => {
+    const id = await seed('in_review', 'Raz', 'autor-ada');
+    expect((await approve(id, guardAs('redaktor-b'))).status).toBe(200);
+    const [first] = await db.select().from(newsEntries);
+    const response = await approve(id, guardAs('redaktor-b'));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: 'not_in_review' });
+    const [second] = await db.select().from(newsEntries);
+    expect(second?.publishedAt).toEqual(first?.publishedAt);
+  });
+
+  it('szkic nie jest w korekcie: 409 i baza bez zmian / a draft is not in review: 409 and the database unchanged', async () => {
+    const id = await seed('draft', 'Szkic', 'autor-ada');
+    const response = await approve(id, guardAs('redaktor-b'));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: 'not_in_review' });
+    const [row] = await db.select().from(newsEntries);
+    expect(row).toMatchObject({ status: 'draft', publishedAt: null });
+  });
+
+  it('brak wpisu daje 404 / a missing entry gives 404', async () => {
+    const response = await approve(crypto.randomUUID(), guardAs('redaktor-b'));
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: 'not_found' });
+  });
+
+  it('prawdziwy router bez sesji odpowiada 401 / the real router without a session answers 401', async () => {
+    const id = await seed('in_review', 'Zostaje', 'autor-ada');
+    expect([401, 503]).toContain((await approve(id, newsEditorApp)).status);
+    const [row] = await db.select().from(newsEntries);
+    expect(row?.status).toBe('in_review');
   });
 });
