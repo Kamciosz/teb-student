@@ -21,6 +21,6 @@ export { newsEditorApp } from './routes';
 export { validateEntry, type CheckedEntry, type EntryRejection, type EntryResult } from './validateEntry';
 export { validateBody, type BodyRejection, type BodyResult } from './validateBody';
 
-// PL: Strażnik zapisu wpisów: sesja, a potem rola autora (do czasu ról z podtoru 8 zamyka zapis każdemu). Podtor 3c wiesza go na swoich adresach zapisu i usuwania.
-// EN: The entry write guard: a session, then the author role (until the roles from subtrack 8 exist it closes writing to everyone). Subtrack 3c puts it on its write and delete routes.
+// PL: Strażnik zapisu wpisów: sesja, a potem rola co najmniej redakcji z podtoru 8 (redakcja, Samorząd, administrator). Podtor 3c wiesza go na swoich adresach zapisu i usuwania.
+// EN: The entry write guard: a session, then at least the editorial role from subtrack 8 (the editorial team, the Council, the administrator). Subtrack 3c puts it on its write and delete routes.
 export { requireNewsAuthor } from './author';

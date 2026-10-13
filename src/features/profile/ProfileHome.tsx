@@ -1,11 +1,12 @@
 /**
- * PL: Ekran „Profil” (ekran 2.4 w docs/projekt/EKRANY.md): litera, imię, klasa i zasłonięty adres, wiersze „Moje zgłoszenia” i „Polityka prywatności”, „Wyloguj” oraz „Usuń konto i dane”. Do tego wiersz „Ustawienia”, który prowadzi do zmiany imienia, klasy, szkoły i palety (tekstu nie ma w projekcie ekranów).
- * EN: The "Profil" screen (screen 2.4 in docs/projekt/EKRANY.md): the letter, name, class and masked address, the rows "Moje zgłoszenia" and "Polityka prywatności", "Wyloguj" and "Usuń konto i dane". Plus the "Ustawienia" row, which leads to changing the name, class, school and palette (the screen design has no text for it).
+ * PL: Ekran „Profil” (ekran 2.4 w docs/projekt/EKRANY.md, z wierszem 6.1a „Panel Samorządu” dla osoby z rolą): litera, imię, klasa i zasłonięty adres, wiersze „Moje zgłoszenia” i „Polityka prywatności”, „Wyloguj” oraz „Usuń konto i dane”. Do tego wiersz „Ustawienia”, który prowadzi do zmiany imienia, klasy, szkoły i palety (tekstu nie ma w projekcie ekranów).
+ * EN: The "Profil" screen (screen 2.4 in docs/projekt/EKRANY.md, with the row "Panel Samorządu" of screen 6.1a for a person with a role): the letter, name, class and masked address, the rows "Moje zgłoszenia" and "Polityka prywatności", "Wyloguj" and "Usuń konto i dane". Plus the "Ustawienia" row, which leads to changing the name, class, school and palette (the screen design has no text for it).
  *
  * @author Jakub
  * @since 2026-10-11
  * @uses src/features/auth/index.ts::useAuthSession
  * @uses src/features/auth/index.ts::signOutStudent
+ * @uses src/features/admin/index.ts::usePanelEntry
  * @uses src/features/profile/queries.ts::useProfile
  * @uses src/features/profile/profileView.ts::profileCaption
  * @used_by src/features/profile/ProfileScreen.tsx::ProfileHome
@@ -20,6 +21,9 @@ import { Link } from 'react-router';
 // PL: Sesja i wylogowanie, przez drzwi modułu auth.
 // EN: The session and the sign-out, through the auth module door.
 import { signOutStudent, useAuthSession } from '../auth';
+// PL: Wiersz panelu dla osoby z rolą, przez drzwi modułu admin.
+// EN: The panel row for a person with a role, through the admin module door.
+import { usePanelEntry } from '../admin';
 // PL: Ikony, pasek, dane i funkcje widoku.
 // EN: The icons, the bar, the data and the view functions.
 import { Icon, type IconName } from './icons';
@@ -61,6 +65,9 @@ export function ProfileHome() {
   // EN: The session gives the e-mail address, the profile gives the name and class (from the server or the saved copy).
   const session = useAuthSession();
   const profile = useProfile().data;
+  // PL: Wiersz panelu: null, gdy uczeń nie ma roli (wtedy wiersza nie ma).
+  // EN: The panel row: null when the student has no role (then there is no row).
+  const panel = usePanelEntry();
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const email = session.status === 'signed-in' ? session.student.email : '';
   const name = profile?.name ?? '';
@@ -82,8 +89,18 @@ export function ProfileHome() {
           <small>{profileCaption(profile?.className ?? '', email)}</small>
         </div>
       </div>
-      {/* PL: Pierwszy kafel: ustawienia, zgłoszenia i polityka prywatności. EN: The first tile: settings, reports and the privacy policy. */}
+      {/* PL: Pierwszy kafel: wiersz panelu (tylko dla osoby z rolą), ustawienia, zgłoszenia i polityka prywatności. EN: The first tile: the panel row (only for a person with a role), settings, reports and the privacy policy. */}
       <ul className="pf-tile">
+        {panel ? (
+          <li>
+            <Link className="pf-row" to="/admin">
+              <Icon name="layout-dashboard" />
+              <span className="pf-row-text">{panel.label}</span>
+              <span className="pf-badge">{panel.badge}</span>
+              <Icon name="chevron-right" />
+            </Link>
+          </li>
+        ) : null}
         <LinkRow icon="sliders-horizontal" to="/profile/ustawienia" label="Ustawienia" />
         <LinkRow icon="list-checks" to="/reports/student/moje" label="Moje zgłoszenia" />
         <LinkRow icon="file-text" to="/profile/prywatnosc" label="Polityka prywatności" />
