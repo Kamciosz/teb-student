@@ -54,7 +54,16 @@ describe('sprawdzanie / validation', () => {
     const base = { ...newDraft(), title: ' Dzień sportu ' };
     const draft = updateQuestion(base, 1, (question) => ({ ...question, prompt: ' W co zagrać? ', options: ['Siatkówka', '', 'Koszykówka'] }));
     expect(hasErrors(validateDraft(draft, now))).toBe(false);
-    expect(toRequestBody(draft)).toEqual({ title: 'Dzień sportu', durationDays: 7, questions: [{ prompt: 'W co zagrać?', options: ['Siatkówka', 'Koszykówka'] }], closesAt: null });
+    expect(toRequestBody(draft)).toEqual({ title: 'Dzień sportu', durationDays: 7, questions: [{ prompt: 'W co zagrać?', type: 'single_choice', options: ['Siatkówka', 'Koszykówka'] }], closesAt: null });
+  });
+
+  it('nowe pytanie to jeden wybór, a wybrany typ idzie do treści zapytania / a new question is single choice, and the chosen type goes into the request body', () => {
+    // PL: Dodane pytanie dostaje domyślny typ, a zmieniony typ trafia do treści zapytania.
+    // EN: The added question gets the default type, and the changed type goes into the request body.
+    const added = addQuestion({ ...newDraft(), title: 'T' });
+    expect(added.questions[1]?.type).toBe('single_choice');
+    const draft = updateQuestion(added, 2, (question) => ({ ...question, prompt: 'P', type: 'multiple_choice', options: ['A', 'B'] }));
+    expect(toRequestBody(draft).questions.map((question) => question.type)).toEqual(['single_choice', 'multiple_choice']);
   });
 });
 

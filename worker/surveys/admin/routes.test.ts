@@ -20,7 +20,7 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { panelRoles } from '../../db/schema/admin';
 import { user } from '../../db/schema/auth';
-import { surveyOptions, surveyQuestions, surveys } from '../../db/schema/surveys';
+import { surveyOptions, surveyParticipation, surveyQuestions, surveys } from '../../db/schema/surveys';
 // PL: Router logowania kodem z drzwi modułu auth, żeby zalogować ucznia tak jak w aplikacji.
 // EN: The code sign-in router from the auth module door, to sign a student in the way the app does.
 import { authEmailApp } from '../../auth';
@@ -140,6 +140,28 @@ beforeAll(async () => {
   // EN: A survey whose closing time has passed, although its last day still runs.
   await db.insert(surveys).values({ id: 'zamknieta', title: 'Ankieta zamknieta', endsOn: '2099-12-31', closesAt: new Date('2020-01-01T09:00:00Z') });
   await seedCsvSurvey();
+  // PL: Ankieta tylko z wielokrotnym wyborem: 7 zaznaczeń od 5 osób, więc liczba osób to 5, nie 7.
+  // EN: A survey with multiple choice only: 7 checked boxes from 5 people, so the number of people is 5, not 7.
+  await db.insert(surveys).values({ id: 'wielokrotna', title: 'Ankieta wielokrotna', endsOn: '2099-12-31' });
+  await db.insert(surveyQuestions).values({ id: 'wielokrotna-q', surveyId: 'wielokrotna', position: 1, prompt: 'Co lubisz?', type: 'multiple_choice' });
+  await db.insert(surveyOptions).values([
+    { id: 'wielokrotna-o0', questionId: 'wielokrotna-q', position: 1, label: 'Ryby', votes: 4 },
+    { id: 'wielokrotna-o1', questionId: 'wielokrotna-q', position: 2, label: 'Psy', votes: 3 },
+  ]);
+  await db.insert(surveyParticipation).values(['w1', 'w2', 'w3', 'w4', 'w5'].map((userId) => ({ surveyId: 'wielokrotna', userId })));
+  // PL: Ankieta z pytaniem jednokrotnym (5 osób) i wielokrotnym (9 zaznaczeń): liczba osób to 5, z pytania jednokrotnego.
+  // EN: A survey with a single-choice question (5 people) and a multiple-choice one (9 checked boxes): the number of people is 5, from the single-choice question.
+  await db.insert(surveys).values({ id: 'mieszana', title: 'Ankieta mieszana', endsOn: '2099-12-31' });
+  await db.insert(surveyQuestions).values([
+    { id: 'mieszana-q1', surveyId: 'mieszana', position: 1, prompt: 'Jednokrotnie', type: 'single_choice' },
+    { id: 'mieszana-q2', surveyId: 'mieszana', position: 2, prompt: 'Wielokrotnie', type: 'multiple_choice' },
+  ]);
+  await db.insert(surveyOptions).values([
+    { id: 'mieszana-o1', questionId: 'mieszana-q1', position: 1, label: 'Tak', votes: 3 },
+    { id: 'mieszana-o2', questionId: 'mieszana-q1', position: 2, label: 'Nie', votes: 2 },
+    { id: 'mieszana-o3', questionId: 'mieszana-q2', position: 1, label: 'Kawa', votes: 6 },
+    { id: 'mieszana-o4', questionId: 'mieszana-q2', position: 2, label: 'Herbata', votes: 3 },
+  ]);
 });
 
 describe('dostęp / access', () => {
@@ -213,6 +235,25 @@ describe('próg 5 odpowiedzi / the 5-response threshold', () => {
   });
 });
 
+describe('wielokrotny wybór / multiple choice', () => {
+  it('liczy osoby z tabeli „kto głosował”, a nie zaznaczenia, i podaje rodzaj pytania / counts people from the "who voted" table, not the checked boxes, and gives the question type', async () => {
+    const body = (await (await asStaff('/wielokrotna/results', {})).json()) as { responseCount: number; questions: { type: string; options: { percent: number }[] }[] };
+
+    expect(body.responseCount).toBe(5);
+    expect(body.questions[0]?.type).toBe('multiple_choice');
+    // PL: Udziały liczymy od zaznaczeń: 4 z 7 to 57 procent, 3 z 7 to 43.
+    // EN: The shares are counted from the checked boxes: 4 of 7 is 57 percent, 3 of 7 is 43.
+    expect(body.questions[0]?.options.map((option) => option.percent)).toEqual([57, 43]);
+  });
+
+  it('w ankiecie z pytaniem jednokrotnym liczy osoby z tego pytania, a nie z zaznaczeń w wielokrotnym / in a survey with a single-choice question it counts people from that question, not from the checked boxes of the multiple-choice one', async () => {
+    const body = (await (await asStaff('/mieszana/results', {})).json()) as { responseCount: number; questions: { type: string }[] };
+
+    expect(body.responseCount).toBe(5);
+    expect(body.questions.map((question) => question.type)).toEqual(['single_choice', 'multiple_choice']);
+  });
+});
+
 describe('lista / the list', () => {
   it('dzieli ankiety na trwające i zakończone i podaje liczbę odpowiedzi, bez liczników głosów / splits surveys into running and ended and gives the response count, without vote counters', async () => {
     const response = await asStaff('/', {});
@@ -221,6 +262,7 @@ describe('lista / the list', () => {
 
     expect(response.status).toBe(200);
     expect(body.active.find((survey) => survey.id === 'dwanascie')).toMatchObject({ responseCount: 12, questionCount: 1 });
+    expect(body.active.find((survey) => survey.id === 'wielokrotna')).toMatchObject({ responseCount: 5 });
     expect(body.ended.find((survey) => survey.id === 'stara')).toMatchObject({ responseCount: 21 });
     expect(body.ended.map((survey) => survey.id)).toContain('zamknieta');
     expect(body.active.map((survey) => survey.id)).not.toContain('zamknieta');
@@ -257,6 +299,7 @@ describe('tworzenie ankiety / creating a survey', () => {
     { name: 'z jedną odpowiedzią', body: { title: 'Zła-2', questions: [{ prompt: 'P', options: ['A'] }], durationDays: 7 } },
     { name: 'z sześcioma odpowiedziami', body: { title: 'Zła-3', questions: [{ prompt: 'P', options: ['A', 'B', 'C', 'D', 'E', 'F'] }], durationDays: 7 } },
     { name: 'z czasem 5 dni', body: { title: 'Zła-4', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 5 } },
+    { name: 'z nieznanym typem pytania', body: { title: 'Zła-7', questions: [{ prompt: 'P', type: 'open_text', options: ['A', 'B'] }], durationDays: 7 } },
     { name: 'z terminem w przeszłości', body: { title: 'Zła-5', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 7, closesAt: '2020-01-01T12:00' } },
     { name: 'z terminem po ostatnim dniu', body: { title: 'Zła-6', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 7, closesAt: warsawIn(Date.now() + 30 * 86400e3) } },
   ])('ankieta $name daje 400 i nic nie zapisuje / a survey $name gives 400 and writes nothing', async ({ body }) => {
@@ -264,6 +307,15 @@ describe('tworzenie ankiety / creating a survey', () => {
 
     expect((await publish(body)).status).toBe(400);
     expect(await db.select().from(surveys)).toHaveLength(before.length);
+  });
+
+  it('zapisuje typ każdego pytania, a pytanie bez typu to jednokrotny wybór / writes the type of each question, and a question without a type is single choice', async () => {
+    const response = await publish({ title: 'Z typami', questions: [{ prompt: 'Wiele', type: 'multiple_choice', options: ['A', 'B'] }, { prompt: 'Jeden', options: ['A', 'B'] }], durationDays: 7 });
+    const { id } = (await response.json()) as { id: string };
+
+    expect(response.status).toBe(201);
+    const questions = await db.select().from(surveyQuestions).where(eq(surveyQuestions.surveyId, id)).orderBy(surveyQuestions.position);
+    expect(questions.map((question) => [question.prompt, question.type])).toEqual([['Wiele', 'multiple_choice'], ['Jeden', 'single_choice']]);
   });
 
   it('zapisuje termin zamknięcia jako chwilę UTC / writes the closing time as a UTC moment', async () => {
