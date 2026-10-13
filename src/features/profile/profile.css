@@ -29,6 +29,8 @@
 .pf-row .pf-icon { color: var(--ink-2); }
 .pf-row-text { flex: 1; min-width: 0; }
 .pf-row-text small { display: block; color: var(--ink-2); font-size: var(--t-sm); }
+/* PL: Znacznik roli przy wierszu panelu (ekran 6.1a). EN: The role badge next to the panel row (screen 6.1a). */
+.pf-badge { flex: none; border-radius: var(--r-sm); background: var(--tile-2); padding: 4px 8px; font-size: var(--t-xs); font-weight: 700; color: var(--ink-2); }
 
 /* PL: Podpis wersji na dole.
    EN: The version caption at the bottom. */

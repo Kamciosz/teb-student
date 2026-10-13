@@ -12,7 +12,7 @@
 
 // PL: Warunek równości i Drizzle dla D1.
 // EN: The equality condition and Drizzle for D1.
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 // PL: Tabela profili.
 // EN: The profiles table.
@@ -61,4 +61,38 @@ export async function saveProfile(db: D1Database, userId: string, input: Profile
   // PL: Wstaw wiersz, a gdy uczeń ma już profil, nadpisz jego pola.
   // EN: Insert the row, and when the student already has a profile, overwrite its fields.
   await drizzle(db).insert(profiles).values(row).onConflictDoUpdate({ target: profiles.userId, set: row });
+}
+
+/**
+ * PL: Imię i klasa jednego ucznia z listy, o którą prosi moduł zgłoszeń. Uczeń bez zapisanego profilu nie ma wiersza w wyniku.
+ * EN: The name and class of one student from the list the reports module asks for. A student without a saved profile has no row in the result.
+ */
+export type StudentName = { userId: string; name: string; className: string };
+
+// PL: Ile numerów kont idzie w jednym zapytaniu. D1 przyjmuje najwyżej 100 parametrów naraz.
+// EN: How many account ids go in one query. D1 accepts at most 100 parameters at once.
+const NAMES_PER_QUERY = 90;
+
+/**
+ * PL: Czyta imiona i klasy dla listy numerów kont. Nie sprawdza roli, więc wywołujący (panel zgłoszeń) musi ją sprawdzić sam.
+ * EN: Reads the names and classes for a list of account ids. It does not check the role, so the caller (the reports panel) must check it itself.
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @param userIds - PL: numery kont uczniów. EN: the student account ids.
+ * @returns PL: imię i klasa tych, którzy mają profil; kolejność jak w bazie. EN: the name and class of those who have a profile; the order as in the database.
+ */
+export async function getStudentNames(db: D1Database, userIds: string[]): Promise<StudentName[]> {
+  // PL: Wynik zbieramy z kolejnych części listy, żeby zapytanie nie przekroczyło limitu D1.
+  // EN: We collect the result from the chunks of the list, so that a query does not exceed the D1 limit.
+  const names: StudentName[] = [];
+  for (let start = 0; start < userIds.length; start += NAMES_PER_QUERY) {
+    const chunk = userIds.slice(start, start + NAMES_PER_QUERY);
+    names.push(
+      ...(await drizzle(db)
+        .select({ userId: profiles.userId, name: profiles.name, className: profiles.className })
+        .from(profiles)
+        .where(inArray(profiles.userId, chunk))),
+    );
+  }
+  return names;
 }
