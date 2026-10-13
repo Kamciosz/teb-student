@@ -8,7 +8,8 @@
  * @used_by src/features/surveys/vote/SurveyFlowScreen.tsx::SurveyFlowScreen
  */
 
-import type { AnswerMap, SurveyDetail, SurveyList } from './types';
+import { cleanShortText } from './shortText';
+import type { AnswerMap, SurveyDetail, SurveyList, TextMap } from './types';
 
 // PL: Początek adresów serwera ankiet. Zgadza się z worker/mounts.ts.
 // EN: The start of the survey server addresses. Matches worker/mounts.ts.
@@ -79,12 +80,19 @@ export function fetchSurvey(surveyId: string): Promise<SurveyDetail> {
  *
  * @param surveyId - PL: numer ankiety. EN: the survey id.
  * @param answers - PL: wybrane odpowiedzi. EN: the chosen options.
+ * @param texts - PL: krótkie odpowiedzi (tekst przycinamy tu, przed wysłaniem). EN: the short answers (the text is trimmed here, before sending).
  * @returns PL: 'ok', 'already_voted' (409) albo 'ended' (410). Inny błąd rzuca ApiError. EN: 'ok', 'already_voted' (409) or 'ended' (410). Any other error throws ApiError.
  */
-export async function sendAnswers(surveyId: string, answers: AnswerMap): Promise<SendResult> {
-  // PL: Zamień mapę na listę pytań z wybranymi odpowiedziami, jakiej oczekuje serwer.
-  // EN: Turn the map into the list of questions with their chosen options, the shape the server expects.
-  const body = { answers: Object.entries(answers).map(([questionId, optionIds]) => ({ questionId, optionIds })) };
+export async function sendAnswers(surveyId: string, answers: AnswerMap, texts: TextMap): Promise<SendResult> {
+  // PL: Zamień mapy na listę pytań, jakiej oczekuje serwer. Wybory idą z listą numerów odpowiedzi, a krótka odpowiedź z tekstem i pustą listą wyborów.
+  // EN: Turn the maps into the list of questions the server expects. Choices go with a list of option ids, and a short answer with its text and an empty list of choices.
+  const choices = Object.entries(answers).map(([questionId, optionIds]) => ({ questionId, optionIds }));
+  // PL: Pusty tekst (wyczyszczony po wpisaniu) nie idzie na serwer, bo serwer odrzuca pusty tekst.
+  // EN: An empty text (cleared after typing) is not sent, because the server rejects empty text.
+  const shortAnswers = Object.entries(texts)
+    .map(([questionId, text]) => ({ questionId, optionIds: [], text: cleanShortText(text) }))
+    .filter((answer) => answer.text !== '');
+  const body = { answers: [...choices, ...shortAnswers] };
   const response = await fetch(`${API_BASE}/${encodeURIComponent(surveyId)}/answers`, {
     method: 'POST',
     headers: requestHeaders(),

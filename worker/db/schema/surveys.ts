@@ -1,13 +1,17 @@
 /**
- * PL: Schemat bazy modułu surveys (tabele Drizzle): ankiety, pytania, odpowiedzi do wyboru oraz zapis, że uczeń już głosował.
- *     Prywatność: odpowiedzi ucznia nie są nigdzie zapisane. Wiersz „kto głosował” (survey_participation) nie ma żadnej
- *     wspólnej kolumny z wynikiem, a wynik to same liczniki przy odpowiedziach (survey_options.votes), bez numeru ucznia i bez czasu.
- *     Przy dostępie do całej bazy da się więc ustalić tylko, że uczeń wypełnił ankietę, ale nie co zaznaczył.
+ * PL: Schemat bazy modułu surveys (tabele Drizzle): ankiety, pytania, odpowiedzi do wyboru, odpowiedzi tekstowe oraz zapis, że uczeń już głosował.
+ *     Prywatność: odpowiedzi do wyboru i tekstowe nie mają numeru ucznia ani czasu. Wiersz „kto głosował” (survey_participation) nie ma żadnej
+ *     wspólnej kolumny z wynikiem, a wynik to liczniki przy odpowiedziach (survey_options.votes) i same teksty (survey_text_answers).
+ *     Przy dostępie do całej bazy da się więc ustalić tylko, że uczeń wypełnił ankietę, a nie co zaznaczył lub napisał.
+ *     Uwaga: tekst i wiersz „kto głosował” zapisują się w tej samej paczce, więc przy surowym dostępie do bazy kolejność wstawiania (rowid)
+ *     mogłaby je połączyć. Otwarte w PR, nie blokuje (docs/zmiany/feat-5a-krotka-odpowiedz.md).
  *     Schemat modułu należy do podtoru 5a (docs/PODZIAL_PRACY.md, część 2).
- * EN: The database schema of the surveys module (Drizzle tables): surveys, questions, answer options and the record that a
- *     student has already voted. Privacy: a student's answers are stored nowhere. The "who voted" row (survey_participation)
- *     shares no column with the result, and the result is only counters on the options (survey_options.votes), with no student id and no time.
- *     With access to the whole database one can learn only that a student filled the survey in, not what they picked.
+ * EN: The database schema of the surveys module (Drizzle tables): surveys, questions, answer options, free-text answers and the record that a
+ *     student has already voted. Privacy: choice and free-text answers have no student id and no time. The "who voted" row (survey_participation)
+ *     shares no column with the result, and the result is only counters on the options (survey_options.votes) and the texts themselves (survey_text_answers).
+ *     With access to the whole database one can learn only that a student filled the survey in, not what they picked or wrote.
+ *     Note: the text and the "who voted" row are written in the same batch, so with raw database access their insertion order (rowid) could link them.
+ *     Open in the PR, does not block (docs/zmiany/feat-5a-krotka-odpowiedz.md).
  *     The module schema belongs to subtrack 5a (docs/PODZIAL_PRACY.md, part 2).
  *
  * @author Jakub
@@ -23,10 +27,10 @@
 import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 /**
- * PL: Rodzaje pytań. Jednokrotny wybór (jedna odpowiedź), wielokrotny wybór (kilka odpowiedzi, pola wyboru) i skala 1–5 (jedna z pięciu odpowiedzi „1”…„5”, wybierana jak przy jednokrotnym wyborze, bez osobnych tabel). Kolumna już jest, żeby rozbudowa (pytanie otwarte) nie wymagała przepisywania tabel (docs/PLAN_APLIKACJI.md, część 2).
- * EN: The question types. Single choice (one answer), multiple choice (several answers, check boxes) and a 1–5 scale (one of five options "1"…"5", picked like a single choice, with no separate tables). The column already exists, so the expansion (open question) does not need the tables rewritten (docs/PLAN_APLIKACJI.md, part 2).
+ * PL: Rodzaje pytań. Jednokrotny wybór (jedna odpowiedź), wielokrotny wybór (kilka odpowiedzi, pola wyboru), skala 1–5 (jedna z pięciu odpowiedzi „1”…„5”, wybierana jak przy jednokrotnym wyborze, bez osobnych tabel) i krótka odpowiedź (wolny tekst 1–200 znaków, zapisany w survey_text_answers, bez numeru ucznia).
+ * EN: The question types. Single choice (one answer), multiple choice (several answers, check boxes), a 1–5 scale (one of five options "1"…"5", picked like a single choice, with no separate tables) and a short answer (free text of 1–200 characters, stored in survey_text_answers, without a student id).
  */
-export const QUESTION_TYPES = ['single_choice', 'multiple_choice', 'scale_1_5'] as const;
+export const QUESTION_TYPES = ['single_choice', 'multiple_choice', 'scale_1_5', 'short_text'] as const;
 
 /**
  * PL: Ankiety. Ankieta jest aktywna do końca dnia w kolumnie ends_on (czas polski).
@@ -113,4 +117,23 @@ export const surveyParticipation = sqliteTable(
     // EN: Deleting a student's data searches by the student id alone, while the primary key starts with the survey.
     index('survey_participation_user_idx').on(table.userId),
   ],
+);
+
+/**
+ * PL: Odpowiedzi tekstowe (krótka odpowiedź). Jeden wiersz to jeden tekst przy pytaniu. Nie ma tu numeru ucznia ani czasu, a wiersz „kto głosował” nie jest z nimi powiązany kluczem.
+ * EN: Free-text answers (short answer). One row is one text for a question. There is no student id and no time here, and the "who voted" row is not linked to them by a key.
+ */
+export const surveyTextAnswers = sqliteTable(
+  'survey_text_answers',
+  {
+    /** PL: Numer wpisu, od 1, rośnie z każdym tekstem. EN: The entry id, from 1, grows with every text. */
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    /** PL: Pytanie, którego dotyczy tekst. Skasowanie pytania kasuje teksty. EN: The question the text belongs to. Deleting the question deletes the texts. */
+    questionId: text('question_id')
+      .notNull()
+      .references(() => surveyQuestions.id, { onDelete: 'cascade' }),
+    /** PL: Tekst odpowiedzi, przycięty z obu stron, 1–200 znaków. EN: The answer text, trimmed on both ends, 1–200 characters. */
+    text: text('text').notNull(),
+  },
+  (table) => [index('survey_text_answers_question_idx').on(table.questionId)],
 );
