@@ -23,10 +23,10 @@
 import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 /**
- * PL: Rodzaje pytań. Jednokrotny wybór (jedna odpowiedź) i wielokrotny wybór (kilka odpowiedzi, pola wyboru). Kolumna już jest, żeby rozbudowa (pytanie otwarte, skala) nie wymagała przepisywania tabel (docs/PLAN_APLIKACJI.md, część 2).
- * EN: The question types. Single choice (one answer) and multiple choice (several answers, check boxes). The column already exists, so the expansion (open question, scale) does not need the tables rewritten (docs/PLAN_APLIKACJI.md, part 2).
+ * PL: Rodzaje pytań. Jednokrotny wybór (jedna odpowiedź), wielokrotny wybór (kilka odpowiedzi, pola wyboru) i skala 1–5 (jedna z pięciu odpowiedzi „1”…„5”, wybierana jak przy jednokrotnym wyborze, bez osobnych tabel). Kolumna już jest, żeby rozbudowa (pytanie otwarte) nie wymagała przepisywania tabel (docs/PLAN_APLIKACJI.md, część 2).
+ * EN: The question types. Single choice (one answer), multiple choice (several answers, check boxes) and a 1–5 scale (one of five options "1"…"5", picked like a single choice, with no separate tables). The column already exists, so the expansion (open question) does not need the tables rewritten (docs/PLAN_APLIKACJI.md, part 2).
  */
-export const QUESTION_TYPES = ['single_choice', 'multiple_choice'] as const;
+export const QUESTION_TYPES = ['single_choice', 'multiple_choice', 'scale_1_5'] as const;
 
 /**
  * PL: Ankiety. Ankieta jest aktywna do końca dnia w kolumnie ends_on (czas polski).

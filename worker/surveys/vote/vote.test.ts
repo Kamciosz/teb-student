@@ -121,8 +121,8 @@ async function readCounters(): Promise<Record<string, number>> {
   return Object.fromEntries(rows.map((row) => [row.id, row.votes]));
 }
 
-// PL: Ankiety testowe: trwająca do 2099 roku (bez godziny), zakończona w 2020, dwie z godziną zamknięcia: przed nią (2099) i po niej (2020), oraz trwająca z pytaniem wielokrotnego wyboru.
-// EN: Test surveys: one running until 2099 (no hour), one ended in 2020, two with a closing hour: one before it (2099) and one after it (2020), and a running one with a multiple-choice question.
+// PL: Ankiety testowe: trwająca do 2099 roku (bez godziny), zakończona w 2020, dwie z godziną zamknięcia: przed nią (2099) i po niej (2020), trwająca z pytaniem wielokrotnego wyboru oraz trwająca ze skalą 1–5.
+// EN: Test surveys: one running until 2099 (no hour), one ended in 2020, two with a closing hour: one before it (2099) and one after it (2020), a running one with a multiple-choice question, and a running one with a 1–5 scale.
 beforeAll(async () => {
   await db.insert(surveys).values([
     { id: 'open', label: 'Test', title: 'Trwająca', endsOn: '2099-12-31', closesAt: null },
@@ -130,6 +130,7 @@ beforeAll(async () => {
     { id: 'godzina-przed', label: null, title: 'Do godziny', endsOn: '2099-12-31', closesAt: new Date('2099-06-01T12:00:00Z') },
     { id: 'godzina-po', label: null, title: 'Po godzinie', endsOn: '2099-12-31', closesAt: new Date('2020-06-01T10:00:00Z') },
     { id: 'wielokrotny', label: null, title: 'Wielokrotny wybór', endsOn: '2099-12-31', closesAt: null },
+    { id: 'skala', label: null, title: 'Skala 1–5', endsOn: '2099-12-31', closesAt: null },
   ]);
   await db.insert(surveyQuestions).values([
     { id: 'open-1', surveyId: 'open', position: 1, prompt: 'Pierwsze?' },
@@ -138,6 +139,7 @@ beforeAll(async () => {
     { id: 'godzina-przed-1', surveyId: 'godzina-przed', position: 1, prompt: 'Przed godziną?' },
     { id: 'godzina-po-1', surveyId: 'godzina-po', position: 1, prompt: 'Po godzinie?' },
     { id: 'wielokrotny-1', surveyId: 'wielokrotny', position: 1, prompt: 'Które?', type: 'multiple_choice' },
+    { id: 'skala-1', surveyId: 'skala', position: 1, prompt: 'Jak oceniasz?', type: 'scale_1_5' },
   ]);
   await db.insert(surveyOptions).values([
     { id: 'open-1-a', questionId: 'open-1', position: 1, label: 'A' },
@@ -150,6 +152,11 @@ beforeAll(async () => {
     { id: 'wielokrotny-1-a', questionId: 'wielokrotny-1', position: 1, label: 'H' },
     { id: 'wielokrotny-1-b', questionId: 'wielokrotny-1', position: 2, label: 'I' },
     { id: 'wielokrotny-1-c', questionId: 'wielokrotny-1', position: 3, label: 'J' },
+    { id: 'skala-1-1', questionId: 'skala-1', position: 1, label: '1' },
+    { id: 'skala-1-2', questionId: 'skala-1', position: 2, label: '2' },
+    { id: 'skala-1-3', questionId: 'skala-1', position: 3, label: '3' },
+    { id: 'skala-1-4', questionId: 'skala-1', position: 4, label: '4' },
+    { id: 'skala-1-5', questionId: 'skala-1', position: 5, label: '5' },
   ]);
 });
 
@@ -182,7 +189,7 @@ describe('odczyt / reading', () => {
 
     expect(response.status).toBe(200);
     expect(body.active.find((survey) => survey.id === 'open')).toMatchObject({ questionCount: 2, hasVoted: false });
-    expect(body.active.map((survey) => survey.id).sort()).toEqual(['godzina-przed', 'open', 'wielokrotny']);
+    expect(body.active.map((survey) => survey.id).sort()).toEqual(['godzina-przed', 'open', 'skala', 'wielokrotny']);
     expect(body.ended.map((survey) => survey.id).sort()).toEqual(['closed', 'godzina-po']);
     expect(text).not.toContain('votes');
   });
@@ -254,6 +261,16 @@ describe('zapis głosu / writing a vote', () => {
     expect(await readCounters()).toEqual(before);
   });
 
+  it('skala 1–5 przyjmuje jedną wartość i liczy ją / a 1–5 scale accepts one value and counts it', async () => {
+    const before = await readCounters();
+    const response = await call('/skala/answers', 'skala1', { answers: [{ questionId: 'skala-1', optionIds: ['skala-1-4'] }] });
+    const after = await readCounters();
+
+    expect(response.status).toBe(201);
+    expect(after['skala-1-4']).toBe((before['skala-1-4'] ?? 0) + 1);
+    expect(after['skala-1-3']).toBe(before['skala-1-3'] ?? 0);
+  });
+
   it('ankieta z godziną w przyszłości przyjmuje głos / a survey with an hour in the future accepts a vote', async () => {
     const response = await call('/godzina-przed/answers', 'godzina', { answers: [{ questionId: 'godzina-przed-1', optionIds: ['godzina-przed-1-a'] }] });
 
@@ -306,6 +323,18 @@ describe('odrzucenia / rejections', () => {
     const response = await call('/open/answers', 'zle', body);
 
     expect(response.status).toBe(400);
+    expect(await readCounters()).toEqual(before);
+    expect((await db.select().from(surveyParticipation)).length).toBe(participationBefore);
+  });
+
+  it('skala 1–5: dwie wartości albo obca odpowiedź daje 400 i niczego nie zapisuje / a 1–5 scale: two values or a foreign option gives 400 and writes nothing', async () => {
+    const before = await readCounters();
+    const participationBefore = (await db.select().from(surveyParticipation)).length;
+
+    for (const optionIds of [['skala-1-2', 'skala-1-3'], ['skala-1-1', 'open-1-a']]) {
+      const response = await call('/skala/answers', 'skala-zle', { answers: [{ questionId: 'skala-1', optionIds }] });
+      expect(response.status).toBe(400);
+    }
     expect(await readCounters()).toEqual(before);
     expect((await db.select().from(surveyParticipation)).length).toBe(participationBefore);
   });
