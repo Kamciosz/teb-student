@@ -5,15 +5,23 @@
  * @author Jakub
  * @since 2026-10-11
  * @uses src/features/profile/look.ts::Look
+ * @uses src/features/profile/textSize.ts::TextSize
  * @used_by src/features/profile/queries.ts::useProfile
+ * @used_by src/features/profile/SettingsScreen.tsx::ExportData
  */
 
 // PL: Typy palety i szkoły.
 // EN: The palette and school types.
 import type { PaletteCode, School } from './look';
+// PL: Rozmiar tekstu.
+// EN: The text size.
+import type { TextSize } from './textSize';
 
 /** PL: Adres serwera profilu. EN: The profile server address. */
 const API_URL = '/api/profile';
+
+/** PL: Nazwa pobieranego pliku z danymi ucznia. EN: The name of the downloaded file with the student's data. */
+export const EXPORT_FILE_NAME = 'moje-dane-teb.json';
 
 /** PL: Profil ucznia, tak jak go oddaje i przyjmuje serwer. EN: The student's profile, as the server returns and accepts it. */
 export type Profile = {
@@ -25,6 +33,8 @@ export type Profile = {
   school: School;
   /** PL: Paleta: CA do CH. EN: The palette: CA to CH. */
   palette: PaletteCode;
+  /** PL: Rozmiar tekstu: normalny albo duzy (większy tekst). EN: The text size: normalny or duzy (larger text). */
+  textSize: TextSize;
 };
 
 /**
@@ -71,4 +81,19 @@ export async function deleteAccount(): Promise<void> {
   // EN: Send DELETE. The server answers 204 with no body.
   const response = await fetch(API_URL, { method: 'DELETE' });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
+}
+
+/**
+ * PL: Pobiera plik z danymi ucznia („Pobierz moje dane”, RODO).
+ * EN: Fetches the file with the student's data ("Pobierz moje dane", GDPR).
+ *
+ * @returns PL: plik JSON jako blob, gotowy do zapisu na telefonie. EN: the JSON file as a blob, ready to save on the phone.
+ * @throws PL: błąd z kodem HTTP albo błąd sieci. EN: an error with the HTTP code or a network error.
+ */
+export async function fetchMyData(): Promise<Blob> {
+  // PL: Pobierz plik metodą GET z podadresu /export.
+  // EN: Fetch the file with the GET method from the /export subaddress.
+  const response = await fetch(`${API_URL}/export`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.blob();
 }

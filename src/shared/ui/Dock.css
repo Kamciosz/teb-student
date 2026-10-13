@@ -1,0 +1,90 @@
+/*
+ * PL: Dolny pasek przyklejony do dołu ekranu, na środku, z szerokością do 398 px (jak w makiecie).
+ *     Wewnątrz siatka 1fr auto 1fr: po bokach linki, na środku przycisk „+”.
+ *     Ukryty tekst (.ui-sr-only) jest tu, bo base.css nie wolno edytować.
+ * EN: The bottom bar pinned to the bottom of the screen, centered, up to 398 px wide (as in the mockup).
+ *     Inside, a 1fr auto 1fr grid: links on the sides, the "+" button in the middle.
+ *     The hidden text (.ui-sr-only) lives here, because base.css must not be edited.
+ */
+
+/* PL: Pasek fixed; env() daje odstęp od paska iPhone'a. Bez 100dvh, bo iOS 15.
+   EN: The bar is fixed; env() gives space from the iPhone home bar. No 100dvh, because of iOS 15. */
+.ui-dock {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 10;
+  transform: translateX(-50%);
+  width: min(calc(100% - 32px), 398px);
+  padding: 8px;
+  border-radius: var(--r-lg);
+  background: var(--tile-2);
+  box-shadow: var(--shadow);
+}
+
+/* PL: Siatka wpisów: lewa i prawa połowa po bokach, przycisk „+” pośrodku.
+   EN: The grid of entries: left and right halves at the sides, the "+" button in the middle. */
+.ui-dock ul {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* PL: Zwykły link: kolumna z ikoną i napisem, wysokość dotyku co najmniej 44 px.
+   EN: A plain link: a column with the icon and the label, touch height at least 44 px. */
+.ui-dock-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 4px;
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+  font-size: var(--t-xs);
+  text-decoration: none;
+}
+
+/* PL: Bieżący ekran: napis w pełnym kolorze tekstu. Atrybut ustawia NavLink.
+   EN: The current screen: the label in the full text color. The attribute is set by NavLink. */
+.ui-dock-link[aria-current='page'] {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* PL: Przycisk „+”: 64 na 48 px, akcent szkoły, tekst z palety, tak jak w makiecie.
+   EN: The "+" button: 64 by 48 px, the school accent, palette text, as in the mockup. */
+.ui-dock-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  min-width: 44px;
+  min-height: 48px;
+  margin: 0 8px;
+  border-radius: var(--r);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--t-xl);
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+}
+
+/* PL: Tekst tylko dla czytnika: zajmuje 1 px i nie widać go, ale czytnik go czyta.
+   EN: Text for the screen reader only: it takes 1 px and is not visible, but the screen reader reads it. */
+.ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

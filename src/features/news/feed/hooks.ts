@@ -9,9 +9,9 @@
  * @used_by src/features/news/feed/EntryScreen.tsx::useEntry
  */
 
-// PL: Zapytanie z pamięcią podręczną.
-// EN: A query with a cache.
-import { useQuery } from '@tanstack/react-query';
+// PL: Zapytanie z pamięcią podręczną i trzymanie poprzednich danych.
+// EN: A query with a cache and keeping the previous data.
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 // PL: Funkcje pobierania.
 // EN: The fetching functions.
 import { fetchEntries, fetchEntry } from './api';
@@ -21,13 +21,19 @@ import { fetchEntries, fetchEntry } from './api';
 const RETRIES = 1;
 
 /**
- * PL: Zapytanie o listę wpisów.
- * EN: The entry list query.
+ * PL: Zapytanie o listę wpisów. Każdy szukany tekst ma własną pamięć, a przy zmianie tekstu zostaje poprzednia lista, zamiast pustego ekranu.
+ * EN: The entry list query. Each searched text has its own cache, and when the text changes the previous list stays instead of an empty screen.
  *
+ * @param term - PL: szukany tekst; pusty znaczy cała lista. EN: the searched text; empty means the whole list.
  * @returns PL: stan zapytania z listą. EN: the query state with the list.
  */
-export function useEntries() {
-  return useQuery({ queryKey: ['news', 'feed', 'list'], queryFn: fetchEntries, retry: RETRIES });
+export function useEntries(term: string) {
+  return useQuery({
+    queryKey: ['news', 'feed', 'list', term],
+    queryFn: () => fetchEntries(term),
+    retry: RETRIES,
+    placeholderData: keepPreviousData,
+  });
 }
 
 /**

@@ -1,0 +1,32 @@
+/*
+ * PL: Pasek postępu: tło z palety i wypełnienie w kolorze akcentu szkoły. Wysokość 8 px to sam pasek, nie obszar dotyku, bo nie jest sterowny.
+ * EN: The progress bar: a background from the palette and a fill in the school accent color. The 8 px height is the bar itself, not a touch area, because it is not a control.
+ */
+
+/* PL: Tor paska: pełna szerokość kolumny, zaokrąglony, z ukrytym wypełnieniem poza torem.
+   EN: The bar track: the full column width, rounded, with the fill hidden outside the track. */
+.ui-progress {
+  width: 100%;
+  min-width: 0;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--tile-2);
+  overflow: hidden;
+}
+
+/* PL: Wypełnienie rośnie od lewej; szerokość w procentach ustawia komponent.
+   EN: The fill grows from the left; the component sets the width in percent. */
+.ui-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+/* PL: Przy ograniczeniu ruchu animacja szerokości znika.
+   EN: With reduced motion the width animation is gone. */
+@media (prefers-reduced-motion: reduce) {
+  .ui-progress-fill {
+    transition: none;
+  }
+}

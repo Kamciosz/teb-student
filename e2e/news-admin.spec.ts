@@ -169,6 +169,28 @@ test('błąd publikacji zostawia przycisk aktywny / a publish error leaves the b
   await expect(page.getByRole('button', { name: /^Opublikuj/ })).toBeEnabled();
 });
 
+// PL: Przycisk „Edytuj” jest tylko przy szkicu i prowadzi do kreatora z jego numerem, a kreator wczytuje szkic z serwera.
+// EN: The "Edytuj" button is only on a draft and leads to the wizard with its id, and the wizard loads the draft from the server.
+test('szkic ma przycisk „Edytuj” prowadzący do kreatora / a draft has an "Edytuj" button leading to the wizard', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.route('**/api/news/editor/entries/e-szkic', (route) =>
+    route.fulfill({ status: 200, json: { id: 'e-szkic', type: 'news', title: 'Turniej e-sportowy klas', status: 'draft', body: { type: 'doc', content: [] } } }),
+  );
+  await page.goto('/news/admin');
+
+  // PL: Tylko szkic ma „Edytuj”, wpis opublikowany go nie ma.
+  // EN: Only the draft has "Edytuj", the published entry does not.
+  const edit = page.getByRole('link', { name: 'Edytuj: Turniej e-sportowy klas' });
+  await expect(page.getByRole('link', { name: /^Edytuj/ })).toHaveCount(1);
+  await expect(edit).toHaveAttribute('href', '/news/editor/e-szkic');
+
+  await edit.click();
+
+  await expect(page).toHaveURL(/\/news\/editor\/e-szkic$/);
+  await page.getByRole('button', { name: 'Dalej' }).click();
+  await expect(page.getByLabel('Tytuł')).toHaveValue('Turniej e-sportowy klas');
+});
+
 // PL: Przy 320 px lista i arkusz nie przewijają się w poziomie, a przyciski mieszczą się w oknie i mają co najmniej 44 px.
 // EN: At 320 px the list and the sheet do not scroll horizontally, and the buttons fit in the window and are at least 44 px tall.
 test('przy szerokości 320 px nic się nie przewija w poziomie / nothing scrolls horizontally at 320 px', async ({ page }) => {
