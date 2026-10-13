@@ -48,15 +48,19 @@ const EVENT_BODY = {
 const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 
 /**
- * PL: Odpowiada na zapytanie o aktualności podstawionymi danymi: lista, wpis turnieju i 404 dla reszty.
- * EN: Answers a news request with stubbed data: the list, the tournament entry and 404 for the rest.
+ * PL: Odpowiada na zapytanie o aktualności podstawionymi danymi: lista (z filtrem po q, jak serwer), wpis turnieju i 404 dla reszty.
+ * EN: Answers a news request with stubbed data: the list (filtered by q, like the server), the tournament entry and 404 for the rest.
  *
  * @param route - PL: przechwycone zapytanie. EN: the intercepted request.
  * @returns PL: obietnica zakończona po odpowiedzi. EN: a promise finished after the answer.
  */
 async function answerNews(route: Route): Promise<void> {
-  const path = new URL(route.request().url()).pathname.replace(/\/+$/, '');
-  if (path === '/api/news/feed') return route.fulfill({ json: { entries: ENTRIES } });
+  const url = new URL(route.request().url());
+  const path = url.pathname.replace(/\/+$/, '');
+  if (path === '/api/news/feed') {
+    const term = (url.searchParams.get('q') ?? '').trim().toLowerCase();
+    return route.fulfill({ json: { entries: ENTRIES.filter((entry) => `${entry.title} ${entry.excerpt}`.toLowerCase().includes(term)) } });
+  }
   if (path === '/api/news/feed/e-event') {
     const summary = ENTRIES.find((entry) => entry.id === 'e-event');
     return route.fulfill({ json: { entry: { ...summary, body: EVENT_BODY, linkUrl: 'https://example.com/regulamin', linkLabel: 'Zobacz regulamin turnieju' } } });
@@ -107,6 +111,48 @@ test.describe('z podstawionym serwerem', () => {
     // EN: The "Wszystkie" filter returns to four.
     await page.getByRole('button', { name: 'Wszystkie' }).click();
     await expect(page.locator('.news-card')).toHaveCount(4);
+  });
+
+  // PL: Szukanie wysyła jedno zapytanie po przerwie w pisaniu (nie po każdej literze), zostawia pasujący kafel.
+  // EN: Searching sends one request after a pause in typing (not after every letter) and leaves the matching tile.
+  test('szukanie: jedno zapytanie po przerwie i pasujący kafel / search: one request after a pause and the matching tile', async ({ page }) => {
+    await page.goto('/news/feed');
+    await expect(page.locator('.news-card')).toHaveCount(4);
+
+    // PL: Od tej chwili zapisujemy zapytania o listę z parametrem q.
+    // EN: From this moment we record the list requests with the q parameter.
+    const searched: (string | null)[] = [];
+    page.on('request', (request) => {
+      const url = new URL(request.url());
+      if (url.pathname.replace(/\/+$/, '') === '/api/news/feed') searched.push(url.searchParams.get('q'));
+    });
+
+    // PL: Pisanie „zapisy” z przerwami 50 ms, krótszymi od opóźnienia 300 ms.
+    // EN: Typing "zapisy" with 50 ms gaps, shorter than the 300 ms delay.
+    await page.getByRole('searchbox', { name: 'Szukaj wpisów' }).pressSequentially('zapisy', { delay: 50 });
+
+    await expect(page.locator('.news-card')).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Turniej e-sportowy klas' })).toBeVisible();
+    expect(searched).toEqual(['zapisy']);
+  });
+
+  // PL: Brak pasujących wpisów pokazuje komunikat z szukanym tekstem, a przycisk „Wyczyść” czyści pole i przywraca całą listę.
+  // EN: No matching entries show a message with the searched text, and the "Wyczyść" button clears the field and brings back the whole list.
+  test('pusty wynik szukania i czyszczenie pola / an empty search result and clearing the field', async ({ page }) => {
+    await page.goto('/news/feed');
+    await expect(page.locator('.news-card')).toHaveCount(4);
+
+    const search = page.getByRole('searchbox', { name: 'Szukaj wpisów' });
+    await search.fill('xyzabc');
+
+    await expect(page.getByText('Nic nie znaleziono dla „xyzabc”.')).toBeVisible();
+    await expect(page.locator('.news-card')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Wyczyść szukanie' }).click();
+
+    await expect(search).toHaveValue('');
+    await expect(page.locator('.news-card')).toHaveCount(4);
+    await expect(page.getByText('Nic nie znaleziono dla')).toHaveCount(0);
   });
 
   // PL: Wpis ma bezpieczne linki, nie wykonuje groźnego linku i pokazuje film dopiero po kliknięciu.
