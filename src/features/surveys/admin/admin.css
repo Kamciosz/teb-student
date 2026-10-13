@@ -331,6 +331,17 @@
   padding: 0;
 }
 
+/* PL: Przełącznik rodzaju pytania („Jeden wybór” / „Wiele wyborów”) ma ten sam wygląd co pasek czasu trwania.
+   EN: The question type switch ("Jeden wybór" / "Wiele wyborów") looks like the duration bar. */
+.sa-type {
+  margin-top: 8px;
+  border: 0;
+}
+
+.sa-type legend {
+  padding: 0;
+}
+
 .sa-segment {
   display: flex;
   gap: 4px;
