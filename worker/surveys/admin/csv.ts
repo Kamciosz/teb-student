@@ -19,6 +19,21 @@ const BOM = '﻿';
 // EN: The column header of the file.
 const HEADER = ['Pytanie', 'Odpowiedź', 'Liczba głosów', 'Procent'];
 
+// PL: Znaki, od których Excel potraktuje pole jak formułę (OWASP CSV injection): znak równości, plus, minus, małpa, tabulator i powrót karetki.
+// EN: The characters that make Excel treat a field as a formula (OWASP CSV injection): the equals sign, plus, minus, at sign, tab and carriage return.
+const FORMULA_START = /^[=+\-@\t\r]/;
+
+/**
+ * PL: Neutralizuje tekst, który zaczyna się od znaku formuły: przed nim dopisuje apostrof, żeby Excel pokazał go jako tekst. Stosujemy tylko do tekstów pytań i odpowiedzi, nie do liczb.
+ * EN: Neutralizes a text that starts with a formula character: prefixes it with an apostrophe so Excel shows it as text. Applied only to the texts of questions and options, not to numbers.
+ *
+ * @param value - PL: surowa wartość tekstowa. EN: the raw text value.
+ * @returns PL: tekst z apostrofem, jeśli zaczyna się od znaku formuły. EN: the text with an apostrophe, if it starts with a formula character.
+ */
+export function neutralizeFormula(value: string): string {
+  return FORMULA_START.test(value) ? `'${value}` : value;
+}
+
 /**
  * PL: Escapuje jedno pole CSV. Pole z przecinkiem, cudzysłowem albo nową linią bierzemy w cudzysłów, a wewnętrzne cudzysłowy podwajamy.
  * EN: Escapes one CSV field. A field with a comma, a quote or a new line goes in quotes, and the inner quotes are doubled.
@@ -41,9 +56,9 @@ export function escapeCsvField(value: string): string {
  * @returns PL: treść pliku z BOM-em na początku. EN: the file content with the BOM at the start.
  */
 export function toResultsCsv(questions: QuestionResult[]): string {
-  // PL: Każdy wiersz to pytanie, odpowiedź, liczba głosów i procent; liczby zamieniamy na tekst.
-  // EN: Each row is the question, the option, the vote count and the percent; the numbers become text.
-  const rows = questions.flatMap((question) => question.options.map((option) => [question.prompt, option.label, String(option.votes), String(option.percent)]));
+  // PL: Każdy wiersz to pytanie, odpowiedź, liczba głosów i procent; teksty neutralizujemy przed escapowaniem, liczby zamieniamy na tekst bez zmian.
+  // EN: Each row is the question, the option, the vote count and the percent; the texts are neutralized before escaping, the numbers become text unchanged.
+  const rows = questions.flatMap((question) => question.options.map((option) => [neutralizeFormula(question.prompt), neutralizeFormula(option.label), String(option.votes), String(option.percent)]));
   const lines = [HEADER, ...rows].map((row) => row.map(escapeCsvField).join(','));
   return `${BOM}${lines.join('\r\n')}\r\n`;
 }

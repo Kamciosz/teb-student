@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { escapeCsvField, toResultsCsv } from './csv';
+import { escapeCsvField, neutralizeFormula, toResultsCsv } from './csv';
 import type { QuestionResult } from './types';
 
 // PL: Znak kolejności bajtów UTF-8, który ma być na początku pliku.
@@ -40,7 +40,25 @@ describe('escapeCsvField', () => {
   });
 });
 
+describe('neutralizeFormula', () => {
+  it.each(['=', '+', '-', '@', '\t', '\r'])('pole zaczynające się od znaku %j dostaje apostrof / a field starting with the character %j gets an apostrophe', (character) => {
+    expect(neutralizeFormula(`${character}1+1`)).toBe(`'${character}1+1`);
+  });
+
+  it('zwykły tekst i znak formuły w środku zostają bez zmian / plain text and a formula character inside stay as they are', () => {
+    expect(neutralizeFormula('Odpowiedź')).toBe('Odpowiedź');
+    expect(neutralizeFormula('A=B, C-D')).toBe('A=B, C-D');
+    expect(neutralizeFormula('')).toBe('');
+  });
+});
+
 describe('toResultsCsv', () => {
+  it('neutralizuje teksty zaczynające się od znaku formuły, a liczby zostawia / neutralizes texts starting with a formula character and leaves the numbers', () => {
+    const questions: QuestionResult[] = [{ prompt: '+Pytanie', options: [{ label: '-Odpowiedź', votes: 4, percent: 80 }, { label: '=HYPERLINK("x")', votes: 1, percent: 20 }] }];
+
+    expect(toResultsCsv(questions)).toBe(`${BOM}Pytanie,Odpowiedź,Liczba głosów,Procent\r\n'+Pytanie,'-Odpowiedź,4,80\r\n'+Pytanie,"'=HYPERLINK(""x"")",1,20\r\n`);
+  });
+
   it('daje nagłówek, wiersz na każdą odpowiedź, BOM na początku i CRLF na końcu wierszy / gives the header, a row for every option, the BOM at the start and CRLF at the end of rows', () => {
     const questions: QuestionResult[] = [
       { prompt: 'Jak oceniasz obiady?', options: [{ label: 'Dobrze', votes: 5, percent: 42 }, { label: 'Słabo', votes: 2, percent: 17 }] },
