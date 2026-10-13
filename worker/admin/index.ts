@@ -12,13 +12,16 @@
  * @used_by worker/<moduł>/…::requirePanelRole (routery podtorów 3c, 4b, 5b / routers of subtracks 3c, 4b, 5b)
  */
 
+// PL: Sprawdzanie roli w panelu dla routerów innych modułów. Użycie: new Hono<PanelEnv>().use(requirePanelRole('council')). Role od najniższej: 'editor' (redakcja, tylko Wpisy), 'council' (Samorząd: Wpisy, Zgłoszenia, Ankiety, Kody zaproszeń), 'admin' (wszystko). Rola wyższa przechodzi tam, gdzie wystarcza niższa. Bez sesji odpowiada 401, bez wystarczającej roli 403. Ucznia daje context.get('student'), a jego najwyższą rolę context.get('panelLevel'). Wpisy (3c): 'editor', zgłoszenia (4b) i ankiety (5b): 'council'.
+// EN: The panel role check for the routers of other modules. Usage: new Hono<PanelEnv>().use(requirePanelRole('council')). Roles from the lowest: 'editor' (the newspaper team, Entries only), 'council' (the Council: Entries, Reports, Surveys, Invitation codes), 'admin' (everything). A higher role passes wherever a lower one is enough. Without a session it answers 401, without a sufficient role 403. The student comes from context.get('student') and their highest role from context.get('panelLevel'). Entries (3c): 'editor', reports (4b) and surveys (5b): 'council'.
+// PL: Kolejność ma znaczenie: sprawdzanie roli jest eksportowane przed routerem, bo router ciągnie drzwi reports i surveys, które już go potrzebują (cykl importów).
+// EN: The order matters: the role check is exported before the router, because the router pulls in the reports and surveys doors, which already need it (an import cycle).
+export { requirePanelRole, type PanelEnv } from './requirePanelRole';
+
 // PL: Router podtoru 8.
 // EN: The router of subtrack 8.
 export { adminApp } from './routes';
 
-// PL: Sprawdzanie roli w panelu dla routerów innych modułów. Użycie: new Hono<PanelEnv>().use(requirePanelRole('council')). Role od najniższej: 'editor' (redakcja, tylko Wpisy), 'council' (Samorząd: Wpisy, Zgłoszenia, Ankiety, Kody zaproszeń), 'admin' (wszystko). Rola wyższa przechodzi tam, gdzie wystarcza niższa. Bez sesji odpowiada 401, bez wystarczającej roli 403. Ucznia daje context.get('student'), a jego najwyższą rolę context.get('panelLevel'). Wpisy (3c): 'editor', zgłoszenia (4b) i ankiety (5b): 'council'.
-// EN: The panel role check for the routers of other modules. Usage: new Hono<PanelEnv>().use(requirePanelRole('council')). Roles from the lowest: 'editor' (the newspaper team, Entries only), 'council' (the Council: Entries, Reports, Surveys, Invitation codes), 'admin' (everything). A higher role passes wherever a lower one is enough. Without a session it answers 401, without a sufficient role 403. The student comes from context.get('student') and their highest role from context.get('panelLevel'). Entries (3c): 'editor', reports (4b) and surveys (5b): 'council'.
-export { requirePanelRole, type PanelEnv } from './requirePanelRole';
 // PL: Typ roli w panelu.
 // EN: The panel role type.
 export type { PanelRole } from '../db/schema/admin';

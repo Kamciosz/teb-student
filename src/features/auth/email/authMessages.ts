@@ -33,6 +33,11 @@ export const MESSAGES = {
   unavailable: 'Logowanie jest chwilowo niedostępne. Spróbuj później.',
   offline: 'Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.',
   unknown: 'Coś poszło nie tak. Spróbuj ponownie.',
+  sessionNotFresh: 'Żeby zobaczyć listę urządzeń, wyloguj się i zaloguj ponownie kodem z maila.',
+  sessionEnded: 'Sesja się skończyła. Zaloguj się ponownie.',
+  deviceGone: 'Tego urządzenia nie ma już na liście. Odśwież listę.',
+  deviceSignedOut: 'Urządzenie zostało wylogowane.',
+  othersSignedOut: 'Wylogowano wszystkie inne urządzenia.',
 } as const;
 
 /**
@@ -72,5 +77,19 @@ export function describeVerifyError(error: ClientError): string {
   if (error.code === 'INVALID_OTP') return MESSAGES.codeWrong;
   if (error.code === 'OTP_EXPIRED') return MESSAGES.codeExpired;
   if (error.code === 'TOO_MANY_ATTEMPTS') return MESSAGES.codeTooManyAttempts;
+  return describeCommonError(error) ?? MESSAGES.unknown;
+}
+
+/**
+ * PL: Dobiera komunikat dla błędu na ekranie urządzeń: lista, wylogowanie jednego i wszystkich innych.
+ * EN: Picks the message for an error on the devices screen: the list, signing out one and signing out all others.
+ *
+ * @param error - PL: błąd serwera (kod HTTP i nasz kod błędu). EN: the server error (the HTTP status and our error code).
+ * @returns PL: komunikat po polsku. EN: the message in Polish.
+ */
+export function describeDeviceError(error: ClientError): string {
+  if (error.error === 'session_not_fresh') return MESSAGES.sessionNotFresh;
+  if (error.status === 401) return MESSAGES.sessionEnded;
+  if (error.status === 404) return MESSAGES.deviceGone;
   return describeCommonError(error) ?? MESSAGES.unknown;
 }
