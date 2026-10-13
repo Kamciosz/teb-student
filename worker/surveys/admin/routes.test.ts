@@ -118,6 +118,25 @@ async function seedCsvSurvey(): Promise<void> {
 }
 
 /**
+ * PL: Wkłada ankietę z pytaniem krótkiej odpowiedzi (z teksami) i skalą 1–5. Liczba osób bierze się z tabeli „kto wypełnił”, bo ta ankieta nie ma pytania jednokrotnego wyboru.
+ * EN: Inserts a survey with a short-answer question (with the texts) and a 1–5 scale. The number of people comes from the "who filled it in" table, because this survey has no single-choice question.
+ *
+ * @param id - PL: numer ankiety. EN: the survey id.
+ * @param texts - PL: teksty krótkiej odpowiedzi w kolejności wstawiania. EN: the short-answer texts in the insert order.
+ * @param people - PL: ile osób wypełniło ankietę. EN: how many people filled the survey in.
+ */
+async function seedShortTextSurvey(id: string, texts: string[], people: number): Promise<void> {
+  await db.insert(surveys).values({ id, title: `Ankieta ${id}`, endsOn: '2099-12-31' });
+  await db.insert(surveyQuestions).values([
+    { id: `${id}-tekst`, surveyId: id, position: 1, prompt: 'Co zmienić?', type: 'short_text' },
+    { id: `${id}-skala`, surveyId: id, position: 2, prompt: 'Jak oceniasz?', type: 'scale_1_5' },
+  ]);
+  await db.insert(surveyOptions).values([1, 0, 1, 2, 1].map((count, index) => ({ id: `${id}-s${index}`, questionId: `${id}-skala`, position: index + 1, label: String(index + 1), votes: count })));
+  await db.insert(surveyTextAnswers).values(texts.map((text) => ({ questionId: `${id}-tekst`, text })));
+  await db.insert(surveyParticipation).values(Array.from({ length: people }, (_, index) => ({ surveyId: id, userId: `${id}-u${index}` })));
+}
+
+/**
  * PL: Podaje chwilę w formacie pola formularza (RRRR-MM-DDTHH:mm, czas polski). Czas względny do zegara, bo ankieta trwa 7 dni od dziś.
  * EN: Gives a moment in the form field format (YYYY-MM-DDTHH:mm, Polish time). The time is relative to the clock, because the survey runs 7 days from today.
  *
@@ -140,6 +159,8 @@ beforeAll(async () => {
   // EN: A survey whose closing time has passed, although its last day still runs.
   await db.insert(surveys).values({ id: 'zamknieta', title: 'Ankieta zamknieta', endsOn: '2099-12-31', closesAt: new Date('2020-01-01T09:00:00Z') });
   await seedCsvSurvey();
+  await seedShortTextSurvey('krotka4', ['Zupa'], 4);
+  await seedShortTextSurvey('krotka5', ['Zupa', 'Łyżwy', 'Lody', '=1+1', 'Za drogo, "bardzo"'], 5);
   // PL: Ankieta tylko z wielokrotnym wyborem: 7 zaznaczeń od 5 osób, więc liczba osób to 5, nie 7.
   // EN: A survey with multiple choice only: 7 checked boxes from 5 people, so the number of people is 5, not 7.
   await db.insert(surveys).values({ id: 'wielokrotna', title: 'Ankieta wielokrotna', endsOn: '2099-12-31' });
@@ -408,11 +429,11 @@ describe('wyniki jako CSV / results as CSV', () => {
     // EN: A question with a comma, a quote and a new line goes in quotes, and the inner quotes are doubled.
     const quoted = `"Co, ""naprawdę""?\nTak"`;
     const expected = [
-      '﻿Pytanie,Odpowiedź,Liczba głosów,Procent',
-      `${quoted},"A, B",3,60`,
-      `${quoted},"C ""x""",1,20`,
-      `${quoted},D,1,20`,
-      `${quoted},Nie wiem,0,0`,
+      '﻿Pytanie,Odpowiedź,Liczba głosów,Procent,Średnia',
+      `${quoted},"A, B",3,60,`,
+      `${quoted},"C ""x""",1,20,`,
+      `${quoted},D,1,20,`,
+      `${quoted},Nie wiem,0,0,`,
     ].join('\r\n') + '\r\n';
 
     expect(response.status).toBe(200);
@@ -422,6 +443,40 @@ describe('wyniki jako CSV / results as CSV', () => {
     // PL: Dekodujemy z zachowaniem BOM-u, bo domyślny dekoder by go zjadł i porównanie nie pokazałoby błędu.
     // EN: We decode keeping the BOM, because the default decoder would eat it and the comparison would not show the error.
     expect(new TextDecoder('utf-8', { ignoreBOM: true, fatal: false }).decode(bytes)).toBe(expected);
+  });
+
+  it('krótka odpowiedź i skala: wiersz na tekst w kolejności alfabetycznej i średnia z przecinkiem / a short answer and a scale: a row per text in the alphabetical order and the average with a decimal comma', async () => {
+    const response = await asStaff('/krotka5/results/csv', {});
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const text = new TextDecoder('utf-8', { ignoreBOM: true, fatal: false }).decode(bytes);
+    // PL: Kolejność jak na ekranie wyników: „Ł” po „L”, „Za” przed „Zupą”, a formuła i odpowiedź z przecinkiem zapisane bezpiecznie.
+    // EN: The order as on the results screen: "Ł" after "L", "Za" before "Zupa", and the formula and the answer with a comma written safely.
+    const expected = [
+      '﻿Pytanie,Odpowiedź,Liczba głosów,Procent,Średnia',
+      'Co zmienić?,\'=1+1,,,',
+      'Co zmienić?,Lody,,,',
+      'Co zmienić?,Łyżwy,,,',
+      'Co zmienić?,"Za drogo, ""bardzo""",,,',
+      'Co zmienić?,Zupa,,,',
+      'Jak oceniasz?,1,1,20,',
+      'Jak oceniasz?,2,0,0,',
+      'Jak oceniasz?,3,1,20,',
+      'Jak oceniasz?,4,2,40,',
+      'Jak oceniasz?,5,1,20,',
+      'Jak oceniasz?,Średnia,,,"3,4"',
+    ].join('\r\n') + '\r\n';
+
+    expect(response.status).toBe(200);
+    expect(text).toBe(expected);
+  });
+
+  it('krótka odpowiedź poniżej progu daje 409 i nie zdradza tekstów / a short answer below the threshold gives 409 and does not reveal the texts', async () => {
+    const response = await asStaff('/krotka4/results/csv', {});
+    const text = await response.text();
+
+    expect(response.status).toBe(409);
+    expect(JSON.parse(text)).toEqual({ error: 'too_few_responses' });
+    for (const forbidden of ['Zupa', 'Co zmienić?', 'Jak oceniasz?']) expect(text).not.toContain(forbidden);
   });
 
   it('nieznana ankieta daje 404 / an unknown survey gives 404', async () => {
