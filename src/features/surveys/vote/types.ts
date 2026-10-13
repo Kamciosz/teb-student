@@ -45,6 +45,8 @@ export type SurveyOption = {
 /** PL: Jedno pytanie z odpowiedziami. EN: One question with its options. */
 export type SurveyQuestion = {
   id: string;
+  /** PL: Rodzaj pytania: jedna odpowiedź (pola radio) albo kilka (pola wyboru). EN: The question type: one option (radio) or several (checkboxes). */
+  type: 'single_choice' | 'multiple_choice';
   prompt: string;
   options: SurveyOption[];
 };
@@ -61,5 +63,5 @@ export type SurveyDetail = {
   questions: SurveyQuestion[];
 };
 
-/** PL: Odpowiedzi ucznia: numer pytania i numer wybranej odpowiedzi. EN: The student's answers: a question id and the chosen option id. */
-export type AnswerMap = Record<string, string>;
+/** PL: Odpowiedzi ucznia: numer pytania i numery wybranych odpowiedzi (jedna albo kilka). EN: The student's answers: a question id and the chosen option ids (one or several). */
+export type AnswerMap = Record<string, string[]>;
