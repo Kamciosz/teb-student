@@ -1,5 +1,5 @@
 /**
- * PL: Edytor jednego pytania na ekranie 6.5b „Nowa ankieta”: pole pytania, od 2 do 5 wierszy odpowiedzi z literami A–E i przyciskiem „x”, przycisk „Dodaj odpowiedź” i teksty błędów pod polami (EKRANY.md). Stan trzyma ekran (NewSurveyScreen), a ten komponent tylko rysuje i woła funkcje z draft.ts.
+ * PL: Edytor jednego pytania na ekranie 6.5b „Nowa ankieta”: przełącznik rodzaju („Jeden wybór” / „Wiele wyborów”), pole pytania, od 2 do 5 wierszy odpowiedzi z literami A–E i przyciskiem „x”, przycisk „Dodaj odpowiedź” i teksty błędów pod polami (EKRANY.md). Stan trzyma ekran (NewSurveyScreen), a ten komponent tylko rysuje i woła funkcje z draft.ts.
  * EN: The editor of one question on screen 6.5b "Nowa ankieta": the question field, 2 to 5 option rows with letters A–E and an "x" button, the "Dodaj odpowiedź" button and the error texts under the fields (EKRANY.md). The screen (NewSurveyScreen) holds the state, and this component only draws and calls the functions from draft.ts.
  *
  * @author Jakub
@@ -11,6 +11,15 @@
 import { addOption, MAX_OPTION_LENGTH, MAX_OPTIONS, MAX_PROMPT_LENGTH, MIN_OPTIONS, removeOption, type DraftQuestion, type QuestionErrors } from './draft';
 import { OPTION_LETTERS } from './format';
 import { PlusIcon, TriangleAlertIcon, XIcon } from './icons';
+import { TO_AGREE } from './texts';
+import type { QuestionType } from './types';
+
+// PL: Rodzaje pytania do przełącznika, w kolejności na ekranie. Domyślnie „Jeden wybór”.
+// EN: The question types for the switch, in the screen order. "Jeden wybór" by default.
+const TYPE_CHOICES: { type: QuestionType; text: string }[] = [
+  { type: 'single_choice', text: TO_AGREE.questionType.single },
+  { type: 'multiple_choice', text: TO_AGREE.questionType.multiple },
+];
 
 /** PL: Dane edytora pytania. EN: The question editor data. */
 type QuestionEditorProps = {
@@ -89,6 +98,19 @@ export function QuestionEditor({ question, number, errors, canRemove, onChange, 
           </button>
         ) : null}
       </div>
+      {/* PL: Rodzaj pytania: przyciski segmentowe jak czas trwania. Każde pytanie ma własną grupę, więc przyciski jednego pytania nie łączą się z innym. EN: The question type: segment buttons like the duration. Each question has its own group, so one question's buttons do not join another's. */}
+      <fieldset className="sa-type">
+        <legend className="sa-label">{TO_AGREE.questionType.legend}</legend>
+        <div className="sa-segment">
+          {TYPE_CHOICES.map((choice) => (
+            <label key={choice.type} className="sa-segment__choice">
+              {/* PL: Prawdziwy przycisk opcji jest ukryty wizualnie, a rysujemy napis obok niego. EN: The real radio button is visually hidden, and we draw the label next to it. */}
+              <input type="radio" name={`question-type-${question.key}`} value={choice.type} checked={question.type === choice.type} onChange={() => onChange((current) => ({ ...current, type: choice.type }))} />
+              <span className="sa-segment__text">{choice.text}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <input id={promptId} className="sa-input" value={question.prompt} maxLength={MAX_PROMPT_LENGTH} aria-invalid={errors?.prompt != null} aria-describedby={`${promptId}-error`} onChange={(event) => onChange((current) => ({ ...current, prompt: event.target.value }))} />
       <FieldError id={`${promptId}-error`} text={errors?.prompt} />
       <ul className="sa-options">
