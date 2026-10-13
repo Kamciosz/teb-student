@@ -32,6 +32,7 @@ export const TO_AGREE = {
   draft: 'Szkic',
   published: 'Opublikowany',
   delete: 'Usuń',
+  edit: 'Edytuj',
   emptyTitle: 'Nie ma jeszcze wpisów',
   emptyHint: 'Dotknij „Nowy wpis”, żeby napisać pierwszy.',
   offlineNote: 'Publikacja i usuwanie wymagają internetu.',
