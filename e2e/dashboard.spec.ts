@@ -123,6 +123,32 @@ test('z planem po lekcjach nagłówek mówi „Po lekcjach” / with a plan afte
   await expect(bell).not.toContainText('Brak planu dzwonków');
 });
 
+// PL: W sobotę z przykładowym planem nagłówek mówi „Dziś nie ma lekcji”, a nie „Po lekcjach”, bo dzień wolny ma pierwszeństwo przed planem.
+// EN: On a Saturday with the example plan the header says "Dziś nie ma lekcji", not "Po lekcjach", because a day off comes before the plan.
+test('w dzień wolny z planem nagłówek mówi „Dziś nie ma lekcji” / on a day off with a plan the header says "Dziś nie ma lekcji"', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-17T08:00:00Z'));
+  await useExamplePlan(page);
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('Dziś nie ma lekcji');
+  await expect(bell).not.toContainText('Po lekcjach');
+});
+
+// PL: Przed pierwszą lekcją (07:00 w Warszawie, lekcja od 08:00) z planem nagłówek mówi „Lekcje jeszcze się nie zaczęły”, a nie „Po lekcjach”.
+// EN: Before the first lesson (07:00 in Warsaw, the lesson starts at 08:00) with a plan the header says "Lekcje jeszcze się nie zaczęły", not "Po lekcjach".
+test('przed lekcjami z planem nagłówek mówi „Lekcje jeszcze się nie zaczęły” / before the lessons with a plan the header says "Lekcje jeszcze się nie zaczęły"', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-19T05:00:00Z'));
+  await useExamplePlan(page);
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('Lekcje jeszcze się nie zaczęły');
+  await expect(bell).not.toContainText('Po lekcjach');
+});
+
 // PL: Każdy kafelek prowadzi do właściwego ekranu.
 // EN: Every tile leads to the right screen.
 test('kafelki prowadzą do właściwych ekranów / the tiles lead to the right screens', async ({ page }) => {

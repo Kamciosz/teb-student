@@ -1,13 +1,14 @@
 /**
- * PL: Górny rząd pulpitu: data i powitanie po lewej, licznik do dzwonka po prawej (docs/projekt/EKRANY.md, ekran 2.1). Kafelek prowadzi do ekranu /bell. Licznik pokazuje minuty, gdy trwa lekcja albo przerwa z planu. Gdy stanu nie ma (null), zostaje kreska, a napis zależy od planu: gdy plan dnia ma lekcje, „Po lekcjach” (do uzgodnienia z zespołem), a bez planu „Brak planu dzwonków”. Imienia ucznia też jeszcze nie ma: moduł logowania go nie wystawia, więc powitanie jest bez imienia.
- * EN: The top row of the dashboard: the date and the greeting on the left, the bell countdown on the right (docs/projekt/EKRANY.md, screen 2.1). The tile leads to the /bell screen. The countdown shows minutes when a lesson or a break from the plan is on. When there is no state (null), a dash stays and the text depends on the plan: "Po lekcjach" (to be agreed with the team) when the day's plan has lessons, and "Brak planu dzwonków" without a plan. There is no student name yet either: the sign-in module does not expose it, so the greeting has no name.
+ * PL: Górny rząd pulpitu: data i powitanie po lewej, licznik do dzwonka po prawej (docs/projekt/EKRANY.md, ekran 2.1). Kafelek prowadzi do ekranu /bell. Licznik pokazuje minuty, gdy trwa lekcja albo przerwa z planu. Gdy stanu nie ma (null), zostaje kreska, a napis zależy od stanu dnia: bez planu „Brak planu dzwonków”, w dzień wolny „Dziś nie ma lekcji”, przed lekcjami „Lekcje jeszcze się nie zaczęły”, w trakcie „Trwa lekcja”, po lekcjach „Po lekcjach”. Nowe napisy są w grupie TO_AGREE i czekają na decyzję zespołu. Imienia ucznia też jeszcze nie ma: moduł logowania go nie wystawia, więc powitanie jest bez imienia.
+ * EN: The top row of the dashboard: the date and the greeting on the left, the bell countdown on the right (docs/projekt/EKRANY.md, screen 2.1). The tile leads to the /bell screen. The countdown shows minutes when a lesson or a break from the plan is on. When there is no state (null), a dash stays and the text depends on the day's state: "Brak planu dzwonków" without a plan, "Dziś nie ma lekcji" on a day off, "Lekcje jeszcze się nie zaczęły" before the lessons, "Trwa lekcja" during them, "Po lekcjach" after them. The new texts are in the TO_AGREE group and wait for a team decision. There is no student name yet either: the sign-in module does not expose it, so the greeting has no name.
  *
  * @author Kacper
  * @since 2026-10-11
  * @uses src/features/dashboard/format.ts::formatToday
  * @uses src/features/dashboard/useBellState.ts::useBellState
  * @uses src/features/bell/index.ts::BellState
- * @uses src/features/bell/index.ts::hasBellPlan
+ * @uses src/features/bell/index.ts::BellDayStatus
+ * @uses src/features/bell/index.ts::bellDayStatus
  * @used_by src/features/dashboard/DashboardScreen.tsx::DashboardScreen
  */
 
@@ -17,12 +18,33 @@ import { Link } from 'react-router';
 // PL: Data nad powitaniem.
 // EN: The date above the greeting.
 import { formatToday } from './format';
-// PL: Typ stanu licznika i sprawdzenie, czy plan dnia ma lekcje, z drzwi modułu bell.
-// EN: The countdown state type and the check whether the day's plan has lessons, from the bell module door.
-import { hasBellPlan, type BellState } from '../bell';
+// PL: Typ stanu licznika, typ stanu dnia i sprawdzenie stanu dnia z drzwi modułu bell.
+// EN: The countdown state type, the day state type and the day state check, from the bell module door.
+import { bellDayStatus, type BellDayStatus, type BellState } from '../bell';
 // PL: Stan licznika odświeżany, gdy karta jest widoczna.
 // EN: The countdown state, refreshed while the tab is visible.
 import { useBellState } from './useBellState';
+
+// PL: Napisy stanu dnia bez licznika. Nowe napisy czekają na decyzję zespołu (TO_AGREE).
+// EN: The texts of the day state without the countdown. The new texts wait for a team decision (TO_AGREE).
+const TO_AGREE = {
+  dayOff: 'Dziś nie ma lekcji',
+  before: 'Lekcje jeszcze się nie zaczęły',
+  during: 'Trwa lekcja',
+  after: 'Po lekcjach',
+} as const;
+
+// PL: Napis pod kreską dla każdego stanu dnia (pełne zestawienie, żeby nowy stan nie zgubił się po cichu).
+// EN: The text under the dash for each day state (the full list, so that a new state cannot be lost silently).
+const NO_STATE_TEXT: Record<BellDayStatus, string> = {
+  // PL: Brak planu dzwonków to napis z wcześniejszego zgłoszenia, nie nowy.
+  // EN: "Brak planu dzwonków" is a text from an earlier change, not a new one.
+  'no-plan': 'Brak planu dzwonków',
+  'day-off': TO_AGREE.dayOff,
+  before: TO_AGREE.before,
+  during: TO_AGREE.during,
+  after: TO_AGREE.after,
+};
 
 /** PL: Własności górnego rzędu. EN: The properties of the top row. */
 type DashboardHeaderProps = {
@@ -31,21 +53,20 @@ type DashboardHeaderProps = {
 };
 
 /**
- * PL: Rysuje treść licznika: minuty i „do dzwonka” albo, bez stanu, kreskę i napis: „Po lekcjach” przy planie, „Brak planu dzwonków” bez planu.
- * EN: Draws the content of the countdown: the minutes and "do dzwonka", or, without a state, a dash and the text: "Po lekcjach" with a plan, "Brak planu dzwonków" without one.
+ * PL: Rysuje treść licznika: minuty i „do dzwonka” albo, bez stanu, kreskę i napis zależny od stanu dnia.
+ * EN: Draws the content of the countdown: the minutes and "do dzwonka", or, without a state, a dash and the text that depends on the day's state.
  *
- * @param props - PL: stan licznika albo null. EN: the countdown state or null.
+ * @param props - PL: stan licznika albo null oraz stan dnia. EN: the countdown state or null, and the day state.
  * @returns PL: elementy licznika. EN: the countdown elements.
  */
-export function BellReadout({ state }: { state: BellState | null }) {
+export function BellReadout({ state, day }: { state: BellState | null; day: BellDayStatus }) {
   if (state === null) {
     return (
       <>
         <p className="dash-bell__num" aria-hidden="true">
           –
         </p>
-        {/* PL: „Po lekcjach” do uzgodnienia z zespołem. EN: "Po lekcjach" to be agreed with the team. */}
-        <p className="dash-label">{hasBellPlan() ? 'Po lekcjach' : 'Brak planu dzwonków'}</p>
+        <p className="dash-label">{NO_STATE_TEXT[day]}</p>
       </>
     );
   }
@@ -79,7 +100,7 @@ export function DashboardHeader({ editing, onToggleEdit }: DashboardHeaderProps)
       </div>
       {/* PL: Licznik do dzwonka jako link do /bell. EN: The bell countdown as a link to /bell. */}
       <Link to="/bell" className="dash-bell" aria-label="Licznik do dzwonka">
-        <BellReadout state={bell} />
+        <BellReadout state={bell} day={bellDayStatus()} />
       </Link>
     </header>
   );
