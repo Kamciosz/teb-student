@@ -268,11 +268,18 @@ test.describe('edytor w zbudowanej aplikacji / the editor in the built app', () 
 
   test('edytor otwiera się i działa bez internetu / the editor opens and works without internet', async ({ page, context }) => {
     await page.goto('/news/editor');
+    // PL: Czekamy, aż service worker przejmie stronę. Dopiero wtedy zapisuje paczki w pamięci telefonu.
+    // EN: We wait until the service worker takes over the page. Only then does it store the bundles in the phone memory.
+    await expect
+      .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null), { timeout: 30_000 })
+      .toBe(true);
+    // PL: Paczki Tiptapa ładują się dopiero na kroku edytora, więc otwieramy go online.
+    // EN: The Tiptap bundles load only on the editor step, so we open it while online.
+    await page.getByRole('button', { name: 'Dalej' }).click();
     // PL: Czekamy, aż service worker zapisze paczkę edytora w pamięci telefonu.
     // EN: We wait until the service worker stores the editor bundle in the phone memory.
     await expect
       .poll(() => page.evaluate(async () => {
-        await navigator.serviceWorker.ready;
         const keys = await Promise.all((await caches.keys()).map(async (name) => (await (await caches.open(name)).keys()).map((request) => request.url)));
         return keys.flat().some((url) => url.includes('/RichEditor-'));
       }), { timeout: 30_000 })

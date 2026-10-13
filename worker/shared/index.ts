@@ -11,8 +11,8 @@
  */
 
 /**
- * PL: Środowisko Workera: to, co Cloudflare podaje serwerowi poza zapytaniem. Dziś baza D1 pod nazwą DB (wrangler.jsonc, d1_databases) i dwa ustawienia logowania (.dev.vars.example). Router dostaje je jako `Hono<{ Bindings: Env }>`, a funkcja kasująca przez pole `db`.
- * EN: The Worker environment: what Cloudflare gives the server besides the request. Today the D1 database under the name DB (wrangler.jsonc, d1_databases) and two sign-in settings (.dev.vars.example). A router receives it as `Hono<{ Bindings: Env }>`, and a deleting function through the `db` field.
+ * PL: Środowisko Workera: to, co Cloudflare podaje serwerowi poza zapytaniem. Dziś baza D1 pod nazwą DB (wrangler.jsonc, d1_databases), zasobnik R2 pod nazwą MEDIA (wrangler.jsonc, r2_buckets) i dwa ustawienia logowania (.dev.vars.example). Router dostaje je jako `Hono<{ Bindings: Env }>`, a funkcja kasująca przez pole `db`.
+ * EN: The Worker environment: what Cloudflare gives the server besides the request. Today the D1 database under the name DB (wrangler.jsonc, d1_databases), the R2 bucket under the name MEDIA (wrangler.jsonc, r2_buckets) and two sign-in settings (.dev.vars.example). A router receives it as `Hono<{ Bindings: Env }>`, and a deleting function through the `db` field.
  */
 export type Env = {
   /** PL: Baza D1 aplikacji (binding DB). EN: The app's D1 database (the DB binding). */
@@ -21,6 +21,8 @@ export type Env = {
   BETTER_AUTH_SECRET?: string;
   /** PL: Adres aplikacji (Better Auth). Lokalnie w .dev.vars. EN: The app address (Better Auth). Locally in .dev.vars. */
   BETTER_AUTH_URL?: string;
+  /** PL: Zasobnik R2 na zdjęcia i filmy (binding MEDIA, wrangler.jsonc, r2_buckets). EN: The R2 bucket for photos and videos (the MEDIA binding, wrangler.jsonc, r2_buckets). */
+  MEDIA: R2Bucket;
 };
 
 // PL: Alias, bo wewnątrz przestrzeni nazw Cloudflare nazwa Env oznacza już interfejs, który rozszerzamy.
