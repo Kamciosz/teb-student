@@ -1,11 +1,12 @@
 /**
- * PL: Ekran jednego wpisu (ekran 2.3): znacznik typu, źródło z datą, tytuł, treść i przycisk z linkiem. Treść rysuje RichContent, który czyści dokument JSON. Szkic i nieznany numer pokazują „Nie znaleziono wpisu”.
- * EN: The single entry screen (screen 2.3): the type tag, the source with the date, the title, the content and the link button. RichContent draws the content and cleans the JSON document. A draft and an unknown id show "Nie znaleziono wpisu" (entry not found).
+ * PL: Ekran jednego wpisu (ekran 2.3): znacznik typu, źródło z datą, tytuł, treść, przycisk z linkiem, podpis autora i stopkę „Redakcja gazetki”. Treść rysuje RichContent, który czyści dokument JSON. Szkic i nieznany numer pokazują „Nie znaleziono wpisu”.
+ * EN: The single entry screen (screen 2.3): the type tag, the source with the date, the title, the content, the link button, the author's signature and the "Redakcja gazetki" footer. RichContent draws the content and cleans the JSON document. A draft and an unknown id show "Nie znaleziono wpisu" (entry not found).
  *
  * @author Szymon
  * @since 2026-10-09
  * @uses src/features/news/feed/hooks.ts::useEntry
  * @uses src/features/news/feed/content/RichContent.tsx::RichContent
+ * @uses src/features/news/feed/EntrySignature.tsx::EntrySignature
  * @used_by src/features/news/feed/NewsFeedScreen.tsx::EntryScreen
  */
 
@@ -16,6 +17,7 @@ import { useParams } from 'react-router';
 // EN: The entry content and the screen bar.
 import { RichContent } from './content/RichContent';
 import { safeHttpsUrl } from './content/sanitize';
+import { EntrySignature } from './EntrySignature';
 import { ScreenTop } from './ScreenTop';
 // PL: Dane, błąd API i zapis daty.
 // EN: Data, the API error and the date format.
@@ -84,6 +86,7 @@ export function EntryScreen() {
           </p>
           <RichContent body={entry.body} />
           <EntryLink entry={entry} />
+          <EntrySignature authorName={entry.authorName} />
         </article>
       ) : null}
     </main>

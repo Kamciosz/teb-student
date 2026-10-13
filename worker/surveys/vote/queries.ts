@@ -123,7 +123,7 @@ export async function loadQuestions(db: VoteDatabase, surveyId: string): Promise
   // PL: Pytania ankiety w kolejności.
   // EN: The survey questions in order.
   const questions = await db
-    .select({ id: surveyQuestions.id, prompt: surveyQuestions.prompt })
+    .select({ id: surveyQuestions.id, type: surveyQuestions.type, prompt: surveyQuestions.prompt })
     .from(surveyQuestions)
     .where(eq(surveyQuestions.surveyId, surveyId))
     .orderBy(asc(surveyQuestions.position));
