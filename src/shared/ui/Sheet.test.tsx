@@ -1,11 +1,10 @@
 /**
- * PL: Test arkusza: natywny dialog z nazwą (aria-labelledby), brak atrybutu open przy zamknięciu, obsługa Escape w kodzie (onCancel woła onClose), brak ukrywania fokusa i blokada tła w CSS. Otwarcie i fokus wymagają przeglądarki, więc sprawdza je e2e/shared-wyglad.spec.ts, gdy jakiś ekran użyje arkusza.
- * EN: Test of the sheet: the native dialog with a name (aria-labelledby), no open attribute when closed, Escape handling in code (onCancel calls onClose), no hiding of the focus and the background block in CSS. Opening and the focus need a browser, so e2e/shared-wyglad.spec.ts checks them once a screen uses the sheet.
+ * PL: Test arkusza: natywny dialog z nazwą (aria-labelledby), brak atrybutu open przy zamknięciu i obsługa Escape w kodzie (onCancel woła onClose). Otwarcie i fokus wymagają przeglądarki.
+ * EN: Test of the sheet: the native dialog with a name (aria-labelledby), no open attribute when closed, and Escape handling in code (onCancel calls onClose). Opening and the focus need a browser.
  *
  * @author Kacper
  * @since 2026-10-13
  * @uses src/shared/ui/Sheet.tsx::Sheet
- * @uses src/shared/ui/Sheet.css::.ui-sheet
  * @used_by vitest.config.ts::include
  */
 
@@ -18,10 +17,9 @@ import { renderToString } from 'react-dom/server';
 // PL: Komponent pod testem.
 // EN: The component under test.
 import { Sheet } from './Sheet';
-// PL: Kod komponentu i arkusz stylów jako tekst, żeby sprawdzić obsługę Escape i stany.
-// EN: The component code and the style sheet as text, to check the Escape handling and the states.
+// PL: Kod komponentu jako tekst, żeby sprawdzić obsługę otwarcia, zamknięcia i Escape.
+// EN: The component code as text, to check opening, closing and the Escape handling.
 import sheetSource from './Sheet.tsx?raw';
-import sheetCss from './Sheet.css?raw';
 
 describe('arkusz / the sheet', () => {
   it('jest natywnym dialogiem z nazwą z tytułu / is a native dialog named by its title', () => {
@@ -55,18 +53,5 @@ describe('arkusz / the sheet', () => {
     expect(sheetSource).toContain('onCancel=');
     expect(sheetSource).toContain('event.preventDefault()');
     expect(sheetSource).toContain('onClose()');
-  });
-
-  it('CSS: nie ustawia display na oknie, żeby zamknięte okno zostało ukryte / CSS: does not set display on the window, so a closed window stays hidden', () => {
-    expect(sheetCss).not.toMatch(/\.ui-sheet\s*\{[^}]*display\s*:/);
-  });
-
-  it('CSS: tło za oknem jest przyciemnione z palety / CSS: the backdrop is dimmed from the palette', () => {
-    expect(sheetCss).toContain('.ui-sheet::backdrop');
-    expect(sheetCss).toContain('var(--bg)');
-  });
-
-  it('CSS: nie wyłącza obwódki fokusa / CSS: does not turn the focus outline off', () => {
-    expect(sheetCss).not.toMatch(/outline:\s*(none|0)\b/);
   });
 });

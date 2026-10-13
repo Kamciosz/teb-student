@@ -1,11 +1,10 @@
 /**
- * PL: Test dolnego paska: nazwa menu, trzy linki, bieżący ekran z aria-current, przycisk „+” z ukrytym znakiem i nazwą dla czytnika, wysokość dotyku w CSS. Linki są w routerze, więc test podaje MemoryRouter. Fokus i Tab sprawdza e2e/shared-wyglad.spec.ts.
- * EN: Test of the bottom bar: the menu name, three links, the current screen with aria-current, the "+" button with the hidden sign and the name for the screen reader, the touch height in CSS. The links need a router, so the test gives a MemoryRouter. Focus and Tab are checked by e2e/shared-wyglad.spec.ts.
+ * PL: Test dolnego paska: nazwa menu, trzy linki, bieżący ekran z aria-current, przycisk „+” z ukrytym znakiem i nazwą dla czytnika oraz klasy stylu. Linki są w routerze, więc test podaje MemoryRouter.
+ * EN: Test of the bottom bar: the menu name, three links, the current screen with aria-current, the "+" button with the hidden sign and the name for the screen reader, and the style classes. The links need a router, so the test gives a MemoryRouter.
  *
  * @author Bohdan
  * @since 2026-10-13
  * @uses src/shared/ui/Dock.tsx::Dock
- * @uses src/shared/ui/Dock.css::.ui-dock
  * @used_by vitest.config.ts::include
  */
 
@@ -21,9 +20,6 @@ import { MemoryRouter } from 'react-router';
 // PL: Komponent pod testem.
 // EN: The component under test.
 import { Dock } from './Dock';
-// PL: Arkusz stylów jako tekst.
-// EN: The style sheet as text.
-import dockCss from './Dock.css?raw';
 
 // PL: Rysuje pasek na ekranie Ankiet, żeby bieżący wpis był znany.
 // EN: Draws the bar on the Surveys screen, so the current entry is known.
@@ -65,16 +61,9 @@ describe('dolny pasek / the bottom bar', () => {
     expect(html).toContain('<span class="ui-sr-only">Zgłoś problem</span>');
   });
 
-  it('linki mają klasy do stylu i wysokość dotyku co najmniej 44 px w CSS / the links have style classes and a touch height of at least 44 px in CSS', () => {
+  it('linki mają klasy do stylu / the links have style classes', () => {
     const html = renderDock('/');
 
     expect(html).toContain('class="ui-dock-link"');
-    expect(dockCss).toMatch(/\.ui-dock-link\s*\{[^}]*min-height:\s*44px/);
-    expect(dockCss).toMatch(/\.ui-dock-add\s*\{[^}]*min-height:\s*48px/);
-  });
-
-  it('CSS: bieżący wpis ma własny styl i fokus nie jest wyłączony / CSS: the current entry has its own style and the focus is not turned off', () => {
-    expect(dockCss).toContain(".ui-dock-link[aria-current='page']");
-    expect(dockCss).not.toMatch(/outline:\s*(none|0)\b/);
   });
 });

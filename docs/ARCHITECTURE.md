@@ -52,7 +52,6 @@ Te pliki zbierają podtory. Zmienia je tylko etap A albo Bohdan, nie podtor:
 - `worker/shared/accountDeletion.ts`: lista funkcji, które kasują dane ucznia przy usunięciu konta.
 - `worker/shared/index.ts`: typ `Env` (binding `DB`) i `DeleteStudentDataInput`; `worker/shared/seed.ts`: typ `SeedSet`.
 - `src/shared/navigation/items.ts`: wpisy dolnego paska i menu panelu.
-- `src/shared/ui/`: wspólne elementy ekranów (przycisk, znacznik, pole tekstowe, kafelek, etykieta, pasek postępu, arkusz, pusty stan, dolny pasek). Moduły importują je z `src/shared/index.ts`, a nie z plików w środku.
 
 Wpis w rejestrze prowadzi do `index.ts` podtoru. Podtor zmienia tylko swój katalog. Dzięki temu dwa podtory nigdy nie zmieniają tego samego pliku.
 
