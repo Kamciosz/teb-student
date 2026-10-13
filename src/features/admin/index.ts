@@ -16,8 +16,8 @@
 // PL: Ekran podtoru 8.
 // EN: The screen of subtrack 8.
 export { AdminScreen } from './AdminScreen';
-// PL: Rama panelu Samorządu z menu. Router otacza nią ekrany panelu.
-// EN: The Student Council panel frame with the menu. The router wraps the panel screens in it.
+// PL: Rama panelu Samorządu z bramką roli. Router otacza nią ekrany panelu.
+// EN: The Student Council panel frame with the role gate. The router wraps the panel screens in it.
 export { AdminLayout } from './AdminLayout';
 
 // PL: Bramka roli dla ekranów panelu po stronie telefonu. Użycie na ekranie modułu w ramie panelu: <PanelGate minimum="council"><MojEkran /></PanelGate>. Role od najniższej: 'editor' (redakcja, Wpisy; to domyślne minimum), 'council' (Samorząd: Zgłoszenia, Ankiety, Kody zaproszeń), 'admin'. Uczeń bez wystarczającej roli widzi ekran „Tylko dla Samorządu”. To tylko wygoda: dane chroni serwer (requirePanelRole w worker/admin/index.ts).
