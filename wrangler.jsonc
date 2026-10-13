@@ -42,5 +42,19 @@
       // EN: The database name in Cloudflare and in Wrangler commands.
       "database_name": "teb-student"
     }
+  ],
+  // PL: Zasobnik R2 na zdjęcia i filmy (podtor 2). Kod serwera czyta go jako env.MEDIA (typ Env w worker/shared/index.ts).
+  // EN: The R2 bucket for photos and videos (subtrack 2). The server code reads it as env.MEDIA (the Env type in worker/shared/index.ts).
+  // PL: Lokalnie (npm run dev, npm test) Wrangler sam tworzy zasobnik w .wrangler/state. Konta Cloudflare jeszcze nie ma, więc nazwy zasobnika nie zakładamy w panelu.
+  // EN: Locally (npm run dev, npm test) Wrangler creates the bucket by itself in .wrangler/state. The Cloudflare account does not exist yet, so the bucket is not created in the dashboard.
+  "r2_buckets": [
+    {
+      // PL: Nazwa bindingu, pod którą zasobnik jest w env.
+      // EN: The binding name under which the bucket is in env.
+      "binding": "MEDIA",
+      // PL: Nazwa zasobnika w Cloudflare R2.
+      // EN: The bucket name in Cloudflare R2.
+      "bucket_name": "teb-media"
+    }
   ]
 }
