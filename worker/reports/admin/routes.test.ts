@@ -68,6 +68,19 @@ function patchStage(id: string, body: unknown): Promise<Response> {
   return send(`/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) });
 }
 
+/**
+ * PL: Czyta dziennik zmian prosto z bazy testowej, od najstarszego wpisu: nazwa akcji, wykonawca i cel.
+ * EN: Reads the change diary straight from the test database, from the oldest entry: the action name, the actor and the target.
+ *
+ * @returns PL: wiersze dziennika. EN: the diary rows.
+ */
+async function diaryRows(): Promise<unknown[]> {
+  // PL: Wybierz wszystkie wpisy po numerze.
+  // EN: Select all entries by id.
+  const { results } = await db.prepare('SELECT action, actor_id, target_id FROM diary_entries ORDER BY id').all();
+  return results;
+}
+
 // PL: Przed każdym testem zaloguj ucznia z rolą Samorządu i wróć do czystych danych.
 // EN: Before every test sign in a student with the Council role and go back to clean data.
 beforeEach(async () => {
@@ -349,6 +362,9 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     expect(row?.stage).toBe('resolved');
     expect(row?.updated_at).toBeGreaterThan(Date.UTC(2026, 9, 7, 8, 0));
     expect(last).toEqual({ changed_by: studentId });
+    // PL: Dokładnie jeden wpis w dzienniku: zmiana etapu, wykonawca z sesji i id zgłoszenia, bez treści.
+    // EN: Exactly one diary entry: the stage change, the actor from the session and the report id, without the content.
+    expect(await diaryRows()).toEqual([{ action: 'report_stage_changed', actor_id: studentId, target_id: 'seed-projektor' }]);
   });
 
   // PL: Odpowiedź wysłana razem ze zmianą etapu trafia do wiersza historii i wraca w tej samej odpowiedzi.
@@ -379,6 +395,9 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     // EN: The answer is successful and the history still has two rows.
     expect(response.status).toBe(200);
     expect(count?.n).toBe(2);
+    // PL: Brak zmiany to brak wpisu w dzienniku.
+    // EN: No change means no diary entry.
+    expect(await diaryRows()).toEqual([]);
   });
 
   // PL: Zły etap, brak etapu i zepsuty JSON to 400, a baza zostaje bez zmian.
@@ -395,6 +414,7 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     // EN: All three are 400, and the stage in the database did not change.
     expect([bad.status, missing.status, broken.status]).toEqual([400, 400, 400]);
     expect(row).toEqual({ stage: 'in_progress' });
+    expect(await diaryRows()).toEqual([]);
   });
 
   // PL: Nieznane zgłoszenie to 404 i nic nie trafia do historii.
@@ -409,6 +429,7 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     // EN: 404, and the history still has the six seed rows.
     expect(response.status).toBe(404);
     expect(count?.n).toBe(6);
+    expect(await diaryRows()).toEqual([]);
   });
 
   // PL: Zbyt duża treść to 413.
@@ -418,6 +439,7 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     // EN: A body larger than 4 KB is rejected before we read it.
     const response = await patchStage('seed-projektor', { stage: 'resolved', padding: 'x'.repeat(5000) });
     expect(response.status).toBe(413);
+    expect(await diaryRows()).toEqual([]);
   });
 
   // PL: Odpowiedź dla autora zapisuje się w wierszu historii nowego etapu, bez dodatkowego wiersza. Przycięte spacje nie trafiają do bazy.
@@ -464,6 +486,7 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     expect([tooLong.status, notText.status]).toEqual([400, 400]);
     expect(row).toEqual({ stage: 'in_progress' });
     expect(count?.n).toBe(2);
+    expect(await diaryRows()).toEqual([]);
   });
 
   // PL: Pusta odpowiedź (same spacje) to brak odpowiedzi: zmiana etapu idzie, a `note` w bazie jest pusty.
