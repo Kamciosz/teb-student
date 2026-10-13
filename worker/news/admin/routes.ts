@@ -55,13 +55,15 @@ export function createNewsAdminApp(guard: MiddlewareHandler<StudentEnv>) {
   // EN: The list of all entries with drafts, without the content.
   app.get('/', (context) => withDatabase(context, async () => context.json({ entries: await listPanelEntries(context.env.DB) })));
 
-  // PL: Publikacja szkicu: 200 po publikacji, 409 gdy wpis już jest opublikowany, 404 gdy go nie ma.
-  // EN: Publishing a draft: 200 after publishing, 409 when the entry is already published, 404 when it does not exist.
+  // PL: Publikacja szkicu: 200 po publikacji, 409 „already_published” gdy wpis już jest opublikowany, 409 „in_review” gdy czeka w korekcie, 404 gdy go nie ma.
+  // EN: Publishing a draft: 200 after publishing, 409 "already_published" when the entry is already published, 409 "in_review" when it waits in review, 404 when it does not exist.
   app.post('/:id/publish', (context) =>
     withDatabase(context, async () => {
       const result = await publishDraft(context.env.DB, context.req.param('id'));
       if (result === 'not_found') return context.json({ error: 'not_found' }, 404);
-      return result === 'already_published' ? context.json({ error: 'already_published' }, 409) : context.json({ id: context.req.param('id') });
+      if (result === 'in_review') return context.json({ error: 'in_review' }, 409);
+      if (result === 'already_published') return context.json({ error: 'already_published' }, 409);
+      return context.json({ id: context.req.param('id') });
     }),
   );
 
