@@ -73,10 +73,10 @@ export const REPORTS_SEED: (typeof reports.$inferInsert)[] = [
  */
 export const REPORT_STAGE_CHANGES_SEED: (typeof reportStageChanges.$inferInsert)[] = [
   { id: 'seed-projektor-1', reportId: 'seed-projektor', stage: 'received', changedBy: null, changedAt: Date.UTC(2026, 9, 6, 8, 0) },
-  { id: 'seed-projektor-2', reportId: 'seed-projektor', stage: 'in_progress', changedBy: 'samorzad-testowy', changedAt: Date.UTC(2026, 9, 7, 8, 0) },
+  { id: 'seed-projektor-2', reportId: 'seed-projektor', stage: 'in_progress', changedBy: 'samorzad-testowy', changedAt: Date.UTC(2026, 9, 7, 8, 0), note: 'Sprawdzimy projektor na przerwie obiadowej.' },
   { id: 'seed-okno-1', reportId: 'seed-okno', stage: 'received', changedBy: null, changedAt: Date.UTC(2026, 8, 29, 8, 0) },
   { id: 'seed-okno-2', reportId: 'seed-okno', stage: 'in_progress', changedBy: 'samorzad-testowy', changedAt: Date.UTC(2026, 8, 30, 8, 0) },
-  { id: 'seed-okno-3', reportId: 'seed-okno', stage: 'resolved', changedBy: 'samorzad-testowy', changedAt: Date.UTC(2026, 9, 2, 8, 0) },
+  { id: 'seed-okno-3', reportId: 'seed-okno', stage: 'resolved', changedBy: 'samorzad-testowy', changedAt: Date.UTC(2026, 9, 2, 8, 0), note: 'Okno wymienione, domyka się bez problemu.' },
   { id: 'seed-cudze-1', reportId: 'seed-cudze', stage: 'received', changedBy: null, changedAt: Date.UTC(2026, 9, 8, 8, 0) },
 ];
 

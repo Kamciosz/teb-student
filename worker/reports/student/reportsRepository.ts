@@ -1,18 +1,19 @@
 /**
- * PL: Dostęp do bazy dla zgłoszeń ucznia: zapis nowego zgłoszenia z pierwszym etapem w historii i odczyt zgłoszeń jednego autora. Tylko ten plik pisze zapytania SQL modułu 4a, żeby trasy zostały krótkie.
- * EN: Database access for student reports: saving a new report with its first stage in the history and reading one author's reports. Only this file writes the SQL queries of module 4a, so the routes stay short.
+ * PL: Dostęp do bazy dla zgłoszeń ucznia: zapis nowego zgłoszenia z pierwszym etapem w historii i odczyt zgłoszeń jednego autora wraz z historią etapów i odpowiedziami Samorządu. Tylko ten plik pisze zapytania SQL modułu 4a, żeby trasy zostały krótkie.
+ * EN: Database access for student reports: saving a new report with its first stage in the history, and reading one author's reports with their stage history and Student Council answers. Only this file writes the SQL queries of module 4a, so the routes stay short.
  *
  * @author Szymon
  * @since 2026-10-09
  * @uses worker/db/schema/reports.ts::reports
  * @uses worker/db/schema/reports.ts::reportStageChanges
+ * @uses worker/db/schema/reports.ts::MAX_STAGE_NOTE_LENGTH
  * @used_by worker/reports/student/routes.ts::createReport
  * @used_by worker/reports/student/routes.ts::listReportsByAuthor
  */
 
-// PL: desc sortuje malejąco, eq porównuje wartości w warunku WHERE.
-// EN: desc sorts in descending order, eq compares values in a WHERE condition.
-import { desc, eq } from 'drizzle-orm';
+// PL: desc i asc sortują malejąco i rosnąco, eq i inArray porównują wartości w warunku WHERE.
+// EN: desc and asc sort in descending and ascending order, eq and inArray compare values in a WHERE condition.
+import { asc, desc, eq, inArray } from 'drizzle-orm';
 // PL: Drizzle dla bazy D1.
 // EN: Drizzle for the D1 database.
 import { drizzle } from 'drizzle-orm/d1';
@@ -24,8 +25,8 @@ import { reports, reportStageChanges, type ReportCategory, type ReportPlace, typ
 import type { ReportInput } from './validation';
 
 /**
- * PL: Zgłoszenie w takiej postaci, w jakiej wraca do telefonu ucznia. Celowo nie ma tu numeru autora ani znacznika anonimowości.
- * EN: A report in the form that goes back to the student's phone. There is deliberately no author id and no anonymity flag.
+ * PL: Zgłoszenie w takiej postaci, w jakiej wraca do telefonu ucznia. Celowo nie ma tu numeru autora, znacznika anonimowości ani numeru członka Samorządu, który zmienił etap.
+ * EN: A report in the form that goes back to the student's phone. There is deliberately no author id, no anonymity flag and no id of the Student Council member who changed the stage.
  */
 export type MyReport = {
   /** PL: Numer zgłoszenia. EN: The report id. */
@@ -44,6 +45,21 @@ export type MyReport = {
   createdAt: number;
   /** PL: Chwila ostatniej zmiany etapu, milisekundy od 1970. EN: When the stage last changed, milliseconds since 1970. */
   updatedAt: number;
+  /** PL: Historia etapów od pierwszego, rosnąco po czasie. EN: The stage history from the first stage, ascending by time. */
+  history: MyReportHistoryEntry[];
+};
+
+/**
+ * PL: Jeden wpis historii widoczny dla ucznia: etap, chwila i odpowiedź Samorządu. Bez numeru członka, który zmienił etap.
+ * EN: One history entry visible to the student: the stage, the time and the Student Council answer. Without the id of the member who changed the stage.
+ */
+export type MyReportHistoryEntry = {
+  /** PL: Etap, na który przeszło zgłoszenie. EN: The stage the report moved to. */
+  stage: ReportStage;
+  /** PL: Krótka odpowiedź Samorządu (do 500 znaków) albo `null`. EN: The short Student Council answer (up to 500 characters) or `null`. */
+  note: string | null;
+  /** PL: Chwila zmiany etapu, milisekundy od 1970. EN: When the stage changed, milliseconds since 1970. */
+  changedAt: number;
 };
 
 /**
@@ -75,8 +91,8 @@ export async function createReport(db: D1Database, authorId: string, input: Repo
 }
 
 /**
- * PL: Czyta zgłoszenia jednego autora, od najnowszego. Nigdy nie zwraca cudzych zgłoszeń ani numeru autora.
- * EN: Reads one author's reports, newest first. Never returns other people's reports or the author id.
+ * PL: Czyta zgłoszenia jednego autora, od najnowszego, razem z ich historią etapów. Nigdy nie zwraca cudzych zgłoszeń ani numeru autora czy członka Samorządu.
+ * EN: Reads one author's reports, newest first, together with their stage history. Never returns other people's reports or the id of the author or of the Student Council member.
  *
  * @param db - PL: baza D1. EN: the D1 database.
  * @param authorId - PL: numer ucznia, którego zgłoszenia czytamy. EN: the id of the student whose reports we read.
@@ -86,7 +102,7 @@ export async function createReport(db: D1Database, authorId: string, input: Repo
 export async function listReportsByAuthor(db: D1Database, authorId: string): Promise<MyReport[]> {
   // PL: Wybierz tylko pola, które wolno oddać uczniowi, i tylko wiersze tego autora.
   // EN: Select only the fields the student may get, and only this author's rows.
-  return drizzle(db)
+  const rows = await drizzle(db)
     .select({
       id: reports.id,
       category: reports.category,
@@ -100,4 +116,30 @@ export async function listReportsByAuthor(db: D1Database, authorId: string): Pro
     .from(reports)
     .where(eq(reports.authorId, authorId))
     .orderBy(desc(reports.createdAt));
+
+  // PL: Bez zgłoszeń nie ma historii do czytania, więc kończymy od razu.
+  // EN: With no reports there is no history to read, so we finish right away.
+  if (rows.length === 0) return [];
+
+  // PL: Jedno zapytanie po wszystkich zgłoszeniach naraz: wpisy od najstarszego, bez numeru członka Samorządu.
+  // EN: One query for all these reports at once: entries from the oldest, without the Student Council member's id.
+  const history = await drizzle(db)
+    .select({
+      reportId: reportStageChanges.reportId,
+      stage: reportStageChanges.stage,
+      note: reportStageChanges.note,
+      changedAt: reportStageChanges.changedAt,
+    })
+    .from(reportStageChanges)
+    .where(inArray(reportStageChanges.reportId, rows.map((row) => row.id)))
+    .orderBy(asc(reportStageChanges.changedAt));
+
+  // PL: Dołącz do każdego zgłoszenia jego wpisy historii.
+  // EN: Attach each report's history entries to it.
+  return rows.map((row) => ({
+    ...row,
+    history: history
+      .filter((entry) => entry.reportId === row.id)
+      .map(({ stage, note, changedAt }) => ({ stage, note, changedAt })),
+  }));
 }

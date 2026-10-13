@@ -26,8 +26,8 @@ export type AdminReport = {
   updatedAt: number;
 };
 
-/** PL: Jeden wiersz historii etapów. EN: One row of the stage history. */
-export type StageChange = { stage: string; changedAt: number };
+/** PL: Jeden wiersz historii etapów, z odpowiedzią dla autora, jeśli była. EN: One row of the stage history, with the answer for the author if there was one. */
+export type StageChange = { stage: string; changedAt: number; note: string | null };
 
 /** PL: Imię i klasa autora zgłoszenia nieanonimowego. EN: The name and class of the author of a signed report. */
 export type AdminStudent = { name: string; className: string };
@@ -78,16 +78,16 @@ export async function fetchAdminReport(id: string): Promise<AdminReportDetail> {
 }
 
 /**
- * PL: Zmienia etap zgłoszenia.
- * EN: Changes a report's stage.
+ * PL: Zmienia etap zgłoszenia i zapisuje odpowiedź dla autora (albo brak odpowiedzi, gdy `note` to `null`).
+ * EN: Changes a report's stage and saves the answer for the author (or no answer, when `note` is `null`).
  *
- * @param change - PL: numer zgłoszenia i nowy etap. EN: the report id and the new stage.
+ * @param change - PL: numer zgłoszenia, nowy etap i odpowiedź dla autora albo `null`. EN: the report id, the new stage and the answer for the author, or `null`.
  * @returns PL: zgłoszenie z nową historią. EN: the report with its new history.
  * @throws PL: błąd sieci albo błąd z kodem odpowiedzi. EN: a network error, or an error with the response code.
  */
-export async function changeReportStage(change: { id: string; stage: string }): Promise<AdminReportDetail> {
-  // PL: Wyślij tylko etap; kto zmienia, serwer bierze z sesji.
-  // EN: Send only the stage; the server takes who changes it from the session.
-  const init = { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ stage: change.stage }) };
+export async function changeReportStage(change: { id: string; stage: string; note: string | null }): Promise<AdminReportDetail> {
+  // PL: Wyślij etap i odpowiedź; kto zmienia, serwer bierze z sesji.
+  // EN: Send the stage and the answer; the server takes who changes it from the session.
+  const init = { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ stage: change.stage, note: change.note }) };
   return readJson<AdminReportDetail>(await fetch(`${API_URL}/${encodeURIComponent(change.id)}`, init));
 }

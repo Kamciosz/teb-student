@@ -9,7 +9,12 @@
  * @used_by worker/surveys/admin/queries.ts::listPanelSurveys
  * @used_by worker/surveys/admin/results.ts::buildResults
  * @used_by worker/surveys/admin/routes.ts::surveysAdminApp
+ * @uses worker/db/schema/surveys.ts::QUESTION_TYPES
  */
+
+// PL: Lista rodzajów pytań z tabeli pytań (typy, nie wartości, więc nic nie trafia do kodu wykonywanego).
+// EN: The list of question types from the questions table (types only, so nothing lands in the running code).
+import type { QUESTION_TYPES } from '../../db/schema/surveys';
 
 /**
  * PL: Jedna ankieta na liście w panelu.
@@ -24,6 +29,8 @@ export type PanelSurvey = {
   questionCount: number;
   /** PL: Ostatni dzień ankiety, RRRR-MM-DD (czas polski). EN: The last day of the survey, YYYY-MM-DD (Polish time). */
   endsOn: string;
+  /** PL: Chwila zamknięcia w milisekundach UTC albo null, gdy ankieta kończy się tylko ostatnim dniem. EN: The closing moment in UTC milliseconds, or null when the survey ends only on its last day. */
+  closesAt: number | null;
   /** PL: Ile osób wypełniło ankietę (osób, a nie głosów). EN: How many people filled the survey in (people, not votes). */
   responseCount: number;
 };
@@ -53,12 +60,20 @@ export type OptionResult = {
 };
 
 /**
+ * PL: Rodzaj pytania z listy QUESTION_TYPES (schemat podtoru 5a): jednokrotny albo wielokrotny wybór.
+ * EN: The question type from the QUESTION_TYPES list (the schema of subtrack 5a): single or multiple choice.
+ */
+export type QuestionType = (typeof QUESTION_TYPES)[number];
+
+/**
  * PL: Jedno pytanie w wynikach.
  * EN: One question in the results.
  */
 export type QuestionResult = {
   /** PL: Treść pytania. EN: The question text. */
   prompt: string;
+  /** PL: Rodzaj pytania: od niego zależy, czy wynik to osoby, czy zaznaczenia. EN: The question type: it decides whether the result counts people or checked boxes. */
+  type: QuestionType;
   /** PL: Odpowiedzi w kolejności A, B, C, D, E. EN: The options in the order A, B, C, D, E. */
   options: OptionResult[];
 };
