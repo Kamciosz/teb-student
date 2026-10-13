@@ -1,17 +1,20 @@
 /**
- * PL: Czyste funkcje widoku panelu zgłoszeń: filtr po etapie, nazwa etapu, krótka data, tekst miejsca i liczba osób („Mnie też”). Bez Reacta, żeby dało się je sprawdzić testem.
- * EN: Pure functions of the reports panel view: the stage filter, the stage name, the short date, the place text and the number of people ("Me too"). No React, so a test can check them.
+ * PL: Czyste funkcje widoku panelu zgłoszeń: filtr po etapie, kolejność listy, nazwa etapu, krótka data, tekst miejsca i liczba osób („Mnie też”). Bez Reacta, żeby dało się je sprawdzić testem.
+ * EN: Pure functions of the reports panel view: the stage filter, the list order, the stage name, the short date, the place text and the number of people ("Me too"). No React, so a test can check them.
  *
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/reports/admin/reportLabels.ts::STAGES
+ * @uses src/features/reports/admin/reportLabels.ts::ReportOrder
  * @used_by src/features/reports/admin/ReportsList.tsx::filterByStage
+ * @used_by src/features/reports/admin/ReportsList.tsx::sortReports
  * @used_by src/features/reports/admin/ReportDetail.tsx::formatShortDate
  * @used_by src/features/reports/admin/reportView.test.ts::filterByStage
+ * @used_by src/features/reports/admin/reportView.test.ts::sortReports
  */
 
 import type { AdminReport } from './api';
-import { ALL_STAGES, CATEGORY_LABELS, PLACE_LABELS, STAGES } from './reportLabels';
+import { ALL_STAGES, CATEGORY_LABELS, PLACE_LABELS, STAGES, type ReportOrder } from './reportLabels';
 
 /** PL: Strefa czasowa szkoły. Data ma być taka sama na każdym telefonie. EN: The school time zone. A date must be the same on every phone. */
 const SCHOOL_TIME_ZONE = 'Europe/Warsaw';
@@ -34,6 +37,28 @@ export function filterByStage(reports: readonly AdminReport[], filter: string): 
   // PL: „Wszystkie” oddaje kopię listy, etap zostawia pasujące zgłoszenia.
   // EN: "Wszystkie" returns a copy of the list, a stage keeps the matching reports.
   return filter === ALL_STAGES ? [...reports] : reports.filter((report) => report.stage === filter);
+}
+
+/**
+ * PL: Układa zgłoszenia w wybranej kolejności. „Najnowsze” to od najnowszego; „Najwięcej osób” to od największej liczby dołączeń, a przy remisie nowsze wyżej. Brak liczby dołączeń liczy się jak zero. Oddaje nową tablicę, wejścia nie rusza.
+ * EN: Orders the reports in the chosen order. "Najnowsze" is newest first; "Najwięcej osób" is the most joins first, and on a tie the newer one comes first. A missing join count counts as zero. Returns a new array and does not touch the input.
+ *
+ * @param reports - PL: lista zgłoszeń. EN: the list of reports.
+ * @param order - PL: wybrana kolejność. EN: the chosen order.
+ * @returns PL: nowa, posortowana lista. EN: a new, sorted list.
+ */
+export function sortReports(reports: readonly AdminReport[], order: ReportOrder): AdminReport[] {
+  // PL: Kopia listy, żeby sortowanie nie zmieniło listy z zapisu w telefonie.
+  // EN: A copy of the list, so the sort does not change the list from the phone copy.
+  const sorted = [...reports];
+  if (order === 'most_joined') {
+    // PL: Najpierw liczba dołączeń malejąco, przy takiej samej liczbie nowsze zgłoszenie wyżej.
+    // EN: First the join count descending, and with the same count the newer report first.
+    return sorted.sort((a, b) => (b.joinCount ?? 0) - (a.joinCount ?? 0) || b.createdAt - a.createdAt);
+  }
+  // PL: Od najnowszego po dacie utworzenia, nie po kolejności z serwera.
+  // EN: Newest first by the creation date, not by the server order.
+  return sorted.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 /**
