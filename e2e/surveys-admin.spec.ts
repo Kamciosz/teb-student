@@ -56,13 +56,13 @@ const MULTI_RESULTS = {
 
 // PL: Plik CSV z wynikami ankiety „stolowka”: nagłówek, wiersz na każdą odpowiedź, BOM na początku i CRLF na końcu wierszy.
 // EN: The CSV file with the results of the "stolowka" survey: the header, a row for every option, the BOM at the start and CRLF at the end of rows.
-const FULL_CSV = '\uFEFFPytanie,Odpowiedź,Liczba głosów,Procent\r\n' + [
-  'Jak oceniasz obiady w stołówce?,Dobrze,5,42',
-  'Jak oceniasz obiady w stołówce?,Różnie,4,33',
-  'Jak oceniasz obiady w stołówce?,Słabo,2,17',
-  'Jak oceniasz obiady w stołówce?,Nie jadam w stołówce,1,8',
-  'Co poprawić?,Porcje,7,58',
-  'Co poprawić?,Smak,5,42',
+const FULL_CSV = '\uFEFFPytanie,Odpowiedź,Liczba głosów,Procent,Średnia\r\n' + [
+  'Jak oceniasz obiady w stołówce?,Dobrze,5,42,',
+  'Jak oceniasz obiady w stołówce?,Różnie,4,33,',
+  'Jak oceniasz obiady w stołówce?,Słabo,2,17,',
+  'Jak oceniasz obiady w stołówce?,Nie jadam w stołówce,1,8,',
+  'Co poprawić?,Porcje,7,58,',
+  'Co poprawić?,Smak,5,42,',
 ].join('\r\n') + '\r\n';
 
 // PL: Wyniki ankiety z 3 odpowiedziami: serwer nie wysyła rozkładu (makieta 6.5c).
