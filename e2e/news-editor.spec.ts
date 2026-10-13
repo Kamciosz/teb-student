@@ -53,6 +53,30 @@ test('krok 1 pokazuje typy wpisu i pasek postępu / step 1 shows the entry types
   await expect(page.getByText('1/3')).toBeVisible();
 });
 
+// PL: Kafelek „dodaj” w sekcji „Zdjęcia i wideo” jest tylko wyglądem: nie otwiera wyboru plików, nic nie wysyła i nie przenosi do kroku 2.
+// EN: The "add" tile in the "Zdjęcia i wideo" section is only a look: it does not open the file picker, sends nothing and does not move to step 2.
+test('kafelek dodaj nic nie robi w kroku 1 / the add tile does nothing in step 1', async ({ page }) => {
+  const requests: string[] = [];
+  let fileChooser = false;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/')) requests.push(request.url());
+  });
+  page.on('filechooser', () => {
+    fileChooser = true;
+  });
+  await page.goto('/news/editor');
+  await expect(page.getByText('Zdjęcia i wideo')).toBeVisible();
+  await expect(page.getByText('Pliki są zmniejszane przed wysłaniem. Zdjęcie przytniesz klikając ikonę kadrowania.')).toBeVisible();
+  const add = page.getByRole('button', { name: 'Dodaj zdjęcie albo wideo' });
+  await expect(add).toHaveAttribute('aria-disabled', 'true');
+  // PL: force omija tylko sprawdzenie „czy włączony”: aria-disabled="true" zatrzymałoby klik, a klik ma dojść i nic nie zrobić.
+  // EN: force skips only the "is enabled" check: aria-disabled="true" would stop the click, and the click must reach the tile and do nothing.
+  await add.click({ force: true });
+  await expect(page.getByRole('heading', { name: 'Jaki to wpis?' })).toBeVisible();
+  expect(fileChooser).toBe(false);
+  expect(requests).toEqual([]);
+});
+
 // PL: Cała ścieżka: trzy kroki, formatowanie, podgląd i publikacja. Sprawdzamy to, co idzie na serwer.
 // EN: The whole path: three steps, formatting, the preview and publishing. We check what goes to the server.
 test('trzy kroki kończą się publikacją z treścią w JSON / three steps end with a publication with JSON content', async ({ page }) => {
@@ -69,11 +93,11 @@ test('trzy kroki kończą się publikacją z treścią w JSON / three steps end 
   await expect(page.getByText(/\d+ \/ 20000 znaków/)).toBeVisible();
   await openPreview(page);
 
-  // PL: Podgląd: znacznik typu, źródło, tytuł i pogrubiony tekst.
-  // EN: The preview: the type tag, the source, the title and the bold text.
-  await expect(page.getByText('Samorząd · teraz')).toBeVisible();
+  // PL: Podgląd: kafel z listy (znacznik typu, źródło, tytuł) i treść z pogrubionym tekstem.
+  // EN: The preview: the list tile (the type tag, the source, the title) and the content with the bold text.
+  await expect(page.getByText('Samorząd · przed chwilą')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Turniej e-sportowy klas' })).toBeVisible();
-  await expect(page.locator('.editor-preview strong')).toHaveText('Zapisy drużyn trwają do piątku.');
+  await expect(page.locator('.news-content strong')).toHaveText('Zapisy drużyn trwają do piątku.');
 
   await page.getByRole('button', { name: 'Opublikuj' }).click();
   await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
@@ -129,10 +153,24 @@ test('link javascript: jest odrzucany, a link https dostaje rel i target / a jav
   await page.getByLabel('Adres linku (https://)').fill('https://teb.edu.pl/regulamin');
   await page.getByRole('button', { name: 'Zapisz link' }).click();
   await openPreview(page);
-  const link = page.locator('.editor-preview a');
+  const link = page.locator('.news-content a');
   await expect(link).toHaveAttribute('href', 'https://teb.edu.pl/regulamin');
   await expect(link).toHaveAttribute('target', '_blank');
   await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+});
+
+// PL: Kafel w podglądzie wygląda jak na liście (style z feed.css), ale kliknięcie go nie otwiera wpisu: adres zostaje ten sam, a podgląd na ekranie.
+// EN: The tile in the preview looks like the list (styles from feed.css), but clicking it does not open the entry: the address stays the same, and the preview stays on screen.
+test('kafel w podglądzie wygląda jak na liście i kliknięcie go nie nawiguje / the preview tile looks like the list and clicking it does not navigate', async ({ page }) => {
+  await fillEntry(page, 'Zapisy drużyn trwają do piątku.');
+  await openPreview(page);
+  const card = page.locator('.news-card');
+  await expect(card).toHaveCSS('display', 'flex');
+  await expect(card.locator('h2')).toHaveText('Turniej e-sportowy klas');
+  await expect(card.locator('.news-card__excerpt')).toHaveText('Zapisy drużyn trwają do piątku.');
+  await card.click();
+  await expect(page.getByRole('heading', { name: 'Podgląd' })).toBeVisible();
+  await expect(page).toHaveURL(/\/news\/editor$/);
 });
 
 // PL: Film z YouTube: adres z parametrami daje węzeł z samym identyfikatorem, bez ramki.
@@ -149,7 +187,7 @@ test('film z YouTube zapisuje sam identyfikator i nie wstawia ramki / a YouTube 
   await page.getByRole('button', { name: 'Dodaj film' }).click();
   await expect(page.locator('.editor-video')).toBeVisible();
   await openPreview(page);
-  await expect(page.locator('.editor-preview iframe')).toHaveCount(0);
+  await expect(page.locator('.news-content iframe')).toHaveCount(0);
   await page.getByRole('button', { name: 'Opublikuj' }).click();
   await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
   expect(sent.body?.content.find((node) => node.type === 'youtube')?.attrs).toEqual({ videoId: 'dQw4w9WgXcQ' });
@@ -198,7 +236,7 @@ test('bez internetu wpis zostaje w edytorze i da się go wysłać później / wi
   await openPreview(page);
   await page.getByRole('button', { name: 'Opublikuj' }).click();
   await expect(page.getByRole('alert')).toHaveText('Brak internetu. Wpis został w edytorze, wyślesz go, gdy internet wróci.');
-  await expect(page.locator('.editor-preview')).toContainText('Tekst napisany bez sieci.');
+  await expect(page.locator('.news-content')).toContainText('Tekst napisany bez sieci.');
 
   // PL: Sieć wraca: ten sam wpis wysyłamy ponownie.
   // EN: The network returns: we send the same entry again.
@@ -230,11 +268,18 @@ test.describe('edytor w zbudowanej aplikacji / the editor in the built app', () 
 
   test('edytor otwiera się i działa bez internetu / the editor opens and works without internet', async ({ page, context }) => {
     await page.goto('/news/editor');
+    // PL: Czekamy, aż service worker przejmie stronę. Dopiero wtedy zapisuje paczki w pamięci telefonu.
+    // EN: We wait until the service worker takes over the page. Only then does it store the bundles in the phone memory.
+    await expect
+      .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null), { timeout: 30_000 })
+      .toBe(true);
+    // PL: Paczki Tiptapa ładują się dopiero na kroku edytora, więc otwieramy go online.
+    // EN: The Tiptap bundles load only on the editor step, so we open it while online.
+    await page.getByRole('button', { name: 'Dalej' }).click();
     // PL: Czekamy, aż service worker zapisze paczkę edytora w pamięci telefonu.
     // EN: We wait until the service worker stores the editor bundle in the phone memory.
     await expect
       .poll(() => page.evaluate(async () => {
-        await navigator.serviceWorker.ready;
         const keys = await Promise.all((await caches.keys()).map(async (name) => (await (await caches.open(name)).keys()).map((request) => request.url)));
         return keys.flat().some((url) => url.includes('/RichEditor-'));
       }), { timeout: 30_000 })

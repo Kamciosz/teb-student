@@ -7,6 +7,7 @@
  * @used_by src/features/news/editor/TypeStep.tsx::SCREEN
  * @used_by src/features/news/editor/ContentStep.tsx::SCREEN
  * @used_by src/features/news/editor/PreviewStep.tsx::SCREEN
+ * @used_by src/features/news/editor/TypeStep.tsx::TO_AGREE
  * @used_by src/features/news/editor/EditorToolbar.tsx::TO_AGREE
  * @used_by src/features/news/editor/AddressPanel.tsx::TO_AGREE
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::TO_AGREE
@@ -28,6 +29,8 @@ export const SCREEN = {
   saveDraft: 'Zapisz szkic i dokończ później',
   publish: 'Opublikuj',
   types: { important: 'Ważne', news: 'News', event: 'Wydarzenie', sport: 'Sport' },
+  mediaLabel: 'Zdjęcia i wideo',
+  mediaHint: 'Pliki są zmniejszane przed wysłaniem. Zdjęcie przytniesz klikając ikonę kadrowania.',
 } as const;
 
 /**
@@ -38,6 +41,7 @@ export const TO_AGREE = {
   back: 'Wróć',
   stepOf: (step: number) => `Krok ${step} z 3`,
   counter: (length: number, max: number) => `${length} / ${max} znaków`,
+  addMedia: 'Dodaj zdjęcie albo wideo',
   toolbarLabel: 'Formatowanie tekstu',
   loading: 'Wczytuję edytor…',
   loadFailed: 'Edytor się nie wczytał. Sprawdź internet.',
