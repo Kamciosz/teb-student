@@ -1,6 +1,6 @@
 /**
- * PL: Test kafla wpisu na liście panelu: znacznik „Zaplanowany na …” pojawia się tylko przy opublikowanym wpisie z chwilą startu w przyszłości. Zegar jest udawany (vi.setSystemTime), więc test nie zależy od dnia uruchomienia.
- * EN: Test of the entry tile on the panel list: the "Zaplanowany na …" tag appears only for a published entry with a start moment in the future. The clock is fake (vi.setSystemTime), so the test does not depend on the day it runs.
+ * PL: Test kafla wpisu na liście panelu: znacznik stanu, przyciski, adres „Otwórz korektę” dla wpisu w korekcie oraz znacznik „Zaplanowany na …”, który pojawia się tylko przy opublikowanym wpisie z chwilą startu w przyszłości. Zegar jest udawany (vi.setSystemTime), więc test nie zależy od dnia uruchomienia.
+ * EN: Test of the entry tile on the panel list: the status tag, the buttons, the "Otwórz korektę" address for an entry in review and the "Zaplanowany na …" tag, which appears only for a published entry with a start moment in the future. The clock is fake (vi.setSystemTime), so the test does not depend on the day it runs.
  *
  * @author Szymon
  * @since 2026-10-13
@@ -88,5 +88,54 @@ describe('EntryTile: znacznik zaplanowania / the scheduled tag', () => {
 
     expect(html).not.toContain('Zaplanowany');
     expect(html).toContain('Szkic');
+  });
+});
+
+// PL: Wpis w korekcie ma znacznik „Do korekty”, link do korekty i nie wygląda na opublikowany.
+// EN: An entry in review has the "Do korekty" tag, a link to the review and does not look published.
+describe('wpis w korekcie / entry in review', () => {
+  // PL: Znacznik „Do korekty” zamiast „Opublikowany”, bez „Opublikuj”, z linkiem do kreatora.
+  // EN: The "Do korekty" tag instead of "Opublikowany", no "Opublikuj", with a link to the wizard.
+  it('ma znacznik „Do korekty” i link do korekty bez przycisku publikacji / has the "Do korekty" tag and a review link without a publish button', () => {
+    const html = tileHtml(entry({ id: 'w-1', status: 'in_review', publishedAt: null }));
+
+    expect(html).toContain('Do korekty');
+    expect(html).not.toContain('Opublikowany');
+    expect(html).not.toContain('Opublikuj');
+    expect(html).toContain('href="/news/editor/w-1"');
+    expect(html).toContain('Otwórz korektę');
+  });
+
+  // PL: „Usuń” jest zawsze, także w korekcie.
+  // EN: "Usuń" is always there, also for an entry in review.
+  it('ma przycisk „Usuń” / has the "Usuń" button', () => {
+    expect(tileHtml(entry({ id: 'w-1', status: 'in_review', publishedAt: null }))).toContain('Usuń');
+  });
+});
+
+// PL: Szkic ma „Edytuj” i „Opublikuj”, opublikowany nie ma żadnego z nich.
+// EN: A draft has "Edytuj" and "Opublikuj", a published entry has neither.
+describe('pozostałe stany / other states', () => {
+  // PL: Szkic pokazuje znacznik „Szkic” i obie czynności.
+  // EN: A draft shows the "Szkic" tag and both actions.
+  it('szkic ma „Szkic”, „Edytuj” i „Opublikuj” / a draft has "Szkic", "Edytuj" and "Opublikuj"', () => {
+    const html = tileHtml(entry({ id: 'w-1', status: 'draft', publishedAt: null }));
+
+    expect(html).toContain('Szkic');
+    expect(html).toContain('Edytuj');
+    expect(html).toContain('Opublikuj');
+    expect(html).not.toContain('Do korekty');
+  });
+
+  // PL: Wpis opublikowany ma tylko znacznik i „Usuń”.
+  // EN: A published entry has only the tag and "Usuń".
+  it('opublikowany nie ma „Edytuj”, „Opublikuj” ani „Do korekty” / a published entry has no "Edytuj", "Opublikuj" or "Do korekty"', () => {
+    const html = tileHtml(entry({ id: 'w-1' }));
+
+    expect(html).toContain('Opublikowany');
+    expect(html).not.toContain('Edytuj');
+    expect(html).not.toContain('Opublikuj');
+    expect(html).not.toContain('Do korekty');
+    expect(html).not.toContain('Otwórz korektę');
   });
 });

@@ -160,6 +160,22 @@ describe('GET /', () => {
   });
 });
 
+// PL: Wpis w korekcie widać na liście panelu, a publikacja go nie rusza.
+// EN: An entry in review is visible on the panel list, and publishing does not touch it.
+describe('wpis w korekcie / entry in review', () => {
+  // PL: Wpis „in_review” wstawiony w teście. Lista panelu go zwraca, a publikacja nie zmienia jego stanu.
+  // EN: An "in_review" entry inserted in the test. The panel list returns it, and publishing does not change its state.
+  it('lista pokazuje wpis w korekcie, a publikacja go nie zmienia / the list shows an entry in review, and publishing does not change it', async () => {
+    await db.insert(newsEntries).values({ id: 'w-korekcie', type: 'news', status: 'in_review', title: 'W korekcie', body: BODY, source: 'Samorząd', publishedAt: null });
+
+    const { entries } = (await (await send('/')).json()) as { entries: { id: string; status: string }[] };
+    expect(entries.find((entry) => entry.id === 'w-korekcie')?.status).toBe('in_review');
+
+    expect((await send('/w-korekcie/publish', 'POST')).status).not.toBe(200);
+    expect((await rows()).find(([id]) => id === 'w-korekcie')).toEqual(['w-korekcie', 'in_review']);
+  });
+});
+
 // PL: Publikacja szkicu.
 // EN: Publishing a draft.
 describe('POST /:id/publish', () => {
