@@ -16,13 +16,13 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 // EN: The publication moment of the test entries (fresh, so the relative time is stable).
 const PUBLISHED_AT = new Date(Date.now() - 20 * 60_000).toISOString();
 
-// PL: Wpisy na liście: po jednym z czterech typów.
-// EN: The entries on the list: one of each of the four types.
+// PL: Wpisy na liście: po jednym z czterech typów. Pierwszy jest przypięty, więc serwer (tu: podstawiony) daje go na górze.
+// EN: The entries on the list: one of each of the four types. The first one is pinned, so the server (here: the stub) puts it on top.
 const ENTRIES = [
-  { id: 'e-important', type: 'important', source: 'Sekretariat', title: 'Jutro 3TA zaczyna o 9:50', excerpt: 'Dwie pierwsze lekcje przeniesione.' },
-  { id: 'e-event', type: 'event', source: 'Samorząd', title: 'Turniej e-sportowy klas', excerpt: 'Zapisy drużyn do piątku.' },
-  { id: 'e-news', type: 'news', source: 'Biblioteka', title: 'Nowe godziny otwarcia biblioteki', excerpt: 'Od poniedziałku do 17:00.' },
-  { id: 'e-sport', type: 'sport', source: 'WF', title: 'Mecz koszykówki', excerpt: 'Piątek, godzina 15:00.' },
+  { id: 'e-important', type: 'important', source: 'Sekretariat', title: 'Jutro 3TA zaczyna o 9:50', excerpt: 'Dwie pierwsze lekcje przeniesione.', pinned: true },
+  { id: 'e-event', type: 'event', source: 'Samorząd', title: 'Turniej e-sportowy klas', excerpt: 'Zapisy drużyn do piątku.', pinned: false },
+  { id: 'e-news', type: 'news', source: 'Biblioteka', title: 'Nowe godziny otwarcia biblioteki', excerpt: 'Od poniedziałku do 17:00.', pinned: false },
+  { id: 'e-sport', type: 'sport', source: 'WF', title: 'Mecz koszykówki', excerpt: 'Piątek, godzina 15:00.', pinned: false },
 ].map((entry) => ({ ...entry, publishedAt: PUBLISHED_AT }));
 
 // PL: Słowo bez spacji, które sprawdza zawijanie przy 320 px.
@@ -111,6 +111,18 @@ test.describe('z podstawionym serwerem', () => {
     // EN: The "Wszystkie" filter returns to four.
     await page.getByRole('button', { name: 'Wszystkie' }).click();
     await expect(page.locator('.news-card')).toHaveCount(4);
+  });
+
+  // PL: Przypięty wpis jest pierwszy i ma znacznik „Przypięte”, a pozostałe go nie mają.
+  // EN: The pinned entry is first and has the "Przypięte" tag, and the others do not.
+  test('przypięty wpis na górze z odznaką / the pinned entry on top with a badge', async ({ page }) => {
+    await page.goto('/news/feed');
+
+    // PL: Jeden znacznik, na pierwszym kaflu.
+    // EN: One tag, on the first tile.
+    await expect(page.locator('.news-card')).toHaveCount(4);
+    await expect(page.locator('.news-card').first()).toContainText('Przypięte');
+    await expect(page.locator('.news-tag--pinned')).toHaveCount(1);
   });
 
   // PL: Szukanie wysyła jedno zapytanie po przerwie w pisaniu (nie po każdej literze), zostawia pasujący kafel.
@@ -260,6 +272,21 @@ test.describe('z podstawionym serwerem', () => {
 
     await expect(page.locator('.news-card')).toHaveCount(4);
     await expect(page.getByText('Nie udało się odświeżyć wpisów. Pokazujemy zapisane.')).toBeVisible();
+  });
+
+  // PL: Bez internetu film w otwartym wpisie zmienia się w napis z linkiem do YouTube, bez miniatury i ramki.
+  // EN: Without internet the video in the open entry turns into a note with a link to YouTube, without the thumbnail and the frame.
+  test('film bez internetu to napis z linkiem / the video without internet is a note with a link', async ({ page, context }) => {
+    await page.goto('/news/feed/e-event');
+    await expect(page.getByRole('button', { name: 'Odtwórz film' })).toBeVisible();
+
+    await context.setOffline(true);
+
+    await expect(page.getByRole('button', { name: 'Odtwórz film' })).toHaveCount(0);
+    await expect(page.locator('iframe')).toHaveCount(0);
+    const link = page.getByRole('link', { name: 'Obejrzyj na YouTube' });
+    await expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 });
 

@@ -7,6 +7,7 @@
  * @uses worker/db/schema/reports.ts::REPORT_CATEGORIES
  * @uses worker/db/schema/reports.ts::REPORT_PLACES
  * @used_by worker/reports/student/routes.ts::parseReportInput
+ * @used_by worker/reports/student/routes.ts::isOneOf
  * @used_by worker/reports/student/validation.test.ts::parseReportInput
  */
 
@@ -51,7 +52,7 @@ export type ParseResult = { ok: true; value: ReportInput } | { ok: false; fields
  * @param allowed - PL: lista dozwolonych kodów. EN: the list of allowed codes.
  * @returns PL: prawda, gdy wartość jest na liście. EN: true when the value is on the list.
  */
-function isOneOf<T extends string>(value: unknown, allowed: readonly T[]): value is T {
+export function isOneOf<T extends string>(value: unknown, allowed: readonly T[]): value is T {
   // PL: Kod musi być tekstem i leżeć na liście.
   // EN: The code must be a string and be on the list.
   return typeof value === 'string' && (allowed as readonly string[]).includes(value);

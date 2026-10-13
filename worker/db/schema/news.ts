@@ -58,6 +58,10 @@ export const newsEntries = sqliteTable(
     source: text('source').notNull(),
     /** PL: Chwila publikacji w milisekundach od 1970 roku. Pusta dla szkicu. EN: The publication moment in milliseconds since 1970. Empty for a draft. */
     publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
+    /** PL: Chwila przypięcia wpisu na górze listy. Pusta, gdy wpis nie jest przypięty. Przypięte są na górze od najnowszego przypięcia. EN: The moment the entry was pinned to the top of the list. Empty when the entry is not pinned. Pinned entries come first, the latest pin on top. */
+    pinnedAt: integer('pinned_at', { mode: 'timestamp_ms' }),
+    /** PL: Chwila, od której uczeń widzi wpis, gdy jest zaplanowany. Pusta znaczy „od razu”. Wpis z chwilą w przyszłości jest niewidoczny dla ucznia. EN: The moment from which the student sees a scheduled entry. Empty means "right away". An entry with a moment in the future is invisible to the student. */
+    publishAt: integer('publish_at', { mode: 'timestamp_ms' }),
     /** PL: Adres https, który otwiera przycisk pod wpisem. Pusty, gdy wpis nie ma linku. EN: The https address the button under the entry opens. Empty when the entry has no link. */
     linkUrl: text('link_url'),
     /** PL: Napis na przycisku z linkiem, na przykład „Zobacz regulamin turnieju”. EN: The label on the link button, for example "Zobacz regulamin turnieju". */
