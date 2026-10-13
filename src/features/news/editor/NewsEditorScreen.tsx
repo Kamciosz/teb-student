@@ -10,6 +10,7 @@
  * @uses src/features/news/editor/TypeStep.tsx::TypeStep
  * @uses src/features/news/editor/ContentStep.tsx::ContentStep
  * @uses src/features/news/editor/PreviewStep.tsx::PreviewStep
+ * @uses src/features/news/editor/ReviewStep.tsx::ReviewStep
  * @used_by src/features/news/editor/index.ts::NewsEditorScreen
  */
 
@@ -20,6 +21,7 @@ import { loadDraft, sendEntry, updateEntry, type DraftToEdit } from './api';
 import { ContentStep } from './ContentStep';
 import './editor.css';
 import { PreviewStep } from './PreviewStep';
+import { ReviewStep } from './ReviewStep';
 import { TO_AGREE } from './texts';
 import { TypeStep, type EntryType } from './TypeStep';
 import { WizardTop } from './WizardTop';
@@ -108,6 +110,9 @@ function DraftLoader({ draftId }: { draftId: string }) {
   }
 
   const { draft } = state;
+  // PL: Wpis w korekcie nie jest już szkicem do edycji: pokazujemy go do podglądu i zatwierdzenia.
+  // EN: An entry in review is no longer a draft to edit: we show it for preview and approval.
+  if (draft.status === 'in_review') return <ReviewStep draft={draft} />;
   return <EntryWizard draftId={draftId} start={{ type: draft.type as EntryType, title: draft.title, body: draft.body as JSONContent }} />;
 }
 
@@ -132,11 +137,11 @@ function EntryWizard({ draftId, start }: { draftId?: string; start?: StartData }
   const [message, setMessage] = useState<string | null>(null);
   // PL: Zapisany wpis: stan i zaplanowana chwila publikacji (albo null, gdy od razu). Pokazuje potwierdzenie.
   // EN: The saved entry: the status and the scheduled publication moment (or null, when immediate). It drives the confirmation.
-  const [saved, setSaved] = useState<{ status: 'draft' | 'published'; publishAt: number | null } | null>(null);
+  const [saved, setSaved] = useState<{ status: 'draft' | 'in_review' | 'published'; publishAt: number | null } | null>(null);
 
   // PL: Wysyła wpis: nowy albo zmiany w szkicu. Błąd zostawia wpis w edytorze i pokazuje komunikat, sukces pokazuje potwierdzenie.
   // EN: Sends the entry: a new one or changes to the draft. An error leaves the entry in the editor and shows a message, success shows the confirmation.
-  async function save(status: 'draft' | 'published', publishAt: number | null): Promise<void> {
+  async function save(status: 'draft' | 'in_review' | 'published', publishAt: number | null): Promise<void> {
     if (body === null || isSaving) return;
     setIsSaving(true);
     setMessage(null);
@@ -152,7 +157,9 @@ function EntryWizard({ draftId, start }: { draftId?: string; start?: StartData }
   if (saved) {
     const confirmation = saved.status === 'draft'
       ? TO_AGREE.savedDraft
-      : saved.publishAt === null ? TO_AGREE.savedPublished : TO_AGREE.scheduledFor(formatWarsawMoment(saved.publishAt));
+      : saved.status === 'in_review'
+        ? TO_AGREE.sentToReview
+        : saved.publishAt === null ? TO_AGREE.savedPublished : TO_AGREE.scheduledFor(formatWarsawMoment(saved.publishAt));
     return (
       <main className="editor-screen" data-subtrack="3b">
         <p role="status" className="editor-done">{confirmation}</p>
