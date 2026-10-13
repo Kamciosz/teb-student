@@ -42,8 +42,21 @@ function useNow(): Date {
 }
 
 /**
- * PL: Rysuje licznik do dzwonka. Bez planu (pusta lista) albo poza lekcjami i przerwami zwraca null.
- * EN: Draws the bell countdown. With no plan (empty list) or outside lessons and breaks it returns null.
+ * PL: Godzina z planu do pokazania na ekranie. Bez zera z przodu, jak w makiecie („9:50”, „10:45”).
+ * EN: A plan time to show on the screen. Without a leading zero, as in the mockup ("9:50", "10:45").
+ *
+ * @param start - PL: godzina w formacie HH:MM. EN: time in HH:MM format.
+ * @returns PL: godzina bez zera z przodu. EN: the time without a leading zero.
+ */
+function displayTime(start: string): string {
+  // PL: Usuwamy tylko zero na samym początku, „10:45” zostaje bez zmian.
+  // EN: Only the zero at the very start is removed, "10:45" stays as it is.
+  return start.replace(/^0/, '');
+}
+
+/**
+ * PL: Rysuje licznik do dzwonka. Bez planu (pusta lista) albo poza lekcjami i przerwami zwraca null. W czasie lekcji pokazuje też następną lekcję, a w przerwie, do której lekcji zostało.
+ * EN: Draws the bell countdown. With no plan (empty list) or outside lessons and breaks it returns null. During a lesson it also shows the next lesson, and during a break which lesson is coming.
  *
  * @param props - PL: opcjonalny plan lekcji (domyślnie BELL_PLAN). EN: optional lesson plan (BELL_PLAN by default).
  * @returns PL: element licznika albo null. EN: the countdown element or null.
@@ -54,9 +67,11 @@ export function BellCountdown({ lessons = BELL_PLAN }: { lessons?: readonly Less
   const now = useNow();
   const state = getBellState(lessons, now);
   if (state === null) return null;
-  // PL: Etykieta w przerwie to „do lekcji”; tekst spoza makiety EKRANY, do potwierdzenia w PR.
-  // EN: The label during a break is "do lekcji" (to lesson); text not in the EKRANY mockup, to be confirmed in the PR.
-  const label = state.kind === 'lesson' ? 'do dzwonka' : 'do lekcji';
+  // PL: Napisy w przerwie i przy następnej lekcji są spoza makiety EKRANY, do potwierdzenia w PR.
+  // EN: The texts for the break and for the next lesson are not in the EKRANY mockup, to be confirmed in the PR.
+  // PL: Szablon ze stringiem, a nie kilka węzłów JSX, żeby odczyt tekstu z HTML dał jedno zdanie.
+  // EN: A template string, not several JSX nodes, so that reading the text from the HTML gives one sentence.
+  const label = state.kind === 'lesson' ? 'do dzwonka' : `Przerwa, do lekcji ${state.next.lessonNo}`;
   return (
     <section className="bell-countdown" aria-label="Licznik do dzwonka">
       <p className="bell-countdown__value">
@@ -64,6 +79,11 @@ export function BellCountdown({ lessons = BELL_PLAN }: { lessons?: readonly Less
         <span className="bell-countdown__unit">min</span>
       </p>
       <p className="bell-countdown__label">{label}</p>
+      {state.kind === 'lesson' && state.next ? (
+        <p className="bell-countdown__next">
+          {`Następna: lekcja ${state.next.lessonNo} o ${displayTime(state.next.start)}`}
+        </p>
+      ) : null}
     </section>
   );
 }

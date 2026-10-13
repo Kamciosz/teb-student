@@ -1,6 +1,6 @@
 /**
- * PL: Górny rząd pulpitu: data i powitanie po lewej, licznik do dzwonka po prawej (docs/projekt/EKRANY.md, ekran 2.1). Licznik robi podtor 6, a jego moduł jeszcze niczego nie wystawia, więc licznik pokazuje pusty stan. Imienia ucznia też jeszcze nie ma: moduł logowania go nie wystawia, więc powitanie jest bez imienia.
- * EN: The top row of the dashboard: the date and the greeting on the left, the bell countdown on the right (docs/projekt/EKRANY.md, screen 2.1). Subtrack 6 builds the countdown and its module exposes nothing yet, so the countdown shows the empty state. There is no student name yet either: the sign-in module does not expose it, so the greeting has no name.
+ * PL: Górny rząd pulpitu: data i powitanie po lewej, licznik do dzwonka po prawej (docs/projekt/EKRANY.md, ekran 2.1). Kafelek prowadzi do ekranu /bell. Drzwi podtoru 6 wystawiają licznik, ale nie plan dzwonków, więc pulpit nie wie, czy plan jest pusty. Dlatego pokazuje pusty stan. Imienia ucznia też jeszcze nie ma: moduł logowania go nie wystawia, więc powitanie jest bez imienia.
+ * EN: The top row of the dashboard: the date and the greeting on the left, the bell countdown on the right (docs/projekt/EKRANY.md, screen 2.1). The tile leads to the /bell screen. The subtrack 6 door exposes the countdown but not the bell plan, so the dashboard cannot tell whether the plan is empty. That is why it shows the empty state. There is no student name yet either: the sign-in module does not expose it, so the greeting has no name.
  *
  * @author Kacper
  * @since 2026-10-11
@@ -8,6 +8,9 @@
  * @used_by src/features/dashboard/DashboardScreen.tsx::DashboardScreen
  */
 
+// PL: Link do ekranu licznika bez przeładowania strony.
+// EN: A link to the countdown screen without reloading the page.
+import { Link } from 'react-router';
 // PL: Data nad powitaniem.
 // EN: The date above the greeting.
 import { formatToday } from './format';
@@ -26,13 +29,13 @@ export function DashboardHeader() {
         <p className="dash-small">{formatToday(new Date())}</p>
         <h1>Cześć</h1>
       </div>
-      {/* PL: Pusty licznik do dzwonka: kreska zamiast minut i napis, że planu jeszcze nie ma (napis do ustalenia z zespołem). EN: The empty bell countdown: a dash instead of minutes and a label that there is no schedule yet (the label is to be agreed with the team). */}
-      <div className="dash-bell" aria-label="Licznik do dzwonka">
+      {/* PL: Licznik do dzwonka jako link do /bell: kreska zamiast minut i napis, że planu jeszcze nie ma (napis do ustalenia z zespołem). EN: The bell countdown as a link to /bell: a dash instead of minutes and a label that there is no schedule yet (the label is to be agreed with the team). */}
+      <Link to="/bell" className="dash-bell" aria-label="Licznik do dzwonka">
         <p className="dash-bell__num" aria-hidden="true">
           –
         </p>
         <p className="dash-label">Brak planu dzwonków</p>
-      </div>
+      </Link>
     </header>
   );
 }

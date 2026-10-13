@@ -83,6 +83,10 @@ export const TO_AGREE = {
   signedOut: 'Sesja wygasła. Zaloguj się ponownie.',
   forbidden: 'Wpisy mogą dodawać tylko Samorząd i redakcja gazetki.',
   failed: 'Nie udało się zapisać wpisu. Spróbuj ponownie.',
+  draftLoading: 'Wczytuję szkic…',
+  draftLoadFailed: 'Nie udało się wczytać szkicu. Spróbuj ponownie za chwilę.',
+  alreadyPublished: 'Ten wpis jest już opublikowany, więc nie da się go edytować.',
+  draftNotFound: 'Nie ma takiego szkicu. Może został usunięty.',
   rejected: {
     bad_title: 'Tytuł jest pusty albo za długi.',
     empty: 'Wpis jest pusty.',

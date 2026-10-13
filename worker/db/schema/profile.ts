@@ -1,6 +1,6 @@
 /**
- * PL: Schemat bazy modułu profile (tabele Drizzle): dane profilu ucznia, czyli imię, klasa, szkoła i wybrana paleta kolorów. Schemat modułu należy do podtoru 7 (docs/PODZIAL_PRACY.md, część 2). Imienia nie trzymamy w tabeli kont (auth), bo ta tabela należy do podtoru 1a.
- * EN: The database schema of the profile module (Drizzle tables): the student's profile data, that is the name, class, school and the chosen color palette. The module schema belongs to subtrack 7 (docs/PODZIAL_PRACY.md, part 2). The name is not kept in the accounts table (auth), because that table belongs to subtrack 1a.
+ * PL: Schemat bazy modułu profile (tabele Drizzle): dane profilu ucznia, czyli imię, klasa, szkoła, wybrana paleta kolorów i rozmiar tekstu. Schemat modułu należy do podtoru 7 (docs/PODZIAL_PRACY.md, część 2). Imienia nie trzymamy w tabeli kont (auth), bo ta tabela należy do podtoru 1a.
+ * EN: The database schema of the profile module (Drizzle tables): the student's profile data, that is the name, class, school, the chosen color palette and the text size. The module schema belongs to subtrack 7 (docs/PODZIAL_PRACY.md, part 2). The name is not kept in the accounts table (auth), because that table belongs to subtrack 1a.
  *
  * @author Jakub
  * @since 2026-10-11
@@ -21,6 +21,12 @@ import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 export const PROFILE_SCHOOLS = ['L', 'T'] as const;
 
 /**
+ * PL: Rozmiar tekstu: normalny albo większy (przełącznik „Większy tekst”). Kody są takie same jak wartości atrybutu data-tekst w src/features/profile/profile.css.
+ * EN: The text size: normal or larger (the "Większy tekst" switch). The codes equal the values of the data-tekst attribute in src/features/profile/profile.css.
+ */
+export const PROFILE_TEXT_SIZES = ['normalny', 'duzy'] as const;
+
+/**
  * PL: Osiem palet kolorów. Kody są takie same jak wartości atrybutu data-paleta w src/shared/styles/tokens.css.
  * EN: The eight color palettes. The codes equal the values of the data-paleta attribute in src/shared/styles/tokens.css.
  */
@@ -31,6 +37,9 @@ export type ProfileSchool = (typeof PROFILE_SCHOOLS)[number];
 
 /** PL: Kod palety (CA do CH). EN: A palette code (CA to CH). */
 export type ProfilePalette = (typeof PROFILE_PALETTES)[number];
+
+/** PL: Rozmiar tekstu (normalny albo duzy). EN: The text size (normalny or duzy). */
+export type ProfileTextSize = (typeof PROFILE_TEXT_SIZES)[number];
 
 /**
  * PL: Profil ucznia: jeden wiersz na ucznia. Wiersz powstaje przy pierwszym zapisie profilu, a znika przy usunięciu konta.
@@ -47,6 +56,8 @@ export const profiles = sqliteTable('profiles', {
   school: text('school', { enum: PROFILE_SCHOOLS }).notNull().default('L'),
   /** PL: Wybrana paleta kolorów. Domyślna jest CE Grafit (docs/projekt/EKRANY.md). EN: The chosen color palette. The default is CE Graphite (docs/projekt/EKRANY.md). */
   palette: text('palette', { enum: PROFILE_PALETTES }).notNull().default('CE'),
+  /** PL: Rozmiar tekstu w całej aplikacji. Domyślny jest normalny. EN: The text size of the whole app. The default is normal. */
+  textSize: text('text_size', { enum: PROFILE_TEXT_SIZES }).notNull().default('normalny'),
   /** PL: Kiedy profil ostatnio zapisano (milisekundy od 1970 roku). EN: When the profile was last saved (milliseconds since 1970). */
   updatedAt: integer('updated_at').notNull(),
 });

@@ -150,12 +150,13 @@ describe('AnnouncementsTile', () => {
 // PL: Test górnego rzędu.
 // EN: The top row test.
 describe('DashboardHeader', () => {
-  // PL: Licznik do dzwonka pokazuje pusty stan, bo moduł dzwonka jeszcze niczego nie wystawia.
-  // EN: The bell countdown shows the empty state, because the bell module exposes nothing yet.
-  it('ma powitanie i pusty licznik do dzwonka / has the greeting and the empty bell countdown', () => {
+  // PL: Licznik do dzwonka pokazuje pusty stan (plan jest pusty, a pulpit go nie widzi) i prowadzi do ekranu /bell.
+  // EN: The bell countdown shows the empty state (the plan is empty and the dashboard cannot see it) and leads to the /bell screen.
+  it('ma powitanie i pusty licznik, który prowadzi do dzwonka / has the greeting and the empty countdown that leads to the bell', () => {
     const result = html(<DashboardHeader />);
 
     expect(result).toContain('Cześć');
     expect(result).toContain('Brak planu dzwonków');
+    expect(result).toContain('href="/bell"');
   });
 });

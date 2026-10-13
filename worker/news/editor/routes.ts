@@ -1,6 +1,6 @@
 /**
- * PL: Router Hono podtoru 3b (edytor wpisów): POST /entries sprawdza wpis od telefonu (typ, tytuł, stan, treść według schematu) i zapisuje go jako szkic albo opublikowany. Zapis chroni strażnik (sesja i rola autora). Ten sam kod przyjmuje szkic i publikację, więc podtor 3c (lista w panelu, publikacja szkicu, usuwanie) dopisuje swoje adresy w swoim routerze. Router jest podpięty pod /api/news/editor w worker/mounts.ts.
- * EN: The Hono router of subtrack 3b (entry editor): POST /entries checks an entry from the phone (type, title, status, content against the schema) and saves it as a draft or published. A guard (session and author role) protects the write. The same code accepts a draft and a publication, so subtrack 3c (the panel list, publishing a draft, deleting) adds its routes in its own router. The router is mounted under /api/news/editor in worker/mounts.ts.
+ * PL: Router Hono podtoru 3b (edytor wpisów): POST /entries sprawdza wpis od telefonu (typ, tytuł, stan, treść według schematu) i zapisuje go jako szkic albo opublikowany. GET i PUT /entries/:id czytają szkic do edycji i zapisują jego zmiany (opublikowany wpis nie wraca do edycji i nie przyjmuje zmian). Zapis i odczyt chroni strażnik (sesja i rola autora). Ten sam kod przyjmuje szkic i publikację, więc podtor 3c (lista w panelu, publikacja szkicu, usuwanie) dopisuje swoje adresy w swoim routerze. Router jest podpięty pod /api/news/editor w worker/mounts.ts.
+ * EN: The Hono router of subtrack 3b (entry editor): POST /entries checks an entry from the phone (type, title, status, content against the schema) and saves it as a draft or published. GET and PUT /entries/:id read a draft for editing and save its changes (a published entry does not come back for editing and takes no changes). A guard (session and author role) protects reading and writing. The same code accepts a draft and a publication, so subtrack 3c (the panel list, publishing a draft, deleting) adds its routes in its own router. The router is mounted under /api/news/editor in worker/mounts.ts.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -16,9 +16,10 @@
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 // PL: Drizzle łączy się z D1.
 // EN: Drizzle connects to D1.
+import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import type { StudentEnv } from '../../auth';
-import { newsEntries } from '../../db/schema/news';
+import { newsEntries, type NewsEntryRow } from '../../db/schema/news';
 import { MAX_BODY_BYTES } from '../../../src/features/news/editor/document/limits';
 import { requireNewsAuthor } from './author';
 import { validateEntry, type CheckedEntry } from './validateEntry';
@@ -67,6 +68,41 @@ async function insertEntry(db: D1Database, entry: CheckedEntry): Promise<string>
 }
 
 /**
+ * PL: Czyta wpis o podanym numerze, a gdy go nie ma, zwraca null.
+ * EN: Reads the entry with the given id, and returns null when there is none.
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @param id - PL: numer wpisu. EN: the entry id.
+ * @returns PL: wiersz wpisu albo null. EN: the entry row or null.
+ */
+async function findEntry(db: D1Database, id: string): Promise<NewsEntryRow | null> {
+  const [row] = await drizzle(db).select().from(newsEntries).where(eq(newsEntries.id, id)).limit(1);
+  return row ?? null;
+}
+
+/**
+ * PL: Zmienia szkic na sprawdzony wpis. Warunek „wciąż szkic” idzie w tym samym zapytaniu co zmiana, więc opublikowanego wpisu nie da się nadpisać, nawet gdy dwa zapisy biegną naraz. Zwraca false, gdy nic nie zmieniono (brak wpisu albo wpis już opublikowany).
+ * EN: Changes a draft into a checked entry. The "still a draft" condition is in the same query as the change, so a published entry cannot be overwritten, even when two saves run at once. Returns false when nothing changed (no entry, or the entry is already published).
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @param id - PL: numer szkicu. EN: the draft id.
+ * @param entry - PL: wpis po sprawdzeniu. EN: the checked entry.
+ * @returns PL: prawda, gdy szkic się zmienił. EN: true when the draft changed.
+ * @throws PL: błąd bazy, gdy zapis się nie uda. EN: a database error when the save fails.
+ */
+async function updateDraft(db: D1Database, id: string, entry: CheckedEntry): Promise<boolean> {
+  // PL: Publikacja przez edycję dostaje chwilę publikacji, szkic jej nie ma.
+  // EN: Publishing through editing gets a publication moment, a draft has none.
+  const publishedAt = entry.status === 'published' ? new Date() : null;
+  const changed = await drizzle(db)
+    .update(newsEntries)
+    .set({ ...entry, publishedAt })
+    .where(and(eq(newsEntries.id, id), eq(newsEntries.status, 'draft')))
+    .returning({ id: newsEntries.id });
+  return changed.length > 0;
+}
+
+/**
  * PL: Buduje router podtoru 3b z podanym strażnikiem zapisu. Strażnik jest parametrem, żeby test mógł podać własnego, bez prawdziwego logowania.
  * EN: Builds the subtrack 3b router with the given write guard. The guard is a parameter, so a test can pass its own, without a real sign-in.
  *
@@ -90,6 +126,39 @@ export function createNewsEditorApp(guard: MiddlewareHandler<StudentEnv>) {
     } catch {
       // PL: Błąd bazy nie wycieka do telefonu: odpowiadamy samym kodem.
       // EN: A database error does not leak to the phone: we answer with the code only.
+      return context.json({ error: 'database_error' }, 500);
+    }
+  });
+
+  // PL: Odczyt szkicu do edycji. Opublikowany wpis nie wraca do edycji (409), brak wpisu daje 404.
+  // EN: Reading a draft for editing. A published entry does not come back for editing (409), a missing entry gives 404.
+  app.get('/entries/:id', guard, async (context) => {
+    try {
+      const entry = await findEntry(context.env.DB, context.req.param('id'));
+      if (!entry) return context.json({ error: 'not_found' }, 404);
+      if (entry.status !== 'draft') return context.json({ error: 'already_published' }, 409);
+      return context.json({ id: entry.id, type: entry.type, title: entry.title, status: entry.status, body: entry.body });
+    } catch {
+      return context.json({ error: 'database_error' }, 500);
+    }
+  });
+
+  // PL: Zapis zmian w szkicu, także publikacja szkicu. Ten sam wpis, bez nowego numeru. Opublikowany wpis nie przyjmuje zmian (409).
+  // EN: Saving changes to a draft, also publishing a draft. The same entry, without a new id. A published entry takes no changes (409).
+  app.put('/entries/:id', guard, async (context) => {
+    const id = context.req.param('id');
+    const input = await readJson(context);
+    if ('error' in input) return input.error;
+    const result = validateEntry(input.value);
+    if (!result.ok) return context.json({ error: 'invalid_entry', reason: result.reason }, 422);
+    try {
+      if (await updateDraft(context.env.DB, id, result.entry)) return context.json({ id }, 200);
+      // PL: Nic nie zmieniono: sprawdzamy, czy wpisu nie ma (404), czy jest już opublikowany (409).
+      // EN: Nothing changed: we check whether the entry is missing (404) or already published (409).
+      const entry = await findEntry(context.env.DB, id);
+      if (!entry) return context.json({ error: 'not_found' }, 404);
+      return context.json({ error: 'already_published' }, 409);
+    } catch {
       return context.json({ error: 'database_error' }, 500);
     }
   });

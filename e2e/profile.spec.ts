@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżek podtoru 7 (profil i ustawienia, wiersz panelu z rolą): zmiana imienia, klasy i szkoły z akcentem niebieskim albo czerwonym, wybór palety, która zostaje po ponownym uruchomieniu, usunięcie konta, polityka prywatności bez logowania, szerokość 320 px i brak internetu. Serwer profilu jest podstawiony z pamięcią (prawdziwy wymaga logowania, a kod trafia tylko do terminala serwera), jego sprawdzają testy Vitest (worker/profile/profile.test.ts). Polityka prywatności idzie bez żadnych podstawek.
- * EN: Test of the subtrack 7 paths (profile and settings): changing the name, class and school with the blue or red accent, choosing a palette that stays after a restart, deleting the account, the privacy policy without signing in, 320 px width and no internet. The profile server is stubbed with memory (the real one requires signing in, and the code goes only to the server terminal), the Vitest tests cover it (worker/profile/profile.test.ts). The privacy policy runs with no stubs at all.
+ * PL: Test ścieżek podtoru 7 (profil i ustawienia, wiersz panelu z rolą): zmiana imienia, klasy i szkoły z akcentem niebieskim albo czerwonym, wybór palety i większego tekstu, które zostają po ponownym uruchomieniu, pobranie moich danych jako pliku JSON, usunięcie konta, polityka prywatności bez logowania, szerokość 320 px i brak internetu. Serwer profilu jest podstawiony z pamięcią (prawdziwy wymaga logowania, a kod trafia tylko do terminala serwera), jego sprawdzają testy Vitest (worker/profile/profile.test.ts). Polityka prywatności idzie bez żadnych podstawek.
+ * EN: Test of the subtrack 7 paths (profile and settings): changing the name, class and school with the blue or red accent, choosing a palette and the larger text that stay after a restart, downloading my data as a JSON file, deleting the account, the privacy policy without signing in, 320 px width and no internet. The profile server is stubbed with memory (the real one requires signing in, and the code goes only to the server terminal), the Vitest tests cover it (worker/profile/profile.test.ts). The privacy policy runs with no stubs at all.
  *
  * @author Jakub
  * @since 2026-10-11
@@ -11,12 +11,15 @@
 // PL: Funkcje testowe Playwright i typ strony.
 // EN: Playwright test functions and the page type.
 import { expect, test, type Page } from '@playwright/test';
+// PL: Odczyt pobranego pliku z dysku.
+// EN: Reading the downloaded file from the disk.
+import { readFile } from 'node:fs/promises';
 
 /** PL: Adres wymyślonego ucznia z sesji testowej. EN: The address of the invented student from the test session. */
 const EMAIL = 'ola.testowa@teb.edu.pl';
 
 /** PL: Profil, który ma uczeń na początku testu. EN: The profile the student has at the start of a test. */
-const START_PROFILE = { name: '', className: '', school: 'L', palette: 'CE' };
+const START_PROFILE = { name: '', className: '', school: 'L', palette: 'CE', textSize: 'normalny' };
 
 /** PL: Stan podstawionego serwera: profil, sesja i liczba wywołań usunięcia konta. EN: The state of the stubbed server: the profile, the session and the number of account deletion calls. */
 type StubState = { profile: Record<string, string>; signedIn: boolean; deleteCalls: number; panelLevel: string | null };
@@ -183,6 +186,78 @@ test('wybrana paleta zostaje po ponownym uruchomieniu / the chosen palette stays
   await page.route('**/api/profile', (route) => route.fulfill({ status: 503, json: { error: 'server_error' } }));
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-paleta', 'CG');
+});
+
+// PL: Przełącznik „Większy tekst” zapisuje rozmiar, powiększa tekst w całej aplikacji i zostaje po przeładowaniu, także gdy serwer profilu nie odpowiada.
+// EN: The "Większy tekst" switch saves the size, enlarges the text in the whole app and stays after a reload, also when the profile server does not answer.
+test('większy tekst zostaje po ponownym uruchomieniu / the larger text stays after a restart', async ({ page }) => {
+  const state = await stubServer(page);
+
+  // PL: Na starcie tekst jest normalny, a przełącznik wyłączony.
+  // EN: At the start the text is normal and the switch is off.
+  await page.goto('/profile/ustawienia');
+  await expect(page.getByRole('checkbox', { name: 'Większy tekst' })).not.toBeChecked();
+
+  // PL: Włącz przełącznik i zapisz: tekst się powiększa, a serwer dostaje rozmiar „duzy”.
+  // EN: Turn the switch on and save: the text gets larger, and the server gets the size "duzy".
+  await page.getByRole('checkbox', { name: 'Większy tekst' }).check();
+  await page.getByRole('button', { name: 'Zapisz' }).click();
+  await expect(page.getByRole('status')).toHaveText('Zapisano.');
+  await expect(page.locator('html')).toHaveAttribute('data-tekst', 'duzy');
+  expect(state.profile.textSize).toBe('duzy');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--t-md').trim())).toBe('20px');
+
+  // PL: Inny ekran po przeładowaniu ma ten sam większy tekst.
+  // EN: Another screen after a reload has the same larger text.
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-tekst', 'duzy');
+
+  // PL: Po „ponownym uruchomieniu” z niedziałającym serwerem profilu tekst nadal jest większy.
+  // EN: After a "restart" with a dead profile server the text is still larger.
+  await page.route('**/api/profile', (route) => route.fulfill({ status: 503, json: { error: 'server_error' } }));
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-tekst', 'duzy');
+});
+
+// PL: „Pobierz moje dane” zapisuje plik moje-dane-teb.json z kontem i profilem z serwera.
+// EN: "Pobierz moje dane" saves the file moje-dane-teb.json with the account and the profile from the server.
+test('pobranie moich danych zapisuje plik JSON / downloading my data saves a JSON file', async ({ page }) => {
+  await stubServer(page);
+  const exported = { version: 1, exportedAt: new Date().toISOString(), account: { id: 'u1', email: EMAIL, name: '' }, profile: { ...START_PROFILE, name: 'Ola' }, missing: ['Zgłoszenia ucznia'] };
+  await page.route('**/api/profile/export', (route) => route.fulfill({ json: exported }));
+  await page.goto('/profile/ustawienia');
+
+  // PL: Kliknięcie w przycisk uruchamia pobieranie, a plik ma nazwę moje-dane-teb.json.
+  // EN: The click starts the download, and the file is named moje-dane-teb.json.
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Pobierz moje dane' }).click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toBe('moje-dane-teb.json');
+
+  // PL: Zawartość pliku to konto i profil ucznia z serwera.
+  // EN: The file content is the student's account and profile from the server.
+  const data = JSON.parse(await readFile((await download.path()) as string, 'utf-8')) as typeof exported;
+  expect(data.account.email).toBe(EMAIL);
+  expect(data.profile.name).toBe('Ola');
+  expect(data.missing).toEqual(['Zgłoszenia ucznia']);
+});
+
+// PL: Gdy serwer nie odda danych, pokazuje się komunikat o błędzie i nic się nie pobiera.
+// EN: When the server does not return the data, an error message shows and nothing is downloaded.
+test('błąd pobierania pokazuje komunikat / a download error shows a message', async ({ page }) => {
+  await stubServer(page);
+  let exportCalls = 0;
+  await page.route('**/api/profile/export', (route) => {
+    exportCalls += 1;
+    return route.fulfill({ status: 500, json: { error: 'server_error' } });
+  });
+  await page.goto('/profile/ustawienia');
+
+  // PL: Komunikat ma rolę alert, żeby czytnik ekranu go ogłosił.
+  // EN: The message has the role alert, so a screen reader announces it.
+  await page.getByRole('button', { name: 'Pobierz moje dane' }).click();
+  await expect(page.getByRole('alert')).toHaveText('Nie udało się pobrać danych.');
+  expect(exportCalls).toBe(1);
 });
 
 // PL: Każda z ośmiu palet daje się wybrać i ustawia swój kod na stronie.
