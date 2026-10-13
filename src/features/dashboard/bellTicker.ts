@@ -4,13 +4,8 @@
  *
  * @author Szymon Sosnowski
  * @since 2026-10-13
- * @uses src/features/bell/index.ts::currentBellState
  * @used_by src/features/dashboard/useBellState.ts::useBellState
  */
-
-// PL: Typ stanu licznika z drzwi modułu bell.
-// EN: The countdown state type from the bell module door.
-import type { BellState } from '../bell';
 
 // PL: Co ile milisekund odświeżać licznik. 30 sekund wystarcza, bo licznik pokazuje pełne minuty.
 // EN: How often to refresh the countdown, in milliseconds. 30 seconds is enough, because the countdown shows whole minutes.
@@ -30,14 +25,14 @@ export type VisibilityTarget = {
 };
 
 /**
- * PL: Dane wejściowe odświeżania: skąd brać stan, dokąd go oddać i którą stronę obserwować.
- * EN: The inputs of the refresh: where to read the state, where to pass it, and which page to watch.
+ * PL: Dane wejściowe odświeżania: skąd brać stan, dokąd go oddać i którą stronę obserwować. Stan jest dowolny (T), bo pulpit odświeża cały odczyt, a nie tylko licznik.
+ * EN: The inputs of the refresh: where to read the state, where to pass it, and which page to watch. The state is any type (T), because the dashboard refreshes the whole reading, not only the countdown.
  */
-export type BellTickerOptions = {
-  /** PL: Czyta bieżący stan licznika. EN: Reads the current countdown state. */
-  read: () => BellState | null;
+export type BellTickerOptions<T> = {
+  /** PL: Czyta bieżący stan. EN: Reads the current state. */
+  read: () => T;
   /** PL: Dostaje każdy odczytany stan. EN: Receives every state read. */
-  onChange: (state: BellState | null) => void;
+  onChange: (state: T) => void;
   /** PL: Strona, której widoczność decyduje o odświeżaniu. EN: The page whose visibility decides the refresh. */
   page: VisibilityTarget;
 };
@@ -49,7 +44,7 @@ export type BellTickerOptions = {
  * @param options - PL: stan, odbiorca i strona. EN: the reader, the receiver and the page.
  * @returns PL: funkcja zatrzymująca odświeżanie. EN: a function that stops the refresh.
  */
-export function startBellTicker({ read, onChange, page }: BellTickerOptions): () => void {
+export function startBellTicker<T>({ read, onChange, page }: BellTickerOptions<T>): () => void {
   // PL: Identyfikator zegara odświeżania. Brak wartości znaczy, że zegara nie ma (karta ukryta albo zatrzymane).
   // EN: The refresh timer ID. No value means there is no timer (the tab is hidden or it is stopped).
   let timer: ReturnType<typeof setInterval> | undefined;
