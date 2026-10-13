@@ -13,7 +13,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /** PL: Wpis podstawionego API. EN: An entry of the stubbed API. */
-type StubEntry = { id: string; type: string; status: 'draft' | 'published'; title: string; source: string; publishedAt: string | null; pinnedAt: string | null; publishAt: string | null };
+type StubEntry = { id: string; type: string; status: 'draft' | 'in_review' | 'published'; title: string; source: string; publishedAt: string | null; pinnedAt: string | null; publishAt: string | null };
 
 /**
  * PL: Kafle listy wpisów. Menu panelu też jest listą, więc szukamy po nazwie listy.
@@ -106,6 +106,23 @@ test('lista pokazuje szkic i wpis opublikowany w ramie panelu / the list shows a
   // EN: Pinning is only on a published entry, a draft does not have it.
   await expect(page.getByRole('button', { name: /^(Przypnij|Odepnij)/ })).toHaveCount(1);
   await expect(tiles(page).first().getByRole('button', { name: /^(Przypnij|Odepnij)/ })).toHaveCount(0);
+});
+
+// PL: Wpis w korekcie ma znacznik „Do korekty” i link „Otwórz korektę” do kreatora, bez „Opublikuj” i bez znacznika „Opublikowany”. Kolejność jak na serwerze: szkic, w korekcie, opublikowany.
+// EN: An entry in review has the "Do korekty" tag and an "Otwórz korektę" link to the wizard, without "Opublikuj" and without the "Opublikowany" tag. The order as on the server: draft, in review, published.
+test('wpis w korekcie ma znacznik i link do korekty / an entry in review has a tag and a link to the review', async ({ page }) => {
+  await stubAdminApi(page, [
+    { id: 'e-szkic', type: 'news', status: 'draft', title: 'Turniej e-sportowy klas', source: 'Samorząd', publishedAt: null, pinnedAt: null, publishAt: null },
+    { id: 'e-korekta', type: 'sport', status: 'in_review', title: 'Mecz w korekcie', source: 'Samorząd', publishedAt: null, pinnedAt: null, publishAt: null },
+    { id: 'e-pub', type: 'event', status: 'published', title: 'Dzień sportu', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null, publishAt: null },
+  ]);
+  await page.goto('/news/admin');
+
+  await expect(tiles(page)).toHaveCount(3);
+  await expect(tiles(page).nth(1)).toContainText('Do korekty');
+  await expect(tiles(page).nth(1)).not.toContainText('Opublikowany');
+  await expect(page.getByRole('link', { name: 'Otwórz korektę: Mecz w korekcie' })).toHaveAttribute('href', '/news/editor/e-korekta');
+  await expect(page.getByRole('button', { name: /^Opublikuj/ })).toHaveCount(1);
 });
 
 // PL: Publikacja szkicu zmienia go w wpis opublikowany, a przycisk „Opublikuj” znika.

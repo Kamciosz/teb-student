@@ -31,6 +31,8 @@ export const TO_AGREE = {
   listLabel: 'Wpisy',
   draft: 'Szkic',
   published: 'Opublikowany',
+  review: 'Do korekty',
+  openReview: 'Otwórz korektę',
   /** PL: Znacznik wpisu opublikowanego z chwilą startu w przyszłości; argument to „dzień.miesiąc, godzina:minuta”. EN: The tag of a published entry with a start moment in the future; the argument is "day.month, hour:minute". */
   scheduled: (when: string) => `Zaplanowany na ${when}`,
   delete: 'Usuń',
@@ -49,6 +51,7 @@ export const TO_AGREE = {
     title: 'Usunąć wpis?',
     draftHint: (title: string) => `Szkic „${title}” zniknie. Tego nie da się cofnąć.`,
     publishedHint: (title: string) => `Uczniowie przestaną widzieć wpis „${title}”. Tego nie da się cofnąć.`,
+    reviewHint: (title: string) => `Wpis „${title}” czekający na korektę zniknie. Tego nie da się cofnąć.`,
     confirm: 'Usuń wpis',
   },
   /** PL: Nazwa przycisku dla czytnika ekranu: czynność i tytuł wpisu. EN: The button name for a screen reader: the action and the entry title. */
