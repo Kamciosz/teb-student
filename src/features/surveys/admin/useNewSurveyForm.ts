@@ -44,7 +44,7 @@ export function useNewSurveyForm(): NewSurveyForm {
   const publish = usePublishSurvey();
   const navigate = useNavigate();
   const isOnline = useIsOnline();
-  const errors = validateDraft(draft);
+  const errors = validateDraft(draft, new Date());
 
   // PL: Wysłanie: zły szkic pokazuje błędy, dobry idzie na serwer, a po zapisie wracamy na listę.
   // EN: Submitting: a bad draft shows the errors, a good one goes to the server, and after the write we return to the list.

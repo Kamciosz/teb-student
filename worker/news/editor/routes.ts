@@ -52,6 +52,18 @@ async function readJson(context: Context<StudentEnv>): Promise<{ value: unknown 
 }
 
 /**
+ * PL: Chwila publikacji wpisu: zaplanowana godzina, a bez niej teraz. Szkic chwili publikacji nie ma.
+ * EN: The publication moment of an entry: the scheduled time, or now without it. A draft has no publication moment.
+ *
+ * @param entry - PL: wpis po sprawdzeniu. EN: the checked entry.
+ * @returns PL: chwila publikacji albo null dla szkicu. EN: the publication moment, or null for a draft.
+ */
+function publishedAtFor(entry: CheckedEntry): Date | null {
+  if (entry.status !== 'published') return null;
+  return entry.publishAt ?? new Date();
+}
+
+/**
  * PL: Zapisuje sprawdzony wpis w bazie. Publikacja dostaje chwilę publikacji, szkic jej nie ma.
  * EN: Saves a checked entry in the database. A publication gets a publication moment, a draft has none.
  *
@@ -62,8 +74,7 @@ async function readJson(context: Context<StudentEnv>): Promise<{ value: unknown 
  */
 async function insertEntry(db: D1Database, entry: CheckedEntry): Promise<string> {
   const id = crypto.randomUUID();
-  const publishedAt = entry.status === 'published' ? new Date() : null;
-  await drizzle(db).insert(newsEntries).values({ id, ...entry, source: ENTRY_SOURCE, publishedAt });
+  await drizzle(db).insert(newsEntries).values({ id, ...entry, source: ENTRY_SOURCE, publishedAt: publishedAtFor(entry) });
   return id;
 }
 
@@ -91,12 +102,9 @@ async function findEntry(db: D1Database, id: string): Promise<NewsEntryRow | nul
  * @throws PL: błąd bazy, gdy zapis się nie uda. EN: a database error when the save fails.
  */
 async function updateDraft(db: D1Database, id: string, entry: CheckedEntry): Promise<boolean> {
-  // PL: Publikacja przez edycję dostaje chwilę publikacji, szkic jej nie ma.
-  // EN: Publishing through editing gets a publication moment, a draft has none.
-  const publishedAt = entry.status === 'published' ? new Date() : null;
   const changed = await drizzle(db)
     .update(newsEntries)
-    .set({ ...entry, publishedAt })
+    .set({ ...entry, publishedAt: publishedAtFor(entry) })
     .where(and(eq(newsEntries.id, id), eq(newsEntries.status, 'draft')))
     .returning({ id: newsEntries.id });
   return changed.length > 0;
