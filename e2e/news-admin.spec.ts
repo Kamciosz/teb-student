@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżki Samorządu w podtorze 3c: lista wpisów ze szkicami w ramie panelu, publikacja szkicu, usuwanie z potwierdzeniem i anulowaniem, pusty stan, odmowa serwera, błąd publikacji, przejście do kreatora „Nowy wpis”, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga roli z podtoru 8 i zalogowania); serwer sprawdzają testy Vitest (worker/news/admin/routes.test.ts), także to, że uczeń nie widzi szkiców.
- * EN: Test of the Student Council path in subtrack 3c: the entry list with drafts in the panel frame, publishing a draft, deleting with a confirmation and a cancel, the empty state, a server refusal, a publish error, the way to the "Nowy wpis" wizard, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/news/admin/routes.test.ts), including that a student does not see drafts.
+ * PL: Test ścieżki Samorządu w podtorze 3c: lista wpisów ze szkicami w ramie panelu, publikacja szkicu, usuwanie z potwierdzeniem i anulowaniem, pusty stan, odmowa serwera, błąd publikacji, przejście do kreatora „Nowy wpis”, przycisk „Edytuj” i świeża lista po powrocie z kreatora, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga roli z podtoru 8 i zalogowania); serwer sprawdzają testy Vitest (worker/news/admin/routes.test.ts), także to, że uczeń nie widzi szkiców.
+ * EN: Test of the Student Council path in subtrack 3c: the entry list with drafts in the panel frame, publishing a draft, deleting with a confirmation and a cancel, the empty state, a server refusal, a publish error, the way to the "Nowy wpis" wizard, the "Edytuj" button and a fresh list after returning from the wizard, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/news/admin/routes.test.ts), including that a student does not see drafts.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -167,6 +167,56 @@ test('błąd publikacji zostawia przycisk aktywny / a publish error leaves the b
 
   await expect(page.getByRole('alert')).toContainText('Nie udało się opublikować wpisu. Spróbuj ponownie za chwilę.');
   await expect(page.getByRole('button', { name: /^Opublikuj/ })).toBeEnabled();
+});
+
+// PL: Przycisk „Edytuj” jest tylko przy szkicu i prowadzi do kreatora z jego numerem, a kreator wczytuje szkic z serwera.
+// EN: The "Edytuj" button is only on a draft and leads to the wizard with its id, and the wizard loads the draft from the server.
+test('szkic ma przycisk „Edytuj” prowadzący do kreatora / a draft has an "Edytuj" button leading to the wizard', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.route('**/api/news/editor/entries/e-szkic', (route) =>
+    route.fulfill({ status: 200, json: { id: 'e-szkic', type: 'news', title: 'Turniej e-sportowy klas', status: 'draft', body: { type: 'doc', content: [] } } }),
+  );
+  await page.goto('/news/admin');
+
+  // PL: Tylko szkic ma „Edytuj”, wpis opublikowany go nie ma.
+  // EN: Only the draft has "Edytuj", the published entry does not.
+  const edit = page.getByRole('link', { name: 'Edytuj: Turniej e-sportowy klas' });
+  await expect(page.getByRole('link', { name: /^Edytuj/ })).toHaveCount(1);
+  await expect(edit).toHaveAttribute('href', '/news/editor/e-szkic');
+
+  await edit.click();
+
+  await expect(page).toHaveURL(/\/news\/editor\/e-szkic$/);
+  await page.getByRole('button', { name: 'Dalej' }).click();
+  await expect(page.getByLabel('Tytuł')).toHaveValue('Turniej e-sportowy klas');
+});
+
+// PL: Po powrocie z kreatora lista pokazuje nowy tytuł szkicu, a nie tytuł z pamięci podręcznej (lista jest świeża 30 s).
+// EN: After returning from the wizard the list shows the new draft title, not the one from the cache (the list is fresh for 30 s).
+test('po powrocie z edycji lista pokazuje nowy tytuł / after returning from editing the list shows the new title', async ({ page }) => {
+  const entries = sampleEntries();
+  await stubAdminApi(page, entries);
+  await page.route('**/api/news/editor/entries/e-szkic', (route) =>
+    route.fulfill({ status: 200, json: { id: 'e-szkic', type: 'news', title: 'Turniej e-sportowy klas', status: 'draft', body: { type: 'doc', content: [] } } }),
+  );
+  await page.goto('/news/admin');
+  await expect(tiles(page).first()).toContainText('Turniej e-sportowy klas');
+
+  await page.getByRole('link', { name: 'Edytuj: Turniej e-sportowy klas' }).click();
+  await expect(page).toHaveURL(/\/news\/editor\/e-szkic$/);
+
+  // PL: Atrapa serwera zmienia tytuł szkicu, a przeglądarka jeszcze o tym nie wie.
+  // EN: The server stub changes the draft title, and the browser does not know about it yet.
+  const draft = entries[0] as StubEntry;
+  draft.title = 'Turniej szkolny klas';
+
+  // PL: Powrót strzałką w kreatorze to nawigacja w aplikacji, bez przeładowania strony.
+  // EN: Going back with the wizard arrow is in-app navigation, without reloading the page.
+  await page.getByRole('link', { name: 'Wróć' }).click();
+
+  await expect(page).toHaveURL(/\/news\/admin$/);
+  await expect(tiles(page).first()).toContainText('Turniej szkolny klas');
+  await expect(tiles(page).first()).not.toContainText('Turniej e-sportowy klas');
 });
 
 // PL: Przy 320 px lista i arkusz nie przewijają się w poziomie, a przyciski mieszczą się w oknie i mają co najmniej 44 px.

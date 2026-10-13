@@ -42,7 +42,7 @@ const JAN = 'jan.test@teb.edu.pl';
 const ANNA = 'anna.test@teb.edu.pl';
 
 /** PL: Poprawny profil do zapisu. EN: A valid profile to save. */
-const BODY = { name: 'Jan', className: '2LB', school: 'T', palette: 'CF' };
+const BODY = { name: 'Jan', className: '2LB', school: 'T', palette: 'CF', textSize: 'duzy' };
 
 /**
  * PL: Wysyła zapytanie do /api/profile pełnej aplikacji, z ciasteczkiem sesji albo bez niego.
@@ -113,7 +113,7 @@ describe('GET i PUT / GET and PUT', () => {
     const response = await send('GET', janCookie);
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ name: '', className: '', school: 'L', palette: 'CE' });
+    expect(await response.json()).toEqual({ name: '', className: '', school: 'L', palette: 'CE', textSize: 'normalny' });
   });
 
   // PL: Zapisany profil wraca przy odczycie, a drugi zapis go nadpisuje.
@@ -131,7 +131,7 @@ describe('GET i PUT / GET and PUT', () => {
   it('profil jednego ucznia nie wpływa na drugiego / one profile does not affect the other', async () => {
     await send('PUT', janCookie, BODY);
 
-    expect(await (await send('GET', annaCookie)).json()).toEqual({ name: '', className: '', school: 'L', palette: 'CE' });
+    expect(await (await send('GET', annaCookie)).json()).toEqual({ name: '', className: '', school: 'L', palette: 'CE', textSize: 'normalny' });
   });
 
   // PL: Zła paleta, szkoła, zepsuty JSON i zbyt duża treść są odrzucone, a profil zostaje.
@@ -197,7 +197,7 @@ describe('DELETE: usunięcie konta / account deletion', () => {
     const newCookie = await signIn(createTestRuntime(), JAN);
 
     expect(await accountId(JAN)).not.toBe(oldId);
-    expect(await (await send('GET', newCookie)).json()).toEqual({ name: '', className: '', school: 'L', palette: 'CE' });
+    expect(await (await send('GET', newCookie)).json()).toEqual({ name: '', className: '', school: 'L', palette: 'CE', textSize: 'normalny' });
   });
 
   // PL: Cudzy profil z danych testowych przeżywa usunięcie konta Jana.

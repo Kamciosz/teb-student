@@ -22,7 +22,8 @@ const EXAMPLE_PLAN_JS = `export const BELL_PLAN = [
   { start: '08:00', end: '08:45' },
   { start: '08:55', end: '09:40' },
   { start: '09:50', end: '10:35' },
-];`;
+];
+export const SHORTENED_BELL_PLAN = [];`;
 
 // PL: Podstawia plan przykładowy w miejsce modułu planu.
 // EN: Stubs the example plan in place of the plan module.
@@ -52,6 +53,7 @@ test('w czasie lekcji pokazuje minuty do dzwonka', async ({ page }) => {
   await expect(countdown).toContainText('30');
   await expect(countdown).toContainText('min');
   await expect(countdown).toContainText('do dzwonka');
+  await expect(countdown).toContainText('Następna: lekcja 3 o 9:50');
 });
 
 // PL: W przerwie licznik pokazuje minuty do następnej lekcji i etykietę „do lekcji”.
@@ -64,5 +66,5 @@ test('w przerwie pokazuje minuty do lekcji', async ({ page }) => {
   await page.goto('/bell');
   const countdown = page.getByLabel('Licznik do dzwonka');
   await expect(countdown).toContainText('5');
-  await expect(countdown).toContainText('do lekcji');
+  await expect(countdown).toContainText('Przerwa, do lekcji 2');
 });

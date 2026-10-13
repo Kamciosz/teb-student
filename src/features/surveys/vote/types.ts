@@ -17,13 +17,17 @@ export type ActiveSurvey = {
   questionCount: number;
   daysLeft: number;
   hasVoted: boolean;
+  /** PL: Godzina zamknięcia (ISO) albo null, gdy ankieta kończy się tylko dniem. EN: The closing hour (ISO), or null when the survey ends only by its day. */
+  closesAt: string | null;
 };
 
-/** PL: Zakończona ankieta na liście. EN: An ended survey on the list. */
+/** PL: Zamknięta ankieta na liście. EN: A closed survey on the list. */
 export type EndedSurvey = {
   id: string;
   title: string;
   endsOn: string;
+  /** PL: Dzień, w którym ankieta faktycznie się zamknęła. EN: The day the survey actually closed. */
+  endedOn: string;
 };
 
 /** PL: Lista ankiet: trwające i zakończone. EN: The survey list: running and ended. */
@@ -41,6 +45,8 @@ export type SurveyOption = {
 /** PL: Jedno pytanie z odpowiedziami. EN: One question with its options. */
 export type SurveyQuestion = {
   id: string;
+  /** PL: Rodzaj pytania: jedna odpowiedź (pola radio) albo kilka (pola wyboru). EN: The question type: one option (radio) or several (checkboxes). */
+  type: 'single_choice' | 'multiple_choice';
   prompt: string;
   options: SurveyOption[];
 };
@@ -52,8 +58,10 @@ export type SurveyDetail = {
   title: string;
   isActive: boolean;
   hasVoted: boolean;
+  /** PL: Godzina zamknięcia (ISO) albo null. EN: The closing hour (ISO) or null. */
+  closesAt: string | null;
   questions: SurveyQuestion[];
 };
 
-/** PL: Odpowiedzi ucznia: numer pytania i numer wybranej odpowiedzi. EN: The student's answers: a question id and the chosen option id. */
-export type AnswerMap = Record<string, string>;
+/** PL: Odpowiedzi ucznia: numer pytania i numery wybranych odpowiedzi (jedna albo kilka). EN: The student's answers: a question id and the chosen option ids (one or several). */
+export type AnswerMap = Record<string, string[]>;

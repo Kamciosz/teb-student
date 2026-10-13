@@ -1,7 +1,7 @@
 /**
- * PL: Test adresów podtoru 5b na prawdziwej bazie D1. Sprawdza odpowiedzi HTTP: dostęp (bez sesji 401, uczeń bez roli 403 przez prawdziwe sprawdzanie roli, także dla POST, który niczego nie zapisuje), próg 5 odpowiedzi (poniżej progu JSON nie ma rozkładu głosów ani treści odpowiedzi, od progu ma udziały), listę z liczbą odpowiedzi, utworzenie ankiety i jej odrzucenie przy złych danych.
+ * PL: Test adresów podtoru 5b na prawdziwej bazie D1. Sprawdza odpowiedzi HTTP: dostęp (bez sesji 401, uczeń bez roli 403 przez prawdziwe sprawdzanie roli, także dla POST, który niczego nie zapisuje), próg 5 odpowiedzi (poniżej progu JSON nie ma rozkładu głosów ani treści odpowiedzi, od progu ma udziały), listę z liczbą odpowiedzi, utworzenie ankiety i jej odrzucenie przy złych danych, plik CSV z wynikami (ten sam próg: poniżej 409, od progu poprawne escapowanie i BOM).
  *     Wszystko idzie przez prawdziwą sesję i prawdziwe sprawdzanie roli podtoru 8: osoba z rolą „council” dostaje wyniki, uczeń bez roli i redakcja („editor”) dostają 403.
- * EN: Test of the subtrack 5b routes on a real D1 database. It checks the HTTP responses: access (no session 401, a student without a role 403 through the real role check, also for POST, which writes nothing), the 5-response threshold (below it the JSON has no vote distribution and no option texts, from it it has the shares), the list with the response count, creating a survey and rejecting it on bad data.
+ * EN: Test of the subtrack 5b routes on a real D1 database. It checks the HTTP responses: access (no session 401, a student without a role 403 through the real role check, also for POST, which writes nothing), the 5-response threshold (below it the JSON has no vote distribution and no option texts, from it it has the shares), the list with the response count, creating a survey and rejecting it on bad data, and the CSV file of the results (the same threshold: below it 409, from it correct escaping and the BOM).
  *     Everything goes through a real session and the real role check of subtrack 8: a person with the "council" role gets the results, a student without a role and the editorial team ("editor") get 403.
  *
  * @author Jakub
@@ -102,8 +102,32 @@ async function seedSurvey(id: string, votes: number[], endsOn = '2099-12-31'): P
   await db.insert(surveyOptions).values(votes.map((count, index) => ({ id: `${id}-o${index}`, questionId: `${id}-q`, position: index + 1, label: `Odpowiedź-${id}-${index}`, votes: count })));
 }
 
-// PL: Cztery ankiety testowe: 4 odpowiedzi (poniżej progu), 5 (próg), 12 (przykład z ekranu 6.5d) i zakończona z 21.
-// EN: Four test surveys: 4 responses (below the threshold), 5 (the threshold), 12 (the example of screen 6.5d) and an ended one with 21.
+// PL: Ankieta „csv” z 5 odpowiedziami (próg): pytanie z przecinkiem, cudzysłowem i nową linią, a odpowiedzi z przecinkiem i cudzysłowem.
+// EN: The "csv" survey with 5 responses (the threshold): a question with a comma, a quote and a new line, and options with a comma and a quote.
+const CSV_PROMPT = 'Co, "naprawdę"?\nTak';
+const CSV_LABELS = ['A, B', 'C "x"', 'D', 'Nie wiem'];
+
+/**
+ * PL: Wkłada ankietę „csv” z trudnymi znakami w pytaniu i odpowiedziach. Głosy: 3, 1, 1, 0 (razem 5).
+ * EN: Inserts the "csv" survey with hard characters in the question and the options. Votes: 3, 1, 1, 0 (5 in total).
+ */
+async function seedCsvSurvey(): Promise<void> {
+  await db.insert(surveys).values({ id: 'csv', title: 'Ankieta csv', endsOn: '2099-12-31' });
+  await db.insert(surveyQuestions).values({ id: 'csv-q', surveyId: 'csv', position: 1, prompt: CSV_PROMPT });
+  await db.insert(surveyOptions).values([3, 1, 1, 0].map((count, index) => ({ id: `csv-o${index}`, questionId: 'csv-q', position: index + 1, label: CSV_LABELS[index]!, votes: count })));
+}
+
+/**
+ * PL: Podaje chwilę w formacie pola formularza (RRRR-MM-DDTHH:mm, czas polski). Czas względny do zegara, bo ankieta trwa 7 dni od dziś.
+ * EN: Gives a moment in the form field format (YYYY-MM-DDTHH:mm, Polish time). The time is relative to the clock, because the survey runs 7 days from today.
+ *
+ * @param ms - PL: chwila w milisekundach UTC. EN: the moment in UTC milliseconds.
+ * @returns PL: tekst w formacie pola. EN: the text in the field format.
+ */
+const warsawIn = (ms: number): string => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(ms).replace(' ', 'T');
+
+// PL: Cztery ankiety testowe: 4 odpowiedzi (poniżej progu), 5 (próg), 12 (przykład z ekranu 6.5d) i zakończona z 21. Do CSV dochodzą: 3 odpowiedzi (poniżej progu) i 5 ze znakami, które trzeba escapować.
+// EN: Four test surveys: 4 responses (below the threshold), 5 (the threshold), 12 (the example of screen 6.5d) and an ended one with 21. For the CSV there are also: 3 responses (below the threshold) and 5 with characters that need escaping.
 beforeAll(async () => {
   councilCookie = await createSession('samorzad', '10.6.0.2');
   await grantRole('samorzad', 'council');
@@ -111,6 +135,11 @@ beforeAll(async () => {
   await seedSurvey('prog', [3, 2]);
   await seedSurvey('dwanascie', [5, 4, 2, 1]);
   await seedSurvey('stara', [12, 9], '2020-01-01');
+  await seedSurvey('malo', [2, 1]);
+  // PL: Ankieta, której termin zamknięcia minął, choć ostatni dzień jeszcze trwa.
+  // EN: A survey whose closing time has passed, although its last day still runs.
+  await db.insert(surveys).values({ id: 'zamknieta', title: 'Ankieta zamknieta', endsOn: '2099-12-31', closesAt: new Date('2020-01-01T09:00:00Z') });
+  await seedCsvSurvey();
 });
 
 describe('dostęp / access', () => {
@@ -118,6 +147,7 @@ describe('dostęp / access', () => {
     { path: '/', method: 'GET' },
     { path: '/', method: 'POST' },
     { path: '/niska/results', method: 'GET' },
+    { path: '/niska/results/csv', method: 'GET' },
   ])('$method $path bez sesji daje 401 / without a session gives 401', async ({ path, method }) => {
     expect((await surveysAdminApp.request(path, { method }, env)).status).toBe(401);
   });
@@ -128,6 +158,7 @@ describe('dostęp / access', () => {
 
     expect((await surveysAdminApp.request('/', { headers }, env)).status).toBe(403);
     expect((await surveysAdminApp.request('/niska/results', { headers }, env)).status).toBe(403);
+    expect((await surveysAdminApp.request('/niska/results/csv', { headers }, env)).status).toBe(403);
     expect((await surveysAdminApp.request('/', { method: 'POST', headers, body }, env)).status).toBe(403);
     expect(await db.select().from(surveys).where(eq(surveys.title, 'Z ucznia'))).toEqual([]);
   });
@@ -139,6 +170,7 @@ describe('rola redakcji / the editorial role', () => {
     await grantRole('redakcja', 'editor');
 
     expect((await surveysAdminApp.request('/', { headers: { cookie } }, env)).status).toBe(403);
+    expect((await surveysAdminApp.request('/csv/results/csv', { headers: { cookie } }, env)).status).toBe(403);
   });
 });
 
@@ -189,7 +221,9 @@ describe('lista / the list', () => {
 
     expect(response.status).toBe(200);
     expect(body.active.find((survey) => survey.id === 'dwanascie')).toMatchObject({ responseCount: 12, questionCount: 1 });
-    expect(body.ended).toMatchObject([{ id: 'stara', responseCount: 21 }]);
+    expect(body.ended.find((survey) => survey.id === 'stara')).toMatchObject({ responseCount: 21 });
+    expect(body.ended.map((survey) => survey.id)).toContain('zamknieta');
+    expect(body.active.map((survey) => survey.id)).not.toContain('zamknieta');
     expect(text).not.toContain('votes');
   });
 });
@@ -210,7 +244,7 @@ describe('tworzenie ankiety / creating a survey', () => {
 
     expect(response.status).toBe(201);
     const [survey] = await db.select().from(surveys).where(eq(surveys.id, id));
-    expect(survey).toMatchObject({ title: 'Dzień sportu', endsOn: lastDayOf(warsawToday(new Date()), 7) });
+    expect(survey).toMatchObject({ title: 'Dzień sportu', endsOn: lastDayOf(warsawToday(new Date()), 7), closesAt: null });
     const questions = await db.select().from(surveyQuestions).where(eq(surveyQuestions.surveyId, id)).orderBy(surveyQuestions.position);
     expect(questions.map((question) => question.prompt)).toEqual(['W co zagrać?', 'Kiedy?']);
     const options = await db.select().from(surveyOptions).where(eq(surveyOptions.questionId, questions[0]!.id)).orderBy(surveyOptions.position);
@@ -223,6 +257,8 @@ describe('tworzenie ankiety / creating a survey', () => {
     { name: 'z jedną odpowiedzią', body: { title: 'Zła-2', questions: [{ prompt: 'P', options: ['A'] }], durationDays: 7 } },
     { name: 'z sześcioma odpowiedziami', body: { title: 'Zła-3', questions: [{ prompt: 'P', options: ['A', 'B', 'C', 'D', 'E', 'F'] }], durationDays: 7 } },
     { name: 'z czasem 5 dni', body: { title: 'Zła-4', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 5 } },
+    { name: 'z terminem w przeszłości', body: { title: 'Zła-5', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 7, closesAt: '2020-01-01T12:00' } },
+    { name: 'z terminem po ostatnim dniu', body: { title: 'Zła-6', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 7, closesAt: warsawIn(Date.now() + 30 * 86400e3) } },
   ])('ankieta $name daje 400 i nic nie zapisuje / a survey $name gives 400 and writes nothing', async ({ body }) => {
     const before = await db.select().from(surveys);
 
@@ -230,9 +266,59 @@ describe('tworzenie ankiety / creating a survey', () => {
     expect(await db.select().from(surveys)).toHaveLength(before.length);
   });
 
+  it('zapisuje termin zamknięcia jako chwilę UTC / writes the closing time as a UTC moment', async () => {
+    // PL: Termin za 26 godzin, zaokrąglony do minuty, bo pole formularza nie ma sekund.
+    // EN: A time 26 hours from now, rounded to the minute, because the form field has no seconds.
+    const soon = Math.floor((Date.now() + 26 * 3600e3) / 60000) * 60000;
+    const response = await publish({ title: 'Z terminem', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 7, closesAt: warsawIn(soon) });
+    const { id } = (await response.json()) as { id: string };
+
+    expect(response.status).toBe(201);
+    const [survey] = await db.select().from(surveys).where(eq(surveys.id, id));
+    expect(survey?.closesAt?.getTime()).toBe(soon);
+  });
+
   it('treść, która nie jest JSON-em, daje 400 / a body that is not JSON gives 400', async () => {
     const response = await asStaff('/', { method: 'POST', body: 'to nie json' });
 
     expect(response.status).toBe(400);
+  });
+});
+
+describe('wyniki jako CSV / results as CSV', () => {
+  it('poniżej progu daje 409 bez treści odpowiedzi / below the threshold gives 409 without option texts', async () => {
+    const response = await asStaff('/malo/results/csv', {});
+    const text = await response.text();
+
+    expect(response.status).toBe(409);
+    expect(JSON.parse(text)).toEqual({ error: 'too_few_responses' });
+    for (const forbidden of ['Odpowiedź-malo', 'Pytanie malo']) expect(text).not.toContain(forbidden);
+  });
+
+  it('od progu zwraca plik z BOM-em, nagłówkami i poprawnie zapisanymi polami / from the threshold returns the file with the BOM, the headers and correctly written fields', async () => {
+    const response = await asStaff('/csv/results/csv', {});
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    // PL: Pytanie z przecinkiem, cudzysłowem i nową linią idzie w cudzysłów, a wewnętrzne cudzysłowy są podwojone.
+    // EN: A question with a comma, a quote and a new line goes in quotes, and the inner quotes are doubled.
+    const quoted = `"Co, ""naprawdę""?\nTak"`;
+    const expected = [
+      '﻿Pytanie,Odpowiedź,Liczba głosów,Procent',
+      `${quoted},"A, B",3,60`,
+      `${quoted},"C ""x""",1,20`,
+      `${quoted},D,1,20`,
+      `${quoted},Nie wiem,0,0`,
+    ].join('\r\n') + '\r\n';
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('text/csv; charset=utf-8');
+    expect(response.headers.get('Content-Disposition')).toBe('attachment; filename="ankieta-csv-wyniki.csv"');
+    expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+    // PL: Dekodujemy z zachowaniem BOM-u, bo domyślny dekoder by go zjadł i porównanie nie pokazałoby błędu.
+    // EN: We decode keeping the BOM, because the default decoder would eat it and the comparison would not show the error.
+    expect(new TextDecoder('utf-8', { ignoreBOM: true, fatal: false }).decode(bytes)).toBe(expected);
+  });
+
+  it('nieznana ankieta daje 404 / an unknown survey gives 404', async () => {
+    expect((await asStaff('/nie-ma/results/csv', {})).status).toBe(404);
   });
 });

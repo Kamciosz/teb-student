@@ -21,6 +21,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 // PL: Tabela wpisów.
 // EN: The entries table.
 import { newsEntries } from '../../db/schema/news';
+// PL: Tabela kont, z której bierzemy imię autora.
+// EN: The accounts table, from which we take the author's name.
+import { user } from '../../db/schema/auth';
 // PL: Router, który sprawdzamy.
 // EN: The router under test.
 import { newsFeedApp } from './routes';
@@ -57,7 +60,7 @@ describe('GET /', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      entries: [{ id: 'e1', type: 'event', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', title: 'Turniej', excerpt: 'Zapisy do piątku.' }],
+      entries: [{ id: 'e1', type: 'event', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', title: 'Turniej', excerpt: 'Zapisy do piątku.', pinned: false }],
     });
   });
 
@@ -70,6 +73,37 @@ describe('GET /', () => {
 
     expect(response.status).toBe(500);
     expect(await response.text()).not.toContain('tajny');
+  });
+});
+
+// PL: Grupa testów szukania w liście (parametr q).
+// EN: A group of search tests on the list (the q parameter).
+describe('GET / z parametrem q', () => {
+  // PL: Szukany tekst trafia w treść albo w tytuł, bez względu na wielkość liter i spacje na brzegach.
+  // EN: The searched text hits the content or the title, regardless of case and spaces at the edges.
+  it.each([
+    ['piątku', 'e1'],
+    ['TURNIEJ', 'e1'],
+    ['  turniej  ', 'e1'],
+    ['nic-takiego', undefined],
+    ['Szkic', undefined],
+  ])('q=%s zwraca %s / q=%s returns %s', async (term, expected) => {
+    const response = await newsFeedApp.request(`/?q=${encodeURIComponent(term)}`, {}, env);
+    const { entries } = (await response.json()) as { entries: { id: string }[] };
+
+    expect(response.status).toBe(200);
+    expect(entries.map((entry) => entry.id)).toEqual(expected ? [expected] : []);
+  });
+
+  // PL: Za długi tekst dostaje 400 z kodem, a tekst w granicy długości przechodzi.
+  // EN: Too long a text gets 400 with a code, and a text within the length limit passes.
+  it('za długi tekst to 400, a w granicy 200 / a too long text is 400, within the limit 200', async () => {
+    const tooLong = await newsFeedApp.request(`/?q=${'a'.repeat(101)}`, {}, env);
+    const atLimit = await newsFeedApp.request(`/?q=${'a'.repeat(100)}`, {}, env);
+
+    expect(tooLong.status).toBe(400);
+    expect(await tooLong.json()).toEqual({ error: 'query_too_long' });
+    expect(atLimit.status).toBe(200);
   });
 });
 
@@ -95,6 +129,30 @@ describe('GET /:id', () => {
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: 'not_found' });
+  });
+
+  // PL: Wpis z autorem pokazuje imię i nazwisko z konta, a e-mail autora nie wychodzi w odpowiedzi.
+  // EN: An entry with an author shows the name and surname from the account, and the author's e-mail does not leave in the response.
+  it('podaje imię autora i nie zdradza e-maila / gives the author name and does not reveal the e-mail', async () => {
+    await db.insert(user).values({ id: 'autor-route', name: 'Adam Wymyślony', email: 'adam.wymyslony@example.com', emailVerified: true }).onConflictDoNothing();
+    await db.insert(newsEntries).values({ id: 'z-autorem', type: 'news', status: 'published', title: 'Z autorem', body: BODY, source: 'Samorząd', authorUserId: 'autor-route', publishedAt: PUBLISHED_AT });
+
+    const response = await newsFeedApp.request('/z-autorem', {}, env);
+    const text = await response.text();
+    const { entry } = JSON.parse(text) as { entry: { authorName: string | null } };
+
+    expect(response.status).toBe(200);
+    expect(entry.authorName).toBe('Adam Wymyślony');
+    expect(text).not.toContain('adam.wymyslony@example.com');
+  });
+
+  // PL: Wpis bez autora ma authorName równe null, a nie brak pola.
+  // EN: An entry without an author has authorName equal to null, not a missing field.
+  it('bez autora authorName to null / without an author authorName is null', async () => {
+    const response = await newsFeedApp.request('/e1', {}, env);
+    const { entry } = (await response.json()) as { entry: Record<string, unknown> };
+
+    expect(entry).toHaveProperty('authorName', null);
   });
 });
 

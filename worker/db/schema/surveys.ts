@@ -23,10 +23,10 @@
 import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 /**
- * PL: Rodzaje pytań. Dziś tylko jednokrotny wybór, ale kolumna już jest, żeby rozbudowa (pytanie otwarte, skala) nie wymagała przepisywania tabel (docs/PLAN_APLIKACJI.md, część 2).
- * EN: The question types. Only single choice today, but the column already exists, so the expansion (open question, scale) does not need the tables rewritten (docs/PLAN_APLIKACJI.md, part 2).
+ * PL: Rodzaje pytań. Jednokrotny wybór (jedna odpowiedź) i wielokrotny wybór (kilka odpowiedzi, pola wyboru). Kolumna już jest, żeby rozbudowa (pytanie otwarte, skala) nie wymagała przepisywania tabel (docs/PLAN_APLIKACJI.md, część 2).
+ * EN: The question types. Single choice (one answer) and multiple choice (several answers, check boxes). The column already exists, so the expansion (open question, scale) does not need the tables rewritten (docs/PLAN_APLIKACJI.md, part 2).
  */
-export const QUESTION_TYPES = ['single_choice'] as const;
+export const QUESTION_TYPES = ['single_choice', 'multiple_choice'] as const;
 
 /**
  * PL: Ankiety. Ankieta jest aktywna do końca dnia w kolumnie ends_on (czas polski).
@@ -41,6 +41,8 @@ export const surveys = sqliteTable('surveys', {
   title: text('title').notNull(),
   /** PL: Ostatni dzień ankiety, data RRRR-MM-DD (czas polski). EN: The last day of the survey, a YYYY-MM-DD date (Polish time). */
   endsOn: text('ends_on').notNull(),
+  /** PL: Godzina zamknięcia ankiety, chwila w czasie zapisana w milisekundach. Null znaczy, że ankieta kończy się tylko przez ends_on. Kolumnę ustawia panel (podtor 5b). EN: The closing hour of the survey, a moment in time stored in milliseconds. Null means the survey ends only by ends_on. The admin panel sets the column (subtrack 5b). */
+  closesAt: integer('closes_at', { mode: 'timestamp_ms' }),
 });
 
 /**

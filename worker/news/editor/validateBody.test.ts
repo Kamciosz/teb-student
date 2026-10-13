@@ -65,6 +65,27 @@ describe('validateBody: poprawna treść / valid content', () => {
     expect(result.ok).toBe(true);
   });
 
+  it('film w cytacie i na liście przechodzi (węzeł blokowy) / a video inside a quote and a list item passes (a block node)', () => {
+    const video = { type: 'youtube', attrs: { videoId: 'dQw4w9WgXcQ' } };
+    const result = validateBody(
+      doc(
+        { type: 'blockquote', content: [paragraph('Cytat'), video] },
+        { type: 'bulletList', content: [{ type: 'listItem', content: [paragraph('Pierwsza'), video] }] },
+      ),
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('film zapisuje tylko identyfikator, bez adresu i HTML / a video keeps only the id, never the address or HTML', () => {
+    const result = validateBody(
+      doc(paragraph('Treść'), { type: 'youtube', attrs: { videoId: 'dQw4w9WgXcQ', src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', html: '<iframe></iframe>' } }),
+    );
+    expect(result).toEqual({
+      ok: true,
+      body: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Treść' }] }, { type: 'youtube', attrs: { videoId: 'dQw4w9WgXcQ' } }] },
+    });
+  });
+
   it('zwraca dokument odczytany przez schemat, bez obcych pól / returns the document read by the schema, without foreign fields', () => {
     const result = validateBody(doc({ type: 'paragraph', attrs: { onclick: 'x()' }, content: [{ type: 'text', text: 'a', extra: 1 }] }));
     expect(result).toEqual({ ok: true, body: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'a' }] }] } });
@@ -78,6 +99,12 @@ describe('validateBody: odrzucenia / rejections', () => {
     ['link javascript: / a javascript: link', doc(paragraph('x', [{ type: 'link', attrs: { href: 'javascript:alert(1)' } }])), 'bad_link'],
     ['link http bez s / a plain http link', doc(paragraph('x', [{ type: 'link', attrs: { href: 'http://teb.edu.pl' } }])), 'bad_link'],
     ['identyfikator filmu zamiast adresu ramki / a frame address instead of an id', doc({ type: 'youtube', attrs: { videoId: 'https://evil.example/x' } }), 'bad_video'],
+    ['identyfikator filmu za krótki (10 znaków) / a video id too short (10 characters)', doc({ type: 'youtube', attrs: { videoId: 'dQw4w9WgXc' } }), 'bad_video'],
+    ['identyfikator filmu za długi (12 znaków) / a video id too long (12 characters)', doc({ type: 'youtube', attrs: { videoId: 'dQw4w9WgXcQA' } }), 'bad_video'],
+    ['identyfikator filmu z niedozwolonym znakiem / a video id with an illegal character', doc({ type: 'youtube', attrs: { videoId: 'dQw4w9WgXc!' } }), 'bad_video'],
+    ['identyfikator filmu o wartości null / a video id that is null', doc({ type: 'youtube', attrs: { videoId: null } }), 'bad_video'],
+    ['identyfikator filmu liczbą / a video id that is a number', doc({ type: 'youtube', attrs: { videoId: 42 } }), 'bad_video'],
+    ['film bez pól / a video without fields', doc({ type: 'youtube' }), 'bad_video'],
     ['zdjęcie z adresem data: / a photo with a data: address', doc({ type: 'image', attrs: { src: 'data:image/png;base64,AAAA' } }), 'bad_image'],
     ['karta linku do obcej domeny / a link card to a foreign domain', doc({ type: 'linkCard', attrs: { href: 'https://fakeinstagram.com/x' } }), 'bad_card'],
     ['źródła z adresem javascript: / sources with a javascript: address', doc({ type: 'sources', attrs: { urls: ['javascript:1'] } }), 'bad_sources'],
