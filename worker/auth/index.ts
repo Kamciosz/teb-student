@@ -10,9 +10,13 @@
  * @uses worker/auth/invite/index.ts::listInviteCodes
  * @uses worker/auth/email/index.ts::deleteAuthStudentData
  * @uses worker/auth/email/index.ts::requireStudent
+ * @uses worker/auth/email/index.ts::findStudentByEmail
+ * @uses worker/auth/email/index.ts::listStudentsByIds
+ * @uses worker/auth/email/index.ts::countStudents
  * @used_by worker/mounts.ts::API_MOUNTS
  * @used_by worker/shared/accountDeletion.ts::STUDENT_DATA_DELETERS
  * @used_by worker/admin/…::issueInviteCode (panel Samorządu, podtor 8 / Student Council panel, subtrack 8)
+ * @used_by worker/admin/…::findStudentByEmail, listStudentsByIds, countStudents (panel Samorządu, podtor 8 / Student Council panel, subtrack 8)
  * @used_by worker/<moduł>/…::requireStudent (routery innych podtorów / routers of other subtracks)
  */
 
@@ -23,6 +27,10 @@ export { authEmailApp, deleteAuthStudentData } from './email';
 // PL: Sprawdzanie sesji dla routerów innych modułów. Użycie: new Hono<StudentEnv>().use(requireStudent); ucznia (id i email) daje context.get('student'). Bez sesji odpowiada 401.
 // EN: The session check for the routers of other modules. Usage: new Hono<StudentEnv>().use(requireStudent); the student (id and email) comes from context.get('student'). Without a session it answers 401.
 export { requireStudent, type Student, type StudentEnv } from './email';
+
+// PL: Wyszukiwanie uczniów dla panelu Samorządu (podtor 8): findStudentByEmail(env.DB, adres) → { id, name, email } | null, listStudentsByIds(env.DB, numery) → { id, name, email }[], countStudents(env.DB) → liczba kont. Zwracają tylko numer, imię i adres.
+// EN: The student lookup for the Student Council panel (subtrack 8): findStudentByEmail(env.DB, address) → { id, name, email } | null, listStudentsByIds(env.DB, ids) → { id, name, email }[], countStudents(env.DB) → the number of accounts. They return only the id, the name and the address.
+export { countStudents, findStudentByEmail, listStudentsByIds, type StudentSummary } from './email';
 
 // PL: Router podtoru 1b (kody zaproszeń, login i hasło), funkcja tworząca kod zaproszenia dla panelu Samorządu (issueInviteCode(env.DB) → { code, expiresAt }) i lista kodów, które jeszcze działają (listInviteCodes(env.DB) → { code, expiresAt }[], od najkrócej ważnego). Panel Samorządu (podtor 8) pokazuje listę na ekranie „Kody zaproszeń”.
 // EN: The router of subtrack 1b (invitation codes, login and password), the function that creates an invitation code for the Student Council panel (issueInviteCode(env.DB) → { code, expiresAt }) and the list of codes that still work (listInviteCodes(env.DB) → { code, expiresAt }[], from the one valid for the shortest time). The Student Council panel (subtrack 8) shows the list on the "Invitation codes" screen.

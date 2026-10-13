@@ -1,5 +1,5 @@
 /**
- * PL: Test ścieżek podtoru 7 (profil i ustawienia): zmiana imienia, klasy i szkoły z akcentem niebieskim albo czerwonym, wybór palety, która zostaje po ponownym uruchomieniu, usunięcie konta, polityka prywatności bez logowania, szerokość 320 px i brak internetu. Serwer profilu jest podstawiony z pamięcią (prawdziwy wymaga logowania, a kod trafia tylko do terminala serwera), jego sprawdzają testy Vitest (worker/profile/profile.test.ts). Polityka prywatności idzie bez żadnych podstawek.
+ * PL: Test ścieżek podtoru 7 (profil i ustawienia, wiersz panelu z rolą): zmiana imienia, klasy i szkoły z akcentem niebieskim albo czerwonym, wybór palety, która zostaje po ponownym uruchomieniu, usunięcie konta, polityka prywatności bez logowania, szerokość 320 px i brak internetu. Serwer profilu jest podstawiony z pamięcią (prawdziwy wymaga logowania, a kod trafia tylko do terminala serwera), jego sprawdzają testy Vitest (worker/profile/profile.test.ts). Polityka prywatności idzie bez żadnych podstawek.
  * EN: Test of the subtrack 7 paths (profile and settings): changing the name, class and school with the blue or red accent, choosing a palette that stays after a restart, deleting the account, the privacy policy without signing in, 320 px width and no internet. The profile server is stubbed with memory (the real one requires signing in, and the code goes only to the server terminal), the Vitest tests cover it (worker/profile/profile.test.ts). The privacy policy runs with no stubs at all.
  *
  * @author Jakub
@@ -19,7 +19,7 @@ const EMAIL = 'ola.testowa@teb.edu.pl';
 const START_PROFILE = { name: '', className: '', school: 'L', palette: 'CE' };
 
 /** PL: Stan podstawionego serwera: profil, sesja i liczba wywołań usunięcia konta. EN: The state of the stubbed server: the profile, the session and the number of account deletion calls. */
-type StubState = { profile: Record<string, string>; signedIn: boolean; deleteCalls: number };
+type StubState = { profile: Record<string, string>; signedIn: boolean; deleteCalls: number; panelLevel: string | null };
 
 /**
  * PL: Podstawia sesję i serwer profilu z pamięcią: GET oddaje profil, PUT go zapisuje, DELETE kasuje konto i kończy sesję.
@@ -27,12 +27,13 @@ type StubState = { profile: Record<string, string>; signedIn: boolean; deleteCal
  *
  * @param page - PL: strona testu. EN: the test page.
  * @param signedIn - PL: czy uczeń ma sesję na starcie. EN: whether the student has a session at the start.
+ * @param panelLevel - PL: rola w panelu albo null, gdy uczeń jej nie ma. EN: the panel role or null when the student has none.
  * @returns PL: stan serwera, który test może odczytać. EN: the server state the test can read.
  */
-async function stubServer(page: Page, signedIn = true): Promise<StubState> {
+async function stubServer(page: Page, signedIn = true, panelLevel: string | null = null): Promise<StubState> {
   // PL: Stan zmieniany przez podstawione adresy.
   // EN: The state changed by the stubbed routes.
-  const state: StubState = { profile: { ...START_PROFILE }, signedIn, deleteCalls: 0 };
+  const state: StubState = { profile: { ...START_PROFILE }, signedIn, deleteCalls: 0, panelLevel };
 
   // PL: Sesja ucznia: z danymi albo pusta (null), gdy ucznia nie ma.
   // EN: The student session: with data or empty (null) when there is no student.
@@ -42,6 +43,10 @@ async function stubServer(page: Page, signedIn = true): Promise<StubState> {
     const user = { id: 'u1', email: EMAIL, name: '', emailVerified: true, createdAt: now, updatedAt: now };
     return route.fulfill({ json: state.signedIn ? { session, user } : null });
   });
+
+  // PL: Rola w panelu (wiersz 6.1a w profilu): null, gdy uczeń nie ma roli.
+  // EN: The panel role (the row 6.1a in the profile): null when the student has no role.
+  await page.route('**/api/admin/me', (route) => route.fulfill({ json: { level: state.panelLevel } }));
 
   // PL: Profil: GET, PUT i DELETE.
   // EN: The profile: GET, PUT and DELETE.
@@ -122,6 +127,40 @@ test('zmiana imienia, klasy i szkoły zmienia profil i akcent / changing name, c
   // EN: Go back to the lyceum: the accent is blue again.
   await saveSettings(page, { name: 'Ola', className: '3TA', school: 'Liceum', palette: 'CE Grafit' });
   expect(await accentHue(page)).toBe('blue');
+});
+
+// PL: Wiersz „Panel Samorządu” widzi tylko osoba z rolą: Samorząd dostaje go z znacznikiem „Samorząd” i prowadzi do /admin.
+// EN: The "Panel Samorządu" row is seen only by a person with a role: the Council gets it with the badge "Samorząd" and it leads to /admin.
+test('wiersz panelu z rolą prowadzi do /admin / the panel row with a role leads to /admin', async ({ page }) => {
+  await stubServer(page, true, 'council');
+  await page.goto('/profile');
+
+  const row = page.getByRole('link', { name: /Panel Samorządu/ });
+  await expect(row).toHaveAttribute('href', '/admin');
+  await expect(row).toContainText('Samorząd');
+});
+
+// PL: Redakcja widzi wiersz „Panel redakcji” ze znacznikiem „Redakcja”, a administrator „Panel Samorządu” ze znacznikiem „Administrator”.
+// EN: The editorial team sees the row "Panel redakcji" with the badge "Redakcja", and the administrator "Panel Samorządu" with the badge "Administrator".
+for (const [level, label, badge] of [['editor', 'Panel redakcji', 'Redakcja'], ['admin', 'Panel Samorządu', 'Administrator']] as const) {
+  test(`rola ${level} widzi wiersz „${label}” / the role ${level} sees the row "${label}"`, async ({ page }) => {
+    await stubServer(page, true, level);
+    await page.goto('/profile');
+
+    const row = page.getByRole('link', { name: new RegExp(label) });
+    await expect(row).toHaveAttribute('href', '/admin');
+    await expect(row).toContainText(badge);
+  });
+}
+
+// PL: Uczeń bez roli nie ma wiersza panelu. Najpierw czekamy, aż profil się wczyta, żeby brak wiersza nie był przypadkiem.
+// EN: A student without a role has no panel row. First we wait for the profile to load, so that the missing row is not a fluke.
+test('uczeń bez roli nie widzi wiersza panelu / a student without a role does not see the panel row', async ({ page }) => {
+  await stubServer(page, true, null);
+  await page.goto('/profile');
+  await expect(page.getByRole('link', { name: 'Moje zgłoszenia' })).toBeVisible();
+
+  await expect(page.getByRole('link', { name: /Panel/ })).toHaveCount(0);
 });
 
 // PL: Wybrana paleta zostaje po ponownym uruchomieniu: na innym ekranie, po przeładowaniu i gdy serwer profilu nie odpowiada.
