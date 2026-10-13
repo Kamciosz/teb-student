@@ -26,8 +26,8 @@ export type AdminReport = {
   updatedAt: number;
 };
 
-/** PL: Jeden wiersz historii etapów. EN: One row of the stage history. */
-export type StageChange = { stage: string; changedAt: number };
+/** PL: Jeden wiersz historii etapów, z odpowiedzią dla autora, jeśli była. EN: One row of the stage history, with the answer for the author if there was one. */
+export type StageChange = { stage: string; changedAt: number; note: string | null };
 
 /** PL: Imię i klasa autora zgłoszenia nieanonimowego. EN: The name and class of the author of a signed report. */
 export type AdminStudent = { name: string; className: string };

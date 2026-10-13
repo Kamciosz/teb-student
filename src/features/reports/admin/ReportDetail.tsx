@@ -75,21 +75,22 @@ function StageNote({ value, onChange }: { value: string; onChange: (value: strin
 }
 
 /**
- * PL: Rysuje historię etapów: etap i data, od najnowszego.
- * EN: Draws the stage history: the stage and the date, newest first.
+ * PL: Rysuje historię etapów: etap i data, od najnowszego. Gdy przy zmianie etapu była odpowiedź dla autora, pokazuje ją pod wpisem, na osobnym wierszu.
+ * EN: Draws the stage history: the stage and the date, newest first. When a change had an answer for the author, it shows it under the entry, on its own line.
  *
  * @param props - PL: wiersze historii. EN: the history rows.
  * @returns PL: drzewo elementów historii. EN: the tree of history elements.
  */
 function History({ rows }: { rows: StageChange[] }) {
-  // PL: Jeden wiersz na etap, od najnowszego (tak je daje serwer).
-  // EN: One row per stage, newest first (as the server gives them).
+  // PL: Jeden wiersz na etap, od najnowszego (tak je daje serwer). Odpowiedź pokazujemy tylko, gdy jest niepusta; wpis zapisany przed zmianą nie ma tego pola, więc `undefined` też nie pokaże nic.
+  // EN: One row per stage, newest first (as the server gives them). We show the answer only when it is non-empty; an entry saved before this change has no such field, so `undefined` shows nothing either.
   return (
     <ul className="ra-history" aria-label="Historia">
       {rows.map((row) => (
         <li key={`${row.stage}-${row.changedAt}`}>
           <span>{stageLabel(row.stage)}</span>
           <span className="ra-small">{formatShortDate(row.changedAt)}</span>
+          {row.note ? <p className="ra-history-note"><span className="ra-small">Odpowiedź dla autora:</span> {row.note}</p> : null}
         </li>
       ))}
     </ul>

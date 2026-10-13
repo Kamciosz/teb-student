@@ -47,8 +47,10 @@
 .ra-segment { flex: 1; min-width: 0; min-height: 48px; border: 0; border-radius: var(--r-sm); background: none; padding: 0 4px; font-size: var(--t-sm); font-weight: 600; color: var(--ink); cursor: pointer; overflow-wrap: anywhere; }
 .ra-segment[aria-checked='true'] { background: var(--ink); color: var(--bg); }
 .ra-history { list-style: none; background: var(--tile); border-radius: var(--r); overflow: hidden; }
-.ra-history li { display: flex; justify-content: space-between; gap: 8px; padding: 12px 16px; }
+.ra-history li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 16px; }
 .ra-history li + li { border-top: 1px solid var(--line); }
+/* PL: Odpowiedź dla autora pod wpisem historii, w całej szerokości; długi tekst bez spacji łamiemy, żeby nie wypchnął ekranu w wąskim telefonie. EN: The answer for the author under the history entry, full width; long text without spaces breaks, so it does not push the screen out on a narrow phone. */
+.ra-history-note { flex-basis: 100%; margin: 0; overflow-wrap: anywhere; }
 
 /* PL: Dolny przycisk z uwagami nad nim. EN: The bottom button with the notes above it. */
 .ra-cta { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); width: min(calc(100% - 32px), 398px); display: grid; gap: 12px; }
