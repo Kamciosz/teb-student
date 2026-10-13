@@ -26,6 +26,10 @@ const QUESTIONS = [
 // EN: A survey with a multiple-choice question of three options.
 const MULTI_QUESTIONS = [{ questionId: 'm1', type: 'multiple_choice' as const, optionIds: ['m1-a', 'm1-b', 'm1-c'] }];
 
+// PL: Ankieta ze skalą 1–5: pięć zwykłych odpowiedzi „1”…„5”, wybiera się jedną, jak przy jednokrotnym wyborze.
+// EN: A survey with a 1–5 scale: five ordinary options "1"…"5", one is picked, like a single choice.
+const SCALE_QUESTIONS = [{ questionId: 's1', type: 'scale_1_5' as const, optionIds: ['s1-1', 's1-2', 's1-3', 's1-4', 's1-5'] }];
+
 // PL: Grupa testów kształtu danych.
 // EN: A group of tests for the data shape.
 describe('parseAnswersBody', () => {
@@ -120,6 +124,24 @@ describe('checkAnswers', () => {
     ];
 
     expect(checkAnswers(QUESTIONS, answers)).toEqual({ ok: false, reason: 'too_many_options' });
+  });
+
+  it('przyjmuje jedną wybraną wartość skali / accepts one picked scale value', () => {
+    const answers = [{ questionId: 's1', optionIds: ['s1-3'] }];
+
+    expect(checkAnswers(SCALE_QUESTIONS, answers)).toEqual({ ok: true, optionIds: ['s1-3'] });
+  });
+
+  it('odrzuca dwie wartości skali / rejects two scale values', () => {
+    const answers = [{ questionId: 's1', optionIds: ['s1-2', 's1-3'] }];
+
+    expect(checkAnswers(SCALE_QUESTIONS, answers)).toEqual({ ok: false, reason: 'too_many_options' });
+  });
+
+  it('odrzuca wartość skali z innego pytania / rejects a scale value from another question', () => {
+    const answers = [{ questionId: 's1', optionIds: ['q1-a'] }];
+
+    expect(checkAnswers([...SCALE_QUESTIONS, ...QUESTIONS], answers)).toEqual({ ok: false, reason: 'unknown_option' });
   });
 
   it('odrzuca tę samą odpowiedź dwa razy w jednym pytaniu / rejects the same option twice in one question', () => {

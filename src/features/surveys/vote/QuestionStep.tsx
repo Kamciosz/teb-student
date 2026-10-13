@@ -1,6 +1,6 @@
 /**
- * PL: Jedno pytanie ankiety na ekranie: numer pytania, treść, odpowiedzi z literami A–D i notatka o anonimowości (ekrany 4.2 i 4.3 w docs/projekt/EKRANY.md). Pytanie jednokrotnego wyboru ma pola radio, wielokrotnego wyboru pola wyboru. Sam niczego nie zapisuje, tylko zgłasza wybór wyżej.
- * EN: One survey question on the screen: the question number, the text, the options with letters A–D and the anonymity note (screens 4.2 and 4.3 in docs/projekt/EKRANY.md). A single-choice question has radio inputs, a multiple-choice one has checkboxes. It stores nothing itself, it only reports the choice upward.
+ * PL: Jedno pytanie ankiety na ekranie: numer pytania, treść, odpowiedzi z literami A–D (albo skala 1–5) i notatka o anonimowości (ekrany 4.2 i 4.3 w docs/projekt/EKRANY.md). Pytanie jednokrotnego wyboru ma pola radio, wielokrotnego wyboru pola wyboru, skala 1–5 przyciski (ScaleOptions). Sam niczego nie zapisuje, tylko zgłasza wybór wyżej.
+ * EN: One survey question on the screen: the question number, the text, the options with letters A–D (or the 1–5 scale) and the anonymity note (screens 4.2 and 4.3 in docs/projekt/EKRANY.md). A single-choice question has radio inputs, a multiple-choice one has checkboxes, the 1–5 scale has buttons (ScaleOptions). It stores nothing itself, it only reports the choice upward.
  *
  * @author Jakub
  * @since 2026-10-09
@@ -11,6 +11,7 @@
 // EN: React's ref and effect hooks.
 import { useEffect, useRef } from 'react';
 import { LockIcon } from './icons';
+import { ScaleOptions } from './ScaleOptions';
 import type { SurveyQuestion } from './types';
 
 // PL: Litery odpowiedzi. Ankieta ma najwyżej tyle odpowiedzi, ile liter; kolejne dostałyby myślnik.
@@ -41,9 +42,10 @@ export function QuestionStep({ question, number, selectedIds, onChange }: Questi
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus(), [question.id]);
 
-  // PL: Przy wielokrotnym wyborze klik dodaje albo usuwa odpowiedź z zestawu. Przy jednokrotnym zostaje tylko kliknięta.
-  // EN: With multiple choice a click adds or removes the option from the set. With single choice only the clicked option stays.
+  // PL: Przy wielokrotnym wyborze klik dodaje albo usuwa odpowiedź z zestawu. Przy jednokrotnym wyborze i skali zostaje tylko kliknięta.
+  // EN: With multiple choice a click adds or removes the option from the set. With single choice and the scale only the clicked option stays.
   const isMultiple = question.type === 'multiple_choice';
+  const isScale = question.type === 'scale_1_5';
   function toggle(optionId: string) {
     if (!isMultiple) return onChange([optionId]);
     onChange(selectedIds.includes(optionId) ? selectedIds.filter((id) => id !== optionId) : [...selectedIds, optionId]);
@@ -56,18 +58,22 @@ export function QuestionStep({ question, number, selectedIds, onChange }: Questi
         {question.prompt}
       </h1>
       {isMultiple ? <p className="vote-small">Możesz zaznaczyć kilka odpowiedzi.</p> : null}
-      <fieldset className="vote-options">
-        <legend className="vote-sr-only">Odpowiedzi</legend>
-        {question.options.map((option, index) => (
-          <label key={option.id} className="vote-option">
-            <input type={isMultiple ? 'checkbox' : 'radio'} name={question.id} value={option.id} checked={selectedIds.includes(option.id)} onChange={() => toggle(option.id)} />
-            <span className="vote-option__body">
-              <span className="vote-option__letter">{LETTERS[index] ?? '-'}</span>
-              <span className="vote-option__text">{option.label}</span>
-            </span>
-          </label>
-        ))}
-      </fieldset>
+      {isScale ? (
+        <ScaleOptions name={question.id} options={question.options} selectedIds={selectedIds} onPick={toggle} />
+      ) : (
+        <fieldset className="vote-options">
+          <legend className="vote-sr-only">Odpowiedzi</legend>
+          {question.options.map((option, index) => (
+            <label key={option.id} className="vote-option">
+              <input type={isMultiple ? 'checkbox' : 'radio'} name={question.id} value={option.id} checked={selectedIds.includes(option.id)} onChange={() => toggle(option.id)} />
+              <span className="vote-option__body">
+                <span className="vote-option__letter">{LETTERS[index] ?? '-'}</span>
+                <span className="vote-option__text">{option.label}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      )}
       <p className="vote-note">
         <LockIcon />
         <span>Odpowiedzi są anonimowe. Wyniki widzi tylko Samorząd.</span>
