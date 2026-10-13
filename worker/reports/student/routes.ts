@@ -1,12 +1,17 @@
 /**
- * PL: Router Hono podtoru 4a (zgłoszenie ucznia). Dwa adresy pod /api/reports/student: POST zapisuje nowe zgłoszenie, GET oddaje zgłoszenia ucznia („Moje zgłoszenia”). Router jest podpięty w worker/mounts.ts.
- * EN: The Hono router of subtrack 4a (student report). Two routes under /api/reports/student: POST saves a new report, GET returns the student's reports ("Moje zgłoszenia"). The router is mounted in worker/mounts.ts.
+ * PL: Router Hono podtoru 4a (zgłoszenie ucznia). Cztery adresy pod /api/reports/student: POST zapisuje nowe zgłoszenie, GET oddaje zgłoszenia ucznia („Moje zgłoszenia”), GET /similar oddaje podobne otwarte zgłoszenia („Mnie też”), POST /:id/join dołącza ucznia do zgłoszenia. Router jest podpięty w worker/mounts.ts.
+ * EN: The Hono router of subtrack 4a (student report). Four routes under /api/reports/student: POST saves a new report, GET returns the student's reports ("Moje zgłoszenia"), GET /similar returns similar open reports ("Mnie też"), POST /:id/join joins the student to a report. The router is mounted in worker/mounts.ts.
  *
  * @author Szymon
  * @since 2026-10-09
  * @uses worker/reports/student/validation.ts::parseReportInput
+ * @uses worker/reports/student/validation.ts::isOneOf
  * @uses worker/reports/student/reportsRepository.ts::createReport
  * @uses worker/reports/student/reportsRepository.ts::listReportsByAuthor
+ * @uses worker/reports/student/similarReports.ts::listSimilarReports
+ * @uses worker/reports/student/joinReport.ts::joinReport
+ * @uses worker/db/schema/reports.ts::REPORT_CATEGORIES
+ * @uses worker/db/schema/reports.ts::REPORT_PLACES
  * @uses worker/auth/index.ts::requireStudent
  * @used_by worker/reports/student/index.ts::reportsStudentApp
  * @used_by worker/reports/student/routes.test.ts::reportsStudentApp
@@ -24,7 +29,14 @@ import { requireStudent, type StudentEnv } from '../../auth';
 import { createReport, listReportsByAuthor } from './reportsRepository';
 // PL: Sprawdzanie danych z telefonu.
 // EN: Checking the data from the phone.
-import { parseReportInput } from './validation';
+import { isOneOf, parseReportInput } from './validation';
+// PL: Lista podobnych zgłoszeń i dołączenie „Mnie też”.
+// EN: The list of similar reports and the "Me too" join.
+import { listSimilarReports } from './similarReports';
+import { joinReport } from './joinReport';
+// PL: Dozwolone kody kategorii i miejsca do sprawdzenia zapytania.
+// EN: The allowed category and place codes for checking the query.
+import { REPORT_CATEGORIES, REPORT_PLACES } from '../../db/schema/reports';
 
 /**
  * PL: Najwięcej bajtów, jakie przyjmuje zapytanie o nowe zgłoszenie. Opis ma najwyżej 500 znaków, więc 8 KB to duży zapas.
@@ -63,4 +75,29 @@ reportsStudentApp.get('/', async (context) => {
   // EN: Read only this student's reports.
   const items = await listReportsByAuthor(context.env.DB, context.get('student').id);
   return context.json({ reports: items });
+});
+
+// PL: GET /similar oddaje otwarte zgłoszenia tej samej kategorii i miejsca. Brak albo zły kod to błąd zapytania (400).
+// EN: GET /similar returns open reports of the same category and place. A missing or bad code is a bad query (400).
+reportsStudentApp.get('/similar', async (context) => {
+  // PL: Sprawdź kody z adresu, zanim zapytamy bazę.
+  // EN: Check the codes from the address before querying the database.
+  const category = context.req.query('category');
+  const place = context.req.query('place');
+  if (!isOneOf(category, REPORT_CATEGORIES) || !isOneOf(place, REPORT_PLACES)) return context.json({ error: 'invalid_query' }, 400);
+
+  // PL: Szukaj dla ucznia z sesji; odpowiedź nie zawiera numerów autorów ani dołączających.
+  // EN: Search for the student from the session; the answer has no author ids or joining students.
+  const items = await listSimilarReports(context.env.DB, context.get('student').id, { category, place });
+  return context.json({ reports: items });
+});
+
+// PL: POST /:id/join dołącza ucznia do cudzego, otwartego zgłoszenia. Zwraca 404, gdy zgłoszenia nie ma lub jest załatwione, 409 dla własnego.
+// EN: POST /:id/join joins the student to someone else's open report. Returns 404 when the report does not exist or is resolved, 409 for an own report.
+reportsStudentApp.post('/:id/join', async (context) => {
+  // PL: Numer zgłoszenia bierzemy z adresu, numer ucznia z sesji.
+  // EN: The report id comes from the address, the student id from the session.
+  const result = await joinReport(context.env.DB, context.get('student').id, context.req.param('id'));
+  if (!result.ok) return context.json({ error: result.reason }, result.reason === 'not_found' ? 404 : 409);
+  return context.json({ joinCount: result.joinCount, joinedByMe: true });
 });
