@@ -8,7 +8,6 @@
  * @uses src/features/dashboard/useBellState.ts::useBellState
  * @uses src/features/bell/index.ts::BellState
  * @uses src/features/bell/index.ts::BellDayStatus
- * @uses src/features/bell/index.ts::bellDayStatus
  * @used_by src/features/dashboard/DashboardScreen.tsx::DashboardScreen
  */
 
@@ -18,11 +17,11 @@ import { Link } from 'react-router';
 // PL: Data nad powitaniem.
 // EN: The date above the greeting.
 import { formatToday } from './format';
-// PL: Typ stanu licznika, typ stanu dnia i sprawdzenie stanu dnia z drzwi modułu bell.
-// EN: The countdown state type, the day state type and the day state check, from the bell module door.
-import { bellDayStatus, type BellDayStatus, type BellState } from '../bell';
-// PL: Stan licznika odświeżany, gdy karta jest widoczna.
-// EN: The countdown state, refreshed while the tab is visible.
+// PL: Typ stanu licznika i typ stanu dnia z drzwi modułu bell.
+// EN: The countdown state type and the day state type, from the bell module door.
+import type { BellDayStatus, BellState } from '../bell';
+// PL: Stan licznika i stan dnia, odświeżane, gdy karta jest widoczna.
+// EN: The countdown state and the day state, refreshed while the tab is visible.
 import { useBellState } from './useBellState';
 
 // PL: Napisy stanu dnia bez licznika. Nowe napisy czekają na decyzję zespołu (TO_AGREE).
@@ -87,7 +86,7 @@ export function BellReadout({ state, day }: { state: BellState | null; day: Bell
  * @returns PL: rząd z datą, powitaniem, przyciskiem układu i licznikiem do dzwonka. EN: a row with the date, the greeting, the layout button and the bell countdown.
  */
 export function DashboardHeader({ editing, onToggleEdit }: DashboardHeaderProps) {
-  const bell = useBellState();
+  const { state, day } = useBellState();
   return (
     <header className="dash-header">
       <div>
@@ -100,7 +99,7 @@ export function DashboardHeader({ editing, onToggleEdit }: DashboardHeaderProps)
       </div>
       {/* PL: Licznik do dzwonka jako link do /bell. EN: The bell countdown as a link to /bell. */}
       <Link to="/bell" className="dash-bell" aria-label="Licznik do dzwonka">
-        <BellReadout state={bell} day={bellDayStatus()} />
+        <BellReadout state={state} day={day} />
       </Link>
     </header>
   );

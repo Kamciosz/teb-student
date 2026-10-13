@@ -8,6 +8,7 @@
  * @uses worker/reports/index.ts::countReports
  * @uses worker/surveys/index.ts::countSurveyParticipations
  * @uses worker/admin/requirePanelRole.ts::requirePanelRole
+ * @uses worker/admin/diary.ts::recordDiaryEntry
  * @used_by worker/admin/routes.ts::adminApp
  * @used_by worker/admin/pilot.test.ts::pilotApp
  */
@@ -23,6 +24,9 @@ import { countSurveyParticipations } from '../surveys';
 // PL: Sprawdzanie roli administratora i typ środowiska z rolą.
 // EN: The administrator role check and the environment type with the role.
 import { requirePanelRole, type PanelEnv } from './requirePanelRole';
+// PL: Zapis pobrania pliku w dzienniku zmian.
+// EN: Recording the file download in the change diary.
+import { recordDiaryEntry } from './diary';
 
 /**
  * PL: Znak kolejności bajtów UTF-8 na początku pliku. Dzięki niemu arkusz kalkulacyjny czyta polskie litery poprawnie.
@@ -56,6 +60,9 @@ export const pilotApp = new Hono<PanelEnv>().use(requirePanelRole('admin')).get(
     ['Ile zgłoszeń wpłynęło', await countReports(context.env.DB)],
     ['Ile odpowiedzi dały ankiety', await countSurveyParticipations(context.env.DB)],
   ];
+  // PL: Zapisz w dzienniku, kto pobrał plik. Liczby w pliku do dziennika nie trafiają.
+  // EN: Record in the diary who downloaded the file. The numbers in the file do not go into the diary.
+  await recordDiaryEntry(context.env.DB, { actorId: context.get('student').id, action: 'pilot_downloaded', targetId: null });
   // PL: Oddaj plik jako załącznik do pobrania.
   // EN: Return the file as a download attachment.
   return context.body(buildPilotCsv(counts), 200, {

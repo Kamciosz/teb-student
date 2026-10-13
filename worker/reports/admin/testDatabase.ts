@@ -1,6 +1,6 @@
 /**
- * PL: Pomocnik testów serwera 4b: czyści tabele zgłoszeń, dołączeń i ról w bazie testowej D1, wpisuje dane testowe z REPORTS_SEED, REPORT_STAGE_CHANGES_SEED i REPORT_JOINS_SEED (plik podtoru 4a, tylko import) i nadaje wskazaną rolę zalogowanemu uczniowi. Tabele zakłada wspólna konfiguracja testów (worker/shared/testSetup.ts).
- * EN: A helper for the 4b server tests: empties the report, join and role tables in the D1 test database, inserts the test data from REPORTS_SEED, REPORT_STAGE_CHANGES_SEED and REPORT_JOINS_SEED (a 4a file, import only) and grants the given role to the signed-in student. The tables are created by the shared test setup (worker/shared/testSetup.ts).
+ * PL: Pomocnik testów serwera 4b: czyści tabele zgłoszeń, dołączeń, ról i dziennika zmian w bazie testowej D1, wpisuje dane testowe z REPORTS_SEED, REPORT_STAGE_CHANGES_SEED i REPORT_JOINS_SEED (plik podtoru 4a, tylko import) i nadaje wskazaną rolę zalogowanemu uczniowi. Tabele zakłada wspólna konfiguracja testów (worker/shared/testSetup.ts).
+ * EN: A helper for the 4b server tests: empties the report, join, role and change diary tables in the D1 test database, inserts the test data from REPORTS_SEED, REPORT_STAGE_CHANGES_SEED and REPORT_JOINS_SEED (a 4a file, import only) and grants the given role to the signed-in student. The tables are created by the shared test setup (worker/shared/testSetup.ts).
  *
  * @author Szymon
  * @since 2026-10-12
@@ -17,7 +17,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { env } from 'cloudflare:workers';
 // PL: Tabela ról w panelu i typ roli. Test nadaje rolę wprost w bazie, bo drzwi modułu admin nie mają funkcji nadającej role.
 // EN: The panel roles table and the role type. The test grants the role directly in the database, because the admin module door has no function that grants roles.
-import { panelRoles, type PanelRole } from '../../db/schema/admin';
+import { diaryEntries, panelRoles, type PanelRole } from '../../db/schema/admin';
 // PL: Tabele i zestawy danych testowych.
 // EN: The tables and the test data sets.
 import { reportJoins, reports, reportStageChanges } from '../../db/schema/reports';
@@ -39,6 +39,7 @@ export async function resetDatabase(authorId: string, role: PanelRole | null): P
   await db.delete(reportJoins);
   await db.delete(reports);
   await db.delete(panelRoles);
+  await db.delete(diaryEntries);
 
   // PL: Wpisz zgłoszenia, potem historię i dołączenia. Numer ucznia z seedu zamieniamy na numer zalogowanego ucznia w obu tabelach.
   // EN: Insert the reports, then the history and the joins. The seed student's id is replaced with the signed-in student's id in both tables.

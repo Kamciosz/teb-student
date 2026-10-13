@@ -18,7 +18,10 @@ export const TO_AGREE = {
     single: 'Jeden wybór',
     multiple: 'Wiele wyborów',
     scale: 'Skala 1–5',
+    shortText: 'Krótka odpowiedź',
   },
+  /** PL: Dopisek nad listą krótkich odpowiedzi w wynikach. EN: The note above the list of short answers in the results. */
+  textsNote: 'Odpowiedzi są w kolejności alfabetycznej. Nie widać, kto je napisał.',
   /** PL: Dopisek w wynikach wielokrotnego wyboru. EN: The note in the multiple choice results. */
   multipleNote: 'Uczeń mógł zaznaczyć kilka odpowiedzi.',
   /** PL: Liczba zaznaczeń w wynikach wielokrotnego wyboru. EN: The number of checked boxes in the multiple choice results. */

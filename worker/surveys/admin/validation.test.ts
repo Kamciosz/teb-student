@@ -99,3 +99,16 @@ describe('parseNewSurvey: termin zamknięcia / closing time', () => {
     expect(parseNewSurvey({ ...valid, closesAt: '2030-02-30T12:00' }, now)).toBeNull();
   });
 });
+
+describe('parseNewSurvey: krótka odpowiedź / short answer', () => {
+  it('krótka odpowiedź nie ma odpowiedzi do wyboru, a te z telefonu są ignorowane / a short answer has no options, and the ones from the phone are ignored', () => {
+    const shortText = (options: unknown) => ({ ...valid, questions: [{ prompt: 'Co zjesz?', type: 'short_text', options }] });
+    expect(parseNewSurvey(shortText(undefined), now)?.questions[0]).toEqual({ prompt: 'Co zjesz?', type: 'short_text', options: [] });
+    expect(parseNewSurvey(shortText([]), now)?.questions[0]?.options).toEqual([]);
+    expect(parseNewSurvey(shortText(['A', 'B']), now)?.questions[0]?.options).toEqual([]);
+  });
+
+  it('krótka odpowiedź bez treści pytania odpada / a short answer without question text is rejected', () => {
+    expect(parseNewSurvey({ ...valid, questions: [{ prompt: '  ', type: 'short_text', options: [] }] }, now)).toBeNull();
+  });
+});

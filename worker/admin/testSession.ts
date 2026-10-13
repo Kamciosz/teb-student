@@ -1,14 +1,16 @@
 /**
- * PL: Wspólne narzędzia testów panelu: logowanie uczniów kodem przez prawdziwy router auth, nadawanie ról w bazie D1 i wołanie routera panelu z ciasteczkiem albo ciałem zapytania. Używają ich testy routes, roles i pilot.
- * EN: Shared tools for the panel tests: signing students in with a code through the real auth router, granting roles in the D1 database, and calling the panel router with a cookie or a request body. The routes, roles and pilot tests use them.
+ * PL: Wspólne narzędzia testów panelu: logowanie uczniów kodem przez prawdziwy router auth, nadawanie ról w bazie D1 i wołanie routera panelu z ciasteczkiem albo ciałem zapytania. Używają ich testy routes, roles, pilot i dziennik.
+ * EN: Shared tools for the panel tests: signing students in with a code through the real auth router, granting roles in the D1 database, and calling the panel router with a cookie or a request body. The routes, roles, pilot and diary tests use them.
  *
  * @author Szymon
  * @since 2026-10-13
  * @uses worker/auth/index.ts::authEmailApp
  * @uses worker/admin/routes.ts::adminApp
+ * @uses worker/db/schema/admin.ts::diaryEntries
  * @used_by worker/admin/routes.test.ts::setUpPanel
  * @used_by worker/admin/roles.test.ts::setUpPanel
  * @used_by worker/admin/pilot.test.ts::setUpPanel
+ * @used_by worker/admin/diary.test.ts::setUpPanel
  */
 
 // PL: Funkcje udawania console.info (tam Better Auth wypisuje kod logowania).
@@ -26,7 +28,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
 // PL: Tabele: role, konta i kody zaproszeń (leżą w verification).
 // EN: The tables: roles, accounts and invitation codes (they live in verification).
-import { panelRoles, type PanelRole } from '../db/schema/admin';
+import { diaryEntries, panelRoles, type PanelRole } from '../db/schema/admin';
 import { user, verification } from '../db/schema/auth';
 // PL: Router logowania kodem z drzwi modułu auth i typ środowiska Workera.
 // EN: The code sign-in router from the auth module door and the Worker environment type.
@@ -160,6 +162,7 @@ export async function setUpPanel(): Promise<Record<Who, string>> {
   // EN: Sign the accounts in, clear the roles and codes from the previous test, then grant the starting roles.
   const signedIn = await signInAll();
   await db.delete(panelRoles);
+  await db.delete(diaryEntries);
   await db.delete(verification).where(like(verification.identifier, 'invite-code-%'));
   await grant(EMAILS.editor, 'editor');
   await grant(EMAILS.council, 'council');

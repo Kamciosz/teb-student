@@ -10,10 +10,12 @@
  * @uses src/features/admin/RoleScreen.tsx::RoleScreen
  * @uses src/features/admin/RoleCardScreen.tsx::RoleCardScreen
  * @uses src/features/admin/PilotScreen.tsx::PilotScreen
+ * @uses src/features/admin/DiaryScreen.tsx::DiaryScreen
  * @used_by src/features/admin/index.ts::AdminScreen
  */
 
 import { Navigate, Route, Routes } from 'react-router';
+import { DiaryScreen } from './DiaryScreen';
 import { InvitesScreen } from './InvitesScreen';
 import { PanelGate } from './PanelGate';
 import { PanelHome } from './PanelHome';
@@ -32,6 +34,8 @@ export function AdminScreen() {
     <Routes>
       {/* PL: Kody zaproszeń: Samorząd i administrator, a redakcja dostaje ekran 6.1d. EN: Invitation codes: the Council and the administrator, while the editorial team gets screen 6.1d. */}
       <Route path="kody" element={<PanelGate minimum="council"><InvitesScreen /></PanelGate>} />
+      {/* PL: Dziennik zmian: Samorząd i administrator, redakcja dostaje ekran 6.1d. EN: The change diary: the Council and the administrator, while the editorial team gets screen 6.1d. */}
+      <Route path="dziennik" element={<PanelGate minimum="council"><DiaryScreen /></PanelGate>} />
       {/* PL: Ekran główny panelu dla każdej roli. EN: The panel main screen for every role. */}
       <Route index element={<PanelGate><PanelHome /></PanelGate>} />
       {/* PL: Role i dane z pilotażu tylko dla administratora. EN: Roles and the pilot data only for the administrator. */}

@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { MIN_RESPONSES, scaleAverage, shapeResults, toQuestionResult } from './results';
+import { MIN_RESPONSES, scaleAverage, shapeResults, sortTexts, toQuestionResult } from './results';
 
 // PL: Dane ankiety bez wyników.
 // EN: The survey data without results.
@@ -72,5 +72,42 @@ describe('shapeResults', () => {
     const questions = [toQuestionResult('P', 'single_choice', [{ label: 'A', votes: 3 }, { label: 'B', votes: 2 }])];
     const result = await shapeResults(survey, MIN_RESPONSES, async () => questions);
     expect(result.questions).toEqual(questions);
+  });
+});
+
+// PL: Krótkie odpowiedzi: sortowanie i próg. Odpowiedzi nie mogą zdradzać kolejności zapisu ani autora.
+// EN: Short answers: the sorting and the threshold. The answers must not reveal the order written or the author.
+describe('krótka odpowiedź / short answer', () => {
+  // PL: Kolejność „Mleko, Zupa, Arbuz, Łosoś, Lody” nie jest ani rosnąca, ani malejąca, więc zdradziłaby zapis tylko błędnym sortowaniem. „Ł” ma stać po „L”, a nie na końcu.
+  // EN: The order "Mleko, Zupa, Arbuz, Łosoś, Lody" is neither ascending nor descending, so only a wrong sort would show the write order. "Ł" must stand after "L", not at the end.
+  const written = ['Mleko', 'Zupa', 'Arbuz', 'Łosoś', 'Lody'];
+
+  it('sortuje alfabetycznie po polsku, niezależnie od kolejności wejścia / sorts alphabetically in Polish, whatever the input order', () => {
+    expect(sortTexts(written)).toEqual(['Arbuz', 'Lody', 'Łosoś', 'Mleko', 'Zupa']);
+    expect(sortTexts([...written].reverse())).toEqual(['Arbuz', 'Lody', 'Łosoś', 'Mleko', 'Zupa']);
+  });
+
+  it('nie zmienia tablicy wejściowej / does not change the input array', () => {
+    const input = [...written];
+    sortTexts(input);
+    expect(input).toEqual(written);
+  });
+
+  it('pytanie krótkiej odpowiedzi ma same teksty, bez odpowiedzi do wyboru i bez autora / a short-answer question has the texts only, no options and no author', () => {
+    expect(toQuestionResult('Co zjesz?', 'short_text', [], written)).toEqual({ prompt: 'Co zjesz?', type: 'short_text', options: [], texts: ['Arbuz', 'Lody', 'Łosoś', 'Mleko', 'Zupa'] });
+  });
+
+  it('poniżej progu nie pobiera tekstów i nie ma ich w odpowiedzi / below the threshold it does not fetch the texts and they are not in the response', async () => {
+    const load = vi.fn(async () => [toQuestionResult('Co zjesz?', 'short_text', [], written)]);
+    const result = await shapeResults(survey, MIN_RESPONSES - 1, load);
+    expect(load).not.toHaveBeenCalled();
+    expect(JSON.stringify(result)).not.toContain('Zupa');
+  });
+
+  it('od progu, czyli 5 odpowiedzi, pokazuje teksty / from the threshold, that is 5 responses, it shows the texts', async () => {
+    const load = vi.fn(async () => [toQuestionResult('Co zjesz?', 'short_text', [], written)]);
+    const result = await shapeResults(survey, MIN_RESPONSES, load);
+    expect(load).toHaveBeenCalledOnce();
+    expect(result.questions?.[0]?.texts).toEqual(['Arbuz', 'Lody', 'Łosoś', 'Mleko', 'Zupa']);
   });
 });

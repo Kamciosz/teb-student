@@ -13,6 +13,7 @@
  * @used_by src/features/admin/PilotScreen.tsx::Icon
  * @used_by src/features/admin/InviteList.tsx::Icon
  * @used_by src/features/admin/CopyCodeButton.tsx::Icon
+ * @used_by src/features/admin/DiaryScreen.tsx::Icon
  */
 
 /** PL: Nazwy ikon, których używa panel. EN: The names of the icons the panel uses. */
@@ -35,7 +36,8 @@ export type IconName =
   | 'search'
   | 'user-round'
   | 'x'
-  | 'log-in';
+  | 'log-in'
+  | 'history';
 
 /** PL: Ścieżki SVG każdej ikony w siatce 24 na 24. EN: The SVG paths of every icon in a 24 by 24 grid. */
 const SHAPES: Record<IconName, string[]> = {
@@ -58,6 +60,7 @@ const SHAPES: Record<IconName, string[]> = {
   'user-round': ['M18 20a6 6 0 0 0-12 0', 'M12 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8'],
   x: ['M18 6 6 18', 'm6 6 12 12'],
   'log-in': ['m10 17 5-5-5-5', 'M15 12H3', 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4'],
+  history: ['M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5', 'M12 7v5l4 2'],
 };
 
 /**

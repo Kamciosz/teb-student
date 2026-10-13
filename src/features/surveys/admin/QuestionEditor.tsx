@@ -1,6 +1,6 @@
 /**
- * PL: Edytor jednego pytania na ekranie 6.5b „Nowa ankieta”: przełącznik rodzaju („Jeden wybór” / „Wiele wyborów” / „Skala 1–5”), pole pytania, od 2 do 5 wierszy odpowiedzi z literami A–E i przyciskiem „x”, przycisk „Dodaj odpowiedź” i teksty błędów pod polami (EKRANY.md). Przy skali 1–5 wierszy i przycisku nie ma, bo odpowiedzi są stałe. Stan trzyma ekran (NewSurveyScreen), a ten komponent tylko rysuje i woła funkcje z draft.ts.
- * EN: The editor of one question on screen 6.5b "Nowa ankieta": the type switch ("Jeden wybór" / "Wiele wyborów" / "Skala 1–5"), the question field, 2 to 5 option rows with letters A–E and an "x" button, the "Dodaj odpowiedź" button and the error texts under the fields (EKRANY.md). With the 1–5 scale there are no rows and no button, because the options are fixed. The screen (NewSurveyScreen) holds the state, and this component only draws and calls the functions from draft.ts.
+ * PL: Edytor jednego pytania na ekranie 6.5b „Nowa ankieta”: przełącznik rodzaju („Jeden wybór” / „Wiele wyborów” / „Skala 1–5” / „Krótka odpowiedź”), pole pytania, od 2 do 5 wierszy odpowiedzi z literami A–E i przyciskiem „x”, przycisk „Dodaj odpowiedź” i teksty błędów pod polami (EKRANY.md). Przy skali 1–5 i przy krótkiej odpowiedzi wierszy i przycisku nie ma, bo odpowiedzi są stałe albo ich nie ma. Stan trzyma ekran (NewSurveyScreen), a ten komponent tylko rysuje i woła funkcje z draft.ts.
+ * EN: The editor of one question on screen 6.5b "Nowa ankieta": the type switch ("Jeden wybór" / "Wiele wyborów" / "Skala 1–5" / "Krótka odpowiedź"), the question field, 2 to 5 option rows with letters A–E and an "x" button, the "Dodaj odpowiedź" button and the error texts under the fields (EKRANY.md). With the 1–5 scale and the short answer there are no rows and no button, because the options are fixed or there are none. The screen (NewSurveyScreen) holds the state, and this component only draws and calls the functions from draft.ts.
  *
  * @author Jakub
  * @since 2026-10-12
@@ -20,6 +20,7 @@ const TYPE_CHOICES: { type: QuestionType; text: string }[] = [
   { type: 'single_choice', text: TO_AGREE.questionType.single },
   { type: 'multiple_choice', text: TO_AGREE.questionType.multiple },
   { type: 'scale_1_5', text: TO_AGREE.questionType.scale },
+  { type: 'short_text', text: TO_AGREE.questionType.shortText },
 ];
 
 /** PL: Dane edytora pytania. EN: The question editor data. */
@@ -87,9 +88,9 @@ function OptionRow(props: { letter: string; value: string; canRemove: boolean; o
 export function QuestionEditor({ question, number, errors, canRemove, onChange, onRemove }: QuestionEditorProps) {
   const promptId = `sa-prompt-${question.key}`;
   const canRemoveOption = question.options.length > MIN_OPTIONS;
-  // PL: Skala 1–5 ma stałe odpowiedzi „1”…„5”, więc lista odpowiedzi i jej przyciski się nie pokazują.
-  // EN: The 1–5 scale has the fixed options "1"…"5", so the option list and its buttons are not shown.
-  const isScale = question.type === 'scale_1_5';
+  // PL: Skala 1–5 ma stałe odpowiedzi „1”…„5”, a krótka odpowiedź nie ma odpowiedzi wcale, więc lista odpowiedzi i jej przyciski się nie pokazują.
+  // EN: The 1–5 scale has the fixed options "1"…"5", and a short answer has no options at all, so the option list and its buttons are not shown.
+  const hidesOptions = question.type === 'scale_1_5' || question.type === 'short_text';
 
   return (
     <section className="sa-question">
@@ -117,7 +118,7 @@ export function QuestionEditor({ question, number, errors, canRemove, onChange, 
       </fieldset>
       <input id={promptId} className="sa-input" value={question.prompt} maxLength={MAX_PROMPT_LENGTH} aria-invalid={errors?.prompt != null} aria-describedby={`${promptId}-error`} onChange={(event) => onChange((current) => ({ ...current, prompt: event.target.value }))} />
       <FieldError id={`${promptId}-error`} text={errors?.prompt} />
-      {isScale ? null : (
+      {hidesOptions ? null : (
         <>
           <ul className="sa-options">
             {question.options.map((option, index) => (

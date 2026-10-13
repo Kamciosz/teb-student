@@ -8,6 +8,7 @@
  * @uses worker/reports/admin/reportsAdminRepository.ts::getReport
  * @uses worker/reports/admin/reportsAdminRepository.ts::changeReportStage
  * @uses worker/admin/index.ts::requirePanelRole
+ * @uses worker/admin/index.ts::recordDiaryEntry
  * @used_by worker/reports/admin/index.ts::reportsAdminApp
  * @used_by worker/reports/admin/routes.test.ts::reportsAdminApp
  */
@@ -16,9 +17,9 @@
 // EN: Hono is the server router. bodyLimit rejects oversized requests before we read them.
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-// PL: Sprawdzanie roli w panelu (401 bez sesji, 403 bez roli), przez drzwi modułu admin (worker/admin/index.ts).
-// EN: The panel role check (401 without a session, 403 without a role), through the door of the admin module (worker/admin/index.ts).
-import { requirePanelRole, type PanelEnv } from '../../admin';
+// PL: Sprawdzanie roli w panelu (401 bez sesji, 403 bez roli) i zapis w dzienniku zmian, przez drzwi modułu admin (worker/admin/index.ts).
+// EN: The panel role check (401 without a session, 403 without a role) and writing to the change diary, through the door of the admin module (worker/admin/index.ts).
+import { recordDiaryEntry, requirePanelRole, type PanelEnv } from '../../admin';
 // PL: Etapy zgłoszenia i najwyższy limit odpowiedzi ze schematu.
 // EN: The report stages and the answer length limit from the schema.
 import { MAX_STAGE_NOTE_LENGTH, REPORT_STAGES, type ReportStage } from '../../db/schema/reports';
@@ -103,6 +104,10 @@ reportsAdminApp.patch('/:id', bodyLimit({ maxSize: MAX_BODY_BYTES, onError: (con
   const id = context.req.param('id');
   const result = await changeReportStage(context.env.DB, { id, stage: body.stage, note, memberId: context.get('student').id });
   if (result === 'not_found') return context.json({ error: 'not_found' }, 404);
+
+  // PL: Wpis w dzienniku tylko przy realnej zmianie etapu. Bez zmiany (ten sam etap) historia też nie rośnie. Wpis bez treści, tylko id zgłoszenia.
+  // EN: A diary entry only for a real stage change. With no change (the same stage) the history does not grow either. The entry has no content, only the report id.
+  if (result === 'changed') await recordDiaryEntry(context.env.DB, { actorId: context.get('student').id, action: 'report_stage_changed', targetId: id });
 
   // PL: Oddaj aktualny stan zgłoszenia, żeby telefon pokazał historię bez drugiego zapytania.
   // EN: Return the current state of the report, so the phone shows the history without a second request.

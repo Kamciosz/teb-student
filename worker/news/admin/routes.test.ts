@@ -20,6 +20,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 // PL: Logowanie ucznia w teście. To plik pomocniczy testów, więc importujemy go wprost, jak w testach podtorów 4a i 4b.
 // EN: Signing a student in within a test. It is a test helper file, so we import it directly, as in the tests of subtracks 4a and 4b.
 import { createTestRuntime, signIn } from '../../auth/email/testRuntime';
+import { diaryEntries } from '../../db/schema/admin';
 import { newsEntries } from '../../db/schema/news';
 // PL: Router ucznia z drzwi podtoru 3a.
 // EN: The student router from the door of subtrack 3a.
@@ -29,8 +30,14 @@ import { createNewsAdminApp, newsAdminApp } from './routes';
 /** PL: Sekret podpisu sesji z testRuntime.ts. EN: The session signing secret from testRuntime.ts. */
 const TEST_SECRET = 'test-secret-test-secret-test-secret-00';
 
-/** PL: Zaślepka roli: wpuszcza każdego. Prawdziwy strażnik przyjdzie z rolami podtoru 8. EN: The role stub: lets everyone in. The real guard comes with the roles of subtrack 8. */
-const app = createNewsAdminApp((_context, next) => next());
+/** PL: Numer redaktora, który publikuje i usuwa w teście. Wpisy w dzienniku mają to jako wykonawcę. EN: The id of the editor who publishes and deletes in the test. The diary entries have it as the actor. */
+const ACTOR_ID = 'redaktor-test';
+
+/** PL: Zaślepka roli: wpuszcza każdego i ustawia zalogowanego ucznia (redaktora). Prawdziwy strażnik przyjdzie z rolami podtoru 8. EN: The role stub: lets everyone in and sets the signed-in student (the editor). The real guard comes with the roles of subtrack 8. */
+const app = createNewsAdminApp((context, next) => {
+  context.set('student', { id: ACTOR_ID, email: 'redaktor.test@teb.edu.pl' });
+  return next();
+});
 
 /** PL: Baza testowa. EN: The test database. */
 const db = drizzle(env.DB);
@@ -43,6 +50,18 @@ const PUBLISHED_AT = new Date(Date.UTC(2026, 9, 9, 10, 0, 0));
 
 /** PL: Chwila przypięcia wpisu ustawiana w testach dostępu: 2026-10-10 08:00 UTC. EN: The pinning moment set in the access tests: 2026-10-10 08:00 UTC. */
 const PINNED_AT = new Date(Date.UTC(2026, 9, 10, 8, 0, 0));
+
+/**
+ * PL: Czyta dziennik zmian prosto z bazy: nazwa akcji, wykonawca i cel, od najstarszego wpisu.
+ * EN: Reads the change diary straight from the database: the action name, the actor and the target, from the oldest entry.
+ *
+ * @returns PL: wiersze dziennika. EN: the diary rows.
+ */
+async function diary(): Promise<[string, string, string | null][]> {
+  // PL: Wybierz wszystkie wpisy po numerze i zostaw trzy pola.
+  // EN: Select all entries by id and keep three fields.
+  return (await db.select().from(diaryEntries).orderBy(diaryEntries.id)).map((row): [string, string, string | null] => [row.action, row.actorId, row.targetId]);
+}
 
 /**
  * PL: Wysyła zapytanie do routera z zaślepką roli.
@@ -101,9 +120,10 @@ async function addPublished(ids: string[]): Promise<void> {
   await db.insert(newsEntries).values(ids.map((id) => ({ id, type: 'news' as const, status: 'published' as const, title: id, body: BODY, source: 'Samorząd', publishedAt: PUBLISHED_AT })));
 }
 
-// PL: Przed każdym testem są trzy wpisy: opublikowany, szkic i drugi szkic. Żaden nie jest przypięty.
-// EN: Before every test there are three entries: a published one, a draft and another draft. None is pinned.
+// PL: Przed każdym testem są trzy wpisy: opublikowany, szkic i drugi szkic. Żaden nie jest przypięty, dziennik jest pusty.
+// EN: Before every test there are three entries: a published one, a draft and another draft. None is pinned, the diary is empty.
 beforeEach(async () => {
+  await db.delete(diaryEntries);
   await db.delete(newsEntries);
   await db.insert(newsEntries).values([
     { id: 'opublikowany', type: 'event', status: 'published', title: 'Turniej', body: BODY, source: 'Samorząd', publishedAt: PUBLISHED_AT },
@@ -152,6 +172,9 @@ describe('POST /:id/publish', () => {
     expect(await studentList()).toContain('szkic');
     expect((await newsFeedApp.request('/szkic', {}, env)).status).toBe(200);
     expect((await db.select().from(newsEntries)).find((row) => row.id === 'szkic')?.publishedAt).toBeInstanceOf(Date);
+    // PL: Dokładnie jeden wpis w dzienniku: publikacja, wykonawca i id wpisu, bez treści.
+    // EN: Exactly one diary entry: the publication, the actor and the entry id, without the content.
+    expect(await diary()).toEqual([['news_published', ACTOR_ID, 'szkic']]);
   });
 
   // PL: Drugie dotknięcie nie przesuwa wpisu: 409 i ta sama chwila publikacji.
@@ -161,6 +184,9 @@ describe('POST /:id/publish', () => {
 
     expect(response.status).toBe(409);
     expect((await db.select().from(newsEntries)).find((row) => row.id === 'opublikowany')?.publishedAt).toEqual(PUBLISHED_AT);
+    // PL: Odpowiedź 409 nic nie dopisuje do dziennika.
+    // EN: The 409 answer writes nothing to the diary.
+    expect(await diary()).toEqual([]);
   });
 
   // PL: Nieznany numer to 404 i nic się nie zmienia.
@@ -168,6 +194,7 @@ describe('POST /:id/publish', () => {
   it('nieznany numer daje 404 / an unknown id gives 404', async () => {
     expect((await send('/nie-ma/publish', 'POST')).status).toBe(404);
     expect(await rows()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
+    expect(await diary()).toEqual([]);
   });
 });
 
@@ -285,6 +312,9 @@ describe('DELETE /:id', () => {
     expect((await newsFeedApp.request('/opublikowany', {}, env)).status).toBe(404);
     expect(await studentList()).toEqual([]);
     expect(await rows()).toEqual([['szkic', 'draft'], ['szkic-2', 'draft']]);
+    // PL: Jeden wpis w dzienniku: usunięcie wpisu opublikowanego.
+    // EN: One diary entry: deleting the published entry.
+    expect(await diary()).toEqual([['news_deleted', ACTOR_ID, 'opublikowany']]);
   });
 
   // PL: Usunięcie szkicu i nieznany numer.
@@ -293,6 +323,9 @@ describe('DELETE /:id', () => {
     expect((await send('/szkic', 'DELETE')).status).toBe(200);
     expect((await send('/szkic', 'DELETE')).status).toBe(404);
     expect(await rows()).toEqual([['opublikowany', 'published'], ['szkic-2', 'draft']]);
+    // PL: Odpowiedź 404 nie dopisuje drugiego wpisu, więc w dzienniku zostaje jeden.
+    // EN: The 404 answer does not add a second entry, so one stays in the diary.
+    expect(await diary()).toEqual([['news_deleted', ACTOR_ID, 'szkic']]);
   });
 });
 
@@ -306,6 +339,9 @@ describe('błąd bazy / database error', () => {
 
     expect(response.status).toBe(500);
     expect(await response.text()).not.toContain('tajny');
+    // PL: Nieudana operacja nie dopisuje nic do dziennika.
+    // EN: A failed operation writes nothing to the diary.
+    expect(await diary()).toEqual([]);
   });
 });
 
@@ -333,6 +369,7 @@ describe('dostęp / access', () => {
     expect(response.status).toBe(401);
     expect(await rows()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
     expect(await pinnedIds()).toEqual(['opublikowany']);
+    expect(await diary()).toEqual([]);
   });
 
   // PL: Zalogowany uczeń bez roli nie dostaje ani listy szkiców, ani możliwości publikacji, przypięcia, odpięcia i usunięcia.
@@ -347,5 +384,6 @@ describe('dostęp / access', () => {
     expect(await response.text()).not.toContain('Szkic');
     expect(await rows()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
     expect(await pinnedIds()).toEqual(['opublikowany']);
+    expect(await diary()).toEqual([]);
   });
 });

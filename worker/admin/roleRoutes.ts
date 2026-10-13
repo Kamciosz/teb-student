@@ -11,6 +11,7 @@
  * @uses worker/admin/panelRoles.ts::revokePanelRole
  * @uses worker/admin/panelRoles.ts::listRoleHolders
  * @uses worker/admin/maskEmail.ts::maskEmail
+ * @uses worker/admin/diary.ts::recordDiaryEntry
  * @used_by worker/admin/routes.ts::adminApp
  * @used_by worker/admin/roles.test.ts::rolesApp
  */
@@ -21,12 +22,15 @@ import { Hono } from 'hono';
 // PL: Wyszukiwanie uczniów i odczyt ich imion z drzwi modułu auth.
 // EN: Searching students and reading their names from the auth module door.
 import { findStudentByEmail, listStudentsByIds, type StudentSummary } from '../auth';
-// PL: Typ roli i tabela ról (rola administratora nie wchodzi w przełączniki).
-// EN: The role type (the administrator role is not one of the switches).
-import type { PanelRole } from '../db/schema/admin';
+// PL: Typy roli i akcji dziennika (rola administratora nie wchodzi w przełączniki).
+// EN: The role type and the diary action type (the administrator role is not one of the switches).
+import type { DiaryAction, PanelRole } from '../db/schema/admin';
 // PL: Odczyt, nadawanie i odbieranie ról, lista osób z rolą.
 // EN: Reading, granting and revoking roles, the list of people with a role.
 import { getPanelRoles, grantPanelRole, listRoleHolders, revokePanelRole } from './panelRoles';
+// PL: Zapis zmiany roli w dzienniku zmian.
+// EN: Recording a role change in the change diary.
+import { recordDiaryEntry } from './diary';
 // PL: Maskowanie adresu przed pokazaniem go w panelu.
 // EN: Masking the address before showing it in the panel.
 import { maskEmail } from './maskEmail';
@@ -99,19 +103,40 @@ function readRoleChoice(body: unknown): RoleChoice | null {
 }
 
 /**
- * PL: Ustawia jedną rolę ucznia zgodnie z przełącznikiem: włączona nadaje, wyłączona odbiera.
- * EN: Sets one student role according to its switch: on grants it, off revokes it.
+ * PL: Dwie akcje dziennika dla każdej roli przełącznika: nadanie i odebranie.
+ * EN: Two diary actions for each switch role: granting and revoking.
+ */
+const DIARY_ACTIONS_OF_ROLE: Record<Exclude<PanelRole, 'admin'>, { granted: DiaryAction; revoked: DiaryAction }> = {
+  council: { granted: 'council_granted', revoked: 'council_revoked' },
+  editor: { granted: 'editor_granted', revoked: 'editor_revoked' },
+};
+
+/**
+ * PL: Zmiana jednej roli: kto ją robi, czyj to uczeń, która rola i czy ma być.
+ * EN: One role change: who makes it, whose student it is, which role and whether it should be there.
+ */
+type RoleChange = { actorId: string; userId: string; role: Exclude<PanelRole, 'admin'>; on: boolean };
+
+/**
+ * PL: Ustawia jedną rolę ucznia zgodnie z przełącznikiem: włączona nadaje, wyłączona odbiera. Wpis w dzienniku powstaje tylko przy realnej zmianie, więc powtórny zapis tego samego nic nie dopisuje.
+ * EN: Sets one student role according to its switch: on grants it, off revokes it. A diary entry is made only on a real change, so saving the same thing again adds nothing.
  *
  * @param db - PL: baza D1. EN: the D1 database.
- * @param userId - PL: numer ucznia. EN: the student id.
- * @param role - PL: rola przełącznika. EN: the role of the switch.
- * @param on - PL: czy rola ma być. EN: whether the role should be there.
+ * @param change - PL: zmiana roli. EN: the role change.
  */
-async function setPanelRole(db: D1Database, userId: string, role: Exclude<PanelRole, 'admin'>, on: boolean): Promise<void> {
+async function setPanelRole(db: D1Database, change: RoleChange): Promise<void> {
+  // PL: Jeśli rola już jest tak, jak chce przełącznik, nie zapisujemy nic.
+  // EN: If the role is already as the switch wants, we save nothing.
+  const has = (await getPanelRoles(db, change.userId)).includes(change.role);
+  if (has === change.on) return;
   // PL: Włączony przełącznik nadaje rolę, wyłączony ją odbiera.
   // EN: An on switch grants the role, an off switch revokes it.
-  if (on) await grantPanelRole(db, userId, role);
-  else await revokePanelRole(db, userId, role);
+  if (change.on) await grantPanelRole(db, change.userId, change.role);
+  else await revokePanelRole(db, change.userId, change.role);
+  // PL: Zapisz w dzienniku, kto i którego ucznia zmienił. Wpis dotyczy numeru ucznia, bez adresu.
+  // EN: Record in the diary who changed which student. The entry concerns the student id, without the address.
+  const action = DIARY_ACTIONS_OF_ROLE[change.role][change.on ? 'granted' : 'revoked'];
+  await recordDiaryEntry(db, { actorId: change.actorId, action, targetId: change.userId });
 }
 
 /**
@@ -150,7 +175,8 @@ export const rolesApp = new Hono<PanelEnv>()
     if (student === undefined) return context.json({ error: 'not_found' }, 404);
     const choice = readRoleChoice(await context.req.json().catch(() => null));
     if (choice === null) return context.json({ error: 'bad_request' }, 400);
-    await setPanelRole(context.env.DB, student.id, 'council', choice.council);
-    await setPanelRole(context.env.DB, student.id, 'editor', choice.editor);
+    const actorId = context.get('student').id;
+    await setPanelRole(context.env.DB, { actorId, userId: student.id, role: 'council', on: choice.council });
+    await setPanelRole(context.env.DB, { actorId, userId: student.id, role: 'editor', on: choice.editor });
     return context.json(await toCard(context.env.DB, student));
   });

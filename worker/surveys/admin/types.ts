@@ -78,6 +78,8 @@ export type QuestionResult = {
   options: OptionResult[];
   /** PL: Średnia ze skali 1–5 (pozycja 1…5 ważona głosami), zaokrąglona do jednego miejsca po przecinku. Tylko przy scale_1_5 i gdy ktoś głosował. EN: The average of the 1–5 scale (the position 1…5 weighted by the votes), rounded to one decimal place. Only for scale_1_5 and when somebody voted. */
   average?: number;
+  /** PL: Krótkie odpowiedzi w porządku alfabetycznym (nie w kolejności zapisu, bez autora). Tylko przy short_text. EN: The short answers in alphabetical order (not in the order written, no author). Only for short_text. */
+  texts?: string[];
 };
 
 /**
