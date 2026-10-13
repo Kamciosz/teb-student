@@ -41,6 +41,8 @@ export const surveys = sqliteTable('surveys', {
   title: text('title').notNull(),
   /** PL: Ostatni dzień ankiety, data RRRR-MM-DD (czas polski). EN: The last day of the survey, a YYYY-MM-DD date (Polish time). */
   endsOn: text('ends_on').notNull(),
+  /** PL: Godzina zamknięcia ankiety, chwila w czasie zapisana w milisekundach. Null znaczy, że ankieta kończy się tylko przez ends_on. Kolumnę ustawia panel (podtor 5b). EN: The closing hour of the survey, a moment in time stored in milliseconds. Null means the survey ends only by ends_on. The admin panel sets the column (subtrack 5b). */
+  closesAt: integer('closes_at', { mode: 'timestamp_ms' }),
 });
 
 /**
