@@ -28,6 +28,8 @@ export type ActiveSurvey = {
   daysLeft: number;
   /** PL: Czy ten uczeń już ją wypełnił. EN: Whether this student has already filled it in. */
   hasVoted: boolean;
+  /** PL: Godzina zamknięcia w formacie ISO albo null (bez godziny). EN: The closing hour in ISO format, or null (no hour). */
+  closesAt: string | null;
 };
 
 /**
@@ -41,6 +43,8 @@ export type EndedSurvey = {
   title: string;
   /** PL: Ostatni dzień ankiety, RRRR-MM-DD. EN: The last day of the survey, YYYY-MM-DD. */
   endsOn: string;
+  /** PL: Dzień, w którym ankieta faktycznie się zamknęła, RRRR-MM-DD (może być wcześniej niż endsOn). EN: The day the survey actually closed, YYYY-MM-DD (can be earlier than endsOn). */
+  endedOn: string;
 };
 
 /**
@@ -72,6 +76,8 @@ export type SurveyOption = {
 export type SurveyQuestion = {
   /** PL: Numer pytania. EN: The question id. */
   id: string;
+  /** PL: Rodzaj pytania: jedna odpowiedź (jednokrotny wybór, skala 1–5), kilka (wielokrotny wybór) albo tekst (krótka odpowiedź, bez odpowiedzi do wyboru). EN: The question type: one answer (single choice, 1–5 scale), several (multiple choice) or text (short answer, no options). */
+  type: 'single_choice' | 'multiple_choice' | 'scale_1_5' | 'short_text';
   /** PL: Treść pytania. EN: The question text. */
   prompt: string;
   /** PL: Odpowiedzi w kolejności A, B, C, D. EN: The options in the order A, B, C, D. */
@@ -93,6 +99,8 @@ export type SurveyDetail = {
   isActive: boolean;
   /** PL: Czy ten uczeń już ją wypełnił. EN: Whether this student has already filled it in. */
   hasVoted: boolean;
+  /** PL: Godzina zamknięcia w formacie ISO albo null (bez godziny). EN: The closing hour in ISO format, or null (no hour). */
+  closesAt: string | null;
   /** PL: Pytania w kolejności. EN: The questions in order. */
   questions: SurveyQuestion[];
 };

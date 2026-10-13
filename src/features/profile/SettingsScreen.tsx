@@ -9,15 +9,20 @@
  * @uses src/features/profile/look.ts::PALETTES
  * @uses src/features/profile/textSize.ts::TextSize
  * @uses src/features/profile/api.ts::fetchMyData
+ * @uses src/features/profile/icons.tsx::Icon
  * @used_by src/features/profile/ProfileScreen.tsx::SettingsScreen
  */
 
 // PL: useState trzyma wpisywane wartości do czasu zapisu.
 // EN: useState keeps the typed values until the save.
 import { useState, type FormEvent } from 'react';
+// PL: Link do listy urządzeń.
+// EN: The link to the device list.
+import { Link } from 'react-router';
 // PL: Dane, wygląd i pasek.
 // EN: The data, the look and the bar.
 import { EXPORT_FILE_NAME, fetchMyData, type Profile } from './api';
+import { Icon } from './icons';
 import { PALETTES, SCHOOLS } from './look';
 import { useProfile, useSaveProfile } from './queries';
 import type { TextSize } from './textSize';
@@ -183,6 +188,16 @@ export function SettingsScreen() {
       {query.data ? <SettingsForm initial={query.data} /> : null}
       {/* PL: Pobranie własnych danych jest zawsze pod formularzem. EN: Downloading one's own data is always under the form. */}
       <ExportData />
+      {/* PL: Wiersz prowadzi do listy urządzeń (ekran podtoru 1a). Tekst „Moje urządzenia” nie ma w docs/projekt/EKRANY.md, więc jest do uzgodnienia z zespołem. EN: The row leads to the device list (the screen of subtrack 1a). The text "Moje urządzenia" is not in docs/projekt/EKRANY.md, so it is to be agreed with the team. */}
+      <ul className="pf-tile">
+        <li>
+          <Link className="pf-row" to="/auth/email/urzadzenia">
+            <Icon name="smartphone" />
+            <span className="pf-row-text">Moje urządzenia</span>
+            <Icon name="chevron-right" />
+          </Link>
+        </li>
+      </ul>
       {!query.data && query.isError ? (
         <div className="pf-empty" role="alert">
           <p>Nie udało się wczytać profilu.</p>

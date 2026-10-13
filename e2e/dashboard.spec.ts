@@ -29,6 +29,29 @@ const FULL = {
 // EN: An empty answer: no tile has data.
 const EMPTY = { important: null, announcements: [], survey: null, report: null };
 
+// PL: Adres modułu planu dzwonków, tak jak Vite podaje go w przeglądarce (ten sam co w e2e/bell.spec.ts).
+// EN: The address of the bell plan module, as Vite serves it in the browser (the same as in e2e/bell.spec.ts).
+const PLAN_MODULE = '**/src/features/bell/bellPlan.ts*';
+
+// PL: Treść modułu z PRZYKŁADOWYM planem (nie prawdziwy plan szkoły): lekcje 08:00–08:45, 08:55–09:40, 09:50–10:35.
+// EN: The module body with an EXAMPLE plan (not the school's real plan): lessons 08:00–08:45, 08:55–09:40, 09:50–10:35.
+const EXAMPLE_PLAN_JS = `export const BELL_PLAN = [
+  { start: '08:00', end: '08:45' },
+  { start: '08:55', end: '09:40' },
+  { start: '09:50', end: '10:35' },
+];
+export const SHORTENED_BELL_PLAN = [];`;
+
+/**
+ * PL: Podstawia plan przykładowy w miejsce modułu planu, żeby pulpit widział niepusty plan.
+ * EN: Stubs the example plan in place of the plan module, so the dashboard sees a non-empty plan.
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ */
+async function useExamplePlan(page: Page): Promise<void> {
+  await page.route(PLAN_MODULE, (route) => route.fulfill({ contentType: 'text/javascript', body: EXAMPLE_PLAN_JS }));
+}
+
 /**
  * PL: Podstawia odpowiedź serwera pulpitu pod /api/dashboard.
  * EN: Stubs the dashboard server answer under /api/dashboard.
@@ -61,13 +84,69 @@ test('kafelki pokazują ważny wpis, ankietę, zgłoszenie i trzy ogłoszenia / 
   await expect(page.locator('[data-subtrack="9"]')).toBeVisible();
 });
 
-// PL: Plan dzwonków jest pusty, a pulpit go nie widzi, więc licznik pokazuje pusty stan.
-// EN: The bell plan is empty and the dashboard cannot see it, so the countdown shows the empty state.
-test('licznik do dzwonka pokazuje pusty stan / the bell countdown shows the empty state', async ({ page }) => {
+// PL: Plan dzwonków jest pusty, więc w godzinie lekcji nagłówek nie pokazuje minut, tylko kreskę i napis o braku planu. Zegar jest ustawiony na lekcję, żeby test nie zależał od pory dnia.
+// EN: The bell plan is empty, so during a lesson hour the header shows no minutes, only the dash and the no-plan text. The clock is set to a lesson, so the test does not depend on the time of day.
+test('pusty plan: nagłówek bez licznika w godzinie lekcji / empty plan: the header without a countdown during a lesson hour', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
   await mockDashboard(page, FULL);
   await page.goto('/');
 
-  await expect(page.getByLabel('Licznik do dzwonka')).toContainText('Brak planu dzwonków');
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('Brak planu dzwonków');
+  await expect(bell).not.toContainText(/\d+\s*min/);
+});
+
+// PL: Z podstawionym planem w godzinie lekcji (09:10 w Warszawie, lekcja do 09:40) licznik pokazuje 30 minut. To też dowodzi, że podstawienie planu działa.
+// EN: With the stubbed plan during a lesson hour (09:10 in Warsaw, the lesson ends at 09:40) the countdown shows 30 minutes. This also proves that the plan stub works.
+test('z planem w lekcji licznik pokazuje minuty / with a plan during a lesson the countdown shows the minutes', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
+  await useExamplePlan(page);
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('30');
+  await expect(bell).toContainText('do dzwonka');
+  await expect(bell).not.toContainText('Brak planu dzwonków');
+});
+
+// PL: Z podstawionym planem po ostatniej lekcji (14:00 w Warszawie) licznik nie ma stanu, więc pokazuje „Po lekcjach”, a nie „Brak planu dzwonków”.
+// EN: With the stubbed plan after the last lesson (14:00 in Warsaw) the countdown has no state, so it shows "Po lekcjach", not "Brak planu dzwonków".
+test('z planem po lekcjach nagłówek mówi „Po lekcjach” / with a plan after the lessons the header says "Po lekcjach"', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-19T12:00:00Z'));
+  await useExamplePlan(page);
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('Po lekcjach');
+  await expect(bell).not.toContainText('Brak planu dzwonków');
+});
+
+// PL: W sobotę z przykładowym planem nagłówek mówi „Dziś nie ma lekcji”, a nie „Po lekcjach”, bo dzień wolny ma pierwszeństwo przed planem.
+// EN: On a Saturday with the example plan the header says "Dziś nie ma lekcji", not "Po lekcjach", because a day off comes before the plan.
+test('w dzień wolny z planem nagłówek mówi „Dziś nie ma lekcji” / on a day off with a plan the header says "Dziś nie ma lekcji"', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-17T08:00:00Z'));
+  await useExamplePlan(page);
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('Dziś nie ma lekcji');
+  await expect(bell).not.toContainText('Po lekcjach');
+});
+
+// PL: Przed pierwszą lekcją (07:00 w Warszawie, lekcja od 08:00) z planem nagłówek mówi „Lekcje jeszcze się nie zaczęły”, a nie „Po lekcjach”.
+// EN: Before the first lesson (07:00 in Warsaw, the lesson starts at 08:00) with a plan the header says "Lekcje jeszcze się nie zaczęły", not "Po lekcjach".
+test('przed lekcjami z planem nagłówek mówi „Lekcje jeszcze się nie zaczęły” / before the lessons with a plan the header says "Lekcje jeszcze się nie zaczęły"', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-19T05:00:00Z'));
+  await useExamplePlan(page);
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('Lekcje jeszcze się nie zaczęły');
+  await expect(bell).not.toContainText('Po lekcjach');
 });
 
 // PL: Każdy kafelek prowadzi do właściwego ekranu.
@@ -183,4 +262,37 @@ test('na lokalnej bazie: wpisy z bazy, ankieta i zgłoszenia puste bez sesji / o
   await expect(page.getByRole('region', { name: 'Ogłoszenia' }).getByRole('listitem')).toHaveCount(3);
   await expect(page.getByRole('region', { name: 'Ankieta' })).toContainText('Nie ma ankiet do wypełnienia.');
   await expect(page.getByRole('region', { name: 'Zgłoszenia' })).toContainText('Nie masz jeszcze żadnych zgłoszeń.');
+});
+
+// PL: Zmiana kolejności kafelków w trybie edycji przetrwa przeładowanie strony, a tryb edycji po przeładowaniu jest wyłączony.
+// EN: A change of the tile order in edit mode survives a page reload, and the edit mode is off after the reload.
+test('zmiana kolejności kafelków przetrwa przeładowanie / a tile order change survives a reload', async ({ page }) => {
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  // PL: Domyślnie „Ważne” stoi nad „Ankietą”.
+  // EN: By default "Ważne" stands above the "Ankieta".
+  const importantBox = page.getByText('Jutro 3TA zaczyna o 9:50');
+  await expect(importantBox).toBeVisible();
+
+  await page.getByRole('button', { name: 'Zmień układ' }).click();
+  // PL: Przycisk „Wyżej” ma pole dotyku co najmniej 44×44 px.
+  // EN: The "Wyżej" button has a touch area of at least 44×44 px.
+  const up = page.getByRole('button', { name: 'Wyżej: Ankieta' });
+  const box = await up.boundingBox();
+  expect(box?.width).toBeGreaterThanOrEqual(44);
+  expect(box?.height).toBeGreaterThanOrEqual(44);
+  await up.click();
+  await page.getByRole('button', { name: 'Gotowe' }).click();
+
+  const survey = await page.getByRole('region', { name: 'Ankieta' }).boundingBox();
+  expect(survey!.y).toBeLessThan((await importantBox.boundingBox())!.y);
+
+  await page.reload();
+
+  // PL: Po przeładowaniu kolejność nadal jest ta sama, a tryb edycji wrócił wyłączony.
+  // EN: After the reload the order is still the same, and the edit mode is off again.
+  await expect(page.getByRole('button', { name: 'Zmień układ' })).toBeVisible();
+  const surveyAfter = await page.getByRole('region', { name: 'Ankieta' }).boundingBox();
+  expect(surveyAfter!.y).toBeLessThan((await importantBox.boundingBox())!.y);
 });

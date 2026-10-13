@@ -5,6 +5,7 @@
  * @author Szymon
  * @since 2026-10-12
  * @uses worker/news/editor/routes.ts::createNewsEditorApp
+ * @uses worker/db/schema/auth.ts::user
  * @used_by vitest.config.ts::include
  */
 
@@ -14,16 +15,26 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { user } from '../../db/schema/auth';
 import { newsEntries } from '../../db/schema/news';
 import { createNewsEditorApp, newsEditorApp } from './routes';
+import { MAX_PUBLISH_AHEAD_MS } from './validatePublishAt';
+
+// PL: Godzina w milisekundach, do wyliczania terminów publikacji.
+// EN: An hour in milliseconds, for working out publication times.
+const HOUR = 60 * 60 * 1000;
 
 // PL: Baza testowa.
 // EN: The test database.
 const db = drizzle(env.DB);
 
+// PL: Konta w bazie: autor, który zapisuje wpis przez strażnika, i drugie konto, którego numer ktoś podstawia w ciele zapytania. Autor wpisu musi być prawdziwym kontem, bo baza pilnuje klucza obcego.
+// EN: Accounts in the database: the author who saves the entry through the guard, and a second account whose id someone puts into the request body. The entry author must be a real account, because the database enforces the foreign key.
+const AUTHOR = { id: 'autor-testowy', email: 'autor.test@teb.edu.pl' };
+const OTHER = { id: 'drugi-testowy', email: 'drugi.test@teb.edu.pl' };
+
 /**
- * PL: Strażnik testowy: wpuszcza każdego i ustawia zalogowanego redaktora o podanym numerze, tak jak prawdziwy strażnik. Prawdziwy strażnik (sesja i rola) ma osobne sprawdzenie niżej.
- * EN: A test guard: lets everyone in and sets the signed-in editor with the given id, as the real guard does. The real guard (session and role) has a separate check below.
+ * PL: Strażnik testowy: wpuszcza każdego i ustawia zalogowanego użytkownika o podanym numerze, tak jak prawdziwy strażnik. Prawdziwy strażnik (sesja i rola) ma osobne sprawdzenie niżej.
+ * EN: A test guard: lets everyone in and sets the signed-in user with the given id, as the real guard does. The real guard (session and role) has a separate check below.
  *
- * @param id - PL: numer redaktora. EN: the editor id.
+ * @param id - PL: numer zalogowanego użytkownika. EN: the id of the signed-in user.
  * @returns PL: router z tym strażnikiem. EN: the router with this guard.
  */
 function guardAs(id: string) {
@@ -33,9 +44,9 @@ function guardAs(id: string) {
   });
 }
 
-// PL: Domyślny redaktor testów.
-// EN: The default editor of the tests.
-const app = guardAs('redaktor-a');
+// PL: Domyślny zalogowany użytkownik testów: autor, który zapisuje wpisy.
+// EN: The default signed-in user of the tests: the author who saves entries.
+const app = guardAs(AUTHOR.id);
 
 // PL: Poprawna treść: jeden akapit.
 // EN: Valid content: one paragraph.
@@ -53,10 +64,15 @@ function post(entry: unknown, router: { request: typeof app.request } = app) {
   return router.request('/entries', { method: 'POST', body: typeof entry === 'string' ? entry : JSON.stringify(entry) }, env);
 }
 
-// PL: Przed każdym testem tabela jest pusta.
-// EN: Before every test the table is empty.
+// PL: Przed każdym testem tabela wpisów jest pusta, a konta są takie same jak na początku.
+// EN: Before every test the entries table is empty, and the accounts are the same as at the start.
 beforeEach(async () => {
   await db.delete(newsEntries);
+  await db.delete(user);
+  await db.insert(user).values([
+    { id: AUTHOR.id, name: 'Autor Testowy', email: AUTHOR.email, emailVerified: true },
+    { id: OTHER.id, name: 'Drugi Testowy', email: OTHER.email, emailVerified: true },
+  ]);
 });
 
 // PL: Zapis poprawnych wpisów.
@@ -67,7 +83,16 @@ describe('POST /entries: zapis / saving', () => {
     expect(response.status).toBe(201);
     const { id } = (await response.json()) as { id: string };
     const [row] = await db.select().from(newsEntries);
-    expect(row).toMatchObject({ id, type: 'news', title: 'Szkic', status: 'draft', source: 'Samorząd', publishedAt: null, body: BODY });
+    expect(row).toMatchObject({ id, type: 'news', title: 'Szkic', status: 'draft', source: 'Samorząd', authorUserId: AUTHOR.id, publishedAt: null, body: BODY });
+  });
+
+  // PL: Autor pochodzi z sesji. Pola author, authorUserId i author_user_id w ciele są ignorowane, więc do bazy trafia konto z sesji, a nie podstawione.
+  // EN: The author comes from the session. The author, authorUserId and author_user_id fields in the body are ignored, so the session account reaches the database, not the one put in.
+  it('autor z sesji, pola author z ciała ignorowane / the author from the session, author fields from the body ignored', async () => {
+    const response = await post({ type: 'news', title: 'Podstawiony', status: 'draft', body: BODY, author: OTHER.id, authorUserId: OTHER.id, author_user_id: OTHER.id });
+    expect(response.status).toBe(201);
+    const [row] = await db.select().from(newsEntries);
+    expect(row?.authorUserId).toBe(AUTHOR.id);
   });
 
   it('zapisuje publikację z chwilą publikacji / saves a publication with a publication moment', async () => {
@@ -76,6 +101,13 @@ describe('POST /entries: zapis / saving', () => {
     const [row] = await db.select().from(newsEntries);
     expect(row?.status).toBe('published');
     expect(row?.publishedAt).toBeInstanceOf(Date);
+  });
+
+  it('zaplanowana publikacja dostaje wpisaną godzinę / a scheduled publication gets the time entered', async () => {
+    const publishAt = Date.now() + HOUR;
+    expect((await post({ type: 'news', title: 'Później', status: 'published', body: BODY, publishAt })).status).toBe(201);
+    const [row] = await db.select().from(newsEntries);
+    expect(row?.publishedAt?.getTime()).toBe(publishAt);
   });
 });
 
@@ -97,6 +129,9 @@ describe('POST /entries: odrzucenia / rejections', () => {
     ['pusty tytuł / an empty title', { type: 'news', title: '   ', status: 'draft', body: BODY }, 'bad_title'],
     ['za długi tytuł / a too long title', { type: 'news', title: 'a'.repeat(121), status: 'draft', body: BODY }, 'bad_title'],
     ['brak treści / no content', { type: 'news', title: 'T', status: 'draft' }, 'not_a_document'],
+    ['godzina w przeszłości / a time in the past', { type: 'news', title: 'T', status: 'published', body: BODY, publishAt: Date.now() - HOUR }, 'publish_past'],
+    ['godzina dalej niż 30 dni / a time more than 30 days ahead', { type: 'news', title: 'T', status: 'published', body: BODY, publishAt: Date.now() + MAX_PUBLISH_AHEAD_MS + HOUR }, 'publish_too_far'],
+    ['godzina przy szkicu / a time for a draft', { type: 'news', title: 'T', status: 'draft', body: BODY, publishAt: Date.now() + HOUR }, 'bad_publish_at'],
   ])('%s daje 422 / gives 422', async (_name, entry, reason) => {
     const response = await post(entry);
     expect(response.status).toBe(422);
@@ -203,6 +238,17 @@ describe('GET /entries/:id: odczyt do edycji / reading for editing', () => {
 // PL: Zapis zmian w szkicu.
 // EN: Saving changes to a draft.
 describe('PUT /entries/:id: zapis zmian / saving changes', () => {
+  // PL: Zmiana szkicu nie przepisuje autora: wpis zostaje przypisany do konta, które go zapisało, nawet gdy zmianę wysyła ktoś inny (tu: strażnik podaje innego ucznia).
+  // EN: Changing a draft does not rewrite the author: the entry stays with the account that saved it, even when someone else sends the change (here the guard passes another student).
+  it('zmiana szkicu nie zmienia autora / changing a draft does not change the author', async () => {
+    const id = crypto.randomUUID();
+    await db.insert(newsEntries).values({ id, type: 'news', title: 'Stary', status: 'draft', body: BODY, source: 'Samorząd', authorUserId: OTHER.id });
+    const response = await put(id, { type: 'news', title: 'Nowy', status: 'published', body: BODY, author_user_id: AUTHOR.id });
+    expect(response.status).toBe(200);
+    const [row] = await db.select().from(newsEntries);
+    expect(row).toMatchObject({ title: 'Nowy', status: 'published', authorUserId: OTHER.id });
+  });
+
   it('zmienia ten sam szkic, bez nowego numeru / changes the same draft, without a new id', async () => {
     const id = await seed('draft', 'Stary');
     const response = await put(id, { type: 'important', title: 'Nowy', status: 'draft', body: BODY });

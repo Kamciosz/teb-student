@@ -166,6 +166,22 @@ test('uczeń bez roli nie widzi wiersza panelu / a student without a role does n
   await expect(page.getByRole('link', { name: /Panel/ })).toHaveCount(0);
 });
 
+// PL: Wiersz „Moje urządzenia” w ustawieniach ma cel dotyku co najmniej 44 px i prowadzi pod adres /auth/email/urzadzenia. Sprawdzamy adres, nie treść ekranu, bo ekran urządzeń powstaje w osobnym podtorze.
+// EN: The row "Moje urządzenia" in the settings has a touch target of at least 44 px and leads to /auth/email/urzadzenia. We check the address, not the screen content, because the devices screen is made in a separate subtrack.
+test('wiersz „Moje urządzenia” prowadzi do /auth/email/urzadzenia / the row "Moje urządzenia" leads to /auth/email/urzadzenia', async ({ page }) => {
+  await stubServer(page);
+  await page.goto('/profile/ustawienia');
+
+  const row = page.getByRole('link', { name: 'Moje urządzenia' });
+  await expect(row).toBeVisible();
+  const box = await row.boundingBox();
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+  // PL: Czekamy na adres, który kliknięcie wpisuje do historii. Nie patrzymy na adres końcowy, bo na main zalogowanego ucznia przekierowuje AuthEmailScreen na „/”.
+  // EN: We wait for the address the click puts into the history. We do not look at the final address, because on main AuthEmailScreen redirects a signed-in student to "/".
+  await Promise.all([page.waitForURL(/\/auth\/email\/urzadzenia$/, { waitUntil: 'commit' }), row.click()]);
+});
+
 // PL: Wybrana paleta zostaje po ponownym uruchomieniu: na innym ekranie, po przeładowaniu i gdy serwer profilu nie odpowiada.
 // EN: The chosen palette stays after a restart: on another screen, after a reload and when the profile server does not answer.
 test('wybrana paleta zostaje po ponownym uruchomieniu / the chosen palette stays after a restart', async ({ page }) => {
@@ -219,11 +235,19 @@ test('większy tekst zostaje po ponownym uruchomieniu / the larger text stays af
   await expect(page.locator('html')).toHaveAttribute('data-tekst', 'duzy');
 });
 
-// PL: „Pobierz moje dane” zapisuje plik moje-dane-teb.json z kontem i profilem z serwera.
-// EN: "Pobierz moje dane" saves the file moje-dane-teb.json with the account and the profile from the server.
+// PL: „Pobierz moje dane” zapisuje plik moje-dane-teb.json z kontem, profilem, zgłoszeniami i ankietami z serwera. Lista brakujących danych jest pusta.
+// EN: "Pobierz moje dane" saves the file moje-dane-teb.json with the account, the profile, the reports and the surveys from the server. The list of missing data is empty.
 test('pobranie moich danych zapisuje plik JSON / downloading my data saves a JSON file', async ({ page }) => {
   await stubServer(page);
-  const exported = { version: 1, exportedAt: new Date().toISOString(), account: { id: 'u1', email: EMAIL, name: '' }, profile: { ...START_PROFILE, name: 'Ola' }, missing: ['Zgłoszenia ucznia'] };
+  const exported = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    account: { id: 'u1', email: EMAIL, name: '', createdAt: 1759968000000 },
+    profile: { ...START_PROFILE, name: 'Ola' },
+    reports: [{ id: 'z1', category: 'safety', place: 'corridor', placeDetail: null, description: 'Mokra podłoga', stage: 'received', createdAt: 1759968000000, updatedAt: 1759968000000 }],
+    surveys: [{ id: 'a1', label: null, title: 'Ankieta o stołówce', endsOn: '2026-12-01' }],
+    missing: [],
+  };
   await page.route('**/api/profile/export', (route) => route.fulfill({ json: exported }));
   await page.goto('/profile/ustawienia');
 
@@ -234,12 +258,14 @@ test('pobranie moich danych zapisuje plik JSON / downloading my data saves a JSO
   const download = await downloading;
   expect(download.suggestedFilename()).toBe('moje-dane-teb.json');
 
-  // PL: Zawartość pliku to konto i profil ucznia z serwera.
-  // EN: The file content is the student's account and profile from the server.
+  // PL: Zawartość pliku to konto, profil, zgłoszenia i ankiety ucznia z serwera, bez brakujących danych.
+  // EN: The file content is the student's account, profile, reports and surveys from the server, with no missing data.
   const data = JSON.parse(await readFile((await download.path()) as string, 'utf-8')) as typeof exported;
   expect(data.account.email).toBe(EMAIL);
   expect(data.profile.name).toBe('Ola');
-  expect(data.missing).toEqual(['Zgłoszenia ucznia']);
+  expect(data.reports.map((report) => report.description)).toEqual(['Mokra podłoga']);
+  expect(data.surveys.map((survey) => survey.title)).toEqual(['Ankieta o stołówce']);
+  expect(data.missing).toEqual([]);
 });
 
 // PL: Gdy serwer nie odda danych, pokazuje się komunikat o błędzie i nic się nie pobiera.

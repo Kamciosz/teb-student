@@ -1,5 +1,5 @@
 /**
- * PL: Test adresów podtoru 5a na prawdziwej bazie D1 i z prawdziwym logowaniem kodem (uczeń loguje się przez router z drzwi modułu auth): lista i szczegóły bez liczników głosów, zapis głosu, drugi głos tego samego ucznia (409, liczniki bez zmian), ankieta zakończona (410), złe odpowiedzi (400), brak sesji (401) i brak ankiety (404). Tabele ze schematu zakłada vitest.config.ts, a test wkłada własne wiersze z odległymi datami, więc nie zależy od dnia uruchomienia.
+ * PL: Test adresów podtoru 5a na prawdziwej bazie D1 i z prawdziwym logowaniem kodem (uczeń loguje się przez router z drzwi modułu auth): lista i szczegóły bez liczników głosów, zapis głosu, drugi głos tego samego ucznia (409, liczniki bez zmian), ankieta zakończona (410), złe odpowiedzi (400), krótka odpowiedź (tekst zapisany przycięty, nigdy nie wraca do ucznia), brak sesji (401) i brak ankiety (404). Tabele ze schematu zakłada vitest.config.ts, a test wkłada własne wiersze z odległymi datami, więc nie zależy od dnia uruchomienia.
  * EN: Test of the subtrack 5a routes on a real D1 database and with real code sign-in (the student signs in through the router from the auth module door): the list and the details without vote counters, writing a vote, a second vote from the same student (409, counters unchanged), an ended survey (410), bad answers (400), no session (401) and no survey (404). The tables from the schema are created by vitest.config.ts, and the test inserts its own rows with distant dates, so it does not depend on the day it runs.
  *
  * @author Jakub
@@ -22,9 +22,12 @@ import { Hono } from 'hono';
 // PL: Klient bazy do wkładania wierszy testowych.
 // EN: The database client for inserting test rows.
 import { drizzle } from 'drizzle-orm/d1';
+// PL: Porównanie kolumny z wartością w zapytaniu.
+// EN: Comparing a column with a value in a query.
+import { eq } from 'drizzle-orm';
 // PL: Tabele ankiet.
 // EN: The survey tables.
-import { surveyOptions, surveyParticipation, surveyQuestions, surveys } from '../../db/schema/surveys';
+import { surveyOptions, surveyParticipation, surveyQuestions, surveyTextAnswers, surveys } from '../../db/schema/surveys';
 // PL: Router logowania kodem z drzwi modułu auth, żeby zalogować ucznia tak jak w aplikacji.
 // EN: The code sign-in router from the auth module door, to sign a student in the way the app does.
 import { authEmailApp } from '../../auth';
@@ -85,7 +88,7 @@ async function createSession(name: string): Promise<string> {
 
 // PL: Pełna odpowiedź na trwającą ankietę: po jednej odpowiedzi do każdego z dwóch pytań.
 // EN: A full answer to the running survey: one option for each of the two questions.
-const OPEN_ANSWERS = { answers: [{ questionId: 'open-1', optionId: 'open-1-a' }, { questionId: 'open-2', optionId: 'open-2-b' }] };
+const OPEN_ANSWERS = { answers: [{ questionId: 'open-1', optionIds: ['open-1-a'] }, { questionId: 'open-2', optionIds: ['open-2-b'] }] };
 
 /**
  * PL: Wysyła zapytanie do routera na bazie testowej, jako zalogowany uczeń o podanej nazwie albo bez sesji.
@@ -121,17 +124,27 @@ async function readCounters(): Promise<Record<string, number>> {
   return Object.fromEntries(rows.map((row) => [row.id, row.votes]));
 }
 
-// PL: Dwie ankiety testowe: trwająca do 2099 roku i zakończona w 2020.
-// EN: Two test surveys: one running until 2099 and one ended in 2020.
+// PL: Ankiety testowe: trwająca do 2099 roku (bez godziny), zakończona w 2020, dwie z godziną zamknięcia: przed nią (2099) i po niej (2020), trwająca z pytaniem wielokrotnego wyboru, trwająca ze skalą 1–5 oraz trwająca z pytaniem krótkiej odpowiedzi.
+// EN: Test surveys: one running until 2099 (no hour), one ended in 2020, two with a closing hour: one before it (2099) and one after it (2020), a running one with a multiple-choice question, a running one with a 1–5 scale, and a running one with a short-answer question.
 beforeAll(async () => {
   await db.insert(surveys).values([
-    { id: 'open', label: 'Test', title: 'Trwająca', endsOn: '2099-12-31' },
-    { id: 'closed', label: null, title: 'Zakończona', endsOn: '2020-01-01' },
+    { id: 'open', label: 'Test', title: 'Trwająca', endsOn: '2099-12-31', closesAt: null },
+    { id: 'closed', label: null, title: 'Zakończona', endsOn: '2020-01-01', closesAt: null },
+    { id: 'godzina-przed', label: null, title: 'Do godziny', endsOn: '2099-12-31', closesAt: new Date('2099-06-01T12:00:00Z') },
+    { id: 'godzina-po', label: null, title: 'Po godzinie', endsOn: '2099-12-31', closesAt: new Date('2020-06-01T10:00:00Z') },
+    { id: 'wielokrotny', label: null, title: 'Wielokrotny wybór', endsOn: '2099-12-31', closesAt: null },
+    { id: 'skala', label: null, title: 'Skala 1–5', endsOn: '2099-12-31', closesAt: null },
+    { id: 'krotka', label: null, title: 'Krótka odpowiedź', endsOn: '2099-12-31', closesAt: null },
   ]);
   await db.insert(surveyQuestions).values([
     { id: 'open-1', surveyId: 'open', position: 1, prompt: 'Pierwsze?' },
     { id: 'open-2', surveyId: 'open', position: 2, prompt: 'Drugie?' },
     { id: 'closed-1', surveyId: 'closed', position: 1, prompt: 'Zamknięte?' },
+    { id: 'godzina-przed-1', surveyId: 'godzina-przed', position: 1, prompt: 'Przed godziną?' },
+    { id: 'godzina-po-1', surveyId: 'godzina-po', position: 1, prompt: 'Po godzinie?' },
+    { id: 'wielokrotny-1', surveyId: 'wielokrotny', position: 1, prompt: 'Które?', type: 'multiple_choice' },
+    { id: 'skala-1', surveyId: 'skala', position: 1, prompt: 'Jak oceniasz?', type: 'scale_1_5' },
+    { id: 'krotka-1', surveyId: 'krotka', position: 1, prompt: 'Co byś zmienił?', type: 'short_text' },
   ]);
   await db.insert(surveyOptions).values([
     { id: 'open-1-a', questionId: 'open-1', position: 1, label: 'A' },
@@ -139,6 +152,16 @@ beforeAll(async () => {
     { id: 'open-2-a', questionId: 'open-2', position: 1, label: 'C' },
     { id: 'open-2-b', questionId: 'open-2', position: 2, label: 'D' },
     { id: 'closed-1-a', questionId: 'closed-1', position: 1, label: 'E' },
+    { id: 'godzina-przed-1-a', questionId: 'godzina-przed-1', position: 1, label: 'F' },
+    { id: 'godzina-po-1-a', questionId: 'godzina-po-1', position: 1, label: 'G' },
+    { id: 'wielokrotny-1-a', questionId: 'wielokrotny-1', position: 1, label: 'H' },
+    { id: 'wielokrotny-1-b', questionId: 'wielokrotny-1', position: 2, label: 'I' },
+    { id: 'wielokrotny-1-c', questionId: 'wielokrotny-1', position: 3, label: 'J' },
+    { id: 'skala-1-1', questionId: 'skala-1', position: 1, label: '1' },
+    { id: 'skala-1-2', questionId: 'skala-1', position: 2, label: '2' },
+    { id: 'skala-1-3', questionId: 'skala-1', position: 3, label: '3' },
+    { id: 'skala-1-4', questionId: 'skala-1', position: 4, label: '4' },
+    { id: 'skala-1-5', questionId: 'skala-1', position: 5, label: '5' },
   ]);
 });
 
@@ -170,8 +193,9 @@ describe('odczyt / reading', () => {
     const body = JSON.parse(text) as { active: { id: string; questionCount: number; hasVoted: boolean }[]; ended: { id: string }[] };
 
     expect(response.status).toBe(200);
-    expect(body.active).toMatchObject([{ id: 'open', questionCount: 2, hasVoted: false }]);
-    expect(body.ended.map((survey) => survey.id)).toEqual(['closed']);
+    expect(body.active.find((survey) => survey.id === 'open')).toMatchObject({ questionCount: 2, hasVoted: false });
+    expect(body.active.map((survey) => survey.id).sort()).toEqual(['godzina-przed', 'krotka', 'open', 'skala', 'wielokrotny']);
+    expect(body.ended.map((survey) => survey.id).sort()).toEqual(['closed', 'godzina-po']);
     expect(text).not.toContain('votes');
   });
 
@@ -186,6 +210,14 @@ describe('odczyt / reading', () => {
     expect(body.questions.map((q) => [q.id, q.options.length])).toEqual([['open-1', 2], ['open-2', 2]]);
     expect(text).not.toContain('votes');
   });
+
+  it('godzina zamknięcia przed końcem dnia: przed nią ankieta jest otwarta i pokazuje godzinę, po niej zamknięta / a closing hour: before it the survey is open and shows the hour, after it closed', async () => {
+    const before = (await (await call('/godzina-przed', 'godzina')).json()) as { isActive: boolean; closesAt: string | null };
+    const after = (await (await call('/godzina-po', 'godzina')).json()) as { isActive: boolean; closesAt: string | null };
+
+    expect(before).toMatchObject({ isActive: true, closesAt: '2099-06-01T12:00:00.000Z' });
+    expect(after).toMatchObject({ isActive: false, closesAt: '2020-06-01T10:00:00.000Z' });
+  });
 });
 
 // PL: Zapis głosu: liczniki, drugi głos i brak śladu odpowiedzi.
@@ -197,13 +229,13 @@ describe('zapis głosu / writing a vote', () => {
     const countersAfterFirst = await readCounters();
     const second = await call('/open/answers', student, OPEN_ANSWERS);
     const countersAfterSecond = await readCounters();
-    const list = (await (await call('/', student)).json()) as { active: { hasVoted: boolean }[] };
+    const list = (await (await call('/', student)).json()) as { active: { id: string; hasVoted: boolean }[] };
 
     expect(first.status).toBe(201);
     expect(countersAfterFirst).toMatchObject({ 'open-1-a': 1, 'open-1-b': 0, 'open-2-a': 0, 'open-2-b': 1 });
     expect(second.status).toBe(409);
     expect(countersAfterSecond).toEqual(countersAfterFirst);
-    expect(list.active[0]?.hasVoted).toBe(true);
+    expect(list.active.find((survey) => survey.id === 'open')?.hasVoted).toBe(true);
   });
 
   it('drugi uczeń głosuje niezależnie / another student votes independently', async () => {
@@ -215,6 +247,41 @@ describe('zapis głosu / writing a vote', () => {
     expect(after['open-1-a']).toBe((before['open-1-a'] ?? 0) + 1);
   });
 
+  it('pytanie wielokrotnego wyboru przyjmuje kilka odpowiedzi i liczy każdą / a multiple-choice question accepts several options and counts each one', async () => {
+    const before = await readCounters();
+    const response = await call('/wielokrotny/answers', 'wielo1', { answers: [{ questionId: 'wielokrotny-1', optionIds: ['wielokrotny-1-a', 'wielokrotny-1-c'] }] });
+    const after = await readCounters();
+
+    expect(response.status).toBe(201);
+    expect(after['wielokrotny-1-a']).toBe((before['wielokrotny-1-a'] ?? 0) + 1);
+    expect(after['wielokrotny-1-b']).toBe(before['wielokrotny-1-b'] ?? 0);
+    expect(after['wielokrotny-1-c']).toBe((before['wielokrotny-1-c'] ?? 0) + 1);
+  });
+
+  it('drugi głos w pytaniu wielokrotnego wyboru daje 409 i nie zmienia liczników / a second vote in a multiple-choice question gives 409 and changes no counters', async () => {
+    const before = await readCounters();
+    const response = await call('/wielokrotny/answers', 'wielo1', { answers: [{ questionId: 'wielokrotny-1', optionIds: ['wielokrotny-1-b'] }] });
+
+    expect(response.status).toBe(409);
+    expect(await readCounters()).toEqual(before);
+  });
+
+  it('skala 1–5 przyjmuje jedną wartość i liczy ją / a 1–5 scale accepts one value and counts it', async () => {
+    const before = await readCounters();
+    const response = await call('/skala/answers', 'skala1', { answers: [{ questionId: 'skala-1', optionIds: ['skala-1-4'] }] });
+    const after = await readCounters();
+
+    expect(response.status).toBe(201);
+    expect(after['skala-1-4']).toBe((before['skala-1-4'] ?? 0) + 1);
+    expect(after['skala-1-3']).toBe(before['skala-1-3'] ?? 0);
+  });
+
+  it('ankieta z godziną w przyszłości przyjmuje głos / a survey with an hour in the future accepts a vote', async () => {
+    const response = await call('/godzina-przed/answers', 'godzina', { answers: [{ questionId: 'godzina-przed-1', optionIds: ['godzina-przed-1-a'] }] });
+
+    expect(response.status).toBe(201);
+  });
+
   it('zapis nie zostawia śladu odpowiedzi ucznia, tylko udział / the write leaves no trace of the student answers, only participation', async () => {
     const rows = await db.select().from(surveyParticipation);
 
@@ -222,6 +289,76 @@ describe('zapis głosu / writing a vote', () => {
     for (const row of rows) expect(Object.keys(row).sort()).toEqual(['surveyId', 'userId']);
   });
 
+});
+
+// PL: Krótka odpowiedź: tekst zapisany przycięty, drugi głos nie dopisuje tekstu, a tekst nie wraca do ucznia w żadnej odpowiedzi.
+// EN: Short answer: the text saved trimmed, a second vote adds no text, and the text never goes back to a student in any response.
+describe('krótka odpowiedź / short answer', () => {
+  // PL: Tekst, którego szukamy w odpowiedziach i w bazie.
+  // EN: The text we look for in the responses and in the database.
+  const MARKER = 'Tekst-do-ukrycia-42';
+
+  it('zapisuje tekst przycięty z obu stron / saves the text trimmed on both ends', async () => {
+    const response = await call('/krotka/answers', 'tekst1', { answers: [{ questionId: 'krotka-1', optionIds: [], text: `  ${MARKER}  ` }] });
+    const rows = await db.select().from(surveyTextAnswers).where(eq(surveyTextAnswers.questionId, 'krotka-1'));
+
+    expect(response.status).toBe(201);
+    expect(rows.map((row) => row.text)).toContain(MARKER);
+    expect(rows.map((row) => row.text)).not.toContain(`  ${MARKER}  `);
+  });
+
+  it('drugi głos daje 409 i nie dopisuje tekstu / a second vote gives 409 and adds no text', async () => {
+    const before = (await db.select().from(surveyTextAnswers)).length;
+    const response = await call('/krotka/answers', 'tekst1', { answers: [{ questionId: 'krotka-1', optionIds: [], text: 'Drugi-tekst' }] });
+    const rows = await db.select().from(surveyTextAnswers);
+
+    expect(response.status).toBe(409);
+    expect(rows.length).toBe(before);
+    expect(rows.map((row) => row.text)).not.toContain('Drugi-tekst');
+  });
+
+  it('tekst nie wraca do ucznia: ani w odpowiedzi na zapis, ani w liście, ani w szczegółach / the text never goes back to a student: not in the write response, the list or the details', async () => {
+    const write = await call('/krotka/answers', 'tekst2', { answers: [{ questionId: 'krotka-1', optionIds: [], text: `${MARKER}-2` }] });
+    const responses = [
+      await write.text(),
+      await (await call('/', 'tekst3')).text(),
+      await (await call('/krotka', 'tekst3')).text(),
+      await (await call('/krotka', 'tekst2')).text(),
+    ];
+
+    expect(write.status).toBe(201);
+    for (const text of responses) expect(text).not.toContain(MARKER);
+  });
+
+  it('tekst jest zapisany bez numeru ucznia i czasu / the text is stored without a student id or time', async () => {
+    const rows = await db.select().from(surveyTextAnswers);
+
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) expect(Object.keys(row).sort()).toEqual(['id', 'questionId', 'text']);
+  });
+
+  it('przyjmuje dokładnie 200 znaków, a 201 odrzuca / accepts exactly 200 characters and rejects 201', async () => {
+    const ok = await call('/krotka/answers', 'dlugi-ok', { answers: [{ questionId: 'krotka-1', optionIds: [], text: 'a'.repeat(200) }] });
+    const tooLong = await call('/krotka/answers', 'dlugi-za-duzo', { answers: [{ questionId: 'krotka-1', optionIds: [], text: 'a'.repeat(201) }] });
+
+    expect(ok.status).toBe(201);
+    expect(tooLong.status).toBe(400);
+  });
+
+  it.each([
+    { name: 'same spacje / only spaces', body: { answers: [{ questionId: 'krotka-1', optionIds: [], text: '   ' }] } },
+    { name: 'brak tekstu / no text', body: { answers: [{ questionId: 'krotka-1', optionIds: [] }] } },
+    { name: 'odpowiedź do wyboru / an option', body: { answers: [{ questionId: 'krotka-1', optionIds: ['open-1-a'] }] } },
+    { name: 'tekst za długi / text too long', body: { answers: [{ questionId: 'krotka-1', optionIds: [], text: 'b'.repeat(201) }] } },
+  ])('krótka odpowiedź: $name, daje 400 i niczego nie zapisuje / short answer: $name gives 400 and writes nothing', async ({ body }) => {
+    const textsBefore = (await db.select().from(surveyTextAnswers)).length;
+    const participationBefore = (await db.select().from(surveyParticipation)).length;
+    const response = await call('/krotka/answers', 'krotka-zle', body);
+
+    expect(response.status).toBe(400);
+    expect((await db.select().from(surveyTextAnswers)).length).toBe(textsBefore);
+    expect((await db.select().from(surveyParticipation)).length).toBe(participationBefore);
+  });
 });
 
 // PL: Odrzucenia: ankieta zakończona i złe odpowiedzi nic nie zapisują.
@@ -234,20 +371,57 @@ describe('odrzucenia / rejections', () => {
 
   it('ankieta zakończona daje 410 i nie zmienia liczników / an ended survey gives 410 and changes no counters', async () => {
     const before = await readCounters();
-    const response = await call('/closed/answers', 'koniec', { answers: [{ questionId: 'closed-1', optionId: 'closed-1-a' }] });
+    const response = await call('/closed/answers', 'koniec', { answers: [{ questionId: 'closed-1', optionIds: ['closed-1-a'] }] });
+
+    expect(response.status).toBe(410);
+    expect(await readCounters()).toEqual(before);
+  });
+
+  it('ankieta zamknięta godziną daje 410, mimo że dzień jeszcze trwa, i nie zmienia liczników / a survey closed by an hour gives 410 although the day is still running, and changes no counters', async () => {
+    const before = await readCounters();
+    const response = await call('/godzina-po/answers', 'po-godzinie', { answers: [{ questionId: 'godzina-po-1', optionIds: ['godzina-po-1-a'] }] });
 
     expect(response.status).toBe(410);
     expect(await readCounters()).toEqual(before);
   });
 
   it.each([
-    { name: 'odpowiedź z cudzego pytania / an option of a foreign question', body: { answers: [{ questionId: 'open-1', optionId: 'closed-1-a' }, { questionId: 'open-2', optionId: 'open-2-a' }] } },
-    { name: 'brak jednego pytania / a missing question', body: { answers: [{ questionId: 'open-1', optionId: 'open-1-a' }] } },
+    { name: 'odpowiedź z cudzego pytania / an option of a foreign question', body: { answers: [{ questionId: 'open-1', optionIds: ['closed-1-a'] }, { questionId: 'open-2', optionIds: ['open-2-a'] }] } },
+    { name: 'brak jednego pytania / a missing question', body: { answers: [{ questionId: 'open-1', optionIds: ['open-1-a'] }] } },
     { name: 'puste dane / an empty body', body: {} },
+    { name: 'pusta lista wyborów / an empty list of picks', body: { answers: [{ questionId: 'open-1', optionIds: [] }, { questionId: 'open-2', optionIds: ['open-2-a'] }] } },
+    { name: 'dwie odpowiedzi w jednokrotnym wyborze / two options in a single choice', body: { answers: [{ questionId: 'open-1', optionIds: ['open-1-a', 'open-1-b'] }, { questionId: 'open-2', optionIds: ['open-2-a'] }] } },
+    { name: 'stara forma optionId / the old optionId form', body: { answers: [{ questionId: 'open-1', optionId: 'open-1-a' }, { questionId: 'open-2', optionId: 'open-2-a' }] } },
   ])('złe odpowiedzi: $name, daje 400 i niczego nie zapisuje / bad answers give 400 and write nothing', async ({ body }) => {
     const before = await readCounters();
     const participationBefore = (await db.select().from(surveyParticipation)).length;
     const response = await call('/open/answers', 'zle', body);
+
+    expect(response.status).toBe(400);
+    expect(await readCounters()).toEqual(before);
+    expect((await db.select().from(surveyParticipation)).length).toBe(participationBefore);
+  });
+
+  it('skala 1–5: dwie wartości albo obca odpowiedź daje 400 i niczego nie zapisuje / a 1–5 scale: two values or a foreign option gives 400 and writes nothing', async () => {
+    const before = await readCounters();
+    const participationBefore = (await db.select().from(surveyParticipation)).length;
+
+    for (const optionIds of [['skala-1-2', 'skala-1-3'], ['skala-1-1', 'open-1-a']]) {
+      const response = await call('/skala/answers', 'skala-zle', { answers: [{ questionId: 'skala-1', optionIds }] });
+      expect(response.status).toBe(400);
+    }
+    expect(await readCounters()).toEqual(before);
+    expect((await db.select().from(surveyParticipation)).length).toBe(participationBefore);
+  });
+
+  it.each([
+    { name: 'pusta lista wyborów / an empty list of picks', optionIds: [] },
+    { name: 'obca odpowiedź / a foreign option', optionIds: ['wielokrotny-1-a', 'open-1-a'] },
+    { name: 'ta sama odpowiedź dwa razy / the same option twice', optionIds: ['wielokrotny-1-b', 'wielokrotny-1-b'] },
+  ])('wielokrotny wybór: $name, daje 400 i niczego nie zapisuje / multiple choice: $name gives 400 and writes nothing', async ({ optionIds }) => {
+    const before = await readCounters();
+    const participationBefore = (await db.select().from(surveyParticipation)).length;
+    const response = await call('/wielokrotny/answers', 'wielo-zle', { answers: [{ questionId: 'wielokrotny-1', optionIds }] });
 
     expect(response.status).toBe(400);
     expect(await readCounters()).toEqual(before);

@@ -7,13 +7,24 @@
  * @uses src/features/bell/BellScreen.tsx::BellScreen
  * @uses src/features/bell/BellCountdown.tsx::BellCountdown
  * @uses src/features/bell/bellState.ts::getBellState
+ * @uses src/features/bell/bellState.ts::currentBellState
+ * @uses src/features/bell/bellState.ts::hasBellPlan
+ * @uses src/features/bell/bellDayStatus.ts::bellDayStatus
  * @used_by src/app/routes.ts::APP_ROUTES
  */
 
 // PL: Ekran podtoru 6.
 // EN: The screen of subtrack 6.
 export { BellScreen } from './BellScreen';
-// PL: Licznik do dzwonka i jego logika stanu (typ BellState do użycia przez pulpit).
-// EN: The bell countdown and its state logic (the BellState type for the dashboard).
+// PL: Licznik do dzwonka i jego logika stanu (typy BellState i NextLesson do użycia przez pulpit).
+// EN: The bell countdown and its state logic (the BellState and NextLesson types for the dashboard).
 export { BellCountdown } from './BellCountdown';
-export { getBellState, type BellState } from './bellState';
+// PL: Stan licznika dla danej chwili z planu dnia (zwykłego albo skróconego). Przeniesiona do bellState.ts, żeby licznik nie importował drzwi (cykl).
+// EN: The countdown state for a given moment from the plan of the day (regular or shortened). Moved to bellState.ts so that the countdown does not import the door (a cycle).
+export { currentBellState, getBellState, type BellState, type NextLesson } from './bellState';
+// PL: Czy plan dnia ma choć jedną lekcję (pulpit: odróżnia „brak planu” od „po lekcjach”).
+// EN: Whether the day's plan has at least one lesson (the dashboard tells "no plan" from "after lessons").
+export { hasBellPlan } from './bellState';
+// PL: Stan dnia: weekend, brak planu, przed lekcjami, w trakcie albo po lekcjach (pulpit pokazuje „po lekcjach” tylko dla stanu „after”).
+// EN: The state of the day: weekend, no plan, before lessons, during them or after them (the dashboard shows "after lessons" only for the "after" state).
+export { bellDayStatus, type BellDayStatus } from './bellDayStatus';
