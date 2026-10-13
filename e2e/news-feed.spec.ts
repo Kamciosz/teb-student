@@ -306,4 +306,17 @@ test.describe('na lokalnej bazie', () => {
     await page.goto('/news/feed/seed-gazetka');
     await expect(page.getByRole('heading', { name: 'Gazetka szkolna szuka autorów', level: 1 })).toBeVisible();
   });
+
+  // PL: Wpis z autorem pokazuje jego imię i stopkę „Redakcja gazetki”, a wpis bez autora ma samą stopkę. Adres e-mail autora nie pojawia się na stronie.
+  // EN: An entry with an author shows the author's name and the "Redakcja gazetki" footer, and an entry without an author has only the footer. The author's e-mail address does not appear on the page.
+  test('podpis autora i stopka na wpisie / the author signature and the footer on the entry', async ({ page }) => {
+    await page.goto('/news/feed/seed-wazne-3ta');
+    await expect(page.getByText('Autor: Ola Testowa')).toBeVisible();
+    await expect(page.getByText('Redakcja gazetki')).toBeVisible();
+    await expect(page.locator('body')).not.toContainText('ola.testowa@teb.edu.pl');
+
+    await page.goto('/news/feed/seed-koszykowka');
+    await expect(page.getByText('Redakcja gazetki')).toBeVisible();
+    await expect(page.getByText('Autor:')).toHaveCount(0);
+  });
 });

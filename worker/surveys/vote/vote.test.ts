@@ -85,7 +85,7 @@ async function createSession(name: string): Promise<string> {
 
 // PL: Pełna odpowiedź na trwającą ankietę: po jednej odpowiedzi do każdego z dwóch pytań.
 // EN: A full answer to the running survey: one option for each of the two questions.
-const OPEN_ANSWERS = { answers: [{ questionId: 'open-1', optionId: 'open-1-a' }, { questionId: 'open-2', optionId: 'open-2-b' }] };
+const OPEN_ANSWERS = { answers: [{ questionId: 'open-1', optionIds: ['open-1-a'] }, { questionId: 'open-2', optionIds: ['open-2-b'] }] };
 
 /**
  * PL: Wysyła zapytanie do routera na bazie testowej, jako zalogowany uczeń o podanej nazwie albo bez sesji.
@@ -121,14 +121,15 @@ async function readCounters(): Promise<Record<string, number>> {
   return Object.fromEntries(rows.map((row) => [row.id, row.votes]));
 }
 
-// PL: Ankiety testowe: trwająca do 2099 roku (bez godziny), zakończona w 2020, oraz dwie z godziną zamknięcia: przed nią (2099) i po niej (2020).
-// EN: Test surveys: one running until 2099 (no hour), one ended in 2020, and two with a closing hour: one before it (2099) and one after it (2020).
+// PL: Ankiety testowe: trwająca do 2099 roku (bez godziny), zakończona w 2020, dwie z godziną zamknięcia: przed nią (2099) i po niej (2020), oraz trwająca z pytaniem wielokrotnego wyboru.
+// EN: Test surveys: one running until 2099 (no hour), one ended in 2020, two with a closing hour: one before it (2099) and one after it (2020), and a running one with a multiple-choice question.
 beforeAll(async () => {
   await db.insert(surveys).values([
     { id: 'open', label: 'Test', title: 'Trwająca', endsOn: '2099-12-31', closesAt: null },
     { id: 'closed', label: null, title: 'Zakończona', endsOn: '2020-01-01', closesAt: null },
     { id: 'godzina-przed', label: null, title: 'Do godziny', endsOn: '2099-12-31', closesAt: new Date('2099-06-01T12:00:00Z') },
     { id: 'godzina-po', label: null, title: 'Po godzinie', endsOn: '2099-12-31', closesAt: new Date('2020-06-01T10:00:00Z') },
+    { id: 'wielokrotny', label: null, title: 'Wielokrotny wybór', endsOn: '2099-12-31', closesAt: null },
   ]);
   await db.insert(surveyQuestions).values([
     { id: 'open-1', surveyId: 'open', position: 1, prompt: 'Pierwsze?' },
@@ -136,6 +137,7 @@ beforeAll(async () => {
     { id: 'closed-1', surveyId: 'closed', position: 1, prompt: 'Zamknięte?' },
     { id: 'godzina-przed-1', surveyId: 'godzina-przed', position: 1, prompt: 'Przed godziną?' },
     { id: 'godzina-po-1', surveyId: 'godzina-po', position: 1, prompt: 'Po godzinie?' },
+    { id: 'wielokrotny-1', surveyId: 'wielokrotny', position: 1, prompt: 'Które?', type: 'multiple_choice' },
   ]);
   await db.insert(surveyOptions).values([
     { id: 'open-1-a', questionId: 'open-1', position: 1, label: 'A' },
@@ -145,6 +147,9 @@ beforeAll(async () => {
     { id: 'closed-1-a', questionId: 'closed-1', position: 1, label: 'E' },
     { id: 'godzina-przed-1-a', questionId: 'godzina-przed-1', position: 1, label: 'F' },
     { id: 'godzina-po-1-a', questionId: 'godzina-po-1', position: 1, label: 'G' },
+    { id: 'wielokrotny-1-a', questionId: 'wielokrotny-1', position: 1, label: 'H' },
+    { id: 'wielokrotny-1-b', questionId: 'wielokrotny-1', position: 2, label: 'I' },
+    { id: 'wielokrotny-1-c', questionId: 'wielokrotny-1', position: 3, label: 'J' },
   ]);
 });
 
@@ -177,7 +182,7 @@ describe('odczyt / reading', () => {
 
     expect(response.status).toBe(200);
     expect(body.active.find((survey) => survey.id === 'open')).toMatchObject({ questionCount: 2, hasVoted: false });
-    expect(body.active.map((survey) => survey.id).sort()).toEqual(['godzina-przed', 'open']);
+    expect(body.active.map((survey) => survey.id).sort()).toEqual(['godzina-przed', 'open', 'wielokrotny']);
     expect(body.ended.map((survey) => survey.id).sort()).toEqual(['closed', 'godzina-po']);
     expect(text).not.toContain('votes');
   });
@@ -230,8 +235,27 @@ describe('zapis głosu / writing a vote', () => {
     expect(after['open-1-a']).toBe((before['open-1-a'] ?? 0) + 1);
   });
 
+  it('pytanie wielokrotnego wyboru przyjmuje kilka odpowiedzi i liczy każdą / a multiple-choice question accepts several options and counts each one', async () => {
+    const before = await readCounters();
+    const response = await call('/wielokrotny/answers', 'wielo1', { answers: [{ questionId: 'wielokrotny-1', optionIds: ['wielokrotny-1-a', 'wielokrotny-1-c'] }] });
+    const after = await readCounters();
+
+    expect(response.status).toBe(201);
+    expect(after['wielokrotny-1-a']).toBe((before['wielokrotny-1-a'] ?? 0) + 1);
+    expect(after['wielokrotny-1-b']).toBe(before['wielokrotny-1-b'] ?? 0);
+    expect(after['wielokrotny-1-c']).toBe((before['wielokrotny-1-c'] ?? 0) + 1);
+  });
+
+  it('drugi głos w pytaniu wielokrotnego wyboru daje 409 i nie zmienia liczników / a second vote in a multiple-choice question gives 409 and changes no counters', async () => {
+    const before = await readCounters();
+    const response = await call('/wielokrotny/answers', 'wielo1', { answers: [{ questionId: 'wielokrotny-1', optionIds: ['wielokrotny-1-b'] }] });
+
+    expect(response.status).toBe(409);
+    expect(await readCounters()).toEqual(before);
+  });
+
   it('ankieta z godziną w przyszłości przyjmuje głos / a survey with an hour in the future accepts a vote', async () => {
-    const response = await call('/godzina-przed/answers', 'godzina', { answers: [{ questionId: 'godzina-przed-1', optionId: 'godzina-przed-1-a' }] });
+    const response = await call('/godzina-przed/answers', 'godzina', { answers: [{ questionId: 'godzina-przed-1', optionIds: ['godzina-przed-1-a'] }] });
 
     expect(response.status).toBe(201);
   });
@@ -255,7 +279,7 @@ describe('odrzucenia / rejections', () => {
 
   it('ankieta zakończona daje 410 i nie zmienia liczników / an ended survey gives 410 and changes no counters', async () => {
     const before = await readCounters();
-    const response = await call('/closed/answers', 'koniec', { answers: [{ questionId: 'closed-1', optionId: 'closed-1-a' }] });
+    const response = await call('/closed/answers', 'koniec', { answers: [{ questionId: 'closed-1', optionIds: ['closed-1-a'] }] });
 
     expect(response.status).toBe(410);
     expect(await readCounters()).toEqual(before);
@@ -263,20 +287,37 @@ describe('odrzucenia / rejections', () => {
 
   it('ankieta zamknięta godziną daje 410, mimo że dzień jeszcze trwa, i nie zmienia liczników / a survey closed by an hour gives 410 although the day is still running, and changes no counters', async () => {
     const before = await readCounters();
-    const response = await call('/godzina-po/answers', 'po-godzinie', { answers: [{ questionId: 'godzina-po-1', optionId: 'godzina-po-1-a' }] });
+    const response = await call('/godzina-po/answers', 'po-godzinie', { answers: [{ questionId: 'godzina-po-1', optionIds: ['godzina-po-1-a'] }] });
 
     expect(response.status).toBe(410);
     expect(await readCounters()).toEqual(before);
   });
 
   it.each([
-    { name: 'odpowiedź z cudzego pytania / an option of a foreign question', body: { answers: [{ questionId: 'open-1', optionId: 'closed-1-a' }, { questionId: 'open-2', optionId: 'open-2-a' }] } },
-    { name: 'brak jednego pytania / a missing question', body: { answers: [{ questionId: 'open-1', optionId: 'open-1-a' }] } },
+    { name: 'odpowiedź z cudzego pytania / an option of a foreign question', body: { answers: [{ questionId: 'open-1', optionIds: ['closed-1-a'] }, { questionId: 'open-2', optionIds: ['open-2-a'] }] } },
+    { name: 'brak jednego pytania / a missing question', body: { answers: [{ questionId: 'open-1', optionIds: ['open-1-a'] }] } },
     { name: 'puste dane / an empty body', body: {} },
+    { name: 'pusta lista wyborów / an empty list of picks', body: { answers: [{ questionId: 'open-1', optionIds: [] }, { questionId: 'open-2', optionIds: ['open-2-a'] }] } },
+    { name: 'dwie odpowiedzi w jednokrotnym wyborze / two options in a single choice', body: { answers: [{ questionId: 'open-1', optionIds: ['open-1-a', 'open-1-b'] }, { questionId: 'open-2', optionIds: ['open-2-a'] }] } },
+    { name: 'stara forma optionId / the old optionId form', body: { answers: [{ questionId: 'open-1', optionId: 'open-1-a' }, { questionId: 'open-2', optionId: 'open-2-a' }] } },
   ])('złe odpowiedzi: $name, daje 400 i niczego nie zapisuje / bad answers give 400 and write nothing', async ({ body }) => {
     const before = await readCounters();
     const participationBefore = (await db.select().from(surveyParticipation)).length;
     const response = await call('/open/answers', 'zle', body);
+
+    expect(response.status).toBe(400);
+    expect(await readCounters()).toEqual(before);
+    expect((await db.select().from(surveyParticipation)).length).toBe(participationBefore);
+  });
+
+  it.each([
+    { name: 'pusta lista wyborów / an empty list of picks', optionIds: [] },
+    { name: 'obca odpowiedź / a foreign option', optionIds: ['wielokrotny-1-a', 'open-1-a'] },
+    { name: 'ta sama odpowiedź dwa razy / the same option twice', optionIds: ['wielokrotny-1-b', 'wielokrotny-1-b'] },
+  ])('wielokrotny wybór: $name, daje 400 i niczego nie zapisuje / multiple choice: $name gives 400 and writes nothing', async ({ optionIds }) => {
+    const before = await readCounters();
+    const participationBefore = (await db.select().from(surveyParticipation)).length;
+    const response = await call('/wielokrotny/answers', 'wielo-zle', { answers: [{ questionId: 'wielokrotny-1', optionIds }] });
 
     expect(response.status).toBe(400);
     expect(await readCounters()).toEqual(before);

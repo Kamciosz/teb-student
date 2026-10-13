@@ -18,9 +18,15 @@ import { drizzle } from 'drizzle-orm/d1';
 // PL: Funkcje testowe Vitest.
 // EN: Vitest test functions.
 import { beforeEach, describe, expect, it } from 'vitest';
+// PL: Warunek równości dla zapytań.
+// EN: The equality condition for queries.
+import { eq } from 'drizzle-orm';
 // PL: Tabela wpisów i typ wiersza do wstawienia.
 // EN: The entries table and the type of a row to insert.
 import { newsEntries, type NewNewsEntryRow, type NewsEntryRow } from '../../db/schema/news';
+// PL: Tabela kont, z której bierzemy imię autora.
+// EN: The accounts table, from which we take the author's name.
+import { user } from '../../db/schema/auth';
 // PL: Zapytania, które sprawdzamy, i limit listy.
 // EN: The queries under test and the list limit.
 import { LIST_LIMIT, findPublishedEntry, listPublishedEntries } from './queries';
@@ -73,13 +79,13 @@ function ids(rows: NewsEntryRow[]): string[] {
 }
 
 /**
- * PL: Wstawia wiersze partiami po 9. Wiersz ma 11 kolumn, a D1 przyjmuje do 100 parametrów w zapytaniu, więc 9 wierszy (99 parametrów) to najwięcej w jednej partii.
- * EN: Inserts rows in batches of 9. A row has 11 columns and D1 accepts up to 100 parameters per query, so 9 rows (99 parameters) is the most in one batch.
+ * PL: Wstawia wiersze partiami po 8. Wiersz ma 12 kolumn, a D1 przyjmuje do 100 parametrów w zapytaniu, więc 8 wierszy (96 parametrów) to najwięcej w jednej partii.
+ * EN: Inserts rows in batches of 8. A row has 12 columns and D1 accepts up to 100 parameters per query, so 8 rows (96 parameters) is the most in one batch.
  *
  * @param rows - PL: wiersze do wstawienia. EN: the rows to insert.
  */
 async function insertAll(rows: NewNewsEntryRow[]): Promise<void> {
-  for (let start = 0; start < rows.length; start += 9) await db.insert(newsEntries).values(rows.slice(start, start + 9));
+  for (let start = 0; start < rows.length; start += 8) await db.insert(newsEntries).values(rows.slice(start, start + 8));
 }
 
 // PL: Przed każdym testem tabela jest pusta.
@@ -223,7 +229,7 @@ describe('findPublishedEntry', () => {
   it('znajduje opublikowany, nie znajduje szkicu / finds a published entry, does not find a draft', async () => {
     await db.insert(newsEntries).values([row('opublikowany'), row('szkic', { status: 'draft', publishedAt: null })]);
 
-    expect((await findPublishedEntry(db, 'opublikowany'))?.id).toBe('opublikowany');
+    expect((await findPublishedEntry(db, 'opublikowany'))?.entry.id).toBe('opublikowany');
     expect(await findPublishedEntry(db, 'szkic')).toBeUndefined();
     expect(await findPublishedEntry(db, 'nie-ma')).toBeUndefined();
   });
@@ -234,7 +240,7 @@ describe('findPublishedEntry', () => {
     await db.insert(newsEntries).values(row('zaplanowany', { publishAt: new Date(NOW.getTime() + 3_600_000) }));
 
     expect(await findPublishedEntry(db, 'zaplanowany', NOW)).toBeUndefined();
-    expect((await findPublishedEntry(db, 'zaplanowany', LATER))?.id).toBe('zaplanowany');
+    expect((await findPublishedEntry(db, 'zaplanowany', LATER))?.entry.id).toBe('zaplanowany');
   });
 
   // PL: Złośliwy numer z adresu jest parametrem: nic nie znajduje i nie psuje tabeli.
@@ -244,6 +250,29 @@ describe('findPublishedEntry', () => {
 
     expect(await findPublishedEntry(db, "x' OR '1'='1")).toBeUndefined();
     expect(await findPublishedEntry(db, "x'; DROP TABLE news_entries; --")).toBeUndefined();
-    expect((await findPublishedEntry(db, 'opublikowany'))?.id).toBe('opublikowany');
+    expect((await findPublishedEntry(db, 'opublikowany'))?.entry.id).toBe('opublikowany');
+  });
+
+  // PL: Imię autora idzie z konta. Bez autora, z samymi spacjami w imieniu albo po usunięciu konta dostajemy null. E-mail konta nigdy nie trafia do wyniku.
+  // EN: The author's name comes from the account. Without an author, with only spaces in the name, or after the account is deleted we get null. The account's e-mail never gets into the result.
+  it('podaje imię autora z konta, a bez autora null / gives the author\'s name from the account, and null without an author', async () => {
+    await db.insert(user).values([
+      { id: 'autor-ada', name: '  Ada Wymyślona ', email: 'ada.wymyslona@example.com', emailVerified: true },
+      { id: 'autor-pusty', name: '   ', email: 'pusty.autor@example.com', emailVerified: true },
+    ]).onConflictDoNothing();
+    await db.insert(newsEntries).values([
+      row('z-autorem', { authorUserId: 'autor-ada' }),
+      row('pusty-autor', { authorUserId: 'autor-pusty' }),
+      row('bez-autora'),
+    ]);
+
+    const withAuthor = await findPublishedEntry(db, 'z-autorem');
+    expect(withAuthor?.authorName).toBe('Ada Wymyślona');
+    expect(JSON.stringify(withAuthor)).not.toContain('example.com');
+    expect((await findPublishedEntry(db, 'pusty-autor'))?.authorName).toBeNull();
+    expect((await findPublishedEntry(db, 'bez-autora'))?.authorName).toBeNull();
+
+    await db.delete(user).where(eq(user.id, 'autor-ada'));
+    expect((await findPublishedEntry(db, 'z-autorem'))?.authorName).toBeNull();
   });
 });

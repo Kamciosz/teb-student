@@ -117,6 +117,15 @@ async function seedCsvSurvey(): Promise<void> {
   await db.insert(surveyOptions).values([3, 1, 1, 0].map((count, index) => ({ id: `csv-o${index}`, questionId: 'csv-q', position: index + 1, label: CSV_LABELS[index]!, votes: count })));
 }
 
+/**
+ * PL: Podaje chwilę w formacie pola formularza (RRRR-MM-DDTHH:mm, czas polski). Czas względny do zegara, bo ankieta trwa 7 dni od dziś.
+ * EN: Gives a moment in the form field format (YYYY-MM-DDTHH:mm, Polish time). The time is relative to the clock, because the survey runs 7 days from today.
+ *
+ * @param ms - PL: chwila w milisekundach UTC. EN: the moment in UTC milliseconds.
+ * @returns PL: tekst w formacie pola. EN: the text in the field format.
+ */
+const warsawIn = (ms: number): string => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(ms).replace(' ', 'T');
+
 // PL: Cztery ankiety testowe: 4 odpowiedzi (poniżej progu), 5 (próg), 12 (przykład z ekranu 6.5d) i zakończona z 21. Do CSV dochodzą: 3 odpowiedzi (poniżej progu) i 5 ze znakami, które trzeba escapować.
 // EN: Four test surveys: 4 responses (below the threshold), 5 (the threshold), 12 (the example of screen 6.5d) and an ended one with 21. For the CSV there are also: 3 responses (below the threshold) and 5 with characters that need escaping.
 beforeAll(async () => {
@@ -127,6 +136,9 @@ beforeAll(async () => {
   await seedSurvey('dwanascie', [5, 4, 2, 1]);
   await seedSurvey('stara', [12, 9], '2020-01-01');
   await seedSurvey('malo', [2, 1]);
+  // PL: Ankieta, której termin zamknięcia minął, choć ostatni dzień jeszcze trwa.
+  // EN: A survey whose closing time has passed, although its last day still runs.
+  await db.insert(surveys).values({ id: 'zamknieta', title: 'Ankieta zamknieta', endsOn: '2099-12-31', closesAt: new Date('2020-01-01T09:00:00Z') });
   await seedCsvSurvey();
 });
 
@@ -209,7 +221,9 @@ describe('lista / the list', () => {
 
     expect(response.status).toBe(200);
     expect(body.active.find((survey) => survey.id === 'dwanascie')).toMatchObject({ responseCount: 12, questionCount: 1 });
-    expect(body.ended).toMatchObject([{ id: 'stara', responseCount: 21 }]);
+    expect(body.ended.find((survey) => survey.id === 'stara')).toMatchObject({ responseCount: 21 });
+    expect(body.ended.map((survey) => survey.id)).toContain('zamknieta');
+    expect(body.active.map((survey) => survey.id)).not.toContain('zamknieta');
     expect(text).not.toContain('votes');
   });
 });
@@ -230,7 +244,7 @@ describe('tworzenie ankiety / creating a survey', () => {
 
     expect(response.status).toBe(201);
     const [survey] = await db.select().from(surveys).where(eq(surveys.id, id));
-    expect(survey).toMatchObject({ title: 'Dzień sportu', endsOn: lastDayOf(warsawToday(new Date()), 7) });
+    expect(survey).toMatchObject({ title: 'Dzień sportu', endsOn: lastDayOf(warsawToday(new Date()), 7), closesAt: null });
     const questions = await db.select().from(surveyQuestions).where(eq(surveyQuestions.surveyId, id)).orderBy(surveyQuestions.position);
     expect(questions.map((question) => question.prompt)).toEqual(['W co zagrać?', 'Kiedy?']);
     const options = await db.select().from(surveyOptions).where(eq(surveyOptions.questionId, questions[0]!.id)).orderBy(surveyOptions.position);
@@ -243,11 +257,25 @@ describe('tworzenie ankiety / creating a survey', () => {
     { name: 'z jedną odpowiedzią', body: { title: 'Zła-2', questions: [{ prompt: 'P', options: ['A'] }], durationDays: 7 } },
     { name: 'z sześcioma odpowiedziami', body: { title: 'Zła-3', questions: [{ prompt: 'P', options: ['A', 'B', 'C', 'D', 'E', 'F'] }], durationDays: 7 } },
     { name: 'z czasem 5 dni', body: { title: 'Zła-4', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 5 } },
+    { name: 'z terminem w przeszłości', body: { title: 'Zła-5', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 7, closesAt: '2020-01-01T12:00' } },
+    { name: 'z terminem po ostatnim dniu', body: { title: 'Zła-6', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 7, closesAt: warsawIn(Date.now() + 30 * 86400e3) } },
   ])('ankieta $name daje 400 i nic nie zapisuje / a survey $name gives 400 and writes nothing', async ({ body }) => {
     const before = await db.select().from(surveys);
 
     expect((await publish(body)).status).toBe(400);
     expect(await db.select().from(surveys)).toHaveLength(before.length);
+  });
+
+  it('zapisuje termin zamknięcia jako chwilę UTC / writes the closing time as a UTC moment', async () => {
+    // PL: Termin za 26 godzin, zaokrąglony do minuty, bo pole formularza nie ma sekund.
+    // EN: A time 26 hours from now, rounded to the minute, because the form field has no seconds.
+    const soon = Math.floor((Date.now() + 26 * 3600e3) / 60000) * 60000;
+    const response = await publish({ title: 'Z terminem', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 7, closesAt: warsawIn(soon) });
+    const { id } = (await response.json()) as { id: string };
+
+    expect(response.status).toBe(201);
+    const [survey] = await db.select().from(surveys).where(eq(surveys.id, id));
+    expect(survey?.closesAt?.getTime()).toBe(soon);
   });
 
   it('treść, która nie jest JSON-em, daje 400 / a body that is not JSON gives 400', async () => {
