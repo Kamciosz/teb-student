@@ -45,3 +45,10 @@
   margin: 0;
   color: var(--ink-2);
 }
+
+/* PL: Następna lekcja pod podpisem. */
+/* EN: The next lesson under the caption. */
+.bell-countdown__next {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+}

@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest';
 import { MAX_CLASS_LENGTH, MAX_NAME_LENGTH, parseProfileInput } from './validation';
 
 /** PL: Poprawny profil, od którego psujemy po jednym polu. EN: A valid profile, from which we break one field at a time. */
-const VALID = { name: 'Ola', className: '3TA', school: 'T', palette: 'CE' };
+const VALID = { name: 'Ola', className: '3TA', school: 'T', palette: 'CE', textSize: 'normalny' };
 
 // PL: Grupa testów poprawnych danych.
 // EN: A group of tests for valid data.
@@ -31,6 +31,12 @@ describe('parseProfileInput: dobre dane / good data', () => {
   // EN: The spaces at the edges disappear, and an empty name and class are allowed (that is how a new student starts).
   it('przycina spacje i dopuszcza puste pola / trims spaces and allows empty fields', () => {
     expect(parseProfileInput({ ...VALID, name: '  Ola  ', className: '   ' })).toEqual({ ok: true, value: { ...VALID, name: 'Ola', className: '' } });
+  });
+
+  // PL: Oba rozmiary tekstu są dozwolone.
+  // EN: Both text sizes are allowed.
+  it.each(['normalny', 'duzy'])('rozmiar tekstu %s / text size %s', (textSize) => {
+    expect(parseProfileInput({ ...VALID, textSize })).toEqual({ ok: true, value: { ...VALID, textSize } });
   });
 
   // PL: Każdy kod palety CA–CH jest dozwolony.
@@ -52,6 +58,8 @@ describe('parseProfileInput: złe dane / bad data', () => {
     ['nieznana szkoła', { school: 'X' }, 'school'],
     ['nieznana paleta', { palette: 'CZ' }, 'palette'],
     ['paleta małymi literami', { palette: 'ce' }, 'palette'],
+    ['nieznany rozmiar tekstu', { textSize: 'wielki' }, 'textSize'],
+    ['rozmiar tekstu nie tekst', { textSize: true }, 'textSize'],
   ])('%s / bad field', (_label, change, field) => {
     expect(parseProfileInput({ ...VALID, ...change })).toEqual({ ok: false, fields: [field] });
   });
@@ -59,6 +67,6 @@ describe('parseProfileInput: złe dane / bad data', () => {
   // PL: Treść, która nie jest obiektem, ma złe wszystkie pola.
   // EN: A body that is not an object has every field bad.
   it.each([undefined, null, 'tekst', 5])('treść %s nie jest obiektem / body %s is not an object', (body) => {
-    expect(parseProfileInput(body)).toEqual({ ok: false, fields: ['name', 'className', 'school', 'palette'] });
+    expect(parseProfileInput(body)).toEqual({ ok: false, fields: ['name', 'className', 'school', 'palette', 'textSize'] });
   });
 });

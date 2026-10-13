@@ -20,7 +20,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { beforeEach, describe, expect, it } from 'vitest';
 // PL: Tabela wpisów i typ wiersza do wstawienia.
 // EN: The entries table and the type of a row to insert.
-import { newsEntries, type NewNewsEntryRow } from '../../db/schema/news';
+import { newsEntries, type NewNewsEntryRow, type NewsEntryRow } from '../../db/schema/news';
 // PL: Zapytania, które sprawdzamy, i limit listy.
 // EN: The queries under test and the list limit.
 import { LIST_LIMIT, findPublishedEntry, listPublishedEntries } from './queries';
@@ -40,6 +40,38 @@ const db = drizzle(env.DB);
 function row(id: string, overrides: Partial<NewNewsEntryRow> = {}): NewNewsEntryRow {
   const body = { type: 'doc', content: [] };
   return { id, type: 'news', status: 'published', title: id, body, source: 'Samorząd', publishedAt: new Date(Date.UTC(2026, 9, 9, 10)), ...overrides };
+}
+
+/**
+ * PL: Chwila publikacji n-tej minuty od początku 2026 roku, żeby kolejność była jasna.
+ * EN: The publication moment of the n-th minute from the start of 2026, so the order is clear.
+ *
+ * @param index - PL: numer minuty. EN: the minute number.
+ * @returns PL: data. EN: the date.
+ */
+function atMinute(index: number): Date {
+  return new Date(Date.UTC(2026, 0, 1) + index * 60_000);
+}
+
+/**
+ * PL: Numery wpisów z listy, w tej samej kolejności.
+ * EN: The entry ids of the list, in the same order.
+ *
+ * @param rows - PL: wiersze z zapytania. EN: the rows from the query.
+ * @returns PL: numery. EN: the ids.
+ */
+function ids(rows: NewsEntryRow[]): string[] {
+  return rows.map((entry) => entry.id);
+}
+
+/**
+ * PL: Wstawia wiersze partiami po 10, bo D1 przyjmuje do 100 parametrów w zapytaniu.
+ * EN: Inserts rows in batches of 10, because D1 accepts up to 100 parameters per query.
+ *
+ * @param rows - PL: wiersze do wstawienia. EN: the rows to insert.
+ */
+async function insertAll(rows: NewNewsEntryRow[]): Promise<void> {
+  for (let start = 0; start < rows.length; start += 10) await db.insert(newsEntries).values(rows.slice(start, start + 10));
 }
 
 // PL: Przed każdym testem tabela jest pusta.
@@ -92,6 +124,44 @@ describe('listPublishedEntries', () => {
 
     expect(rows).toHaveLength(LIST_LIMIT);
     expect(rows[0]?.publishedAt).toBeInstanceOf(Date);
+  });
+
+  // PL: Szukanie po tytule i treści, bez względu na wielkość liter, także dla polskich liter.
+  // EN: Searching in the title and the content, regardless of case, also for Polish letters.
+  it('szuka w tytule i treści bez wielkości liter / searches the title and the content ignoring case', async () => {
+    await db.insert(newsEntries).values([
+      row('tytul', { title: 'Turniej ŻAK' }),
+      row('tresc', { title: 'Biblioteka', body: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Zapisy do Łodzi' }] }] } }),
+      row('obcy', { title: 'Sport' }),
+    ]);
+
+    expect(ids(await listPublishedEntries(db, 'żak'))).toEqual(['tytul']);
+    expect(ids(await listPublishedEntries(db, 'ŁODZI'))).toEqual(['tresc']);
+    expect(ids(await listPublishedEntries(db, 'nic-takiego'))).toEqual([]);
+  });
+
+  // PL: Szkic z pasującym tytułem nie wraca w wynikach szukania.
+  // EN: A draft with a matching title does not come back in the search results.
+  it('nie szuka w szkicach / does not search drafts', async () => {
+    await db.insert(newsEntries).values([row('opublikowany', { title: 'Żak' }), row('szkic', { title: 'Żak', status: 'draft', publishedAt: null })]);
+
+    expect(ids(await listPublishedEntries(db, 'żak'))).toEqual(['opublikowany']);
+  });
+
+  // PL: Szukanie sięga do całej listy, a nie tylko do pierwszej strony: najstarszy pasujący wpis też się znajdzie.
+  // EN: The search reaches the whole list, not just the first page: the oldest matching entry is found too.
+  it('szuka w całej liście, nie tylko na pierwszej stronie / searches the whole list, not just the first page', async () => {
+    await insertAll(Array.from({ length: LIST_LIMIT + 10 }, (_, index) => row(`wpis-${index}`, { title: index < 3 ? `Zapisy ${index}` : `Inne ${index}`, publishedAt: atMinute(index) })));
+
+    expect(ids(await listPublishedEntries(db, 'zapisy'))).toEqual(['wpis-2', 'wpis-1', 'wpis-0']);
+  });
+
+  // PL: Limit działa po filtrowaniu: pasujących wpisów jest więcej niż strona, a odpowiedź ma ich najwyżej LIST_LIMIT.
+  // EN: The limit applies after filtering: there are more matching entries than a page, and the answer has at most LIST_LIMIT of them.
+  it('ucina wyniki szukania do limitu / cuts the search results to the limit', async () => {
+    await insertAll(Array.from({ length: LIST_LIMIT + 5 }, (_, index) => row(`zapis-${index}`, { title: `Zapisy ${index}`, publishedAt: atMinute(index) })));
+
+    expect(await listPublishedEntries(db, 'zapisy')).toHaveLength(LIST_LIMIT);
   });
 });
 

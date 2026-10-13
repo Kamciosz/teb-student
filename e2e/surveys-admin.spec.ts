@@ -10,6 +10,7 @@
  * @used_by playwright.config.ts::testDir
  */
 
+import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 
 // PL: Lista z makiety 6.5a: ankieta z 3 odpowiedziami (wyniki jeszcze ukryte), ankieta z 12 i zakończona z 21.
@@ -31,6 +32,17 @@ const FULL_RESULTS = {
     { prompt: 'Co poprawić?', options: [{ label: 'Porcje', votes: 7, percent: 58 }, { label: 'Smak', votes: 5, percent: 42 }] },
   ],
 };
+
+// PL: Plik CSV z wynikami ankiety „stolowka”: nagłówek, wiersz na każdą odpowiedź, BOM na początku i CRLF na końcu wierszy.
+// EN: The CSV file with the results of the "stolowka" survey: the header, a row for every option, the BOM at the start and CRLF at the end of rows.
+const FULL_CSV = '\uFEFFPytanie,Odpowiedź,Liczba głosów,Procent\r\n' + [
+  'Jak oceniasz obiady w stołówce?,Dobrze,5,42',
+  'Jak oceniasz obiady w stołówce?,Różnie,4,33',
+  'Jak oceniasz obiady w stołówce?,Słabo,2,17',
+  'Jak oceniasz obiady w stołówce?,Nie jadam w stołówce,1,8',
+  'Co poprawić?,Porcje,7,58',
+  'Co poprawić?,Smak,5,42',
+].join('\r\n') + '\r\n';
 
 // PL: Wyniki ankiety z 3 odpowiedziami: serwer nie wysyła rozkładu (makieta 6.5c).
 // EN: The results of a survey with 3 responses: the server sends no distribution (mockup 6.5c).
@@ -62,6 +74,7 @@ async function mockPanelServer(page: Page, overrides: Partial<Mock> = {}): Promi
     }
     if (mock.listStatus !== 200) return route.fulfill({ status: mock.listStatus, json: { error: 'server_error' } });
     if (path === '/stolowka/results') return route.fulfill({ json: FULL_RESULTS });
+    if (path === '/stolowka/results/csv') return route.fulfill({ headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="ankieta-stolowka-wyniki.csv"' }, body: FULL_CSV });
     if (path === '/dodatkowe/results') return route.fulfill({ json: FEW_RESULTS });
     return route.fulfill({ json: LIST });
   });
@@ -216,6 +229,7 @@ test('wyniki poniżej 5 odpowiedzi pokazują tylko liczbę / results below 5 res
   await expect(page.getByText('z 5 odpowiedzi', { exact: true })).toBeVisible();
   await expect(page.getByText('Przy mniejszej liczbie łatwo rozpoznać, kto głosował.')).toBeVisible();
   await expect(page.getByText('%')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Pobierz CSV' })).toHaveCount(0);
 });
 
 // PL: Wyniki od progu z makiety 6.5d i przełączanie pytań.
@@ -237,10 +251,40 @@ test('wyniki od 5 odpowiedzi: udziały i „Następne pytanie” / results from 
   await expect(page.getByText('Pytanie 1')).toBeVisible();
 });
 
+// PL: „Pobierz CSV” zapisuje plik z nazwą z serwera i treścią z BOM-em.
+// EN: "Pobierz CSV" saves the file with the name from the server and the content with the BOM.
+test('„Pobierz CSV” zapisuje plik z wynikami / "Pobierz CSV" saves the file with the results', async ({ page }) => {
+  await mockPanelServer(page);
+  await page.goto('/surveys/admin/stolowka');
+  await expect(page.getByText('Jak oceniasz obiady w stołówce?')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Pobierz CSV' }).click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toBe('ankieta-stolowka-wyniki.csv');
+  expect(await readFile((await download.path())!, 'utf8')).toBe(FULL_CSV);
+});
+
+// PL: Bez internetu „Pobierz CSV” jest nieaktywne, a obok stoi notatka. Wyniki zostają na ekranie.
+// EN: Without internet "Pobierz CSV" is inactive, with a note beside it. The results stay on the screen.
+test('bez internetu „Pobierz CSV” jest nieaktywne / without internet "Pobierz CSV" is inactive', async ({ page, context }) => {
+  await mockPanelServer(page);
+  await page.goto('/surveys/admin/stolowka');
+  await expect(page.getByRole('button', { name: 'Pobierz CSV' })).toBeEnabled();
+
+  await context.setOffline(true);
+
+  await expect(page.getByText('Pobranie wymaga internetu.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pobierz CSV' })).toBeDisabled();
+  await expect(page.getByText('Jak oceniasz obiady w stołówce?')).toBeVisible();
+  await context.setOffline(false);
+});
+
 // PL: Prawdziwy serwer z bazą D1: bez sesji każdy adres panelu ankiet odpowiada 401 i nie oddaje żadnych danych.
 // EN: The real server with the D1 database: without a session every survey panel route answers 401 and returns no data.
 test('prawdziwy serwer: bez sesji 401 na każdym adresie / the real server: 401 on every route without a session', async ({ request }) => {
-  const responses = [await request.get('/api/surveys/admin'), await request.get('/api/surveys/admin/dodatkowe/results'), await request.post('/api/surveys/admin', { data: {} })];
+  const responses = [await request.get('/api/surveys/admin'), await request.get('/api/surveys/admin/dodatkowe/results'), await request.get('/api/surveys/admin/dodatkowe/results/csv'), await request.post('/api/surveys/admin', { data: {} })];
   for (const response of responses) {
     expect(response.status()).toBe(401);
     expect(await response.text()).not.toContain('Zajęcia dodatkowe');
