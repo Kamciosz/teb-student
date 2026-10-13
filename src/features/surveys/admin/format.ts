@@ -81,22 +81,57 @@ export function formatShortDate(isoDate: string): string {
 }
 
 /**
- * PL: Liczy ostatni dzień nowej ankiety i podaje go jako „19.10.2026”. Czas trwania liczy się od dnia publikacji, więc 7 dni od 12.10 to 19.10 (tak samo liczy serwer).
- * EN: Counts the last day of a new survey and gives it as "19.10.2026". The duration counts from the publication day, so 7 days from 12.10 is 19.10 (the server counts the same way).
+ * PL: Zapisuje chwilę jako czas ścienny w Warszawie, RRRR-MM-DDTHH:mm. Takie teksty porównuje się zwykłym porównaniem napisów, bez zależności od strefy telefonu.
+ * EN: Writes a moment as Warsaw wall-clock time, YYYY-MM-DDTHH:mm. Such texts are compared as plain strings, with no dependence on the phone's time zone.
+ *
+ * @param now - PL: chwila. EN: the moment.
+ * @returns PL: czas ścienny w Warszawie. EN: the Warsaw wall-clock time.
+ */
+export function warsawWallClock(now: Date): string {
+  // PL: Dzień i godzina w czasie polskim, a nie w strefie telefonu. Godziny 00–23 (bez „24”).
+  // EN: The day and the hour in Polish time, not in the phone's time zone. Hours 00–23 (no "24").
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: SCHOOL_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
+  const pick = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${pick('year')}-${pick('month')}-${pick('day')}T${pick('hour')}:${pick('minute')}`;
+}
+
+/**
+ * PL: Liczy ostatni dzień nowej ankiety jako RRRR-MM-DD. Czas trwania liczy się od dnia publikacji, więc 7 dni od 12.10 to 19.10 (tak samo liczy serwer).
+ * EN: Counts the last day of a new survey as YYYY-MM-DD. The duration counts from the publication day, so 7 days from 12.10 is 19.10 (the server counts the same way).
+ *
+ * @param now - PL: chwila publikacji. EN: the moment of publication.
+ * @param durationDays - PL: czas trwania w dniach. EN: the duration in days.
+ * @returns PL: ostatni dzień, RRRR-MM-DD. EN: the last day, YYYY-MM-DD.
+ */
+export function lastDayIso(now: Date, durationDays: number): string {
+  // PL: Dzisiejszy dzień w czasie polskim. Dodajemy dni do północy UTC tej daty, żeby czas letni nie przesunął wyniku.
+  // EN: Today in Polish time. We add the days to the UTC midnight of that date, so daylight saving time does not shift the result.
+  const today = warsawWallClock(now).slice(0, 10);
+  const end = new Date(Date.parse(`${today}T00:00:00Z`) + durationDays * MS_PER_DAY);
+  return end.toISOString().slice(0, 10);
+}
+
+/**
+ * PL: Liczy ostatni dzień nowej ankiety i podaje go jako „19.10.2026”.
+ * EN: Counts the last day of a new survey and gives it as "19.10.2026".
  *
  * @param now - PL: chwila publikacji. EN: the moment of publication.
  * @param durationDays - PL: czas trwania w dniach. EN: the duration in days.
  * @returns PL: data „D.MM.RRRR”. EN: the date as "D.MM.YYYY".
  */
 export function lastDayLabel(now: Date, durationDays: number): string {
-  // PL: Dzisiejszy dzień w czasie polskim, a nie w strefie telefonu.
-  // EN: Today in Polish time, not in the phone's time zone.
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: SCHOOL_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
-  const pick = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
-
-  // PL: Dodaj dni do północy UTC tej daty, żeby czas letni nie przesunął wyniku.
-  // EN: Add the days to the UTC midnight of that date, so daylight saving time does not shift the result.
-  const end = new Date(Date.parse(`${pick('year')}-${pick('month')}-${pick('day')}T00:00:00Z`) + durationDays * MS_PER_DAY);
-  const [year, month, day] = end.toISOString().slice(0, 10).split('-');
+  const [year, month, day] = lastDayIso(now, durationDays).split('-');
   return `${Number(day)}.${month}.${year}`;
+}
+
+/**
+ * PL: Opisuje termin zamknięcia po polsku, na przykład „15.10, 12:00”.
+ * EN: Describes the closing time in Polish, for example "15.10, 12:00".
+ *
+ * @param closesAt - PL: chwila w milisekundach UTC. EN: the moment in UTC milliseconds.
+ * @returns PL: data i godzina w czasie polskim. EN: the date and the hour in Polish time.
+ */
+export function formatClosesAt(closesAt: number): string {
+  const [date = '', time = ''] = warsawWallClock(new Date(closesAt)).split('T');
+  return `${formatShortDate(date)}, ${time}`;
 }
