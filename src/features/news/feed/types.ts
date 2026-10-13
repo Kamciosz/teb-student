@@ -48,6 +48,8 @@ export type NewsEntrySummary = {
   title: string;
   /** PL: Krótki opis z początku treści. EN: A short description from the start of the content. */
   excerpt: string;
+  /** PL: Czy wpis jest przypięty na górze listy. Serwer zawsze podaje pole; brak (podgląd z edytora) znaczy „nieprzypięty”. EN: Whether the entry is pinned to the top of the list. The server always sends the field; missing (the editor preview) means "not pinned". */
+  pinned?: boolean;
 };
 
 /**
@@ -61,4 +63,6 @@ export type NewsEntryDetail = NewsEntrySummary & {
   linkUrl: string | null;
   /** PL: Napis na przycisku z linkiem albo null. EN: The label on the link button, or null. */
   linkLabel: string | null;
+  /** PL: Imię i nazwisko autora z konta albo null, gdy wpis nie ma autora. Adresu e-mail serwer nie podaje. EN: The author's name and surname from the account, or null when the entry has no author. The server does not give the e-mail address. */
+  authorName: string | null;
 };

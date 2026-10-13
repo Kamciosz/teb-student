@@ -23,6 +23,13 @@ export type NewReport = {
   isAnonymous: boolean;
 };
 
+/** PL: Jeden wpis historii zgłoszenia: etap, odpowiedź Samorządu (albo `null`) i chwila zmiany. EN: One history entry of a report: the stage, the Student Council answer (or `null`) and the time of the change. */
+export type ReportHistoryEntry = {
+  stage: string;
+  note: string | null;
+  changedAt: number;
+};
+
 /** PL: Zgłoszenie ucznia z serwera (bez numeru autora). EN: A student's report from the server (without the author id). */
 export type MyReport = {
   id: string;
@@ -33,6 +40,8 @@ export type MyReport = {
   stage: string;
   createdAt: number;
   updatedAt: number;
+  /** PL: Historia etapów od pierwszego, rosnąco po czasie. EN: The stage history from the first stage, ascending by time. */
+  history: ReportHistoryEntry[];
 };
 
 /**

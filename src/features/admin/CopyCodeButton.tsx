@@ -1,11 +1,12 @@
 /**
- * PL: Przycisk „Kopiuj kod” z ekranu 6.2b w docs/projekt/EKRANY.md: kopiuje kod do schowka, a przez 3 sekundy pokazuje „Skopiowano” z ptaszkiem. Gdy przeglądarka nie pozwala na kopiowanie, napis się nie zmienia, a kod nadal da się zaznaczyć na ekranie.
- * EN: The "Kopiuj kod" button from screen 6.2b in docs/projekt/EKRANY.md: it copies the code to the clipboard and for 3 seconds shows "Skopiowano" with a check mark. When the browser does not allow copying, the label does not change, and the code can still be selected on the screen.
+ * PL: Przycisk „Kopiuj kod” z ekranu 6.2b w docs/projekt/EKRANY.md: kopiuje kod do schowka, a przez 3 sekundy pokazuje „Skopiowano” z ptaszkiem. Wersja kompaktowa (sama ikona 44×44) stoi przy każdym kodzie z listy „Wydane wcześniej”. Gdy przeglądarka nie pozwala na kopiowanie, napis się nie zmienia, a kod nadal da się zaznaczyć na ekranie.
+ * EN: The "Kopiuj kod" button from screen 6.2b in docs/projekt/EKRANY.md: it copies the code to the clipboard and for 3 seconds shows "Skopiowano" with a check mark. The compact version (the icon alone, 44 by 44) stands next to each code in the "Wydane wcześniej" list. When the browser does not allow copying, the label does not change, and the code can still be selected on the screen.
  *
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/admin/icons.tsx::Icon
  * @used_by src/features/admin/InvitesScreen.tsx::CopyCodeButton
+ * @used_by src/features/admin/InviteList.tsx::CopyCodeButton
  */
 
 import { useEffect, useState } from 'react';
@@ -15,13 +16,13 @@ import { Icon } from './icons';
 const COPIED_MS = 3000;
 
 /**
- * PL: Rysuje przycisk kopiowania kodu.
- * EN: Draws the code copy button.
+ * PL: Rysuje przycisk kopiowania kodu. Wersja kompaktowa nie ma napisu, więc dostaje nazwę dla czytnika ekranu z kodem.
+ * EN: Draws the code copy button. The compact version has no label, so it gets a name for the screen reader with the code.
  *
- * @param props - PL: kod do skopiowania. EN: the code to copy.
+ * @param props - PL: kod do skopiowania i wersja kompaktowa. EN: the code to copy and the compact version.
  * @returns PL: element przycisku. EN: the button element.
  */
-export function CopyCodeButton({ code }: { code: string }) {
+export function CopyCodeButton({ code, compact = false }: { code: string; compact?: boolean }) {
   const [isCopied, setIsCopied] = useState(false);
 
   // PL: Po skopiowaniu wróć do napisu „Kopiuj kod” po 3 sekundach. Sprzątanie zatrzymuje licznik przy zmianie ekranu.
@@ -43,9 +44,19 @@ export function CopyCodeButton({ code }: { code: string }) {
     }
   }
 
+  const iconName = isCopied ? 'check' : 'copy';
+  // PL: Kompaktowy przycisk ma nazwę z kodem, a pełny ma napis na przycisku.
+  // EN: The compact button is named with the code, and the full one has its label on the button.
+  if (compact) {
+    return (
+      <button type="button" className="ad-btn-icon" aria-label={`Kopiuj kod ${code}`} onClick={handleCopy}>
+        <Icon name={iconName} />
+      </button>
+    );
+  }
   return (
     <button type="button" className="ad-btn ad-btn-outline" onClick={handleCopy}>
-      <Icon name={isCopied ? 'check' : 'copy'} />
+      <Icon name={iconName} />
       {isCopied ? 'Skopiowano' : 'Kopiuj kod'}
     </button>
   );
