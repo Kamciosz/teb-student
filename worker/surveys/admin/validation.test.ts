@@ -22,7 +22,20 @@ const valid = { title: 'Dzień sportu', questions: [{ prompt: 'W co chcesz zagra
 describe('parseNewSurvey', () => {
   it('przyjmuje poprawną ankietę i przycina spacje / accepts a valid survey and trims spaces', () => {
     const parsed = parseNewSurvey({ ...valid, title: '  Dzień sportu  ' }, now);
-    expect(parsed).toEqual({ ...valid, closesAt: null });
+    expect(parsed).toEqual({ ...valid, questions: [{ ...valid.questions[0], type: 'single_choice' }], closesAt: null });
+  });
+
+  it('bierze typ pytania z listy, a brak typu to jednokrotny wybór / takes the question type from the list, and no type means single choice', () => {
+    const withType = (type: unknown) => ({ ...valid, questions: [{ ...valid.questions[0], type }] });
+    expect(parseNewSurvey(withType('multiple_choice'), now)?.questions[0]?.type).toBe('multiple_choice');
+    expect(parseNewSurvey(withType('single_choice'), now)?.questions[0]?.type).toBe('single_choice');
+    expect(parseNewSurvey(withType(undefined), now)?.questions[0]?.type).toBe('single_choice');
+    expect(parseNewSurvey(withType(null), now)?.questions[0]?.type).toBe('single_choice');
+  });
+
+  it('odrzuca typ spoza QUESTION_TYPES / rejects a type outside QUESTION_TYPES', () => {
+    const withType = (type: unknown) => ({ ...valid, questions: [{ ...valid.questions[0], type }] });
+    for (const type of ['open_text', 'Multiple_Choice', 'multiple_choice ', '', 1, ['single_choice']]) expect(parseNewSurvey(withType(type), now)).toBeNull();
   });
 
   it('odrzuca ankietę bez tytułu albo z samymi spacjami / rejects a survey without a title or with spaces only', () => {

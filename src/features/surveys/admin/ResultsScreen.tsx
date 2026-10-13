@@ -17,7 +17,8 @@ import { LockIcon, WifiOffIcon } from './icons';
 import { ErrorMessage, PanelNote, ScreenTop } from './PanelParts';
 import { fetchResultsCsv } from './surveyApi';
 import { useIsOnline, useSurveyResults } from './surveyQueries';
-import type { OptionResult, SurveyResults } from './types';
+import { TO_AGREE } from './texts';
+import type { OptionResult, QuestionResult, SurveyResults } from './types';
 
 /**
  * PL: Rysuje nagłówek wyników: etykieta „Ankieta”, tytuł i podpis (liczba pytań albo odpowiedzi z terminem).
@@ -134,6 +135,24 @@ function DownloadCsvButton({ surveyId }: { surveyId: string }) {
 }
 
 /**
+ * PL: Przy wielokrotnym wyborze pokazuje liczbę zaznaczeń (suma głosów wszystkich odpowiedzi) i dopisek, że uczeń mógł zaznaczyć kilka odpowiedzi. Przy jednokrotnym nic nie rysuje.
+ * EN: With multiple choice it shows the number of checked boxes (the sum of the votes of all options) and a note that the student could check several options. With single choice it draws nothing.
+ *
+ * @param props - PL: pytanie z wynikami. EN: the question with its results.
+ * @returns PL: notatka albo nic. EN: the note or nothing.
+ */
+function MultipleChoiceNote({ question }: { question: QuestionResult }) {
+  if (question.type !== 'multiple_choice') return null;
+  const checked = question.options.reduce((sum, option) => sum + option.votes, 0);
+  return (
+    <>
+      <p className="sa-small">{TO_AGREE.checkedCount(checked)}</p>
+      <p className="sa-small">{TO_AGREE.multipleNote}</p>
+    </>
+  );
+}
+
+/**
  * PL: Rysuje ekran 6.5d dla jednego pytania. Przy kilku pytaniach „Następne pytanie” przełącza je, a „Wstecz” wraca do poprzedniego.
  * EN: Draws screen 6.5d for one question. With several questions "Następne pytanie" switches them, and "Wstecz" returns to the previous one.
  *
@@ -152,6 +171,7 @@ function QuestionResults({ results }: { results: SurveyResults }) {
       <ResultsHeader results={results} summary={describeResponses(results.responseCount)} />
       <p className="sa-label sa-label--tight">{`Pytanie ${index + 1}`}</p>
       <h2 className="sa-h2">{question.prompt}</h2>
+      <MultipleChoiceNote question={question} />
       <ul className="sa-tile sa-results">
         {question.options.map((option, place) => (
           <ResultBar key={place} letter={OPTION_LETTERS[place] ?? ''} option={option} />
