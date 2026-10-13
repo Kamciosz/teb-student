@@ -1,7 +1,7 @@
 /**
- * PL: Sprawdzanie odpowiedzi ucznia: kształt danych z telefonu i zgodność z pytaniami ankiety (każde pytanie raz, odpowiedzi z tego pytania, a przy jednokrotnym wyborze jedna). Czysta logika bez bazy.
+ * PL: Sprawdzanie odpowiedzi ucznia: kształt danych z telefonu i zgodność z pytaniami ankiety (każde pytanie raz, odpowiedzi z tego pytania, a przy jednokrotnym wyborze i skali 1–5 jedna). Czysta logika bez bazy.
  *     Serwer nie ufa telefonowi (docs/STANDARD_KODU.md, część 6): sprawdza każde pole, zanim cokolwiek zapisze.
- * EN: Checking the student's answers: the shape of the data from the phone and the match with the survey questions (every question once, options of that question, and one option for a single choice). Pure logic without the database.
+ * EN: Checking the student's answers: the shape of the data from the phone and the match with the survey questions (every question once, options of that question, and one option for a single choice or a 1–5 scale). Pure logic without the database.
  *     The server does not trust the phone (docs/STANDARD_KODU.md, part 6): it checks every field before writing anything.
  *
  * @author Jakub
@@ -28,8 +28,8 @@ const MAX_OPTIONS = 50;
 const MAX_ID_LENGTH = 64;
 
 /**
- * PL: Rodzaj pytania: jedna odpowiedź albo kilka. Z kolumny survey_questions.type.
- * EN: The question type: one answer or several. From the survey_questions.type column.
+ * PL: Rodzaj pytania: jedna odpowiedź (jednokrotny wybór, skala 1–5) albo kilka. Z kolumny survey_questions.type.
+ * EN: The question type: one answer (single choice, 1–5 scale) or several. From the survey_questions.type column.
  */
 export type QuestionType = (typeof QUESTION_TYPES)[number];
 
@@ -106,8 +106,8 @@ export function parseAnswersBody(body: unknown): AnswerInput[] | null {
 }
 
 /**
- * PL: Porównuje odpowiedzi z pytaniami ankiety: każde pytanie dokładnie raz, co najmniej jedna odpowiedź, każda z tego pytania, bez powtórzeń, a przy jednokrotnym wyborze dokładnie jedna.
- * EN: Compares the answers with the survey questions: every question exactly once, at least one option, each from that question, without repeats, and exactly one for a single choice.
+ * PL: Porównuje odpowiedzi z pytaniami ankiety: każde pytanie dokładnie raz, co najmniej jedna odpowiedź, każda z tego pytania, bez powtórzeń, a przy jednokrotnym wyborze i skali dokładnie jedna.
+ * EN: Compares the answers with the survey questions: every question exactly once, at least one option, each from that question, without repeats, and exactly one for a single choice or a scale.
  *
  * @param questions - PL: pytania ankiety z rodzajem i numerami odpowiedzi. EN: the survey questions with their type and option ids.
  * @param answers - PL: odpowiedzi ucznia po parsowaniu. EN: the student's answers after parsing.
@@ -129,7 +129,10 @@ export function checkAnswers(questions: QuestionOptionIds[], answers: AnswerInpu
     seen.add(answer.questionId);
 
     if (answer.optionIds.length === 0) return { ok: false, reason: 'empty_answer' };
-    if (question.type === 'single_choice' && answer.optionIds.length > 1) return { ok: false, reason: 'too_many_options' };
+    // PL: Jednokrotny wybór i skala 1–5 przyjmują jedną odpowiedź. Wypisane wprost, żeby nowy typ nie dostał wielu odpowiedzi po cichu.
+    // EN: A single choice and a 1–5 scale take one answer. Listed explicitly, so a new type does not get several answers silently.
+    const isSingle = question.type === 'single_choice' || question.type === 'scale_1_5';
+    if (isSingle && answer.optionIds.length > 1) return { ok: false, reason: 'too_many_options' };
     // PL: Zbiór wybranych musi mieć tyle samo elementów co lista, inaczej ten sam numer przyszedł dwa razy.
     // EN: The set of picked ids must have as many items as the list, otherwise the same id came twice.
     if (new Set(answer.optionIds).size !== answer.optionIds.length) return { ok: false, reason: 'duplicate_option' };
