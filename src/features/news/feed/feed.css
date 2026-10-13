@@ -212,6 +212,18 @@
   gap: 16px;
 }
 
+/* PL: Podpis autora i stopka „Redakcja gazetki” pod treścią wpisu.
+   EN: The author's signature and the "Redakcja gazetki" footer under the entry content. */
+.news-entry__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
 /* PL: Treść wpisu: akapity, nagłówki, listy, cytat i linki.
    EN: The entry content: paragraphs, headings, lists, the quote and links. */
 .news-content {

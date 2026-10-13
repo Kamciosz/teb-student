@@ -14,3 +14,7 @@ export type Lesson = { start: string; end: string };
 // PL: Plan lekcji tak samo dla każdego dnia roboczego (poniedziałek–piątek). Lista ma być posortowana rosnąco i bez nakładania się. Przerwy nie trzeba wpisywać: to odstępy między lekcjami. Format, nie dane: { start: '08:00', end: '08:45' }.
 // EN: The lesson plan, the same for every working day (Monday–Friday). The list must be sorted ascending and must not overlap. Breaks need no entry: they are the gaps between lessons. Format, not data: { start: '08:00', end: '08:45' }.
 export const BELL_PLAN: readonly Lesson[] = [];
+
+// PL: Plan skrócony, który Samorząd włącza na wybrany dzień (lekcje skrócone). Pusty, bo godziny poda szkoła. TO_AGREE: godziny planu skróconego uzgadniamy ze szkołą; dopóki są puste, dzień skrócony nie pokazuje licznika.
+// EN: The shortened plan the Student Council turns on for a chosen day (shortened lessons). Empty, because the school will provide the hours. TO_AGREE: the shortened plan hours are agreed with the school; while they are empty, a shortened day shows no countdown.
+export const SHORTENED_BELL_PLAN: readonly Lesson[] = [];
