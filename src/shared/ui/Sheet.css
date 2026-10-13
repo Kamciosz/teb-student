@@ -1,0 +1,54 @@
+/*
+ * PL: Arkusz od dołu. Nie ustawiamy display na .ui-sheet, bo wtedy przeglądarka przestałaby go chować, gdy jest zamknięty.
+ *     Wysokość liczymy w vh (nie dvh), bo tak jest w reszcie projektu ze względu na iOS 15.
+ * EN: The sheet from the bottom. We do not set display on .ui-sheet, otherwise the browser would stop hiding it when closed.
+ *     The height is counted in vh (not dvh), as in the rest of the project because of iOS 15.
+ */
+
+/* PL: Okno przyklejone do dołu, pełna szerokość w wąskim ekranie, zaokrąglone tylko góra. Bez marginesów przeglądarki.
+   EN: The window pinned to the bottom, full width on a narrow screen, rounded only at the top. No browser margins. */
+.ui-sheet {
+  inset: auto 0 0 0;
+  margin: 0 auto;
+  width: min(100%, 520px);
+  max-height: 85vh;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background: var(--tile);
+  color: var(--ink);
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+
+/* PL: Tło za oknem: kolor z palety, mocno przyciemnione, żeby treść za nim była nieczytelna.
+   EN: The backdrop behind the window: a palette color, strongly dimmed, so the content behind is unreadable. */
+.ui-sheet::backdrop {
+  background: var(--bg);
+  opacity: 0.7;
+}
+
+/* PL: Wnętrze arkusza jest kolumną z odstępami; min-width: 0 pozwala zwęzić się przy 320 px.
+   EN: The inside of the sheet is a column with gaps; min-width: 0 lets it narrow at 320 px. */
+.ui-sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 20px;
+}
+
+/* PL: Tytuł arkusza: duży, pogrubiony.
+   EN: The sheet title: large and bold. */
+.ui-sheet-title {
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+/* PL: Przy ograniczeniu ruchu okno nie wjeżdża animacją.
+   EN: With reduced motion the window does not slide in. */
+@media (prefers-reduced-motion: reduce) {
+  .ui-sheet {
+    transition: none;
+  }
+}

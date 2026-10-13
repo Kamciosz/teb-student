@@ -8,6 +8,7 @@
  * @used_by src/features/news/admin/NewsAdminScreen.tsx::EntryTile
  */
 
+import { Link } from 'react-router';
 import type { PanelEntry } from './api';
 import { Icon } from './icons';
 import { SCREEN, TO_AGREE } from './texts';
@@ -59,11 +60,16 @@ export function EntryTile({ entry, isLocked, onPublish, onDelete }: EntryTilePro
       </div>
       <h2 className="na-title">{entry.title}</h2>
       <div className="na-actions">
-        {/* PL: Szkic można opublikować, opublikowanego już nie. EN: A draft can be published, a published entry cannot. */}
+        {/* PL: Szkic można edytować i opublikować, opublikowanego już nie. EN: A draft can be edited and published, a published entry cannot. */}
         {isDraft ? (
-          <button type="button" className="na-btn" disabled={isLocked} aria-label={TO_AGREE.actionName(SCREEN.publish, entry.title)} onClick={onPublish}>
-            <Icon name="send" />{SCREEN.publish}
-          </button>
+          <>
+            <Link className="na-btn na-btn-outline" to={`/news/editor/${entry.id}`} aria-label={TO_AGREE.actionName(TO_AGREE.edit, entry.title)}>
+              <Icon name="pencil" />{TO_AGREE.edit}
+            </Link>
+            <button type="button" className="na-btn" disabled={isLocked} aria-label={TO_AGREE.actionName(SCREEN.publish, entry.title)} onClick={onPublish}>
+              <Icon name="send" />{SCREEN.publish}
+            </button>
+          </>
         ) : null}
         <button type="button" className="na-btn na-btn-outline" disabled={isLocked} aria-label={TO_AGREE.actionName(TO_AGREE.delete, entry.title)} onClick={onDelete}>
           <Icon name="trash-2" />{TO_AGREE.delete}
