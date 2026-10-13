@@ -1,5 +1,5 @@
 /**
- * PL: Test adresów podtoru 5a na prawdziwej bazie D1 i z prawdziwym logowaniem kodem (uczeń loguje się przez router z drzwi modułu auth): lista i szczegóły bez liczników głosów, zapis głosu, drugi głos tego samego ucznia (409, liczniki bez zmian), ankieta zakończona (410), złe odpowiedzi (400), brak sesji (401) i brak ankiety (404). Tabele ze schematu zakłada vitest.config.ts, a test wkłada własne wiersze z odległymi datami, więc nie zależy od dnia uruchomienia.
+ * PL: Test adresów podtoru 5a na prawdziwej bazie D1 i z prawdziwym logowaniem kodem (uczeń loguje się przez router z drzwi modułu auth): lista i szczegóły bez liczników głosów, zapis głosu, drugi głos tego samego ucznia (409, liczniki bez zmian), ankieta zakończona (410), złe odpowiedzi (400), krótka odpowiedź (tekst zapisany przycięty, nigdy nie wraca do ucznia), brak sesji (401) i brak ankiety (404). Tabele ze schematu zakłada vitest.config.ts, a test wkłada własne wiersze z odległymi datami, więc nie zależy od dnia uruchomienia.
  * EN: Test of the subtrack 5a routes on a real D1 database and with real code sign-in (the student signs in through the router from the auth module door): the list and the details without vote counters, writing a vote, a second vote from the same student (409, counters unchanged), an ended survey (410), bad answers (400), no session (401) and no survey (404). The tables from the schema are created by vitest.config.ts, and the test inserts its own rows with distant dates, so it does not depend on the day it runs.
  *
  * @author Jakub
@@ -22,9 +22,12 @@ import { Hono } from 'hono';
 // PL: Klient bazy do wkładania wierszy testowych.
 // EN: The database client for inserting test rows.
 import { drizzle } from 'drizzle-orm/d1';
+// PL: Porównanie kolumny z wartością w zapytaniu.
+// EN: Comparing a column with a value in a query.
+import { eq } from 'drizzle-orm';
 // PL: Tabele ankiet.
 // EN: The survey tables.
-import { surveyOptions, surveyParticipation, surveyQuestions, surveys } from '../../db/schema/surveys';
+import { surveyOptions, surveyParticipation, surveyQuestions, surveyTextAnswers, surveys } from '../../db/schema/surveys';
 // PL: Router logowania kodem z drzwi modułu auth, żeby zalogować ucznia tak jak w aplikacji.
 // EN: The code sign-in router from the auth module door, to sign a student in the way the app does.
 import { authEmailApp } from '../../auth';
@@ -121,8 +124,8 @@ async function readCounters(): Promise<Record<string, number>> {
   return Object.fromEntries(rows.map((row) => [row.id, row.votes]));
 }
 
-// PL: Ankiety testowe: trwająca do 2099 roku (bez godziny), zakończona w 2020, dwie z godziną zamknięcia: przed nią (2099) i po niej (2020), trwająca z pytaniem wielokrotnego wyboru oraz trwająca ze skalą 1–5.
-// EN: Test surveys: one running until 2099 (no hour), one ended in 2020, two with a closing hour: one before it (2099) and one after it (2020), a running one with a multiple-choice question, and a running one with a 1–5 scale.
+// PL: Ankiety testowe: trwająca do 2099 roku (bez godziny), zakończona w 2020, dwie z godziną zamknięcia: przed nią (2099) i po niej (2020), trwająca z pytaniem wielokrotnego wyboru, trwająca ze skalą 1–5 oraz trwająca z pytaniem krótkiej odpowiedzi.
+// EN: Test surveys: one running until 2099 (no hour), one ended in 2020, two with a closing hour: one before it (2099) and one after it (2020), a running one with a multiple-choice question, a running one with a 1–5 scale, and a running one with a short-answer question.
 beforeAll(async () => {
   await db.insert(surveys).values([
     { id: 'open', label: 'Test', title: 'Trwająca', endsOn: '2099-12-31', closesAt: null },
@@ -131,6 +134,7 @@ beforeAll(async () => {
     { id: 'godzina-po', label: null, title: 'Po godzinie', endsOn: '2099-12-31', closesAt: new Date('2020-06-01T10:00:00Z') },
     { id: 'wielokrotny', label: null, title: 'Wielokrotny wybór', endsOn: '2099-12-31', closesAt: null },
     { id: 'skala', label: null, title: 'Skala 1–5', endsOn: '2099-12-31', closesAt: null },
+    { id: 'krotka', label: null, title: 'Krótka odpowiedź', endsOn: '2099-12-31', closesAt: null },
   ]);
   await db.insert(surveyQuestions).values([
     { id: 'open-1', surveyId: 'open', position: 1, prompt: 'Pierwsze?' },
@@ -140,6 +144,7 @@ beforeAll(async () => {
     { id: 'godzina-po-1', surveyId: 'godzina-po', position: 1, prompt: 'Po godzinie?' },
     { id: 'wielokrotny-1', surveyId: 'wielokrotny', position: 1, prompt: 'Które?', type: 'multiple_choice' },
     { id: 'skala-1', surveyId: 'skala', position: 1, prompt: 'Jak oceniasz?', type: 'scale_1_5' },
+    { id: 'krotka-1', surveyId: 'krotka', position: 1, prompt: 'Co byś zmienił?', type: 'short_text' },
   ]);
   await db.insert(surveyOptions).values([
     { id: 'open-1-a', questionId: 'open-1', position: 1, label: 'A' },
@@ -189,7 +194,7 @@ describe('odczyt / reading', () => {
 
     expect(response.status).toBe(200);
     expect(body.active.find((survey) => survey.id === 'open')).toMatchObject({ questionCount: 2, hasVoted: false });
-    expect(body.active.map((survey) => survey.id).sort()).toEqual(['godzina-przed', 'open', 'skala', 'wielokrotny']);
+    expect(body.active.map((survey) => survey.id).sort()).toEqual(['godzina-przed', 'krotka', 'open', 'skala', 'wielokrotny']);
     expect(body.ended.map((survey) => survey.id).sort()).toEqual(['closed', 'godzina-po']);
     expect(text).not.toContain('votes');
   });
@@ -284,6 +289,76 @@ describe('zapis głosu / writing a vote', () => {
     for (const row of rows) expect(Object.keys(row).sort()).toEqual(['surveyId', 'userId']);
   });
 
+});
+
+// PL: Krótka odpowiedź: tekst zapisany przycięty, drugi głos nie dopisuje tekstu, a tekst nie wraca do ucznia w żadnej odpowiedzi.
+// EN: Short answer: the text saved trimmed, a second vote adds no text, and the text never goes back to a student in any response.
+describe('krótka odpowiedź / short answer', () => {
+  // PL: Tekst, którego szukamy w odpowiedziach i w bazie.
+  // EN: The text we look for in the responses and in the database.
+  const MARKER = 'Tekst-do-ukrycia-42';
+
+  it('zapisuje tekst przycięty z obu stron / saves the text trimmed on both ends', async () => {
+    const response = await call('/krotka/answers', 'tekst1', { answers: [{ questionId: 'krotka-1', optionIds: [], text: `  ${MARKER}  ` }] });
+    const rows = await db.select().from(surveyTextAnswers).where(eq(surveyTextAnswers.questionId, 'krotka-1'));
+
+    expect(response.status).toBe(201);
+    expect(rows.map((row) => row.text)).toContain(MARKER);
+    expect(rows.map((row) => row.text)).not.toContain(`  ${MARKER}  `);
+  });
+
+  it('drugi głos daje 409 i nie dopisuje tekstu / a second vote gives 409 and adds no text', async () => {
+    const before = (await db.select().from(surveyTextAnswers)).length;
+    const response = await call('/krotka/answers', 'tekst1', { answers: [{ questionId: 'krotka-1', optionIds: [], text: 'Drugi-tekst' }] });
+    const rows = await db.select().from(surveyTextAnswers);
+
+    expect(response.status).toBe(409);
+    expect(rows.length).toBe(before);
+    expect(rows.map((row) => row.text)).not.toContain('Drugi-tekst');
+  });
+
+  it('tekst nie wraca do ucznia: ani w odpowiedzi na zapis, ani w liście, ani w szczegółach / the text never goes back to a student: not in the write response, the list or the details', async () => {
+    const write = await call('/krotka/answers', 'tekst2', { answers: [{ questionId: 'krotka-1', optionIds: [], text: `${MARKER}-2` }] });
+    const responses = [
+      await write.text(),
+      await (await call('/', 'tekst3')).text(),
+      await (await call('/krotka', 'tekst3')).text(),
+      await (await call('/krotka', 'tekst2')).text(),
+    ];
+
+    expect(write.status).toBe(201);
+    for (const text of responses) expect(text).not.toContain(MARKER);
+  });
+
+  it('tekst jest zapisany bez numeru ucznia i czasu / the text is stored without a student id or time', async () => {
+    const rows = await db.select().from(surveyTextAnswers);
+
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) expect(Object.keys(row).sort()).toEqual(['id', 'questionId', 'text']);
+  });
+
+  it('przyjmuje dokładnie 200 znaków, a 201 odrzuca / accepts exactly 200 characters and rejects 201', async () => {
+    const ok = await call('/krotka/answers', 'dlugi-ok', { answers: [{ questionId: 'krotka-1', optionIds: [], text: 'a'.repeat(200) }] });
+    const tooLong = await call('/krotka/answers', 'dlugi-za-duzo', { answers: [{ questionId: 'krotka-1', optionIds: [], text: 'a'.repeat(201) }] });
+
+    expect(ok.status).toBe(201);
+    expect(tooLong.status).toBe(400);
+  });
+
+  it.each([
+    { name: 'same spacje / only spaces', body: { answers: [{ questionId: 'krotka-1', optionIds: [], text: '   ' }] } },
+    { name: 'brak tekstu / no text', body: { answers: [{ questionId: 'krotka-1', optionIds: [] }] } },
+    { name: 'odpowiedź do wyboru / an option', body: { answers: [{ questionId: 'krotka-1', optionIds: ['open-1-a'] }] } },
+    { name: 'tekst za długi / text too long', body: { answers: [{ questionId: 'krotka-1', optionIds: [], text: 'b'.repeat(201) }] } },
+  ])('krótka odpowiedź: $name, daje 400 i niczego nie zapisuje / short answer: $name gives 400 and writes nothing', async ({ body }) => {
+    const textsBefore = (await db.select().from(surveyTextAnswers)).length;
+    const participationBefore = (await db.select().from(surveyParticipation)).length;
+    const response = await call('/krotka/answers', 'krotka-zle', body);
+
+    expect(response.status).toBe(400);
+    expect((await db.select().from(surveyTextAnswers)).length).toBe(textsBefore);
+    expect((await db.select().from(surveyParticipation)).length).toBe(participationBefore);
+  });
 });
 
 // PL: Odrzucenia: ankieta zakończona i złe odpowiedzi nic nie zapisują.
