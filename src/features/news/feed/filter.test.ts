@@ -27,7 +27,7 @@ import type { NewsEntrySummary, NewsType } from './types';
  * @returns PL: wpis. EN: an entry.
  */
 function entry(id: string, type: NewsType): NewsEntrySummary {
-  return { id, type, source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', title: id, excerpt: '' };
+  return { id, type, source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', title: id, excerpt: '', pinned: false };
 }
 
 // PL: Grupa testów filtra.

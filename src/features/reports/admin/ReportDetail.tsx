@@ -1,12 +1,13 @@
 /**
- * PL: Ekrany 6.4b i 6.4c: szczegół zgłoszenia, autor albo napis o anonimowości, pasek wyboru etapu, historia i „Zapisz etap”. Przycisk jest nieaktywny, dopóki etap się nie zmienił, i bez internetu. Błąd zapisu zostawia przycisk aktywny.
- * EN: Screens 6.4b and 6.4c: the report detail, the author or the anonymity label, the stage segmented control, the history and "Zapisz etap". The button is disabled until the stage changes, and offline. A save error leaves the button active.
+ * PL: Ekrany 6.4b i 6.4c: szczegół zgłoszenia, autor albo napis o anonimowości, pasek wyboru etapu, opcjonalna odpowiedź dla autora (do 500 znaków, z licznikiem), historia i „Zapisz etap”. Przycisk jest nieaktywny, dopóki etap się nie zmienił, i bez internetu. Błąd zapisu zostawia przycisk aktywny i wpisaną odpowiedź.
+ * EN: Screens 6.4b and 6.4c: the report detail, the author or the anonymity label, the stage segmented control, the optional answer for the author (up to 500 characters, with a counter), the history and "Zapisz etap". The button is disabled until the stage changes, and offline. A save error leaves the button active and the typed answer in place.
  *
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/reports/admin/queries.ts::useAdminReport
  * @uses src/features/reports/admin/queries.ts::useChangeStage
  * @uses src/features/reports/admin/queries.ts::useIsOnline
+ * @uses src/features/reports/admin/reportLabels.ts::STAGE_NOTE_MAX_LENGTH
  * @used_by src/features/reports/admin/ReportsAdminScreen.tsx::ReportDetail
  */
 
@@ -18,6 +19,7 @@ import { PanelTop } from './PanelTop';
 import { StagePicker } from './StagePicker';
 import type { AdminReport, AdminStudent, StageChange } from './api';
 import { useAdminReport, useChangeStage, useIsOnline } from './queries';
+import { STAGE_NOTE_MAX_LENGTH } from './reportLabels';
 import { categoryLabel, formatShortDate, placeText, stageLabel } from './reportView';
 
 /**
@@ -54,21 +56,41 @@ function AuthorTile({ isAnonymous, student }: { isAnonymous: boolean; student: A
 }
 
 /**
- * PL: Rysuje historię etapów: etap i data, od najnowszego.
- * EN: Draws the stage history: the stage and the date, newest first.
+ * PL: Rysuje pole „Odpowiedź dla autora” z licznikiem znaków. Pole ma `maxLength`, więc nie przyjmie więcej niż limit; licznik pokazuje, ile znaków jest wpisanych. Nazwa pola i licznik są do uzgodnienia z zespołem.
+ * EN: Draws the "Odpowiedź dla autora" field with a character counter. The field has `maxLength`, so it does not take more than the limit; the counter shows how many characters are typed. The field name and the counter are to be agreed with the team.
+ *
+ * @param props - PL: bieżący tekst i funkcja, która go zmienia. EN: the current text and the function that changes it.
+ * @returns PL: drzewo elementów pola. EN: the tree of field elements.
+ */
+function StageNote({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  // PL: Licznik jest opisem pola dla czytnika ekranu (aria-describedby), więc wiąże go z napisem „n/500”.
+  // EN: The counter is the field's description for the screen reader (aria-describedby), so it ties the field to the "n/500" text.
+  return (
+    <>
+      <label htmlFor="stage-note" className="ra-label">Odpowiedź dla autora</label>
+      <textarea id="stage-note" className="ra-note" value={value} maxLength={STAGE_NOTE_MAX_LENGTH} aria-describedby="stage-note-count" onChange={(event) => onChange(event.target.value)} />
+      <p id="stage-note-count" className="ra-small">{value.length}/{STAGE_NOTE_MAX_LENGTH}</p>
+    </>
+  );
+}
+
+/**
+ * PL: Rysuje historię etapów: etap i data, od najnowszego. Gdy przy zmianie etapu była odpowiedź dla autora, pokazuje ją pod wpisem, na osobnym wierszu.
+ * EN: Draws the stage history: the stage and the date, newest first. When a change had an answer for the author, it shows it under the entry, on its own line.
  *
  * @param props - PL: wiersze historii. EN: the history rows.
  * @returns PL: drzewo elementów historii. EN: the tree of history elements.
  */
 function History({ rows }: { rows: StageChange[] }) {
-  // PL: Jeden wiersz na etap, od najnowszego (tak je daje serwer).
-  // EN: One row per stage, newest first (as the server gives them).
+  // PL: Jeden wiersz na etap, od najnowszego (tak je daje serwer). Odpowiedź pokazujemy tylko, gdy jest niepusta; wpis zapisany przed zmianą nie ma tego pola, więc `undefined` też nie pokaże nic.
+  // EN: One row per stage, newest first (as the server gives them). We show the answer only when it is non-empty; an entry saved before this change has no such field, so `undefined` shows nothing either.
   return (
     <ul className="ra-history" aria-label="Historia">
       {rows.map((row) => (
         <li key={`${row.stage}-${row.changedAt}`}>
           <span>{stageLabel(row.stage)}</span>
           <span className="ra-small">{formatShortDate(row.changedAt)}</span>
+          {row.note ? <p className="ra-history-note"><span className="ra-small">Odpowiedź dla autora:</span> {row.note}</p> : null}
         </li>
       ))}
     </ul>
@@ -107,26 +129,31 @@ function DetailBody({ report, history, student }: { report: AdminReport; history
   // PL: Wybrany etap to stan ekranu; `null` znaczy, że Samorząd jeszcze nic nie wybrał.
   // EN: The chosen stage is the screen state; `null` means the Student Council has not chosen anything yet.
   const [picked, setPicked] = useState<string | null>(null);
+  // PL: Odpowiedź dla autora, wpisana przed zapisem; po udanym zapisie znika.
+  // EN: The answer for the author, typed before saving; it clears after a successful save.
+  const [note, setNote] = useState('');
   const save = useChangeStage(report.id);
   const isOnline = useIsOnline();
   // PL: Zapis jest możliwy tylko przy zmienionym etapie, z internetem i gdy poprzedni zapis nie trwa.
   // EN: Saving is possible only with a changed stage, with internet and when the previous save is not running.
   const stage = picked ?? report.stage;
   const canSave = stage !== report.stage && isOnline && !save.isPending;
-  // PL: Nagłówek, autor, pasek wyboru, historia i dolny przycisk z uwagami nad nim.
-  // EN: The header, the author, the segmented control, the history and the bottom button with the notes above it.
+  // PL: Nagłówek, autor, pasek wyboru, odpowiedź, historia i dolny przycisk z uwagami nad nim.
+  // EN: The header, the author, the segmented control, the answer, the history and the bottom button with the notes above it.
   return (
     <>
       <ReportHead report={report} />
       <AuthorTile isAnonymous={report.isAnonymous} student={student} />
       <h3 className="ra-label">Etap</h3>
       <StagePicker value={stage} onChange={setPicked} />
+      <StageNote value={note} onChange={setNote} />
       <h3 className="ra-label">Historia</h3>
       <History rows={history} />
       <div className="ra-cta">
         {isOnline ? null : <p className="ra-small">Zmiana etapu wymaga internetu.</p>}
         {save.isError ? <Notice text="Nie udało się zapisać etapu. Spróbuj ponownie za chwilę." /> : null}
-        <button type="button" className="ra-btn" disabled={!canSave} onClick={() => save.mutate(stage, { onSuccess: () => setPicked(null) })}>
+        {/* PL: Pusta albo same spacje to brak odpowiedzi (`null`). EN: Empty or only spaces means no answer (`null`). */}
+        <button type="button" className="ra-btn" disabled={!canSave} onClick={() => save.mutate({ stage, note: note.trim() || null }, { onSuccess: () => { setPicked(null); setNote(''); } })}>
           <Icon name="check" />Zapisz etap
         </button>
       </div>
