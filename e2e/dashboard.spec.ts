@@ -29,6 +29,29 @@ const FULL = {
 // EN: An empty answer: no tile has data.
 const EMPTY = { important: null, announcements: [], survey: null, report: null };
 
+// PL: Adres modułu planu dzwonków, tak jak Vite podaje go w przeglądarce (ten sam co w e2e/bell.spec.ts).
+// EN: The address of the bell plan module, as Vite serves it in the browser (the same as in e2e/bell.spec.ts).
+const PLAN_MODULE = '**/src/features/bell/bellPlan.ts*';
+
+// PL: Treść modułu z PRZYKŁADOWYM planem (nie prawdziwy plan szkoły): lekcje 08:00–08:45, 08:55–09:40, 09:50–10:35.
+// EN: The module body with an EXAMPLE plan (not the school's real plan): lessons 08:00–08:45, 08:55–09:40, 09:50–10:35.
+const EXAMPLE_PLAN_JS = `export const BELL_PLAN = [
+  { start: '08:00', end: '08:45' },
+  { start: '08:55', end: '09:40' },
+  { start: '09:50', end: '10:35' },
+];
+export const SHORTENED_BELL_PLAN = [];`;
+
+/**
+ * PL: Podstawia plan przykładowy w miejsce modułu planu, żeby pulpit widział niepusty plan.
+ * EN: Stubs the example plan in place of the plan module, so the dashboard sees a non-empty plan.
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ */
+async function useExamplePlan(page: Page): Promise<void> {
+  await page.route(PLAN_MODULE, (route) => route.fulfill({ contentType: 'text/javascript', body: EXAMPLE_PLAN_JS }));
+}
+
 /**
  * PL: Podstawia odpowiedź serwera pulpitu pod /api/dashboard.
  * EN: Stubs the dashboard server answer under /api/dashboard.
@@ -71,6 +94,33 @@ test('pusty plan: nagłówek bez licznika w godzinie lekcji / empty plan: the he
   const bell = page.getByLabel('Licznik do dzwonka');
   await expect(bell).toContainText('Brak planu dzwonków');
   await expect(bell).not.toContainText(/\d+\s*min/);
+});
+
+// PL: Z podstawionym planem w godzinie lekcji (09:10 w Warszawie, lekcja do 09:40) licznik pokazuje 30 minut. To też dowodzi, że podstawienie planu działa.
+// EN: With the stubbed plan during a lesson hour (09:10 in Warsaw, the lesson ends at 09:40) the countdown shows 30 minutes. This also proves that the plan stub works.
+test('z planem w lekcji licznik pokazuje minuty / with a plan during a lesson the countdown shows the minutes', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
+  await useExamplePlan(page);
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('30');
+  await expect(bell).toContainText('do dzwonka');
+  await expect(bell).not.toContainText('Brak planu dzwonków');
+});
+
+// PL: Z podstawionym planem po ostatniej lekcji (14:00 w Warszawie) licznik nie ma stanu, więc pokazuje „Po lekcjach”, a nie „Brak planu dzwonków”.
+// EN: With the stubbed plan after the last lesson (14:00 in Warsaw) the countdown has no state, so it shows "Po lekcjach", not "Brak planu dzwonków".
+test('z planem po lekcjach nagłówek mówi „Po lekcjach” / with a plan after the lessons the header says "Po lekcjach"', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-19T12:00:00Z'));
+  await useExamplePlan(page);
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('Po lekcjach');
+  await expect(bell).not.toContainText('Brak planu dzwonków');
 });
 
 // PL: Każdy kafelek prowadzi do właściwego ekranu.
