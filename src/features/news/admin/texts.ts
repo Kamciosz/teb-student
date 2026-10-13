@@ -31,6 +31,8 @@ export const TO_AGREE = {
   listLabel: 'Wpisy',
   draft: 'Szkic',
   published: 'Opublikowany',
+  review: 'Do korekty',
+  openReview: 'Otwórz korektę',
   delete: 'Usuń',
   edit: 'Edytuj',
   emptyTitle: 'Nie ma jeszcze wpisów',
@@ -43,6 +45,7 @@ export const TO_AGREE = {
     title: 'Usunąć wpis?',
     draftHint: (title: string) => `Szkic „${title}” zniknie. Tego nie da się cofnąć.`,
     publishedHint: (title: string) => `Uczniowie przestaną widzieć wpis „${title}”. Tego nie da się cofnąć.`,
+    reviewHint: (title: string) => `Wpis „${title}” czekający na korektę zniknie. Tego nie da się cofnąć.`,
     confirm: 'Usuń wpis',
   },
   /** PL: Nazwa przycisku dla czytnika ekranu: czynność i tytuł wpisu. EN: The button name for a screen reader: the action and the entry title. */

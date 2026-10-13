@@ -13,11 +13,11 @@
 /** PL: Adres routera serwera. EN: The server router address. */
 const API_URL = '/api/news/admin';
 
-/** PL: Wpis na liście panelu, bez treści (worker/news/admin/queries.ts::PanelEntry). EN: An entry on the panel list, without the content (worker/news/admin/queries.ts::PanelEntry). */
+/** PL: Wpis na liście panelu, bez treści (worker/news/admin/queries.ts::PanelEntry). Stan „in_review” to wpis w korekcie. EN: An entry on the panel list, without the content (worker/news/admin/queries.ts::PanelEntry). The "in_review" state is an entry in review. */
 export type PanelEntry = {
   id: string;
   type: string;
-  status: 'draft' | 'published';
+  status: 'draft' | 'in_review' | 'published';
   title: string;
   source: string;
   publishedAt: string | null;

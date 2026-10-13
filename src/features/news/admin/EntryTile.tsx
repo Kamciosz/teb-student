@@ -1,6 +1,6 @@
 /**
- * PL: Kafel jednego wpisu na liście panelu: znacznik typu, znacznik stanu (szkic albo opublikowany), źródło z datą, tytuł i przyciski „Opublikuj” (tylko szkic) oraz „Usuń”. Kafel wpisu ucznia (podtor 3a) nie jest wystawiony przez drzwi modułu, więc to własny kafel panelu, nie podgląd wpisu.
- * EN: The tile of one entry on the panel list: the type tag, the status tag (draft or published), the source with the date, the title and the "Opublikuj" (draft only) and "Usuń" buttons. The student entry tile (subtrack 3a) is not exposed through the module door, so this is the panel's own tile, not an entry preview.
+ * PL: Kafel jednego wpisu na liście panelu: znacznik typu, znacznik stanu (szkic, do korekty albo opublikowany), źródło z datą, tytuł i przyciski. Szkic ma „Edytuj” i „Opublikuj”, wpis w korekcie ma „Otwórz korektę” (zatwierdza go inny redaktor w kreatorze, podtor 3b), opublikowany nie ma żadnego. Każdy wpis ma „Usuń”. Kafel wpisu ucznia (podtor 3a) nie jest wystawiony przez drzwi modułu, więc to własny kafel panelu, nie podgląd wpisu.
+ * EN: The tile of one entry on the panel list: the type tag, the status tag (draft, in review or published), the source with the date, the title and the buttons. A draft has "Edytuj" and "Opublikuj", an entry in review has "Otwórz korektę" (another editor approves it in the wizard, subtrack 3b), a published entry has none. Every entry has "Usuń". The student entry tile (subtrack 3a) is not exposed through the module door, so this is the panel's own tile, not an entry preview.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -41,40 +41,73 @@ function shortDate(iso: string): string {
 }
 
 /**
+ * PL: Zamienia stan wpisu na znacznik na kaflu.
+ * EN: Turns the entry state into the tag on the tile.
+ *
+ * @param status - PL: stan wpisu z serwera. EN: the entry state from the server.
+ * @returns PL: tekst znacznika. EN: the tag text.
+ */
+function statusLabel(status: PanelEntry['status']): string {
+  // PL: Trzy stany, trzy napisy. Wpis w korekcie nie może wyglądać jak opublikowany.
+  // EN: Three states, three labels. An entry in review must not look published.
+  if (status === 'draft') return TO_AGREE.draft;
+  return status === 'in_review' ? TO_AGREE.review : TO_AGREE.published;
+}
+
+/**
+ * PL: Rysuje rząd przycisków kafla. Każdy stan ma swoje czynności, a „Usuń” jest zawsze.
+ * EN: Draws the row of tile buttons. Each state has its own actions, and "Usuń" is always there.
+ *
+ * @param props - PL: wpis i funkcje przycisków. EN: the entry and the button functions.
+ * @returns PL: drzewo elementów rzędu. EN: the tree of row elements.
+ */
+function TileActions({ entry, isLocked, onPublish, onDelete }: EntryTileProps) {
+  // PL: Szkic można edytować i opublikować. Wpis w korekcie tylko otworzyć, bo zmienić go może tylko kreator. Opublikowanego nie da się już ruszyć.
+  // EN: A draft can be edited and published. An entry in review can only be opened, because only the wizard changes it. A published entry cannot be touched any more.
+  return (
+    <div className="na-actions">
+      {entry.status === 'draft' ? (
+        <>
+          <Link className="na-btn na-btn-outline" to={`/news/editor/${entry.id}`} aria-label={TO_AGREE.actionName(TO_AGREE.edit, entry.title)}>
+            <Icon name="pencil" />{TO_AGREE.edit}
+          </Link>
+          <button type="button" className="na-btn" disabled={isLocked} aria-label={TO_AGREE.actionName(SCREEN.publish, entry.title)} onClick={onPublish}>
+            <Icon name="send" />{SCREEN.publish}
+          </button>
+        </>
+      ) : null}
+      {entry.status === 'in_review' ? (
+        <Link className="na-btn na-btn-outline" to={`/news/editor/${entry.id}`} aria-label={TO_AGREE.actionName(TO_AGREE.openReview, entry.title)}>
+          <Icon name="pencil" />{TO_AGREE.openReview}
+        </Link>
+      ) : null}
+      <button type="button" className="na-btn na-btn-outline" disabled={isLocked} aria-label={TO_AGREE.actionName(TO_AGREE.delete, entry.title)} onClick={onDelete}>
+        <Icon name="trash-2" />{TO_AGREE.delete}
+      </button>
+    </div>
+  );
+}
+
+/**
  * PL: Rysuje kafel wpisu.
  * EN: Draws the entry tile.
  *
  * @param props - PL: wpis i funkcje przycisków. EN: the entry and the button functions.
  * @returns PL: drzewo elementów kafla. EN: the tree of tile elements.
  */
-export function EntryTile({ entry, isLocked, onPublish, onDelete }: EntryTileProps) {
-  const isDraft = entry.status === 'draft';
+export function EntryTile(props: EntryTileProps) {
+  const { entry } = props;
   // PL: Znaczniki, źródło z datą (szkic nie ma daty), tytuł i rząd przycisków.
   // EN: The tags, the source with the date (a draft has no date), the title and the row of buttons.
   return (
     <li className="na-tile">
       <div className="na-tile-head">
         <span className="na-tag">{SCREEN.types[entry.type] ?? entry.type}</span>
-        <span className="na-tag na-tag-status">{isDraft ? TO_AGREE.draft : TO_AGREE.published}</span>
+        <span className="na-tag na-tag-status">{statusLabel(entry.status)}</span>
         <span className="na-small">{entry.publishedAt ? `${entry.source} · ${shortDate(entry.publishedAt)}` : entry.source}</span>
       </div>
       <h2 className="na-title">{entry.title}</h2>
-      <div className="na-actions">
-        {/* PL: Szkic można edytować i opublikować, opublikowanego już nie. EN: A draft can be edited and published, a published entry cannot. */}
-        {isDraft ? (
-          <>
-            <Link className="na-btn na-btn-outline" to={`/news/editor/${entry.id}`} aria-label={TO_AGREE.actionName(TO_AGREE.edit, entry.title)}>
-              <Icon name="pencil" />{TO_AGREE.edit}
-            </Link>
-            <button type="button" className="na-btn" disabled={isLocked} aria-label={TO_AGREE.actionName(SCREEN.publish, entry.title)} onClick={onPublish}>
-              <Icon name="send" />{SCREEN.publish}
-            </button>
-          </>
-        ) : null}
-        <button type="button" className="na-btn na-btn-outline" disabled={isLocked} aria-label={TO_AGREE.actionName(TO_AGREE.delete, entry.title)} onClick={onDelete}>
-          <Icon name="trash-2" />{TO_AGREE.delete}
-        </button>
-      </div>
+      <TileActions {...props} />
     </li>
   );
 }
