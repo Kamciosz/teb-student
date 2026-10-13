@@ -42,10 +42,11 @@ export class AlreadyVotedError extends Error {}
  * @param db - PL: baza. EN: the database.
  * @param userId - PL: numer ucznia (do oznaczenia wypełnionych). EN: the student id (to mark the filled ones).
  * @param today - PL: dzisiejsza data, RRRR-MM-DD. EN: today's date, YYYY-MM-DD.
+ * @param now - PL: ta sama chwila, z której wzięto today. EN: the same moment today was taken from.
  * @returns PL: lista trwających i zakończonych ankiet. EN: the list of running and ended surveys.
  * @throws PL: błąd bazy. EN: a database error.
  */
-export async function listSurveys(db: VoteDatabase, userId: string, today: string): Promise<SurveyList> {
+export async function listSurveys(db: VoteDatabase, userId: string, today: string, now: Date): Promise<SurveyList> {
   // PL: Wszystkie ankiety. Tabela jest mała (kilka ankiet w semestrze).
   // EN: All the surveys. The table is small (a few surveys a semester).
   const rows = await db.select().from(surveys);
@@ -71,6 +72,7 @@ export async function listSurveys(db: VoteDatabase, userId: string, today: strin
     questionCounts: new Map(counts.map((item) => [item.surveyId, item.total])),
     votedIds: new Set(voted.map((item) => item.surveyId)),
     today,
+    now,
   });
 }
 
