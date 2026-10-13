@@ -18,8 +18,8 @@ import { drizzle } from 'drizzle-orm/d1';
 import { env } from 'cloudflare:workers';
 // PL: Tabele i zestawy danych testowych.
 // EN: The tables and the test data sets.
-import { reports, reportStageChanges } from '../../db/schema/reports';
-import { REPORTS_SEED, REPORT_STAGE_CHANGES_SEED, SEED_STUDENT_ID } from '../../db/seed/reports';
+import { reportJoins, reports, reportStageChanges } from '../../db/schema/reports';
+import { REPORTS_SEED, REPORT_JOINS_SEED, REPORT_STAGE_CHANGES_SEED, SEED_STUDENT_ID } from '../../db/seed/reports';
 
 /**
  * PL: Przygotowuje czystą bazę: czyści tabele zgłoszeń i wpisuje dane testowe.
@@ -32,13 +32,16 @@ export async function resetDatabase(studentId: string = SEED_STUDENT_ID): Promis
   // PL: Wyczyść dane z poprzedniego testu. Historia ma klucz obcy, więc ginie razem ze zgłoszeniami.
   // EN: Clear the data of the previous test. The history has a foreign key, so it goes away with the reports.
   const db = drizzle(env.DB);
+  await db.delete(reportJoins);
   await db.delete(reportStageChanges);
   await db.delete(reports);
 
-  // PL: Wpisz dane: najpierw zgłoszenia, potem historia. Zgłoszenia ucznia z seedu przejmuje podany uczeń (zalogowany w teście); cudze zostają.
-  // EN: Insert the data: the reports first, then the history. The seed student's reports go to the given student (signed in the test); foreign ones stay.
+  // PL: Wpisz dane: najpierw zgłoszenia, potem historia i dołączenia. Zgłoszenia i dołączenia ucznia z seedu przejmuje podany uczeń (zalogowany w teście); cudze zostają.
+  // EN: Insert the data: the reports first, then the history and the joins. The seed student's reports and joins go to the given student (signed in the test); foreign ones stay.
   const rows = REPORTS_SEED.map((row) => (row.authorId === SEED_STUDENT_ID ? { ...row, authorId: studentId } : row));
+  const joins = REPORT_JOINS_SEED.map((row) => (row.userId === SEED_STUDENT_ID ? { ...row, userId: studentId } : row));
   await db.insert(reports).values(rows);
   await db.insert(reportStageChanges).values(REPORT_STAGE_CHANGES_SEED);
+  await db.insert(reportJoins).values(joins);
   return env.DB;
 }

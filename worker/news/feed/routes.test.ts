@@ -57,7 +57,7 @@ describe('GET /', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      entries: [{ id: 'e1', type: 'event', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', title: 'Turniej', excerpt: 'Zapisy do piątku.' }],
+      entries: [{ id: 'e1', type: 'event', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', title: 'Turniej', excerpt: 'Zapisy do piątku.', pinned: false }],
     });
   });
 
