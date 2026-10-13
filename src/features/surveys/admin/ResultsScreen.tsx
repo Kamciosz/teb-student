@@ -17,7 +17,8 @@ import { LockIcon, WifiOffIcon } from './icons';
 import { ErrorMessage, PanelNote, ScreenTop } from './PanelParts';
 import { fetchResultsCsv } from './surveyApi';
 import { useIsOnline, useSurveyResults } from './surveyQueries';
-import type { OptionResult, SurveyResults } from './types';
+import { TO_AGREE } from './texts';
+import type { OptionResult, QuestionResult, SurveyResults } from './types';
 
 /**
  * PL: Rysuje nagłówek wyników: etykieta „Ankieta”, tytuł i podpis (liczba pytań albo odpowiedzi z terminem).
@@ -134,6 +135,58 @@ function DownloadCsvButton({ surveyId }: { surveyId: string }) {
 }
 
 /**
+ * PL: Przy wielokrotnym wyborze pokazuje liczbę zaznaczeń (suma głosów wszystkich odpowiedzi) i dopisek, że uczeń mógł zaznaczyć kilka odpowiedzi. Przy jednokrotnym nic nie rysuje.
+ * EN: With multiple choice it shows the number of checked boxes (the sum of the votes of all options) and a note that the student could check several options. With single choice it draws nothing.
+ *
+ * @param props - PL: pytanie z wynikami. EN: the question with its results.
+ * @returns PL: notatka albo nic. EN: the note or nothing.
+ */
+function MultipleChoiceNote({ question }: { question: QuestionResult }) {
+  if (question.type !== 'multiple_choice') return null;
+  const checked = question.options.reduce((sum, option) => sum + option.votes, 0);
+  return (
+    <>
+      <p className="sa-small">{TO_AGREE.checkedCount(checked)}</p>
+      <p className="sa-small">{TO_AGREE.multipleNote}</p>
+    </>
+  );
+}
+
+/**
+ * PL: Przy skali 1–5 pokazuje średnią, jeśli serwer ją przysłał (dopiero od progu odpowiedzi i gdy ktoś głosował). Przy innych typach nic nie rysuje.
+ * EN: With the 1–5 scale it shows the average, if the server sent it (only from the response threshold and when somebody voted). With other types it draws nothing.
+ *
+ * @param props - PL: pytanie z wynikami. EN: the question with its results.
+ * @returns PL: notatka albo nic. EN: the note or nothing.
+ */
+function AverageNote({ question }: { question: QuestionResult }) {
+  if (question.average === undefined) return null;
+  return <p className="sa-small">{TO_AGREE.average(question.average)}</p>;
+}
+
+/**
+ * PL: Lista krótkich odpowiedzi jednego pytania: same teksty, bez procentów i bez autorów. Serwer już je posortował alfabetycznie.
+ * EN: The list of short answers of one question: the texts only, without percentages and without authors. The server has already sorted them alphabetically.
+ *
+ * @param props - PL: teksty odpowiedzi. EN: the answer texts.
+ * @returns PL: notatka i lista. EN: the note and the list.
+ */
+function TextAnswers({ texts }: { texts: string[] }) {
+  return (
+    <>
+      <p className="sa-small">{TO_AGREE.textsNote}</p>
+      <ul className="sa-tile sa-results">
+        {texts.map((text, place) => (
+          <li key={place} className="sa-result__label">
+            {text}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/**
  * PL: Rysuje ekran 6.5d dla jednego pytania. Przy kilku pytaniach „Następne pytanie” przełącza je, a „Wstecz” wraca do poprzedniego.
  * EN: Draws screen 6.5d for one question. With several questions "Następne pytanie" switches them, and "Wstecz" returns to the previous one.
  *
@@ -152,11 +205,17 @@ function QuestionResults({ results }: { results: SurveyResults }) {
       <ResultsHeader results={results} summary={describeResponses(results.responseCount)} />
       <p className="sa-label sa-label--tight">{`Pytanie ${index + 1}`}</p>
       <h2 className="sa-h2">{question.prompt}</h2>
-      <ul className="sa-tile sa-results">
-        {question.options.map((option, place) => (
-          <ResultBar key={place} letter={OPTION_LETTERS[place] ?? ''} option={option} />
-        ))}
-      </ul>
+      <MultipleChoiceNote question={question} />
+      <AverageNote question={question} />
+      {question.type === 'short_text' ? (
+        <TextAnswers texts={question.texts ?? []} />
+      ) : (
+        <ul className="sa-tile sa-results">
+          {question.options.map((option, place) => (
+            <ResultBar key={place} letter={question.type === 'scale_1_5' ? '' : OPTION_LETTERS[place] ?? ''} option={option} />
+          ))}
+        </ul>
+      )}
       <PanelNote icon={<LockIcon />} text="Wyniki są zbiorcze. Nie widać, kto co wybrał." />
       <DownloadCsvButton surveyId={results.id} />
       {index < questions.length - 1 ? (

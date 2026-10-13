@@ -14,7 +14,7 @@
 
 // PL: Funkcje testowe Vitest.
 // EN: Vitest test functions.
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // PL: Rysowanie do tekstu HTML, a router do linków w kafelkach.
 // EN: Rendering to an HTML string, and the router for the links in the tiles.
 import type { ReactElement } from 'react';
@@ -150,6 +150,17 @@ describe('AnnouncementsTile', () => {
 // PL: Test górnego rzędu.
 // EN: The top row test.
 describe('DashboardHeader', () => {
+  // PL: Czas przypięty do wtorku roboczego, bo w weekend pusty plan dałby „Dziś nie ma lekcji”, a test czeka na „Brak planu dzwonków”.
+  // EN: The time is pinned to a working Tuesday, because on a weekend an empty plan would give "Dziś nie ma lekcji", and the test expects "Brak planu dzwonków".
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-13T09:10:00Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   // PL: Licznik do dzwonka pokazuje pusty stan (plan jest pusty, a pulpit go nie widzi) i prowadzi do ekranu /bell.
   // EN: The bell countdown shows the empty state (the plan is empty and the dashboard cannot see it) and leads to the /bell screen.
   it('ma powitanie i pusty licznik, który prowadzi do dzwonka / has the greeting and the empty countdown that leads to the bell', () => {
