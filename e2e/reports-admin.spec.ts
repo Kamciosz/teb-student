@@ -53,8 +53,8 @@ async function stubPanelLevel(page: Page, level: 'editor' | 'council' | 'admin' 
 }
 
 /**
- * PL: Podstawia API Samorządu z pamięcią: GET oddaje listę, GET /:id szczegół z historią, PATCH /:id zmienia etap i dopisuje historię. Tak jak serwer, nie wysyła numeru autora.
- * EN: Stubs the Student Council API with memory: GET returns the list, GET /:id the detail with history, PATCH /:id changes the stage and appends the history. Like the server, it sends no author id.
+ * PL: Podstawia API Samorządu z pamięcią: GET oddaje listę, GET /:id szczegół z historią i imieniem z klasą autora (tylko przy zgłoszeniu nieanonimowym), PATCH /:id zmienia etap i dopisuje historię. Tak jak serwer, nie wysyła numeru autora.
+ * EN: Stubs the Student Council API with memory: GET returns the list, GET /:id the detail with history and the author's name and class (only for a signed report), PATCH /:id changes the stage and appends the history. Like the server, it sends no author id.
  *
  * @param page - PL: strona testu. EN: the test page.
  * @param reports - PL: zgłoszenia na start. EN: the reports to start with.
@@ -81,7 +81,10 @@ async function stubAdminApi(page: Page, reports: StubReport[] = sampleReports())
       found.updatedAt = Date.UTC(2026, 9, 12, 8);
       history.get(id)?.unshift({ stage: found.stage, changedAt: found.updatedAt });
     }
-    return route.fulfill({ json: { report: found, history: history.get(id) } });
+    // PL: Imię i klasa autora tylko przy zgłoszeniu nieanonimowym, jak na serwerze.
+    // EN: The author's name and class only for a signed report, as on the server.
+    const student = found.isAnonymous ? null : { name: 'Ola', className: '3TA' };
+    return route.fulfill({ json: { report: found, history: history.get(id), student } });
   });
 }
 
@@ -119,8 +122,8 @@ test('pusta lista mówi, że nikt nic nie zgłosił / the empty list says nobody
   await expect(page.getByText('Zgłoszenia uczniów pojawią się tutaj.')).toBeVisible();
 });
 
-// PL: Zgłoszenie anonimowe nie ma autora, z autorem mówi tylko, że anonimowość wyłączono.
-// EN: An anonymous report has no author, a signed one says only that anonymity was turned off.
+// PL: Zgłoszenie anonimowe nie ma autora, a podpisane pokazuje imię i klasę (ekran 6.4c).
+// EN: An anonymous report has no author, a signed one shows the name and class (screen 6.4c).
 test('szczegół: anonimowe i z autorem / detail: anonymous and with an author', async ({ page }) => {
   // PL: Zgłoszenie anonimowe: napis o anonimowości.
   // EN: An anonymous report: the anonymity label.
@@ -129,9 +132,10 @@ test('szczegół: anonimowe i z autorem / detail: anonymous and with an author',
   await expect(page.getByText('Zgłoszenie anonimowe')).toBeVisible();
   await expect(page.getByText('Samorząd nie widzi, kto je wysłał.')).toBeVisible();
 
-  // PL: Zgłoszenie z autorem: tylko informacja o rezygnacji z anonimowości.
-  // EN: A report with an author: only the information that anonymity was turned off.
+  // PL: Zgłoszenie z autorem: imię i klasa z profilu oraz informacja o rezygnacji z anonimowości.
+  // EN: A report with an author: the name and class from the profile and the information that anonymity was turned off.
   await page.goto('/reports/admin/r1');
+  await expect(page.getByText('Ola · 3TA')).toBeVisible();
   await expect(page.getByText('Autor zgłosił bez anonimowości.')).toBeVisible();
   await expect(page.getByText('Samorząd nie widzi, kto je wysłał.')).toHaveCount(0);
 });

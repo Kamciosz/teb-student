@@ -1,6 +1,6 @@
 /**
- * PL: Rozmowa ekranów 4b z serwerem: lista zgłoszeń, jedno zgłoszenie z historią i zmiana etapu. Adres to /api/reports/admin (docs/ARCHITECTURE.md). Serwer nie wysyła numeru autora, więc tu go nie ma.
- * EN: The talk of the 4b screens with the server: the report list, one report with its history and the stage change. The address is /api/reports/admin (docs/ARCHITECTURE.md). The server does not send the author id, so it is not here.
+ * PL: Rozmowa ekranów 4b z serwerem: lista zgłoszeń, jedno zgłoszenie z historią i zmiana etapu. Adres to /api/reports/admin (docs/ARCHITECTURE.md). Serwer nie wysyła numeru autora, więc tu go nie ma. Przy zgłoszeniu nieanonimowym wysyła tylko imię i klasę autora.
+ * EN: The talk of the 4b screens with the server: the report list, one report with its history and the stage change. The address is /api/reports/admin (docs/ARCHITECTURE.md). The server does not send the author id, so it is not here. For a signed report it sends only the author's name and class.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -29,8 +29,11 @@ export type AdminReport = {
 /** PL: Jeden wiersz historii etapów. EN: One row of the stage history. */
 export type StageChange = { stage: string; changedAt: number };
 
-/** PL: Zgłoszenie z historią etapów, od najnowszego. EN: A report with its stage history, newest first. */
-export type AdminReportDetail = { report: AdminReport; history: StageChange[] };
+/** PL: Imię i klasa autora zgłoszenia nieanonimowego. EN: The name and class of the author of a signed report. */
+export type AdminStudent = { name: string; className: string };
+
+/** PL: Zgłoszenie z historią etapów, od najnowszego, i autor (tylko przy zgłoszeniu nieanonimowym). EN: A report with its stage history, newest first, and the author (only for a signed report). */
+export type AdminReportDetail = { report: AdminReport; history: StageChange[]; student: AdminStudent | null };
 
 /**
  * PL: Odczytuje JSON odpowiedzi albo rzuca błąd z kodem odpowiedzi.
