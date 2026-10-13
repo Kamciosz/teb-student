@@ -1,6 +1,6 @@
 /**
- * PL: Zapytania TanStack Query dla panelu: rola ucznia (trafia do wspólnej pamięci podręcznej, więc panel otwiera się też bez internetu), kody zaproszeń (lista i wydanie), role Samorządu i redakcji (lista, szukanie, karta i zapis), pobranie pliku z pilotażu, wiersz wejścia do panelu dla profilu.
- * EN: The TanStack Query hooks for the panel: the student's role (it goes into the shared cache, so the panel opens without internet too), the invitation codes (the list and issuing), the Samorząd and editor roles (the list, search, card and saving), the pilot file download and the panel entry row for the profile.
+ * PL: Zapytania TanStack Query dla panelu: rola ucznia (trafia do wspólnej pamięci podręcznej, więc panel otwiera się też bez internetu), kody zaproszeń (lista i wydanie), role Samorządu i redakcji (lista, szukanie, karta i zapis), pobranie pliku z pilotażu, dziennik zmian (strony), wiersz wejścia do panelu dla profilu.
+ * EN: The TanStack Query hooks for the panel: the student's role (it goes into the shared cache, so the panel opens without internet too), the invitation codes (the list and issuing), the Samorząd and editor roles (the list, search, card and saving), the pilot file download, the change diary (pages) and the panel entry row for the profile.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -12,6 +12,7 @@
  * @uses src/features/admin/api.ts::fetchRoleCard
  * @uses src/features/admin/api.ts::saveRoles
  * @uses src/features/admin/api.ts::downloadPilot
+ * @uses src/features/admin/api.ts::fetchDiary
  * @uses src/features/admin/panelView.ts::panelEntryFor
  * @used_by src/features/admin/PanelGate.tsx::usePanelLevel
  * @used_by src/features/admin/PanelHome.tsx::usePanelLevel
@@ -22,11 +23,12 @@
  * @used_by src/features/admin/RoleCardScreen.tsx::useRoleCard
  * @used_by src/features/admin/RoleCardScreen.tsx::useSaveRoles
  * @used_by src/features/admin/PilotScreen.tsx::usePilotDownload
+ * @used_by src/features/admin/DiaryScreen.tsx::useDiary
  * @used_by src/features/admin/index.ts::usePanelEntry
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { downloadPilot, fetchInvites, fetchPanelLevel, fetchRoleCard, fetchRoleHolders, issueInvite, saveRoles, searchRole, type RoleChoice } from './api';
+import { downloadPilot, fetchDiary, fetchInvites, fetchPanelLevel, fetchRoleCard, fetchRoleHolders, issueInvite, saveRoles, searchRole, type RoleChoice } from './api';
 import { panelEntryFor, type PanelEntry } from './panelView';
 
 /** PL: Klucz zapytania o rolę w pamięci podręcznej. EN: The role query key in the cache. */
@@ -37,6 +39,9 @@ const INVITES_KEY = ['admin', 'invites'] as const;
 
 /** PL: Klucz listy osób z rolą w pamięci podręcznej. EN: The key of the role holders list in the cache. */
 const ROLE_HOLDERS_KEY = ['admin', 'roles'] as const;
+
+/** PL: Klucz dziennika zmian w pamięci podręcznej (wszystkie strony). EN: The key of the change diary in the cache (all pages). */
+const DIARY_KEY = ['admin', 'diary'] as const;
 
 /**
  * PL: Klucz karty jednej osoby z rolą w pamięci podręcznej. EN: The key of one role holder's card in the cache.
@@ -87,20 +92,31 @@ export function useInvites() {
 }
 
 /**
- * PL: Wydanie kodu zaproszenia. Wymaga internetu, więc mutacja nie czeka w kolejce, tylko od razu próbuje i przy braku sieci kończy się błędem. Po udanym wydaniu unieważnia listę kodów, żeby nowy kod się w niej pojawił.
- * EN: Issuing an invitation code. It needs internet, so the mutation does not wait in a queue but tries at once and ends with an error without a network. After a successful issue it invalidates the list of codes, so the new code appears in it.
+ * PL: Wydanie kodu zaproszenia. Wymaga internetu, więc mutacja nie czeka w kolejce, tylko od razu próbuje i przy braku sieci kończy się błędem. Po udanym wydaniu unieważnia listę kodów, żeby nowy kod się w niej pojawił, i dziennik, który dostał nowy wpis.
+ * EN: Issuing an invitation code. It needs internet, so the mutation does not wait in a queue but tries at once and ends with an error without a network. After a successful issue it invalidates the list of codes, so the new code appears in it, and the diary, which got a new entry.
  *
  * @returns PL: mutacja z `mutate`, `data`, `isPending` i `isError`. EN: a mutation with `mutate`, `data`, `isPending` and `isError`.
  */
 export function useIssueInvite() {
-  // PL: Klient zapytań, żeby po wydaniu oznaczyć listę kodów jako nieaktualną.
-  // EN: The query client, to mark the list of codes as stale after issuing.
+  // PL: Klient zapytań, żeby po wydaniu oznaczyć listę kodów i dziennik jako nieaktualne.
+  // EN: The query client, to mark the list of codes and the diary as stale after issuing.
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: issueInvite,
     networkMode: 'always',
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: INVITES_KEY }),
+    onSuccess: () => Promise.all([queryClient.invalidateQueries({ queryKey: INVITES_KEY }), queryClient.invalidateQueries({ queryKey: DIARY_KEY })]),
   });
+}
+
+/**
+ * PL: Czyta jedną stronę dziennika zmian (po 50 wpisów, od najnowszych). Każda strona ma swój klucz w pamięci podręcznej.
+ * EN: Reads one page of the change diary (50 entries each, newest first). Each page has its own key in the cache.
+ *
+ * @param page - PL: numer strony, od 1. EN: the page number, from 1.
+ * @returns PL: wynik zapytania ze stroną wpisów w `data`. EN: the query result with the page of entries in `data`.
+ */
+export function useDiary(page: number) {
+  return useQuery({ queryKey: [...DIARY_KEY, page], queryFn: () => fetchDiary(page) });
 }
 
 /**
@@ -151,21 +167,28 @@ export function useSaveRoles(studentId: string) {
     onSuccess: async (card) => {
       queryClient.setQueryData(roleCardKey(studentId), card);
       await queryClient.invalidateQueries({ queryKey: ROLE_HOLDERS_KEY });
+      await queryClient.invalidateQueries({ queryKey: DIARY_KEY });
     },
   });
 }
 
 /**
- * PL: Pobiera plik z pilotażem (6.1e) i zapisuje go na urządzeniu. Wymaga internetu.
- * EN: Downloads the pilot file (6.1e) and saves it to the device. It needs internet.
+ * PL: Pobiera plik z pilotażem (6.1e) i zapisuje go na urządzeniu. Wymaga internetu. Po pobraniu odświeża dziennik, bo pobranie zapisuje wpis.
+ * EN: Downloads the pilot file (6.1e) and saves it to the device. It needs internet. After the download it refreshes the diary, because the download records an entry.
  *
  * @returns PL: mutacja z `mutate`, `isPending` i `isError`. EN: a mutation with `mutate`, `isPending` and `isError`.
  */
 export function usePilotDownload() {
+  // PL: Klient zapytań, żeby po pobraniu oznaczyć dziennik jako nieaktualny.
+  // EN: The query client, to mark the diary as stale after the download.
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: downloadPilot,
     networkMode: 'always',
-    onSuccess: (blob) => saveFile(blob, 'pilotaz.csv'),
+    onSuccess: (blob) => {
+      saveFile(blob, 'pilotaz.csv');
+      return queryClient.invalidateQueries({ queryKey: DIARY_KEY });
+    },
   });
 }
 

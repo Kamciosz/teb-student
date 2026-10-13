@@ -39,14 +39,15 @@ export type PanelSection = {
 };
 
 /**
- * PL: Części panelu w kolejności z ekranu 6.1b, w jednym kafelku. Redakcja widzi tylko Wpisy, Samorząd cztery pierwsze, administrator także „Role”.
- * EN: The panel sections in the order of screen 6.1b, in one tile. The editorial team sees only Entries, the Council the first four, the administrator also "Role".
+ * PL: Części panelu w kolejności z ekranu 6.1b, w jednym kafelku. Redakcja widzi tylko Wpisy, Samorząd pięć pierwszych (z Dziennikiem zmian), administrator także „Role”.
+ * EN: The panel sections in the order of screen 6.1b, in one tile. The editorial team sees only Entries, the Council the first five (with the Change diary), the administrator also "Role".
  */
 export const PANEL_SECTIONS: readonly PanelSection[] = [
   { to: '/news/admin', title: 'Wpisy', hint: 'Pisz i publikuj aktualności.', icon: 'newspaper', minimum: 'editor' },
   { to: '/reports/admin', title: 'Zgłoszenia', hint: 'Zmieniaj etap zgłoszeń.', icon: 'clipboard-list', minimum: 'council' },
   { to: '/surveys/admin', title: 'Ankiety', hint: 'Twórz ankiety i czytaj wyniki.', icon: 'chart-column', minimum: 'council' },
   { to: '/admin/kody', title: 'Kody zaproszeń', hint: 'Wydaj kod osobie bez szkolnej skrzynki.', icon: 'ticket', minimum: 'council' },
+  { to: '/admin/dziennik', title: 'Dziennik zmian', hint: 'Kto wydał kod, nadał rolę albo pobrał plik.', icon: 'history', minimum: 'council' },
   { to: '/admin/role', title: 'Role', hint: 'Nadaj albo odbierz rolę Samorządu i redakcji.', icon: 'users', minimum: 'admin', badge: 'Administrator' },
 ];
 

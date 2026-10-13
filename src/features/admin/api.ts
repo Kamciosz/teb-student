@@ -12,6 +12,7 @@
  * @used_by src/features/admin/queries.ts::useRoleCard
  * @used_by src/features/admin/queries.ts::useSaveRoles
  * @used_by src/features/admin/queries.ts::usePilotDownload
+ * @used_by src/features/admin/queries.ts::useDiary
  */
 
 /** PL: Adres serwera panelu. EN: The panel server address. */
@@ -47,6 +48,35 @@ export type RoleCard = {
 
 /** PL: Dwa przełączniki do zapisu: rola Samorządu i rola redakcji. EN: The two switches to save: the Council role and the editorial role. */
 export type RoleChoice = { council: boolean; editor: boolean };
+
+/** PL: Akcja zapisana w dzienniku zmian. EN: An action recorded in the change diary. */
+export type DiaryAction =
+  | 'invite_issued'
+  | 'council_granted'
+  | 'council_revoked'
+  | 'editor_granted'
+  | 'editor_revoked'
+  | 'pilot_downloaded';
+
+/** PL: Jeden wpis dziennika zmian. EN: One change diary entry. */
+export type DiaryEntry = {
+  /** PL: Numer wpisu. EN: The entry id. */
+  id: number;
+  /** PL: Co się stało. EN: What happened. */
+  action: DiaryAction;
+  /** PL: Kiedy (data ISO). EN: When (an ISO date). */
+  at: string;
+  /** PL: Imię osoby, która wykonała akcję (null, gdy konto nie ma imienia). EN: The first name of the person who did the action (null when the account has none). */
+  actorName: string | null;
+};
+
+/** PL: Strona dziennika zmian. EN: A page of the change diary. */
+export type DiaryPage = {
+  /** PL: Wpisy strony, od najnowszych. EN: The entries of the page, newest first. */
+  entries: DiaryEntry[];
+  /** PL: Czy jest jeszcze jedna strona. EN: Whether there is one more page. */
+  hasNext: boolean;
+};
 
 /**
  * PL: Sprawdza odpowiedź: przy kodzie innym niż 2xx rzuca błąd z kodem HTTP.
@@ -183,4 +213,19 @@ export async function downloadPilot(): Promise<Blob> {
   // PL: Odczyt pliku jako blob, żeby ekran mógł go zapisać.
   // EN: Reading the file as a blob, so the screen can save it.
   return ensureOk(await fetch(`${API_URL}/pilot`)).blob();
+}
+
+/**
+ * PL: Pobiera jedną stronę dziennika zmian (po 50 wpisów, od najnowszych). Tylko Samorząd i administrator.
+ * EN: Fetches one page of the change diary (50 entries each, newest first). The Council and the administrator only.
+ *
+ * @param page - PL: numer strony, od 1. EN: the page number, from 1.
+ * @returns PL: wpisy strony i informacja o następnej. EN: the entries of the page and the information about the next one.
+ * @throws PL: błąd z kodem HTTP (403, gdy rola jest za niska) albo błąd sieci. EN: an error with the HTTP code (403 when the role is too low) or a network error.
+ */
+export async function fetchDiary(page: number): Promise<DiaryPage> {
+  // PL: Odczyt strony z numerem w zapytaniu.
+  // EN: Reading the page with the number in the query.
+  const response = ensureOk(await fetch(`${API_URL}/diary?page=${page}`));
+  return (await response.json()) as DiaryPage;
 }
