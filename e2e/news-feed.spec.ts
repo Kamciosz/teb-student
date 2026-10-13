@@ -16,13 +16,13 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 // EN: The publication moment of the test entries (fresh, so the relative time is stable).
 const PUBLISHED_AT = new Date(Date.now() - 20 * 60_000).toISOString();
 
-// PL: Wpisy na liście: po jednym z czterech typów.
-// EN: The entries on the list: one of each of the four types.
+// PL: Wpisy na liście: po jednym z czterech typów. Pierwszy jest przypięty, więc serwer (tu: podstawiony) daje go na górze.
+// EN: The entries on the list: one of each of the four types. The first one is pinned, so the server (here: the stub) puts it on top.
 const ENTRIES = [
-  { id: 'e-important', type: 'important', source: 'Sekretariat', title: 'Jutro 3TA zaczyna o 9:50', excerpt: 'Dwie pierwsze lekcje przeniesione.' },
-  { id: 'e-event', type: 'event', source: 'Samorząd', title: 'Turniej e-sportowy klas', excerpt: 'Zapisy drużyn do piątku.' },
-  { id: 'e-news', type: 'news', source: 'Biblioteka', title: 'Nowe godziny otwarcia biblioteki', excerpt: 'Od poniedziałku do 17:00.' },
-  { id: 'e-sport', type: 'sport', source: 'WF', title: 'Mecz koszykówki', excerpt: 'Piątek, godzina 15:00.' },
+  { id: 'e-important', type: 'important', source: 'Sekretariat', title: 'Jutro 3TA zaczyna o 9:50', excerpt: 'Dwie pierwsze lekcje przeniesione.', pinned: true },
+  { id: 'e-event', type: 'event', source: 'Samorząd', title: 'Turniej e-sportowy klas', excerpt: 'Zapisy drużyn do piątku.', pinned: false },
+  { id: 'e-news', type: 'news', source: 'Biblioteka', title: 'Nowe godziny otwarcia biblioteki', excerpt: 'Od poniedziałku do 17:00.', pinned: false },
+  { id: 'e-sport', type: 'sport', source: 'WF', title: 'Mecz koszykówki', excerpt: 'Piątek, godzina 15:00.', pinned: false },
 ].map((entry) => ({ ...entry, publishedAt: PUBLISHED_AT }));
 
 // PL: Słowo bez spacji, które sprawdza zawijanie przy 320 px.
@@ -48,15 +48,19 @@ const EVENT_BODY = {
 const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 
 /**
- * PL: Odpowiada na zapytanie o aktualności podstawionymi danymi: lista, wpis turnieju i 404 dla reszty.
- * EN: Answers a news request with stubbed data: the list, the tournament entry and 404 for the rest.
+ * PL: Odpowiada na zapytanie o aktualności podstawionymi danymi: lista (z filtrem po q, jak serwer), wpis turnieju i 404 dla reszty.
+ * EN: Answers a news request with stubbed data: the list (filtered by q, like the server), the tournament entry and 404 for the rest.
  *
  * @param route - PL: przechwycone zapytanie. EN: the intercepted request.
  * @returns PL: obietnica zakończona po odpowiedzi. EN: a promise finished after the answer.
  */
 async function answerNews(route: Route): Promise<void> {
-  const path = new URL(route.request().url()).pathname.replace(/\/+$/, '');
-  if (path === '/api/news/feed') return route.fulfill({ json: { entries: ENTRIES } });
+  const url = new URL(route.request().url());
+  const path = url.pathname.replace(/\/+$/, '');
+  if (path === '/api/news/feed') {
+    const term = (url.searchParams.get('q') ?? '').trim().toLowerCase();
+    return route.fulfill({ json: { entries: ENTRIES.filter((entry) => `${entry.title} ${entry.excerpt}`.toLowerCase().includes(term)) } });
+  }
   if (path === '/api/news/feed/e-event') {
     const summary = ENTRIES.find((entry) => entry.id === 'e-event');
     return route.fulfill({ json: { entry: { ...summary, body: EVENT_BODY, linkUrl: 'https://example.com/regulamin', linkLabel: 'Zobacz regulamin turnieju' } } });
@@ -107,6 +111,60 @@ test.describe('z podstawionym serwerem', () => {
     // EN: The "Wszystkie" filter returns to four.
     await page.getByRole('button', { name: 'Wszystkie' }).click();
     await expect(page.locator('.news-card')).toHaveCount(4);
+  });
+
+  // PL: Przypięty wpis jest pierwszy i ma znacznik „Przypięte”, a pozostałe go nie mają.
+  // EN: The pinned entry is first and has the "Przypięte" tag, and the others do not.
+  test('przypięty wpis na górze z odznaką / the pinned entry on top with a badge', async ({ page }) => {
+    await page.goto('/news/feed');
+
+    // PL: Jeden znacznik, na pierwszym kaflu.
+    // EN: One tag, on the first tile.
+    await expect(page.locator('.news-card')).toHaveCount(4);
+    await expect(page.locator('.news-card').first()).toContainText('Przypięte');
+    await expect(page.locator('.news-tag--pinned')).toHaveCount(1);
+  });
+
+  // PL: Szukanie wysyła jedno zapytanie po przerwie w pisaniu (nie po każdej literze), zostawia pasujący kafel.
+  // EN: Searching sends one request after a pause in typing (not after every letter) and leaves the matching tile.
+  test('szukanie: jedno zapytanie po przerwie i pasujący kafel / search: one request after a pause and the matching tile', async ({ page }) => {
+    await page.goto('/news/feed');
+    await expect(page.locator('.news-card')).toHaveCount(4);
+
+    // PL: Od tej chwili zapisujemy zapytania o listę z parametrem q.
+    // EN: From this moment we record the list requests with the q parameter.
+    const searched: (string | null)[] = [];
+    page.on('request', (request) => {
+      const url = new URL(request.url());
+      if (url.pathname.replace(/\/+$/, '') === '/api/news/feed') searched.push(url.searchParams.get('q'));
+    });
+
+    // PL: Pisanie „zapisy” z przerwami 50 ms, krótszymi od opóźnienia 300 ms.
+    // EN: Typing "zapisy" with 50 ms gaps, shorter than the 300 ms delay.
+    await page.getByRole('searchbox', { name: 'Szukaj wpisów' }).pressSequentially('zapisy', { delay: 50 });
+
+    await expect(page.locator('.news-card')).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Turniej e-sportowy klas' })).toBeVisible();
+    expect(searched).toEqual(['zapisy']);
+  });
+
+  // PL: Brak pasujących wpisów pokazuje komunikat z szukanym tekstem, a przycisk „Wyczyść” czyści pole i przywraca całą listę.
+  // EN: No matching entries show a message with the searched text, and the "Wyczyść" button clears the field and brings back the whole list.
+  test('pusty wynik szukania i czyszczenie pola / an empty search result and clearing the field', async ({ page }) => {
+    await page.goto('/news/feed');
+    await expect(page.locator('.news-card')).toHaveCount(4);
+
+    const search = page.getByRole('searchbox', { name: 'Szukaj wpisów' });
+    await search.fill('xyzabc');
+
+    await expect(page.getByText('Nic nie znaleziono dla „xyzabc”.')).toBeVisible();
+    await expect(page.locator('.news-card')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Wyczyść szukanie' }).click();
+
+    await expect(search).toHaveValue('');
+    await expect(page.locator('.news-card')).toHaveCount(4);
+    await expect(page.getByText('Nic nie znaleziono dla')).toHaveCount(0);
   });
 
   // PL: Wpis ma bezpieczne linki, nie wykonuje groźnego linku i pokazuje film dopiero po kliknięciu.
@@ -214,6 +272,21 @@ test.describe('z podstawionym serwerem', () => {
 
     await expect(page.locator('.news-card')).toHaveCount(4);
     await expect(page.getByText('Nie udało się odświeżyć wpisów. Pokazujemy zapisane.')).toBeVisible();
+  });
+
+  // PL: Bez internetu film w otwartym wpisie zmienia się w napis z linkiem do YouTube, bez miniatury i ramki.
+  // EN: Without internet the video in the open entry turns into a note with a link to YouTube, without the thumbnail and the frame.
+  test('film bez internetu to napis z linkiem / the video without internet is a note with a link', async ({ page, context }) => {
+    await page.goto('/news/feed/e-event');
+    await expect(page.getByRole('button', { name: 'Odtwórz film' })).toBeVisible();
+
+    await context.setOffline(true);
+
+    await expect(page.getByRole('button', { name: 'Odtwórz film' })).toHaveCount(0);
+    await expect(page.locator('iframe')).toHaveCount(0);
+    const link = page.getByRole('link', { name: 'Obejrzyj na YouTube' });
+    await expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 });
 

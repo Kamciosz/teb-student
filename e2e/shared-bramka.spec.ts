@@ -30,6 +30,9 @@ for (const address of ['/reports/student/moje', '/surveys/vote']) {
 // EN: A 401 when sending a report (a request that changes data, not a read): also moves to sign-in.
 test('401 przy wysyłaniu zgłoszenia przenosi na /auth/email / a 401 when sending a report moves to /auth/email', async ({ page }) => {
   await page.route('**/api/reports/student', (route) => route.fulfill({ status: 401, json: { error: 'unauthorized' } }));
+  // PL: Lista podobnych zgłoszeń (krok „Mnie też”, podtor 4a) jest pusta, żeby pierwsze 401 przyszło dopiero z wysyłki.
+  // EN: The similar reports list ("Me too" step, subtrack 4a) is empty, so the first 401 comes only from sending.
+  await page.route('**/api/reports/student/similar*', (route) => route.fulfill({ json: { reports: [] } }));
 
   await page.goto('/reports/student');
   await page.getByRole('radio', { name: 'Sala lub sprzęt' }).click();

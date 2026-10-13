@@ -28,7 +28,7 @@ import type { NewsEntryRow } from '../../db/schema';
 import { excerptFromBody } from './excerpt';
 // PL: Zapytania do bazy.
 // EN: The database queries.
-import { findPublishedEntry, listPublishedEntries } from './queries';
+import { SEARCH_MAX_LENGTH, findPublishedEntry, listPublishedEntries } from './queries';
 
 /**
  * PL: Wpis na liście: bez treści, z krótkim opisem.
@@ -47,6 +47,8 @@ export type NewsEntrySummary = {
   title: string;
   /** PL: Krótki opis z początku treści. EN: A short description from the start of the content. */
   excerpt: string;
+  /** PL: Czy wpis jest przypięty na górze listy. EN: Whether the entry is pinned to the top of the list. */
+  pinned: boolean;
 };
 
 /**
@@ -79,6 +81,7 @@ function toSummary(row: NewsEntryRow): NewsEntrySummary {
     publishedAt: (row.publishedAt as Date).toISOString(),
     title: row.title,
     excerpt: excerptFromBody(row.body),
+    pinned: row.pinnedAt !== null,
   };
 }
 
@@ -120,14 +123,19 @@ async function withDatabase(
  */
 export const newsFeedApp = new Hono<{ Bindings: Env }>();
 
-// PL: Lista opublikowanych wpisów od najnowszego.
-// EN: The list of published entries, newest first.
-newsFeedApp.get('/', (context) =>
-  withDatabase(context, async (db) => context.json({ entries: (await listPublishedEntries(db)).map(toSummary) })),
-);
+// PL: Lista widocznych wpisów: przypięte na górze, potem od najnowszego. Parametr q szuka w tytule i treści; bez niego jest cała lista.
+// EN: The list of visible entries: pinned on top, then newest first. The q parameter searches the title and the content; without it there is the whole list.
+newsFeedApp.get('/', async (context) => {
+  // PL: Szukany tekst bez spacji na brzegach. Za długi dostaje 400, zanim dotknie bazy.
+  // EN: The searched text without spaces at the edges. A too long one gets 400 before it touches the database.
+  const term = (context.req.query('q') ?? '').trim();
+  if (term.length > SEARCH_MAX_LENGTH) return context.json({ error: 'query_too_long' }, 400);
 
-// PL: Jeden opublikowany wpis. Szkic i nieznany numer to to samo: 404.
-// EN: One published entry. A draft and an unknown id are the same: 404.
+  return withDatabase(context, async (db) => context.json({ entries: (await listPublishedEntries(db, term)).map(toSummary) }));
+});
+
+// PL: Jeden widoczny wpis. Szkic, wpis zaplanowany na później i nieznany numer to to samo: 404.
+// EN: One visible entry. A draft, an entry scheduled for later and an unknown id are the same: 404.
 newsFeedApp.get('/:id', (context) =>
   withDatabase(context, async (db) => {
     const row = await findPublishedEntry(db, context.req.param('id'));

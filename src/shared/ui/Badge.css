@@ -1,0 +1,26 @@
+/*
+ * PL: Znacznik: mała pigułka z tekstem. Kolory tylko przez var(--...) z tokens.css.
+ * EN: The badge: a small pill with text. Colors only through var(--...) from tokens.css.
+ */
+
+/* PL: Pigułka: tekst w jednej linii, ale przy długim napisie zawija się zamiast wypychać ekran.
+   EN: The pill: text on one line, but a long label wraps instead of pushing the screen. */
+.ui-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--tile-2);
+  color: var(--ink-2);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* PL: Ton akcentowy: kolor szkoły z tłem i tekstem z palety.
+   EN: The accent tone: the school color with the palette text. */
+.ui-badge[data-tone='accent'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}

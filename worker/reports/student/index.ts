@@ -7,8 +7,10 @@
  * @uses worker/reports/student/routes.ts::reportsStudentApp
  * @uses worker/reports/student/deleteStudentData.ts::deleteReportsStudentData
  * @uses worker/reports/student/countReports.ts::countReports
+ * @uses worker/reports/student/reportsRepository.ts::listReportsByAuthor
  * @used_by worker/reports/index.ts::reportsStudentApp
  * @used_by worker/reports/index.ts::countReports
+ * @used_by worker/reports/index.ts::listReportsByAuthor
  */
 
 // PL: Router podtoru 4a.
@@ -22,3 +24,7 @@ export { deleteReportsStudentData } from './deleteStudentData';
 // PL: Liczba wszystkich zgłoszeń (także anonimowych) dla ekranu „Dane z pilotażu” w panelu Samorządu. Zbiera ją worker/reports/index.ts.
 // EN: The number of all reports (anonymous ones too) for the "Pilot data" screen in the Student Council panel. worker/reports/index.ts collects it.
 export { countReports } from './countReports';
+
+// PL: Zgłoszenia jednego ucznia, od najnowszego (id, kategoria, miejsce, opis, etap, daty), bez numeru autora. Używa ich eksport danych RODO („Pobierz moje dane”) przez worker/reports/index.ts.
+// EN: One student's reports, newest first (id, category, place, description, stage, dates), without the author id. The data export ("Download my data", GDPR) uses them through worker/reports/index.ts.
+export { listReportsByAuthor, type MyReport } from './reportsRepository';
