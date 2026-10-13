@@ -11,7 +11,7 @@
  * @used_by worker/surveys/admin/results.test.ts::shapeResults
  */
 
-import type { OptionResult, QuestionResult, SurveyResults } from './types';
+import type { OptionResult, QuestionResult, QuestionType, SurveyResults } from './types';
 
 // PL: Od ilu odpowiedzi pokazujemy wyniki. Przy mniejszej liczbie łatwo rozpoznać, kto głosował.
 // EN: From how many responses the results are shown. With fewer, it is easy to tell who voted.
@@ -37,15 +37,16 @@ export function percentOf(votes: number, total: number): number {
  * EN: Adds the percent share to the options of one question.
  *
  * @param prompt - PL: treść pytania. EN: the question text.
+ * @param type - PL: rodzaj pytania. EN: the question type.
  * @param options - PL: odpowiedzi z liczbą głosów, w kolejności. EN: the options with their vote counts, in order.
  * @returns PL: pytanie z udziałami. EN: the question with shares.
  */
-export function toQuestionResult(prompt: string, options: { label: string; votes: number }[]): QuestionResult {
-  // PL: Udział liczymy od sumy głosów tego pytania.
-  // EN: The share is counted from the vote sum of this question.
+export function toQuestionResult(prompt: string, type: QuestionType, options: { label: string; votes: number }[]): QuestionResult {
+  // PL: Udział liczymy od sumy głosów tego pytania. Przy wielokrotnym wyborze to suma zaznaczeń, więc udziały nie sumują się do 100 w osobach.
+  // EN: The share is counted from the vote sum of this question. With multiple choice it is the sum of checked boxes, so the shares do not add up to 100 in people.
   const total = options.reduce((sum, option) => sum + option.votes, 0);
   const withShare: OptionResult[] = options.map((option) => ({ ...option, percent: percentOf(option.votes, total) }));
-  return { prompt, options: withShare };
+  return { prompt, type, options: withShare };
 }
 
 /**

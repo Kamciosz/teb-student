@@ -15,7 +15,7 @@
  */
 
 import { lastDayIso, warsawWallClock } from './format';
-import type { NewSurveyBody } from './types';
+import type { NewSurveyBody, QuestionType } from './types';
 
 // PL: Czasy trwania z paska wyboru, w dniach. Domyślnie 7 dni (ekran 6.5b).
 // EN: The durations of the choice bar, in days. 7 days by default (screen 6.5b).
@@ -37,6 +37,8 @@ export type DraftQuestion = {
   key: number;
   /** PL: Treść pytania. EN: The question text. */
   prompt: string;
+  /** PL: Rodzaj pytania. Nowe pytanie to „Jeden wybór”. EN: The question type. A new question is "Jeden wybór" (single choice). */
+  type: QuestionType;
   /** PL: Treści odpowiedzi w kolejności A, B, C, D, E, także puste. EN: The option texts in the order A, B, C, D, E, also blank ones. */
   options: string[];
 };
@@ -68,7 +70,7 @@ export type DraftErrors = { title: string | null; questions: Map<number, Questio
  * @returns PL: nowy szkic. EN: a new draft.
  */
 export function newDraft(): Draft {
-  return { title: '', questions: [{ key: 1, prompt: '', options: ['', ''] }], durationDays: DEFAULT_DURATION_DAYS, nextKey: 2, closesAt: '' };
+  return { title: '', questions: [{ key: 1, prompt: '', type: 'single_choice', options: ['', ''] }], durationDays: DEFAULT_DURATION_DAYS, nextKey: 2, closesAt: '' };
 }
 
 /**
@@ -95,7 +97,7 @@ export function addQuestion(draft: Draft): Draft {
   // PL: Przy limicie pytań przycisk „Dodaj pytanie” jest nieaktywny, ale funkcja też go pilnuje.
   // EN: At the question limit the "Dodaj pytanie" button is inactive, but the function guards it too.
   if (draft.questions.length >= MAX_QUESTIONS) return draft;
-  const question = { key: draft.nextKey, prompt: '', options: ['', ''] };
+  const question: DraftQuestion = { key: draft.nextKey, prompt: '', type: 'single_choice', options: ['', ''] };
   return { ...draft, questions: [...draft.questions, question], nextKey: draft.nextKey + 1 };
 }
 
@@ -204,6 +206,7 @@ export function toRequestBody(draft: Draft): NewSurveyBody {
     closesAt: draft.closesAt === '' ? null : draft.closesAt,
     questions: draft.questions.map((question) => ({
       prompt: question.prompt.trim(),
+      type: question.type,
       options: question.options.map((option) => option.trim()).filter((option) => option !== ''),
     })),
   };

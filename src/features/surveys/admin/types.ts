@@ -43,10 +43,15 @@ export type OptionResult = {
   percent: number;
 };
 
+/** PL: Rodzaj pytania: jeden wybór albo wiele wyborów. EN: The question type: single or multiple choice. */
+export type QuestionType = 'single_choice' | 'multiple_choice';
+
 /** PL: Jedno pytanie w wynikach. EN: One question in the results. */
 export type QuestionResult = {
   /** PL: Treść pytania. EN: The question text. */
   prompt: string;
+  /** PL: Rodzaj pytania: przy wielu wyborach liczba to zaznaczenia, a nie osoby. EN: The question type: with multiple choice the number is checked boxes, not people. */
+  type: QuestionType;
   /** PL: Odpowiedzi w kolejności A, B, C, D, E. EN: The options in the order A, B, C, D, E. */
   options: OptionResult[];
 };
@@ -73,8 +78,8 @@ export type SurveyResults = {
 export type NewSurveyBody = {
   /** PL: Tytuł ankiety. EN: The survey title. */
   title: string;
-  /** PL: Pytania z odpowiedziami (tylko treść). EN: The questions with their options (text only). */
-  questions: { prompt: string; options: string[] }[];
+  /** PL: Pytania z rodzajem i odpowiedziami (tylko treść). EN: The questions with their type and options (text only). */
+  questions: { prompt: string; type: QuestionType; options: string[] }[];
   /** PL: Czas trwania w dniach: 3, 7 albo 14. EN: The duration in days: 3, 7 or 14. */
   durationDays: number;
   /** PL: Termin zamknięcia RRRR-MM-DDTHH:mm (czas polski) albo null, gdy go nie ma. EN: The closing time YYYY-MM-DDTHH:mm (Polish time), or null when there is none. */
