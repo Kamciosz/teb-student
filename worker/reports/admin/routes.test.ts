@@ -1,10 +1,9 @@
 /**
- * PL: Test routera podtoru 4b na prawdziwej bazie D1 z testowego Workera. Sprawdza dostęp (401 bez sesji, 403 bez roli), listę, szczegół, zmianę etapu z historią, błędy (400, 404) i to, że odpowiedź HTTP nie zawiera numeru autora, także dla zgłoszeń z autorem.
- * EN: Test of the 4b router on a real D1 database of the test Worker. Checks access (401 without a session, 403 without a role), the list, the detail, the stage change with history, errors (400, 404) and that the HTTP response never contains the author id, also for reports with an author.
+ * PL: Test routera podtoru 4b na prawdziwej bazie D1 z testowego Workera. Sprawdza dostęp (401 bez sesji, 403 bez roli albo z rolą redakcji, wpuszczenie Samorządu i administratora), listę, szczegół, zmianę etapu z historią, błędy (400, 404) i to, że odpowiedź HTTP nie zawiera numeru autora, także dla zgłoszeń z autorem.
+ * EN: Test of the 4b router on a real D1 database of the test Worker. Checks access (401 without a session, 403 without a role or with the editorial role, letting in the Council and the administrator), the list, the detail, the stage change with history, errors (400, 404) and that the HTTP response never contains the author id, also for reports with an author.
  *
  * @author Szymon
  * @since 2026-10-12
- * @uses worker/reports/admin/routes.ts::createReportsAdminApp
  * @uses worker/reports/admin/routes.ts::reportsAdminApp
  * @uses worker/reports/admin/testDatabase.ts::resetDatabase
  * @uses worker/auth/email/testRuntime.ts::signIn
@@ -23,16 +22,14 @@ import { createTestRuntime, signIn } from '../../auth/email/testRuntime';
 // PL: Dane testowe: numer ucznia, którego zgłoszeń nie wolno ujawnić, i drugi autor.
 // EN: The test data: the id of the student whose reports must not be revealed, and the other author.
 import { OTHER_STUDENT_ID } from '../../db/seed/reports';
-// PL: Routery, które sprawdzamy: z podstawionym strażnikiem i produkcyjny.
-// EN: The routers under test: with a stub guard and the production one.
-import { createReportsAdminApp, reportsAdminApp } from './routes';
+// PL: Produkcyjny router, razem z prawdziwym sprawdzaniem roli.
+// EN: The production router, together with the real role check.
+import { reportsAdminApp } from './routes';
+import type { PanelRole } from '../../db/schema/admin';
 import { resetDatabase } from './testDatabase';
 
 /** PL: Sekret podpisu sesji z testRuntime.ts. EN: The session signing secret from testRuntime.ts. */
 const TEST_SECRET = 'test-secret-test-secret-test-secret-00';
-
-/** PL: Zaślepka roli: wpuszcza każdego zalogowanego. Prawdziwy strażnik przyjdzie z podtorem 8. EN: The role stub: lets in every signed-in student. The real guard comes with subtrack 8. */
-const app = createReportsAdminApp((_context, next) => next());
 
 /** PL: Baza użyta w bieżącym teście. EN: The database used in the current test. */
 let db: D1Database;
@@ -42,8 +39,8 @@ let cookie: string;
 let studentId: string;
 
 /**
- * PL: Wysyła zapytanie do routera z zaślepką roli, jako zalogowany (albo bez sesji, gdy `signedIn` to false).
- * EN: Sends a request to the router with the role stub, signed in (or without a session when `signedIn` is false).
+ * PL: Wysyła zapytanie do produkcyjnego routera, jako zalogowany (albo bez sesji, gdy `signedIn` to false).
+ * EN: Sends a request to the production router, signed in (or without a session when `signedIn` is false).
  *
  * @param path - PL: adres względem routera. EN: the path relative to the router.
  * @param init - PL: metoda, nagłówki i treść. EN: the method, headers and body.
@@ -54,7 +51,7 @@ async function send(path: string, init: RequestInit = {}, signedIn = true): Prom
   // PL: Nagłówki z ciasteczkiem sesji albo bez niego, potem zapytanie do routera z bazą testową.
   // EN: The headers with the session cookie or without it, then the request to the router with the test database.
   const headers = { ...(init.headers as Record<string, string> | undefined), ...(signedIn ? { cookie } : {}) };
-  return app.request(path, { ...init, headers }, { ...env, BETTER_AUTH_SECRET: TEST_SECRET });
+  return reportsAdminApp.request(path, { ...init, headers }, { ...env, BETTER_AUTH_SECRET: TEST_SECRET });
 }
 
 /**
@@ -71,20 +68,20 @@ function patchStage(id: string, body: unknown): Promise<Response> {
   return send(`/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) });
 }
 
-// PL: Przed każdym testem zaloguj ucznia i wróć do czystych danych.
-// EN: Before every test sign the student in and go back to clean data.
+// PL: Przed każdym testem zaloguj ucznia z rolą Samorządu i wróć do czystych danych.
+// EN: Before every test sign in a student with the Council role and go back to clean data.
 beforeEach(async () => {
-  // PL: Zaloguj ucznia kodem, odczytaj jego numer i przypisz mu zgłoszenia z seedu.
-  // EN: Sign the student in with a code, read their id and assign the seed reports to them.
+  // PL: Zaloguj ucznia kodem, odczytaj jego numer, przypisz mu zgłoszenia z seedu i rolę Samorządu.
+  // EN: Sign the student in with a code, read their id, assign the seed reports and the Council role to them.
   const login = createTestRuntime();
   cookie = await signIn(login, 'jan.test@teb.edu.pl');
   const session = await login.runtime.auth.api.getSession({ headers: new Headers({ cookie }) });
   studentId = session?.user.id ?? '';
-  db = await resetDatabase(studentId);
+  db = await resetDatabase(studentId, 'council');
 });
 
-// PL: Dostęp: bez sesji 401, z sesją ucznia bez roli 403, w obu przypadkach bez zmian w bazie.
-// EN: Access: 401 without a session, 403 with a student session without a role, and no database change in both cases.
+// PL: Dostęp: bez sesji 401, bez roli albo z rolą redakcji 403 (bez zmian w bazie), Samorząd i administrator wchodzą.
+// EN: Access: 401 without a session, 403 without a role or with the editorial role (no database change), the Council and the administrator get in.
 describe('dostęp / access', () => {
   // PL: Bez sesji żaden adres nie odpowiada danymi, a PATCH niczego nie zmienia.
   // EN: Without a session no route answers with data, and PATCH changes nothing.
@@ -102,15 +99,18 @@ describe('dostęp / access', () => {
     expect(row).toEqual({ stage: 'in_progress' });
   });
 
-  // PL: Produkcyjny router (z zaślepką, która nikogo nie wpuszcza) odmawia uczniowi bez roli.
-  // EN: The production router (with the stand-in that lets nobody in) refuses a student without a role.
-  it('uczeń bez roli dostaje 403 i nic nie zmienia / a student without a role gets 403 and changes nothing', async () => {
-    // PL: Zapytanie do produkcyjnego routera z ciasteczkiem zalogowanego ucznia.
-    // EN: A request to the production router with the signed-in student cookie.
-    const send403 = (path: string, init: RequestInit = {}) => reportsAdminApp.request(path, { ...init, headers: { cookie } }, { ...env, BETTER_AUTH_SECRET: TEST_SECRET });
-    const list = await send403('/');
-    const detail = await send403('/seed-projektor');
-    const patch = await send403('/seed-projektor', { method: 'PATCH', body: JSON.stringify({ stage: 'resolved' }) });
+  // PL: Uczeń bez roli i członek redakcji (rola niższa niż Samorząd) dostają 403 na wszystkich adresach.
+  // EN: A student without a role and an editorial team member (a role lower than the Council) get 403 on all routes.
+  it.each<[string, PanelRole | null]>([
+    ['uczeń bez roli / a student without a role', null],
+    ['redakcja / the editorial team', 'editor'],
+  ])('%s dostaje 403 i nic nie zmienia', async (_name, role) => {
+    // PL: Ustaw rolę ucznia i zapytaj o trzy adresy.
+    // EN: Set the student's role and ask three routes.
+    db = await resetDatabase(studentId, role);
+    const list = await send('/');
+    const detail = await send('/seed-projektor');
+    const patch = await patchStage('seed-projektor', { stage: 'resolved' });
     const row = await db.prepare('SELECT stage FROM reports WHERE id = ?').bind('seed-projektor').first();
 
     // PL: Wszystkie trzy adresy odmawiają, odpowiedź nie ma danych, a etap się nie zmienił.
@@ -118,6 +118,20 @@ describe('dostęp / access', () => {
     expect([list.status, detail.status, patch.status]).toEqual([403, 403, 403]);
     expect(await list.text()).not.toContain('Nie działa projektor');
     expect(row).toEqual({ stage: 'in_progress' });
+  });
+
+  // PL: Samorząd (rola z beforeEach) i administrator (rola wyższa) wchodzą i widzą listę.
+  // EN: The Council (the role from beforeEach) and the administrator (a higher role) get in and see the list.
+  it.each<PanelRole>(['council', 'admin'])('rola %s wchodzi / the %s role gets in', async (role) => {
+    // PL: Ustaw rolę i odczytaj listę.
+    // EN: Set the role and read the list.
+    db = await resetDatabase(studentId, role);
+    const response = await send('/');
+
+    // PL: Odpowiedź jest udana i ma trzy zgłoszenia z seedu.
+    // EN: The answer is successful and has the three seed reports.
+    expect(response.status).toBe(200);
+    expect(((await response.json()) as { reports: unknown[] }).reports).toHaveLength(3);
   });
 });
 
@@ -127,8 +141,8 @@ describe('odczyt / reading', () => {
   // PL: Lista ma trzy zgłoszenia od najnowszego, z etapem i znacznikiem anonimowości.
   // EN: The list has three reports from the newest, with the stage and the anonymity flag.
   it('GET / oddaje wszystkie zgłoszenia od najnowszego / GET / returns all reports newest first', async () => {
-    // PL: Odczytaj listę jako zalogowany z zaślepką roli.
-    // EN: Read the list as a signed-in student with the role stub.
+    // PL: Odczytaj listę jako zalogowany członek Samorządu.
+    // EN: Read the list as a signed-in Council member.
     const response = await send('/');
     const { reports } = (await response.json()) as { reports: { id: string; stage: string; isAnonymous: boolean }[] };
 
