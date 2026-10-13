@@ -197,6 +197,17 @@ test('administrator widzi role i pilotaż na ekranie głównym / the administrat
   await expect(page.getByRole('link', { name: /Dane z pilotażu Pobierz liczby bez imion, nazwisk i adresów\./ })).toHaveAttribute('href', '/admin/pilotaz');
 });
 
+// PL: Rama panelu bramkuje też ekrany innych części: uczeń bez roli nie widzi wpisów (3c) i dostaje ekran 6.1d.
+// EN: The panel frame gates the screens of the other sections too: a student without a role does not see entries (3c) and gets screen 6.1d.
+test('uczeń bez roli nie widzi części panelu w ramie / a student without a role does not see a section in the frame', async ({ page }) => {
+  await stubServer(page, null);
+  await page.route(/\/api\/news\/admin$/, (route) => route.fulfill({ json: { entries: [] } }));
+  await page.goto('/news/admin');
+
+  await expect(page.getByRole('heading', { name: 'Tylko dla Samorządu' })).toBeVisible();
+  await expect(page.locator('[data-subtrack="3c"]')).toHaveCount(0);
+});
+
 // PL: Wydanie kodu: pokazuje kod z datą końca i kopiuje go do schowka.
 // EN: Issuing a code: shows the code with the end date and copies it to the clipboard.
 test('Samorząd wydaje kod i go kopiuje / the Council issues a code and copies it', async ({ page, context }) => {

@@ -112,9 +112,12 @@ export default defineConfig({
       // PL: Service worker robi Workbox (generateSW). Plik sw.js powstaje przy budowaniu.
       // EN: Workbox makes the service worker (generateSW). The sw.js file is created during the build.
       workbox: {
-        // PL: Zapisz w telefonie wszystkie pliki aplikacji, także wersję dla starszych telefonów (iOS 15 jej potrzebuje do działania bez internetu), czcionki i ikony.
-        // EN: Store all app files in the phone, including the build for older phones (iOS 15 needs it to work offline), fonts and icons.
+        // PL: Zapisz w telefonie pliki aplikacji, także wersję dla starszych telefonów (iOS 15 jej potrzebuje do działania bez internetu), czcionki i ikony. Paczki edytora nie są tu zapisywane, bo są duże i używane tylko na kroku edytora.
+        // EN: Store the app files in the phone, including the build for older phones (iOS 15 needs it to work offline), fonts and icons. The editor bundles are not stored here, because they are large and used only on the editor step.
         globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+        // PL: Pomiń paczkę edytora Tiptapa przy zapisie w telefonie. Wzorzec pasuje także do wersji „-legacy-”.
+        // EN: Skip the Tiptap editor bundle when storing in the phone. The pattern also matches the "-legacy-" version.
+        globIgnores: ['**/RichEditor-*.js'],
         // PL: Adres bez pliku (na przykład /zgloszenia) otwiera index.html, bo ekrany wybiera React Router w telefonie.
         // EN: An address with no file (for example /zgloszenia) opens index.html, because React Router picks the screens in the phone.
         navigateFallback: 'index.html',
@@ -124,6 +127,18 @@ export default defineConfig({
         // PL: Usuń z telefonu pliki z poprzednich wersji aplikacji.
         // EN: Remove the files of earlier app versions from the phone.
         cleanupOutdatedCaches: true,
+        // PL: Paczki pominięte przy zapisie zapisują się w osobnej pamięci przy pierwszym otwarciu ekranu, a potem działają bez sieci. Wzorzec Workbox „precache the shell, runtime-cache lazy chunks”. Limit wpisów ogranicza rozrost pamięci przy kolejnych wersjach (cleanupOutdatedCaches nie czyści tej pamięci).
+        // EN: Bundles skipped at install store in a separate cache on the first opening of the screen, then work without a network. The Workbox pattern "precache the shell, runtime-cache lazy chunks". The entry limit keeps the cache from growing with later versions (cleanupOutdatedCaches does not clean this cache).
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/.*\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'lazy-js',
+              expiration: { maxEntries: 40 },
+            },
+          },
+        ],
       },
     }),
     // PL: Worker z wrangler.jsonc działa pod tym samym adresem co aplikacja.
