@@ -9,6 +9,8 @@
  * @uses src/features/bell/bellPlan.ts::Lesson
  * @used_by src/features/bell/BellCountdown.tsx::BellCountdown
  * @used_by src/features/bell/index.ts::currentBellState
+ * @used_by src/features/bell/index.ts::hasBellPlan
+ * @used_by src/features/bell/BellScreen.tsx::BellScreen
  */
 
 // PL: Typ lekcji z planu.
@@ -192,6 +194,20 @@ export function getBellState(lessons: readonly Lesson[], now: Date): BellState |
 }
 
 /**
+ * PL: Wybiera plan dnia danej chwili: skrócony, gdy dzień jest na liście dni skróconych, inaczej zwykły.
+ * EN: Picks the plan of the day of a given moment: the shortened one when the day is on the list of shortened days, otherwise the regular one.
+ *
+ * @param now - PL: chwila w czasie. EN: the moment in time.
+ * @param shortenedDays - PL: dni skrócone w formacie RRRR-MM-DD, czas polski. EN: the shortened days as YYYY-MM-DD, Polish time.
+ * @returns PL: plan dnia. EN: the plan of the day.
+ */
+function planFor(now: Date, shortenedDays: ReadonlySet<string>): readonly Lesson[] {
+  // PL: Dzień tej chwili w strefie szkoły decyduje o planie.
+  // EN: The day of this moment in the school zone decides the plan.
+  return shortenedDays.has(warsawDate(now)) ? SHORTENED_BELL_PLAN : BELL_PLAN;
+}
+
+/**
  * PL: Wylicza stan licznika dla danej chwili: wybiera plan dnia (skrócony, gdy dzień jest na liście dni skróconych, inaczej zwykły) i z niego stan. Zwraca null, gdy planu nie ma (pusty plan) albo nie trwa lekcja ani przerwa.
  * EN: Works out the countdown state for a given moment: picks the plan of the day (the shortened one when the day is on the list of shortened days, otherwise the regular one) and the state from it. Returns null when there is no plan (empty plan) or no lesson or break is on.
  *
@@ -200,8 +216,17 @@ export function getBellState(lessons: readonly Lesson[], now: Date): BellState |
  * @returns PL: stan licznika albo null. EN: the countdown state or null.
  */
 export function currentBellState(now: Date = new Date(), shortenedDays: ReadonlySet<string> = new Set()): BellState | null {
-  // PL: Wybór planu według dnia tej chwili w strefie szkoły.
-  // EN: Choose the plan by the day of this moment in the school zone.
-  const plan = shortenedDays.has(warsawDate(now)) ? SHORTENED_BELL_PLAN : BELL_PLAN;
-  return getBellState(plan, now);
+  return getBellState(planFor(now, shortenedDays), now);
+}
+
+/**
+ * PL: Czy plan dnia danej chwili ma choć jedną lekcję. Plan wybiera tak samo jak currentBellState. Nie sprawdza weekendu: to robi stan licznika, a tu pytamy tylko, czy plan jest wpisany. Dzięki temu pulpit odróżni „brak planu” od „po lekcjach”.
+ * EN: Whether the plan of a given moment's day has at least one lesson. The plan is picked the same way as in currentBellState. It does not check the weekend: the countdown state does that, and here we only ask whether the plan is filled in. This lets the dashboard tell "no plan" from "after lessons".
+ *
+ * @param now - PL: chwila w czasie (domyślnie teraz). EN: the moment in time (default: now).
+ * @param shortenedDays - PL: dni skrócone w formacie RRRR-MM-DD, czas polski (domyślnie żaden). EN: the shortened days as YYYY-MM-DD, Polish time (none by default).
+ * @returns PL: true, gdy plan dnia ma lekcje. EN: true when the plan of the day has lessons.
+ */
+export function hasBellPlan(now: Date = new Date(), shortenedDays: ReadonlySet<string> = new Set()): boolean {
+  return planFor(now, shortenedDays).length > 0;
 }

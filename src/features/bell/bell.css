@@ -66,3 +66,10 @@
   margin: 4px 0 0;
   color: var(--ink-2);
 }
+
+/* PL: Komunikat, gdy planu dzwonków nie ma (zamiast pustego ekranu). EN: The message shown when there is no bell plan (instead of an empty screen). */
+.bell-empty {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--t-xl);
+}
