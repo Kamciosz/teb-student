@@ -6,7 +6,9 @@
  * @since 2026-10-09
  * @uses worker/surveys/vote/routes.ts::surveysVoteApp
  * @uses worker/surveys/vote/deleteStudentData.ts::deleteSurveysStudentData
+ * @uses worker/surveys/vote/countParticipations.ts::countSurveyParticipations
  * @used_by worker/surveys/index.ts::surveysVoteApp
+ * @used_by worker/surveys/index.ts::countSurveyParticipations
  */
 
 // PL: Router podtoru 5a.
@@ -16,3 +18,7 @@ export { surveysVoteApp } from './routes';
 // PL: Funkcja kasująca dane ucznia z modułu surveys. Zbiera ją worker/shared/accountDeletion.ts.
 // EN: The function that deletes the student's data from the surveys module. worker/shared/accountDeletion.ts collects it.
 export { deleteSurveysStudentData } from './deleteStudentData';
+
+// PL: Liczba udziałów w ankietach dla ekranu panelu Samorządu. Zbiera ją worker/surveys/index.ts.
+// EN: The number of survey participations for a screen of the Student Council panel. worker/surveys/index.ts collects it.
+export { countSurveyParticipations } from './countParticipations';
