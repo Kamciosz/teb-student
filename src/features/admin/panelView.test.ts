@@ -5,11 +5,12 @@
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/admin/panelView.ts::sectionsFor
+ * @uses src/features/admin/panelView.ts::pilotSectionsFor
  * @used_by vitest.config.ts::include
  */
 
 import { describe, expect, it } from 'vitest';
-import { formatInviteEnd, isLevelEnough, panelEntryFor, roleCaption, sectionsFor } from './panelView';
+import { formatInviteEnd, isLevelEnough, panelEntryFor, pilotSectionsFor, roleCaption, sectionsFor } from './panelView';
 
 // PL: Grupa testów wierszy ekranu głównego.
 // EN: A group of tests for the main screen rows.
@@ -18,10 +19,24 @@ describe('sectionsFor', () => {
     expect(sectionsFor('editor').map((section) => section.title)).toEqual(['Wpisy']);
   });
 
-  it('Samorząd i administrator widzą cztery części w kolejności z projektu / the Council and the administrator see four sections in the design order', () => {
-    const titles = ['Wpisy', 'Zgłoszenia', 'Ankiety', 'Kody zaproszeń'];
-    expect(sectionsFor('council').map((section) => section.title)).toEqual(titles);
-    expect(sectionsFor('admin').map((section) => section.title)).toEqual(titles);
+  it('Samorząd widzi cztery części w kolejności z projektu / the Council sees four sections in the design order', () => {
+    expect(sectionsFor('council').map((section) => section.title)).toEqual(['Wpisy', 'Zgłoszenia', 'Ankiety', 'Kody zaproszeń']);
+  });
+
+  it('administrator widzi te cztery i „Role” z podpisem Administrator / the administrator sees those four and "Role" with the Administrator badge', () => {
+    const rows = sectionsFor('admin');
+    expect(rows.map((section) => section.title)).toEqual(['Wpisy', 'Zgłoszenia', 'Ankiety', 'Kody zaproszeń', 'Role']);
+    expect(rows[4].badge).toBe('Administrator');
+  });
+});
+
+// PL: Grupa testów wierszy pod etykietą „Pilotaż”.
+// EN: A group of tests for the rows under the "Pilotaż" label.
+describe('pilotSectionsFor', () => {
+  it('tylko administrator widzi „Dane z pilotażu” / only the administrator sees "Dane z pilotażu"', () => {
+    expect(pilotSectionsFor('admin').map((section) => section.title)).toEqual(['Dane z pilotażu']);
+    expect(pilotSectionsFor('council')).toEqual([]);
+    expect(pilotSectionsFor('editor')).toEqual([]);
   });
 });
 

@@ -11,7 +11,7 @@
 
 // PL: Liczenie terminu ankiety.
 // EN: Counting the survey deadline.
-import { daysLeft, isSurveyActive } from './deadline';
+import { closedOn, daysLeft, isSurveyOpen, shownClosesAt } from './deadline';
 // PL: Kształt odpowiedzi listy.
 // EN: The shape of the list response.
 import type { ActiveSurvey, EndedSurvey, SurveyList } from './types';
@@ -33,6 +33,8 @@ export type SurveyRow = {
   title: string;
   /** PL: Ostatni dzień, RRRR-MM-DD. EN: The last day, YYYY-MM-DD. */
   endsOn: string;
+  /** PL: Godzina zamknięcia albo null (bez godziny). EN: The closing hour, or null (no hour). */
+  closesAt: Date | null;
 };
 
 /**
@@ -48,6 +50,8 @@ export type SurveyListInput = {
   votedIds: Set<string>;
   /** PL: Dzisiejsza data, RRRR-MM-DD. EN: Today's date, YYYY-MM-DD. */
   today: string;
+  /** PL: Ta sama chwila, z której wzięto today (decyduje o godzinie zamknięcia). EN: The same moment today was taken from (decides the closing hour). */
+  now: Date;
 };
 
 /**
@@ -64,10 +68,11 @@ export function buildSurveyList(input: SurveyListInput): SurveyList {
   // PL: Rozdziel ankiety po terminie.
   // EN: Split the surveys by the deadline.
   for (const row of input.rows) {
-    if (!isSurveyActive(row.endsOn, input.today)) {
-      ended.push({ id: row.id, title: row.title, endsOn: row.endsOn });
+    if (!isSurveyOpen(row.endsOn, row.closesAt, input.today, input.now)) {
+      ended.push({ id: row.id, title: row.title, endsOn: row.endsOn, endedOn: closedOn(row.endsOn, row.closesAt) });
       continue;
     }
+    const closesAt = shownClosesAt(row.endsOn, row.closesAt);
     active.push({
       id: row.id,
       label: row.label,
@@ -75,12 +80,13 @@ export function buildSurveyList(input: SurveyListInput): SurveyList {
       questionCount: input.questionCounts.get(row.id) ?? 0,
       daysLeft: daysLeft(row.endsOn, input.today),
       hasVoted: input.votedIds.has(row.id),
+      closesAt: closesAt === null ? null : closesAt.toISOString(),
     });
   }
 
   // PL: Kolejność: kończące się wcześniej na górze, zakończone od najnowszej.
   // EN: The order: those ending sooner on top, ended ones from the newest.
   active.sort((a, b) => a.daysLeft - b.daysLeft);
-  ended.sort((a, b) => b.endsOn.localeCompare(a.endsOn));
+  ended.sort((a, b) => b.endedOn.localeCompare(a.endedOn));
   return { active, ended: ended.slice(0, MAX_ENDED_SURVEYS) };
 }

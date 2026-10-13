@@ -7,8 +7,11 @@
  * @uses worker/surveys/vote/routes.ts::surveysVoteApp
  * @uses worker/surveys/vote/deleteStudentData.ts::deleteSurveysStudentData
  * @uses worker/surveys/vote/countParticipations.ts::countSurveyParticipations
+ * @uses worker/surveys/vote/listParticipatedSurveys.ts::listParticipatedSurveys
+ * @uses worker/surveys/vote/listParticipatedSurveys.ts::ParticipatedSurvey
  * @used_by worker/surveys/index.ts::surveysVoteApp
  * @used_by worker/surveys/index.ts::countSurveyParticipations
+ * @used_by worker/surveys/index.ts::listParticipatedSurveys
  */
 
 // PL: Router podtoru 5a.
@@ -22,3 +25,7 @@ export { deleteSurveysStudentData } from './deleteStudentData';
 // PL: Liczba udziałów w ankietach dla ekranu panelu Samorządu. Zbiera ją worker/surveys/index.ts.
 // EN: The number of survey participations for a screen of the Student Council panel. worker/surveys/index.ts collects it.
 export { countSurveyParticipations } from './countParticipations';
+
+// PL: Lista ankiet, w których uczeń brał udział (numer, temat, tytuł, ostatni dzień), bez wyborów odpowiedzi, dla eksportu danych RODO „Pobierz moje dane” (podtor 7). Zbiera ją worker/surveys/index.ts.
+// EN: The list of surveys a student took part in (id, label, title, last day), without the answers chosen, for the GDPR data export "Download my data" (subtrack 7). worker/surveys/index.ts collects it.
+export { listParticipatedSurveys, type ParticipatedSurvey } from './listParticipatedSurveys';

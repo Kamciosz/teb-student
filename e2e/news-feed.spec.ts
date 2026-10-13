@@ -273,6 +273,21 @@ test.describe('z podstawionym serwerem', () => {
     await expect(page.locator('.news-card')).toHaveCount(4);
     await expect(page.getByText('Nie udało się odświeżyć wpisów. Pokazujemy zapisane.')).toBeVisible();
   });
+
+  // PL: Bez internetu film w otwartym wpisie zmienia się w napis z linkiem do YouTube, bez miniatury i ramki.
+  // EN: Without internet the video in the open entry turns into a note with a link to YouTube, without the thumbnail and the frame.
+  test('film bez internetu to napis z linkiem / the video without internet is a note with a link', async ({ page, context }) => {
+    await page.goto('/news/feed/e-event');
+    await expect(page.getByRole('button', { name: 'Odtwórz film' })).toBeVisible();
+
+    await context.setOffline(true);
+
+    await expect(page.getByRole('button', { name: 'Odtwórz film' })).toHaveCount(0);
+    await expect(page.locator('iframe')).toHaveCount(0);
+    const link = page.getByRole('link', { name: 'Obejrzyj na YouTube' });
+    await expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
 });
 
 // PL: Test bez podstawionego serwera: ekran czyta wpisy z lokalnej bazy D1 po `npm run db:reset` i `npm run db:seed` (robi to `npm run test:e2e`). Szkic z danych testowych nie może być widoczny ani pod własnym adresem.
