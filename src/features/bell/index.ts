@@ -1,13 +1,19 @@
 /**
- * PL: Drzwi podtoru 6 (licznik do dzwonka) po stronie telefonu. Wystawia ekran dla routera. Inne moduły importują tylko stąd.
- * EN: The door of subtrack 6 (bell countdown) on the phone side. Exposes the screen to the router. Other modules import only from here.
+ * PL: Drzwi podtoru 6 (licznik do dzwonka) po stronie telefonu. Wystawia ekran dla routera i licznik oraz logikę dla pulpitu (podtor 9). Inne moduły importują tylko stąd.
+ * EN: The door of subtrack 6 (bell countdown) on the phone side. Exposes the screen to the router and the countdown and its logic to the dashboard (subtrack 9). Other modules import only from here.
  *
  * @author Bohdan
  * @since 2026-10-09
  * @uses src/features/bell/BellScreen.tsx::BellScreen
+ * @uses src/features/bell/BellCountdown.tsx::BellCountdown
+ * @uses src/features/bell/bellState.ts::getBellState
  * @used_by src/app/routes.ts::APP_ROUTES
  */
 
 // PL: Ekran podtoru 6.
 // EN: The screen of subtrack 6.
 export { BellScreen } from './BellScreen';
+// PL: Licznik do dzwonka i jego logika stanu (typ BellState do użycia przez pulpit).
+// EN: The bell countdown and its state logic (the BellState type for the dashboard).
+export { BellCountdown } from './BellCountdown';
+export { getBellState, type BellState } from './bellState';
