@@ -1,0 +1,47 @@
+/* PL: Licznik do dzwonka i ekran podtoru 6. Kolory i rozmiary tylko przez tokeny (tokens.css). */
+/* EN: Bell countdown and the subtrack 6 screen. Colours and sizes only through tokens (tokens.css). */
+
+/* PL: Ekran podtoru 6: odstęp od krawędzi. */
+/* EN: Screen of subtrack 6: space from the edges. */
+.bell-screen {
+  padding: 16px;
+}
+
+/* PL: Licznik wyrównany do prawej, jak w makiecie EKRANY 2.1. */
+/* EN: Countdown aligned right, as in the EKRANY 2.1 mockup. */
+.bell-countdown {
+  text-align: right;
+}
+
+/* PL: Wiersz z liczbą i jednostką. */
+/* EN: Row with the number and the unit. */
+.bell-countdown__value {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0;
+}
+
+/* PL: Liczba minut: duża i pogrubiona. */
+/* EN: Number of minutes: large and bold. */
+.bell-countdown__num {
+  font-size: var(--t-xl);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* PL: Jednostka „min”. */
+/* EN: The unit "min". */
+.bell-countdown__unit {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* PL: Podpis pod liczbą. */
+/* EN: Caption under the number. */
+.bell-countdown__label {
+  margin: 0;
+  color: var(--ink-2);
+}
