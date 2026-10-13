@@ -1,6 +1,6 @@
 /**
- * PL: Zapytania do bazy podtoru 3c (wpisy w panelu): lista wszystkich wpisów ze szkicami, publikacja szkicu i usunięcie wpisu. To jedyne miejsce, które w panelu zmienia stan wpisu. Treści wpisu nie czytamy i nie zapisujemy: tworzy ją edytor (podtor 3b).
- * EN: The database queries of subtrack 3c (entries in the panel): the list of all entries with drafts, publishing a draft and deleting an entry. This is the only place in the panel that changes an entry's state. We neither read nor write the entry content: the editor (subtrack 3b) creates it.
+ * PL: Zapytania do bazy podtoru 3c (wpisy w panelu): lista wszystkich wpisów ze szkicami, publikacja szkicu, przypięcie i odpięcie wpisu oraz usunięcie wpisu. To jedyne miejsce, które w panelu zmienia stan wpisu. Treści wpisu nie czytamy i nie zapisujemy: tworzy ją edytor (podtor 3b).
+ * EN: The database queries of subtrack 3c (entries in the panel): the list of all entries with drafts, publishing a draft, pinning and unpinning an entry, and deleting an entry. This is the only place in the panel that changes an entry's state. We neither read nor write the entry content: the editor (subtrack 3b) creates it.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -8,9 +8,9 @@
  * @used_by worker/news/admin/routes.ts::createNewsAdminApp
  */
 
-// PL: Funkcje składania warunków i sortowania w Drizzle.
-// EN: The Drizzle functions for building conditions and sorting.
-import { and, asc, desc, eq } from 'drizzle-orm';
+// PL: Funkcje składania warunków i sortowania w Drizzle, a także surowy fragment SQL do podzapytania.
+// EN: The Drizzle functions for building conditions and sorting, and a raw SQL fragment for a subquery.
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 // PL: Drizzle łączy się z D1.
 // EN: Drizzle connects to D1.
 import { drizzle } from 'drizzle-orm/d1';
@@ -23,6 +23,12 @@ import { newsEntries, type NewsEntryStatus, type NewsEntryType } from '../../db/
  * EN: The most entries on the panel list. The panel has no paging, so the list has a ceiling.
  */
 export const PANEL_LIST_LIMIT = 100;
+
+/**
+ * PL: Najwięcej wpisów przypiętych naraz. Czwarte przypięcie dostaje błąd „pin_limit”.
+ * EN: The most entries pinned at once. A fourth pin gets the "pin_limit" error.
+ */
+export const PIN_LIMIT = 3;
 
 /**
  * PL: Wpis na liście panelu: bez treści, bo lista jej nie pokazuje.
@@ -41,6 +47,10 @@ export type PanelEntry = {
   source: string;
   /** PL: Chwila publikacji jako tekst ISO 8601 albo null dla szkicu. EN: The publication moment as an ISO 8601 string, or null for a draft. */
   publishedAt: string | null;
+  /** PL: Chwila przypięcia jako tekst ISO 8601 albo null, gdy wpis nie jest przypięty. EN: The pinning moment as an ISO 8601 string, or null when the entry is not pinned. */
+  pinnedAt: string | null;
+  /** PL: Chwila, od której uczeń widzi wpis, jako tekst ISO 8601 albo null, gdy nie ma zaplanowania. EN: The moment from which the student sees the entry, as an ISO 8601 string, or null when it is not scheduled. */
+  publishAt: string | null;
 };
 
 /**
@@ -48,6 +58,18 @@ export type PanelEntry = {
  * EN: The result of publishing a draft: published, already published before, or no such entry.
  */
 export type PublishResult = 'published' | 'already_published' | 'not_found';
+
+/**
+ * PL: Wynik przypięcia: przypięty (także wcześniej przypięty), brak wpisu, szkic albo komplet przypiętych.
+ * EN: The result of pinning: pinned (also pinned before), no entry, a draft, or a full set of pinned entries.
+ */
+export type PinResult = 'pinned' | 'not_found' | 'not_published' | 'pin_limit';
+
+/**
+ * PL: Wynik odpięcia: odpięty (także wcześniej nieprzypięty) albo brak wpisu.
+ * EN: The result of unpinning: unpinned (also unpinned before), or no entry.
+ */
+export type UnpinResult = 'unpinned' | 'not_found';
 
 /**
  * PL: Pobiera wpisy z panelu: najpierw szkice, potem opublikowane od najnowszego. W tabeli nie ma chwili utworzenia, więc kolejność szkiców między sobą nie jest ustalona.
@@ -61,13 +83,27 @@ export async function listPanelEntries(db: D1Database): Promise<PanelEntry[]> {
   // PL: Wybierz kolumny bez treści. Stan „draft” sortuje się przed „published”, więc szkice idą pierwsze.
   // EN: Select the columns without the content. The "draft" status sorts before "published", so drafts come first.
   const rows = await drizzle(db)
-    .select({ id: newsEntries.id, type: newsEntries.type, status: newsEntries.status, title: newsEntries.title, source: newsEntries.source, publishedAt: newsEntries.publishedAt })
+    .select({
+      id: newsEntries.id,
+      type: newsEntries.type,
+      status: newsEntries.status,
+      title: newsEntries.title,
+      source: newsEntries.source,
+      publishedAt: newsEntries.publishedAt,
+      pinnedAt: newsEntries.pinnedAt,
+      publishAt: newsEntries.publishAt,
+    })
     .from(newsEntries)
     .orderBy(asc(newsEntries.status), desc(newsEntries.publishedAt))
     .limit(PANEL_LIST_LIMIT);
-  // PL: Chwilę zamień na tekst ISO, żeby JSON miał jeden format.
-  // EN: Turn the moment into an ISO string, so the JSON has one format.
-  return rows.map((row) => ({ ...row, publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null }));
+  // PL: Chwile zamień na tekst ISO, żeby JSON miał jeden format.
+  // EN: Turn the moments into ISO strings, so the JSON has one format.
+  return rows.map((row) => ({
+    ...row,
+    publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
+    pinnedAt: row.pinnedAt ? row.pinnedAt.toISOString() : null,
+    publishAt: row.publishAt ? row.publishAt.toISOString() : null,
+  }));
 }
 
 /**
@@ -93,6 +129,56 @@ export async function publishDraft(db: D1Database, id: string): Promise<PublishR
   // EN: Nothing changed: the entry is already published or does not exist.
   const found = await orm.select({ id: newsEntries.id }).from(newsEntries).where(eq(newsEntries.id, id)).limit(1);
   return found.length > 0 ? 'already_published' : 'not_found';
+}
+
+/**
+ * PL: Przypina opublikowany wpis: ustawia chwilę przypięcia na teraz, o ile na liście nie ma już PIN_LIMIT przypiętych. Warunek liczenia jest w tym samym zapytaniu co zmiana, więc dwa równoległe przypięcia nie przekroczą limitu. Wpis już przypięty zostaje bez zmian (ta sama chwila), więc ponowne przypięcie przy komplecie nie daje błędu.
+ * EN: Pins a published entry: sets the pinning moment to now, provided the list has fewer than PIN_LIMIT pinned entries. The count condition is in the same query as the change, so two parallel pins cannot exceed the limit. An entry already pinned is left as it is (the same moment), so pinning again with a full set gives no error.
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @param id - PL: numer wpisu z adresu. EN: the entry id from the address.
+ * @returns PL: co się stało z wpisem. EN: what happened to the entry.
+ * @throws PL: błąd bazy. EN: a database error.
+ */
+export async function pinEntry(db: D1Database, id: string): Promise<PinResult> {
+  const orm = drizzle(db);
+  // PL: Zmień wiersz tylko, gdy jest opublikowany, nie jest przypięty i przypiętych jest mniej niż limit. Liczymy w podzapytaniu tej samej instrukcji.
+  // EN: Change the row only when it is published, not pinned, and there are fewer pinned entries than the limit. We count in a subquery of the same statement.
+  const changed = await orm
+    .update(newsEntries)
+    .set({ pinnedAt: new Date() })
+    .where(
+      and(
+        eq(newsEntries.id, id),
+        eq(newsEntries.status, 'published'),
+        isNull(newsEntries.pinnedAt),
+        sql`(select count(*) from ${newsEntries} where ${newsEntries.pinnedAt} is not null) < ${PIN_LIMIT}`,
+      ),
+    )
+    .returning({ id: newsEntries.id });
+  if (changed.length > 0) return 'pinned';
+  // PL: Nic się nie zmieniło. Odczytaj wpis, żeby podać przyczynę: brak, szkic, już przypięty albo limit.
+  // EN: Nothing changed. Read the entry to give the reason: missing, a draft, already pinned, or the limit.
+  const [row] = await orm.select({ status: newsEntries.status, pinnedAt: newsEntries.pinnedAt }).from(newsEntries).where(eq(newsEntries.id, id)).limit(1);
+  if (!row) return 'not_found';
+  if (row.status === 'draft') return 'not_published';
+  return row.pinnedAt !== null ? 'pinned' : 'pin_limit';
+}
+
+/**
+ * PL: Odpina wpis: czyści chwilę przypięcia. Wpis nieprzypięty też dostaje odpowiedź „odpięty”, więc powtórne odpięcie nie jest błędem.
+ * EN: Unpins an entry: clears the pinning moment. An entry that is not pinned also gets the "unpinned" answer, so unpinning twice is not an error.
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @param id - PL: numer wpisu z adresu. EN: the entry id from the address.
+ * @returns PL: co się stało z wpisem. EN: what happened to the entry.
+ * @throws PL: błąd bazy. EN: a database error.
+ */
+export async function unpinEntry(db: D1Database, id: string): Promise<UnpinResult> {
+  // PL: Wyczyść przypięcie wiersza o tym numerze i sprawdź, czy wiersz istnieje.
+  // EN: Clear the pinning of the row with this id and check whether the row exists.
+  const changed = await drizzle(db).update(newsEntries).set({ pinnedAt: null }).where(eq(newsEntries.id, id)).returning({ id: newsEntries.id });
+  return changed.length > 0 ? 'unpinned' : 'not_found';
 }
 
 /**

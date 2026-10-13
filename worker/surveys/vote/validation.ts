@@ -1,52 +1,104 @@
 /**
- * PL: Sprawdzanie odpowiedzi ucznia: kształt danych z telefonu i zgodność z pytaniami ankiety (każde pytanie raz, odpowiedź z tego pytania). Czysta logika bez bazy.
+ * PL: Sprawdzanie odpowiedzi ucznia: kształt danych z telefonu i zgodność z pytaniami ankiety (każde pytanie raz, odpowiedzi z tego pytania, a przy jednokrotnym wyborze i skali 1–5 jedna, przy krótkiej odpowiedzi niepusty tekst do 200 znaków). Czysta logika bez bazy.
  *     Serwer nie ufa telefonowi (docs/STANDARD_KODU.md, część 6): sprawdza każde pole, zanim cokolwiek zapisze.
- * EN: Checking the student's answers: the shape of the data from the phone and the match with the survey questions (every question once, an option of that question). Pure logic without the database.
+ * EN: Checking the student's answers: the shape of the data from the phone and the match with the survey questions (every question once, options of that question, one option for a single choice or a 1–5 scale, and a non-empty text of up to 200 characters for a short answer). Pure logic without the database.
  *     The server does not trust the phone (docs/STANDARD_KODU.md, part 6): it checks every field before writing anything.
  *
  * @author Jakub
  * @since 2026-10-09
+ * @uses worker/db/schema/surveys.ts::QUESTION_TYPES
  * @used_by worker/surveys/vote/routes.ts::surveysVoteApp
  * @used_by worker/surveys/vote/validation.test.ts::checkAnswers
  */
+
+// PL: Rodzaje pytań ze schematu, tylko jako typ (nic nie jest wykonywane).
+// EN: The question types from the schema, as a type only (nothing is run).
+import type { QUESTION_TYPES } from '../../db/schema/surveys';
 
 // PL: Najwięcej odpowiedzi w jednym zapytaniu. Ankieta ma kilka pytań, więc 50 to duży zapas, a odcina śmieciowe zapytania.
 // EN: The most answers in one request. A survey has a few questions, so 50 is a big margin, and it cuts off junk requests.
 const MAX_ANSWERS = 50;
 
+// PL: Najwięcej wybranych odpowiedzi w jednym pytaniu. Pytanie ma kilka odpowiedzi, więc 50 to duży zapas.
+// EN: The most picked options in one question. A question has a few options, so 50 is a big margin.
+const MAX_OPTIONS = 50;
+
 // PL: Najdłuższy numer pytania albo odpowiedzi. Numery są krótkimi tekstami.
 // EN: The longest question or option id. The ids are short texts.
 const MAX_ID_LENGTH = 64;
 
+// PL: Najwięcej znaków w krótkiej odpowiedzi, po przycięciu spacji z obu stron. Liczone w znakach Unicode (punktach kodowych), tak samo jak licznik na telefonie.
+// EN: The most characters in a short answer, after trimming spaces on both ends. Counted in Unicode characters (code points), the same way as the counter on the phone.
+export const MAX_TEXT_LENGTH = 200;
+
+// PL: Najdłuższy surowy tekst z telefonu, zanim zostanie przycięty. Zapas ponad 200 znaków na białe znaki i znaki spoza BMP, żeby ucięte zapytanie nie wyglądało jak zły kształt.
+// EN: The longest raw text from the phone before trimming. A margin over 200 characters for spaces and characters outside the BMP, so a cut request does not look like a bad shape.
+const MAX_RAW_TEXT_LENGTH = 1000;
+
 /**
- * PL: Jedna odpowiedź ucznia: które pytanie i którą odpowiedź wybrał.
- * EN: One answer of the student: which question and which option was picked.
+ * PL: Rodzaj pytania: jedna odpowiedź (jednokrotny wybór, skala 1–5), kilka (wielokrotny wybór) albo tekst (krótka odpowiedź). Z kolumny survey_questions.type.
+ * EN: The question type: one answer (single choice, 1–5 scale), several (multiple choice) or text (short answer). From the survey_questions.type column.
+ */
+export type QuestionType = (typeof QUESTION_TYPES)[number];
+
+/**
+ * PL: Odpowiedź ucznia na jedno pytanie: które pytanie, które odpowiedzi wybrał i ewentualnie jaki tekst wpisał.
+ * EN: The student's answer to one question: which question, which options were picked and, if any, the text typed.
  */
 export type AnswerInput = {
   /** PL: Numer pytania. EN: The question id. */
   questionId: string;
-  /** PL: Numer wybranej odpowiedzi. EN: The id of the picked option. */
-  optionId: string;
+  /** PL: Numery wybranych odpowiedzi. EN: The ids of the picked options. */
+  optionIds: string[];
+  /** PL: Tekst krótkiej odpowiedzi. Brak pola znaczy, że telefon nic nie wysłał. EN: The short-answer text. A missing field means the phone sent nothing. */
+  text?: string;
 };
 
 /**
- * PL: Pytanie ankiety z numerami jego odpowiedzi, do porównania z tym, co przysłał telefon.
- * EN: A survey question with the ids of its options, to compare with what the phone sent.
+ * PL: Pytanie ankiety z jego rodzajem i numerami odpowiedzi, do porównania z tym, co przysłał telefon.
+ * EN: A survey question with its type and the ids of its options, to compare with what the phone sent.
  */
 export type QuestionOptionIds = {
   /** PL: Numer pytania. EN: The question id. */
   questionId: string;
+  /** PL: Rodzaj pytania: decyduje, ile odpowiedzi wolno wybrać albo czy wolno wpisać tekst. EN: The question type: it decides how many options may be picked, or whether text may be typed. */
+  type: QuestionType;
   /** PL: Numery odpowiedzi tego pytania. EN: The ids of this question's options. */
   optionIds: string[];
 };
 
 /**
- * PL: Wynik sprawdzenia: poprawne numery odpowiedzi do zapisania albo powód odrzucenia.
- * EN: The check result: the valid option ids to write, or the reason for rejection.
+ * PL: Tekst krótkiej odpowiedzi po sprawdzeniu, gotowy do zapisu przy pytaniu.
+ * EN: A short-answer text after the check, ready to be written next to its question.
+ */
+export type TextAnswer = {
+  /** PL: Numer pytania. EN: The question id. */
+  questionId: string;
+  /** PL: Przycięty tekst, 1–200 znaków. EN: The trimmed text, 1–200 characters. */
+  text: string;
+};
+
+/**
+ * PL: Wynik sprawdzenia: poprawne numery odpowiedzi i teksty do zapisania albo powód odrzucenia.
+ * EN: The check result: the valid option ids and texts to write, or the reason for rejection.
  */
 export type AnswersCheck =
-  | { ok: true; optionIds: string[] }
-  | { ok: false; reason: 'missing_question' | 'unknown_question' | 'duplicate_question' | 'unknown_option' };
+  | { ok: true; optionIds: string[]; texts: TextAnswer[] }
+  | {
+      ok: false;
+      reason:
+        | 'missing_question'
+        | 'unknown_question'
+        | 'duplicate_question'
+        | 'empty_answer'
+        | 'too_many_options'
+        | 'duplicate_option'
+        | 'unknown_option'
+        | 'empty_text'
+        | 'text_too_long'
+        | 'unexpected_text'
+        | 'unexpected_option';
+    };
 
 /**
  * PL: Sprawdza, czy tekst to krótki, niepusty numer.
@@ -62,8 +114,8 @@ function isId(value: unknown): value is string {
 }
 
 /**
- * PL: Zamienia dane z telefonu na listę odpowiedzi. Oczekiwany kształt: { answers: [{ questionId, optionId }, ...] }.
- * EN: Turns the data from the phone into a list of answers. Expected shape: { answers: [{ questionId, optionId }, ...] }.
+ * PL: Zamienia dane z telefonu na listę odpowiedzi. Oczekiwany kształt: { answers: [{ questionId, optionIds: [...], text? }, ...] }. Pusta lista wyborów przechodzi tutaj, a odrzuca ją checkAnswers.
+ * EN: Turns the data from the phone into a list of answers. Expected shape: { answers: [{ questionId, optionIds: [...], text? }, ...] }. An empty list of picks passes here, and checkAnswers rejects it.
  *
  * @param body - PL: odczytany JSON zapytania (dowolna wartość). EN: the parsed JSON of the request (any value).
  * @returns PL: lista odpowiedzi albo null, gdy kształt jest zły. EN: the list of answers, or null when the shape is wrong.
@@ -74,43 +126,80 @@ export function parseAnswersBody(body: unknown): AnswerInput[] | null {
   const answers = (body as { answers?: unknown } | null)?.answers;
   if (!Array.isArray(answers) || answers.length === 0 || answers.length > MAX_ANSWERS) return null;
 
-  // PL: Każdy element musi mieć oba numery. Dodatkowe pola odrzucamy, nie zapisujemy ich nigdzie.
-  // EN: Every element must have both ids. We drop extra fields and store them nowhere.
+  // PL: Każdy element musi mieć numer pytania i tablicę numerów odpowiedzi. Tekst jest opcjonalny, ale jeśli przyszedł, musi być tekstem o rozsądnej długości. Dodatkowe pola odrzucamy, nie zapisujemy ich nigdzie.
+  // EN: Every element must have a question id and an array of option ids. The text is optional, but if it comes it must be text of a sensible length. We drop extra fields and store them nowhere.
   const parsed: AnswerInput[] = [];
   for (const item of answers) {
-    const { questionId, optionId } = (item ?? {}) as Record<string, unknown>;
-    if (!isId(questionId) || !isId(optionId)) return null;
-    parsed.push({ questionId, optionId });
+    const { questionId, optionIds, text } = (item ?? {}) as Record<string, unknown>;
+    if (!isId(questionId) || !Array.isArray(optionIds) || optionIds.length > MAX_OPTIONS || !optionIds.every(isId)) return null;
+
+    // PL: Brak tekstu (albo null) to brak pola. Tekst innego typu albo za długi to zły kształt.
+    // EN: No text (or null) means no field. A text of another type, or too long, is a bad shape.
+    if (text === undefined || text === null) {
+      parsed.push({ questionId, optionIds });
+      continue;
+    }
+    if (typeof text !== 'string' || text.length > MAX_RAW_TEXT_LENGTH) return null;
+    parsed.push({ questionId, optionIds, text });
   }
   return parsed;
 }
 
 /**
- * PL: Porównuje odpowiedzi z pytaniami ankiety: każde pytanie dokładnie raz i odpowiedź należy do swojego pytania.
- * EN: Compares the answers with the survey questions: every question exactly once and the option belongs to its question.
+ * PL: Porównuje odpowiedzi z pytaniami ankiety: każde pytanie dokładnie raz. Przy wyborze: co najmniej jedna odpowiedź, każda z tego pytania, bez powtórzeń, a przy jednokrotnym wyborze i skali dokładnie jedna, bez tekstu. Przy krótkiej odpowiedzi: niepusty tekst do 200 znaków po przycięciu, bez odpowiedzi do wyboru.
+ * EN: Compares the answers with the survey questions: every question exactly once. For a choice: at least one option, each from that question, without repeats, and exactly one for a single choice or a scale, with no text. For a short answer: a non-empty text of up to 200 characters after trimming, with no options.
  *
- * @param questions - PL: pytania ankiety z numerami odpowiedzi. EN: the survey questions with option ids.
+ * @param questions - PL: pytania ankiety z rodzajem i numerami odpowiedzi. EN: the survey questions with their type and option ids.
  * @param answers - PL: odpowiedzi ucznia po parsowaniu. EN: the student's answers after parsing.
- * @returns PL: numery wybranych odpowiedzi albo powód odrzucenia. EN: the picked option ids, or the reason for rejection.
+ * @returns PL: numery wybranych odpowiedzi i przycięte teksty (wszystkich pytań) albo powód odrzucenia. EN: the picked option ids and the trimmed texts of all questions, or the reason for rejection.
  */
 export function checkAnswers(questions: QuestionOptionIds[], answers: AnswerInput[]): AnswersCheck {
-  // PL: Mapa pytanie → dozwolone odpowiedzi, do szybkiego sprawdzania.
-  // EN: A question → allowed options map, for quick checks.
-  const allowed = new Map(questions.map((question) => [question.questionId, new Set(question.optionIds)]));
+  // PL: Mapa numer pytania → pytanie, do szybkiego sprawdzania.
+  // EN: A question id → question map, for quick checks.
+  const allowed = new Map(questions.map((question) => [question.questionId, question]));
 
-  // PL: Przejdź po odpowiedziach i odrzuć pierwszą złą: nieznane pytanie, powtórzone pytanie albo cudza odpowiedź.
-  // EN: Walk the answers and reject the first bad one: an unknown question, a repeated question or a foreign option.
+  // PL: Przejdź po odpowiedziach i odrzuć pierwszą złą: nieznane pytanie, powtórzone pytanie, pustą odpowiedź albo tekst, za dużo odpowiedzi w jednokrotnym wyborze, powtórzoną albo cudzą odpowiedź, zły rodzaj zawartości.
+  // EN: Walk the answers and reject the first bad one: an unknown question, a repeated question, an empty answer or text, too many options for a single choice, a repeated or a foreign option, content of the wrong kind.
   const seen = new Set<string>();
+  const picked: string[] = [];
+  const texts: TextAnswer[] = [];
   for (const answer of answers) {
-    const options = allowed.get(answer.questionId);
-    if (options === undefined) return { ok: false, reason: 'unknown_question' };
+    const question = allowed.get(answer.questionId);
+    if (question === undefined) return { ok: false, reason: 'unknown_question' };
     if (seen.has(answer.questionId)) return { ok: false, reason: 'duplicate_question' };
-    if (!options.has(answer.optionId)) return { ok: false, reason: 'unknown_option' };
     seen.add(answer.questionId);
+
+    // PL: Krótka odpowiedź: tylko tekst. Tekst przycinamy tu, bo to jedyne miejsce, które go liczy i zapisuje.
+    // EN: A short answer: text only. The text is trimmed here, because this is the only place that counts and stores it.
+    if (question.type === 'short_text') {
+      if (answer.optionIds.length > 0) return { ok: false, reason: 'unexpected_option' };
+      const value = (answer.text ?? '').trim();
+      if (value === '') return { ok: false, reason: 'empty_text' };
+      if ([...value].length > MAX_TEXT_LENGTH) return { ok: false, reason: 'text_too_long' };
+      texts.push({ questionId: answer.questionId, text: value });
+      continue;
+    }
+
+    // PL: Wybór nie przyjmuje tekstu, nawet pustego.
+    // EN: A choice does not take text, not even an empty one.
+    if (answer.text !== undefined) return { ok: false, reason: 'unexpected_text' };
+
+    if (answer.optionIds.length === 0) return { ok: false, reason: 'empty_answer' };
+    // PL: Jednokrotny wybór i skala 1–5 przyjmują jedną odpowiedź. Wypisane wprost, żeby nowy typ nie dostał wielu odpowiedzi po cichu.
+    // EN: A single choice and a 1–5 scale take one answer. Listed explicitly, so a new type does not get several answers silently.
+    const isSingle = question.type === 'single_choice' || question.type === 'scale_1_5';
+    if (isSingle && answer.optionIds.length > 1) return { ok: false, reason: 'too_many_options' };
+    // PL: Zbiór wybranych musi mieć tyle samo elementów co lista, inaczej ten sam numer przyszedł dwa razy.
+    // EN: The set of picked ids must have as many items as the list, otherwise the same id came twice.
+    if (new Set(answer.optionIds).size !== answer.optionIds.length) return { ok: false, reason: 'duplicate_option' };
+
+    const options = new Set(question.optionIds);
+    if (!answer.optionIds.every((optionId) => options.has(optionId))) return { ok: false, reason: 'unknown_option' };
+    picked.push(...answer.optionIds);
   }
 
   // PL: Każde pytanie ankiety musi mieć odpowiedź.
   // EN: Every survey question must have an answer.
   if (seen.size !== questions.length) return { ok: false, reason: 'missing_question' };
-  return { ok: true, optionIds: answers.map((answer) => answer.optionId) };
+  return { ok: true, optionIds: picked, texts };
 }

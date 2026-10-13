@@ -1,6 +1,6 @@
 /**
- * PL: Test zapytań podtoru 3a na prawdziwym D1 z testów (env.DB, tabele ze schematu są już założone). Sprawdza, że lista zawiera tylko opublikowane wpisy z datą, od najnowszego i z limitem, a pojedynczy wpis jest widoczny tylko wtedy, gdy jest opublikowany. Test oblewa, gdy ktoś usunie warunek „published” z zapytania.
- * EN: Test of the queries of subtrack 3a on the real D1 from the tests (env.DB, the schema tables are already created). Checks that the list holds only published entries with a date, newest first and with a limit, and that a single entry is visible only when it is published. The test fails when someone removes the "published" condition from the query.
+ * PL: Test zapytań podtoru 3a na prawdziwym D1 z testów (env.DB, tabele ze schematu są już założone). Sprawdza, że lista zawiera tylko opublikowane wpisy z datą, od najnowszego i z limitem, że wpis zaplanowany na przyszłość jest niewidoczny, że przypięte są na górze i że szukanie traktuje % i _ jak zwykłe znaki. Test oblewa, gdy ktoś usunie któryś z tych warunków z zapytania.
+ * EN: Test of the queries of subtrack 3a on the real D1 from the tests (env.DB, the schema tables are already created). Checks that the list holds only published entries with a date, newest first and with a limit, that an entry scheduled for the future is invisible, that pinned entries come first, and that the search treats % and _ as plain characters. The test fails when someone removes one of these conditions from the query.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -18,9 +18,15 @@ import { drizzle } from 'drizzle-orm/d1';
 // PL: Funkcje testowe Vitest.
 // EN: Vitest test functions.
 import { beforeEach, describe, expect, it } from 'vitest';
+// PL: Warunek równości dla zapytań.
+// EN: The equality condition for queries.
+import { eq } from 'drizzle-orm';
 // PL: Tabela wpisów i typ wiersza do wstawienia.
 // EN: The entries table and the type of a row to insert.
 import { newsEntries, type NewNewsEntryRow, type NewsEntryRow } from '../../db/schema/news';
+// PL: Tabela kont, z której bierzemy imię autora.
+// EN: The accounts table, from which we take the author's name.
+import { user } from '../../db/schema/auth';
 // PL: Zapytania, które sprawdzamy, i limit listy.
 // EN: The queries under test and the list limit.
 import { LIST_LIMIT, findPublishedEntry, listPublishedEntries } from './queries';
@@ -28,6 +34,14 @@ import { LIST_LIMIT, findPublishedEntry, listPublishedEntries } from './queries'
 // PL: Baza testowa.
 // EN: The test database.
 const db = drizzle(env.DB);
+
+// PL: Stała „teraz” dla testów widoczności, żeby wynik nie zależał od zegara.
+// EN: A fixed "now" for the visibility tests, so the result does not depend on the clock.
+const NOW = new Date(Date.UTC(2026, 9, 12, 12));
+
+// PL: Dwie godziny później niż NOW: zaplanowany wpis już wtedy jest widoczny.
+// EN: Two hours after NOW: a scheduled entry is already visible then.
+const LATER = new Date(NOW.getTime() + 2 * 3_600_000);
 
 /**
  * PL: Składa wiersz testowy. Domyślnie jest opublikowany o podanej godzinie 2026-10-09.
@@ -65,13 +79,13 @@ function ids(rows: NewsEntryRow[]): string[] {
 }
 
 /**
- * PL: Wstawia wiersze partiami po 10, bo D1 przyjmuje do 100 parametrów w zapytaniu.
- * EN: Inserts rows in batches of 10, because D1 accepts up to 100 parameters per query.
+ * PL: Wstawia wiersze partiami po 8. Wiersz ma 12 kolumn, a D1 przyjmuje do 100 parametrów w zapytaniu, więc 8 wierszy (96 parametrów) to najwięcej w jednej partii.
+ * EN: Inserts rows in batches of 8. A row has 12 columns and D1 accepts up to 100 parameters per query, so 8 rows (96 parameters) is the most in one batch.
  *
  * @param rows - PL: wiersze do wstawienia. EN: the rows to insert.
  */
 async function insertAll(rows: NewNewsEntryRow[]): Promise<void> {
-  for (let start = 0; start < rows.length; start += 10) await db.insert(newsEntries).values(rows.slice(start, start + 10));
+  for (let start = 0; start < rows.length; start += 8) await db.insert(newsEntries).values(rows.slice(start, start + 8));
 }
 
 // PL: Przed każdym testem tabela jest pusta.
@@ -98,6 +112,16 @@ describe('listPublishedEntries', () => {
     expect(rows.map((entry) => entry.id)).toEqual(['opublikowany']);
   });
 
+  // PL: Wpis do korekty ma datę publikacji w przeszłości i pustą chwilę zaplanowania, więc widoczność wynika tylko ze statusu. Ukrywa go filtr statusu, nie data: lista i wpis po numerze go pomijają.
+  // EN: An entry in review has a publication date in the past and an empty scheduled moment, so its visibility comes only from the status. The status filter hides it, not the date: the list and the entry by id both skip it.
+  it('pomija wpis do korekty, nawet z datą publikacji / skips an entry in review, even with a publication date', async () => {
+    await db.insert(newsEntries).values([row('opublikowany'), row('do-korekty', { status: 'in_review', title: 'Zapisy do korekty' })]);
+
+    expect(ids(await listPublishedEntries(db, '', NOW))).toEqual(['opublikowany']);
+    expect(ids(await listPublishedEntries(db, 'zapisy', NOW))).toEqual([]);
+    expect(await findPublishedEntry(db, 'do-korekty', NOW)).toBeUndefined();
+  });
+
   // PL: Najnowszy wpis jest pierwszy.
   // EN: The newest entry comes first.
   it('sortuje od najnowszego / sorts newest first', async () => {
@@ -115,10 +139,7 @@ describe('listPublishedEntries', () => {
   // PL: Lista ma limit, a odczytany wiersz ma datę jako obiekt Date.
   // EN: The list has a limit, and a read row has the date as a Date object.
   it('ucina listę do limitu / cuts the list to the limit', async () => {
-    const many = Array.from({ length: LIST_LIMIT + 5 }, (_, index) => row(`wpis-${index}`, { publishedAt: new Date(Date.UTC(2026, 0, 1) + index * 60_000) }));
-    // PL: D1 przyjmuje do 100 parametrów w zapytaniu, więc wstawiamy po 10 wierszy (9 kolumn każdy).
-    // EN: D1 accepts up to 100 parameters per query, so we insert 10 rows at a time (9 columns each).
-    for (let start = 0; start < many.length; start += 10) await db.insert(newsEntries).values(many.slice(start, start + 10));
+    await insertAll(Array.from({ length: LIST_LIMIT + 5 }, (_, index) => row(`wpis-${index}`, { publishedAt: atMinute(index) })));
 
     const rows = await listPublishedEntries(db);
 
@@ -163,6 +184,51 @@ describe('listPublishedEntries', () => {
 
     expect(await listPublishedEntries(db, 'zapisy')).toHaveLength(LIST_LIMIT);
   });
+  // PL: Wpis zaplanowany na przyszłość nie jest widoczny na liście ani w szukaniu, a po swojej chwili już jest. Wpis bez zaplanowanej chwili (od razu) i z chwilą, która minęła, też jest widoczny.
+  // EN: An entry scheduled for the future is not visible in the list or in the search, and after its moment it is. An entry without a scheduled moment (right away) and one whose moment has passed are visible too.
+  it('ukrywa wpis zaplanowany na przyszłość / hides an entry scheduled for the future', async () => {
+    await db.insert(newsEntries).values([
+      row('od-razu', { publishedAt: atMinute(3) }),
+      row('minelo', { publishedAt: atMinute(2), publishAt: new Date(NOW.getTime() - 60_000) }),
+      row('zaplanowany', { publishedAt: atMinute(1), publishAt: new Date(NOW.getTime() + 3_600_000), title: 'Zapisy przyszłe' }),
+    ]);
+
+    expect(ids(await listPublishedEntries(db, '', NOW))).toEqual(['od-razu', 'minelo']);
+    expect(ids(await listPublishedEntries(db, 'zapisy', NOW))).toEqual([]);
+    expect(ids(await listPublishedEntries(db, 'zapisy', LATER))).toEqual(['zaplanowany']);
+  });
+
+  // PL: Przypięte wpisy są na górze, najnowsze przypięcie pierwsze. Wpis bez przypięcia, najnowszy według daty, ląduje pod nimi: samo sortowanie po dacie by tego nie przeszło.
+  // EN: Pinned entries come first, the latest pin on top. An unpinned entry, newest by date, lands below them: sorting by date alone would not pass this.
+  it('przypięte są na górze, najnowsze przypięcie pierwsze / pinned entries come first, the latest pin on top', async () => {
+    await db.insert(newsEntries).values([
+      row('najnowszy-bez-przypiecia', { publishedAt: atMinute(5) }),
+      row('przypiety-stary', { publishedAt: atMinute(1), pinnedAt: atMinute(100) }),
+      row('przypiety-nowy', { publishedAt: atMinute(2), pinnedAt: atMinute(200) }),
+      row('zwykly', { publishedAt: atMinute(3) }),
+    ]);
+
+    expect(ids(await listPublishedEntries(db, '', NOW))).toEqual(['przypiety-nowy', 'przypiety-stary', 'najnowszy-bez-przypiecia', 'zwykly']);
+  });
+
+  // PL: Znaki % i _ w szukanym tekście są zwykłymi znakami (szukanie działa przez instr, a nie LIKE). Ukośnik też. Gdyby % działał jak wzorzec, znalazłby każdy tytuł.
+  // EN: The % and _ characters in the searched text are plain characters (the search works through instr, not LIKE). So is the backslash. If % acted as a pattern, it would find every title.
+  it('szuka znaków % i _ dosłownie / searches the % and _ characters literally', async () => {
+    await db.insert(newsEntries).values([
+      row('procent', { title: 'Rabat 50%', publishedAt: atMinute(1) }),
+      row('zlotowki', { title: 'Rabat 50 zł', publishedAt: atMinute(2) }),
+      row('podkreslenie', { title: 'Kod a_b', publishedAt: atMinute(3) }),
+      row('litera', { title: 'Kod axb', publishedAt: atMinute(4) }),
+      row('ukosnik', { title: 'Ścieżka a\\b', publishedAt: atMinute(5) }),
+    ]);
+
+    expect(ids(await listPublishedEntries(db, '50%', NOW))).toEqual(['procent']);
+    expect(ids(await listPublishedEntries(db, '%', NOW))).toEqual(['procent']);
+    expect(ids(await listPublishedEntries(db, 'a_b', NOW))).toEqual(['podkreslenie']);
+    expect(ids(await listPublishedEntries(db, '_', NOW))).toEqual(['podkreslenie']);
+    expect(ids(await listPublishedEntries(db, 'a\\b', NOW))).toEqual(['ukosnik']);
+    expect(ids(await listPublishedEntries(db, '\\', NOW))).toEqual(['ukosnik']);
+  });
 });
 
 // PL: Grupa testów zapytania o jeden wpis.
@@ -173,9 +239,18 @@ describe('findPublishedEntry', () => {
   it('znajduje opublikowany, nie znajduje szkicu / finds a published entry, does not find a draft', async () => {
     await db.insert(newsEntries).values([row('opublikowany'), row('szkic', { status: 'draft', publishedAt: null })]);
 
-    expect((await findPublishedEntry(db, 'opublikowany'))?.id).toBe('opublikowany');
+    expect((await findPublishedEntry(db, 'opublikowany'))?.entry.id).toBe('opublikowany');
     expect(await findPublishedEntry(db, 'szkic')).toBeUndefined();
     expect(await findPublishedEntry(db, 'nie-ma')).toBeUndefined();
+  });
+
+  // PL: Wpis zaplanowany na przyszłość nie otwiera się po numerze, dopóki jego chwila nie minie.
+  // EN: An entry scheduled for the future does not open by its id until its moment passes.
+  it('wpis zaplanowany na przyszłość nie jest widoczny po numerze / a scheduled entry is not visible by its id', async () => {
+    await db.insert(newsEntries).values(row('zaplanowany', { publishAt: new Date(NOW.getTime() + 3_600_000) }));
+
+    expect(await findPublishedEntry(db, 'zaplanowany', NOW)).toBeUndefined();
+    expect((await findPublishedEntry(db, 'zaplanowany', LATER))?.entry.id).toBe('zaplanowany');
   });
 
   // PL: Złośliwy numer z adresu jest parametrem: nic nie znajduje i nie psuje tabeli.
@@ -185,6 +260,29 @@ describe('findPublishedEntry', () => {
 
     expect(await findPublishedEntry(db, "x' OR '1'='1")).toBeUndefined();
     expect(await findPublishedEntry(db, "x'; DROP TABLE news_entries; --")).toBeUndefined();
-    expect((await findPublishedEntry(db, 'opublikowany'))?.id).toBe('opublikowany');
+    expect((await findPublishedEntry(db, 'opublikowany'))?.entry.id).toBe('opublikowany');
+  });
+
+  // PL: Imię autora idzie z konta. Bez autora, z samymi spacjami w imieniu albo po usunięciu konta dostajemy null. E-mail konta nigdy nie trafia do wyniku.
+  // EN: The author's name comes from the account. Without an author, with only spaces in the name, or after the account is deleted we get null. The account's e-mail never gets into the result.
+  it('podaje imię autora z konta, a bez autora null / gives the author\'s name from the account, and null without an author', async () => {
+    await db.insert(user).values([
+      { id: 'autor-ada', name: '  Ada Wymyślona ', email: 'ada.wymyslona@example.com', emailVerified: true },
+      { id: 'autor-pusty', name: '   ', email: 'pusty.autor@example.com', emailVerified: true },
+    ]).onConflictDoNothing();
+    await db.insert(newsEntries).values([
+      row('z-autorem', { authorUserId: 'autor-ada' }),
+      row('pusty-autor', { authorUserId: 'autor-pusty' }),
+      row('bez-autora'),
+    ]);
+
+    const withAuthor = await findPublishedEntry(db, 'z-autorem');
+    expect(withAuthor?.authorName).toBe('Ada Wymyślona');
+    expect(JSON.stringify(withAuthor)).not.toContain('example.com');
+    expect((await findPublishedEntry(db, 'pusty-autor'))?.authorName).toBeNull();
+    expect((await findPublishedEntry(db, 'bez-autora'))?.authorName).toBeNull();
+
+    await db.delete(user).where(eq(user.id, 'autor-ada'));
+    expect((await findPublishedEntry(db, 'z-autorem'))?.authorName).toBeNull();
   });
 });
