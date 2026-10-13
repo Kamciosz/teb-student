@@ -257,6 +257,24 @@ test('rodzaj pytania „Wiele wyborów” idzie na serwer / the question type "W
   expect(mock.posted).toEqual([{ title: 'Wybory klasowe', durationDays: 7, questions: [{ prompt: 'Co lubisz jeść?', type: 'multiple_choice', options: ['Pizzę', 'Sałatkę'] }], closesAt: null }]);
 });
 
+// PL: Skala 1–5 nie pokazuje pól odpowiedzi, a panel sam wysyła odpowiedzi „1”…„5”.
+// EN: The 1–5 scale shows no option fields, and the panel sends the options "1"…"5" itself.
+test('skala 1–5 idzie na serwer z odpowiedziami 1…5 / the 1–5 scale goes to the server with the options 1…5', async ({ page }) => {
+  const mock = await mockPanelServer(page);
+  await page.goto('/surveys/admin/new');
+  await page.getByLabel('Tytuł ankiety', { exact: true }).fill('Ocena stołówki');
+  await page.getByLabel('Pytanie 1', { exact: true }).fill('Jak oceniasz obiady?');
+
+  await page.getByText('Skala 1–5', { exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Skala 1–5' })).toBeChecked();
+  await expect(page.getByLabel('Odpowiedź A', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Dodaj odpowiedź' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
+
+  await expect(page).toHaveURL(/\/surveys\/admin$/);
+  expect(mock.posted).toEqual([{ title: 'Ocena stołówki', durationDays: 7, questions: [{ prompt: 'Jak oceniasz obiady?', type: 'scale_1_5', options: ['1', '2', '3', '4', '5'] }], closesAt: null }]);
+});
+
 // PL: Błąd zapisu: komunikat nad przyciskiem, a przycisk zostaje aktywny, żeby ponowić.
 // EN: A write error: the message above the button, and the button stays active to retry.
 test('błąd zapisu pokazuje komunikat, a przycisk zostaje aktywny / a write error shows the message and the button stays active', async ({ page }) => {

@@ -1,7 +1,7 @@
 /**
- * PL: Sprawdzanie nowej ankiety z telefonu: tytuł i pytania są wymagane, każde pytanie ma od 2 do 5 odpowiedzi, a czas trwania to 3, 7 albo 14 dni. Czysta logika bez bazy.
+ * PL: Sprawdzanie nowej ankiety z telefonu: tytuł i pytania są wymagane, każde pytanie ma od 2 do 5 odpowiedzi, a czas trwania to 3, 7 albo 14 dni. Pytanie „Skala 1–5” (scale_1_5) ma pięć odpowiedzi „1”…„5” tworzonych przez serwer, nie przez telefon. Czysta logika bez bazy.
  *     Tabela z podtoru 5a tych zasad nie wymusza (docs/projekt/EKRANY.md, ekran 6.5b), więc wymusza je serwer 5b. Serwer nie ufa telefonowi (docs/STANDARD_KODU.md, część 6).
- * EN: Checking a new survey from the phone: the title and the questions are required, each question has 2 to 5 options, and the duration is 3, 7 or 14 days. Pure logic without the database.
+ * EN: Checking a new survey from the phone: the title and the questions are required, each question has 2 to 5 options, and the duration is 3, 7 or 14 days. A question of the type scale_1_5 gets five options "1"…"5" made by the server, not by the phone. Pure logic without the database.
  *     The table from subtrack 5a does not enforce these rules (docs/projekt/EKRANY.md, screen 6.5b), so the 5b server does. The server does not trust the phone (docs/STANDARD_KODU.md, part 6).
  *
  * @author Jakub
@@ -23,6 +23,10 @@ export const DURATIONS_DAYS = [3, 7, 14] as const;
 // EN: The fewest and the most options in a question (screen 6.5b: from 2 to 5).
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 5;
+
+// PL: Odpowiedzi skali 1–5. Tworzy je serwer, a telefon ich nie wysyła. Te same etykiety i kolejność rozpoznaje głosowanie (worker/surveys/vote, podtor 5a).
+// EN: The options of the 1–5 scale. The server makes them, and the phone does not send them. The vote (worker/surveys/vote, subtrack 5a) recognises the same labels in the same order.
+export const SCALE_LABELS = ['1', '2', '3', '4', '5'] as const;
 
 // PL: Najwięcej pytań w ankiecie. Ekran nie podaje limitu, ten odcina śmieciowe zapytania i mieści zapis w limicie D1 (100 wartości na zapytanie).
 // EN: The most questions in a survey. The screen gives no limit, this one cuts off junk requests and keeps the write within the D1 limit (100 values per query).
@@ -81,8 +85,8 @@ function parseQuestionType(value: unknown): QuestionType | undefined {
 }
 
 /**
- * PL: Sprawdza jedno pytanie: treść, typ i od 2 do 5 odpowiedzi.
- * EN: Checks one question: the text, the type and 2 to 5 options.
+ * PL: Sprawdza jedno pytanie: treść, typ i odpowiedzi. Przy skali 1–5 odpowiedzi tworzy serwer (pięć stałych), a przy pozostałych typach to od 2 do 5 odpowiedzi z telefonu.
+ * EN: Checks one question: the text, the type and the options. For the 1–5 scale the server makes the options (five fixed ones), and for the other types they are 2 to 5 options from the phone.
  *
  * @param value - PL: pytanie z danych telefonu. EN: a question from the phone's data.
  * @returns PL: poprawne pytanie albo null. EN: the valid question, or null.
@@ -93,7 +97,13 @@ function parseQuestion(value: unknown): NewSurvey['questions'][number] | null {
   const raw = value as { prompt?: unknown; type?: unknown; options?: unknown } | null;
   const prompt = cleanText(raw?.prompt, MAX_PROMPT_LENGTH);
   const type = parseQuestionType(raw?.type);
-  if (prompt === null || type === undefined || !Array.isArray(raw?.options)) return null;
+  if (prompt === null || type === undefined) return null;
+
+  // PL: Skala 1–5 nie bierze odpowiedzi z telefonu: serwer daje pięć stałych i ignoruje to, co przyszło w options.
+  // EN: The 1–5 scale does not take options from the phone: the server gives the five fixed ones and ignores whatever came in options.
+  if (type === 'scale_1_5') return { prompt, type, options: [...SCALE_LABELS] };
+
+  if (!Array.isArray(raw?.options)) return null;
   if (raw.options.length < MIN_OPTIONS || raw.options.length > MAX_OPTIONS) return null;
 
   // PL: Każda odpowiedź musi mieć treść. Jedna pusta odrzuca całe pytanie.
@@ -123,8 +133,8 @@ function parseClosesAt(value: unknown, now: Date): number | null | undefined {
 }
 
 /**
- * PL: Zamienia dane z telefonu na nową ankietę. Oczekiwany kształt: { title, questions: [{ prompt, type, options: [tekst, ...] }], durationDays, closesAt }, gdzie type to single_choice albo multiple_choice (brak typu = single_choice), a closesAt jest czasem polskim RRRR-MM-DDTHH:mm albo pusty.
- * EN: Turns the data from the phone into a new survey. Expected shape: { title, questions: [{ prompt, type, options: [text, ...] }], durationDays, closesAt }, where type is single_choice or multiple_choice (no type = single_choice), and closesAt is the Polish time YYYY-MM-DDTHH:mm or empty.
+ * PL: Zamienia dane z telefonu na nową ankietę. Oczekiwany kształt: { title, questions: [{ prompt, type, options: [tekst, ...] }], durationDays, closesAt }, gdzie type to single_choice, multiple_choice albo scale_1_5 (brak typu = single_choice; przy scale_1_5 options są ignorowane), a closesAt jest czasem polskim RRRR-MM-DDTHH:mm albo pusty.
+ * EN: Turns the data from the phone into a new survey. Expected shape: { title, questions: [{ prompt, type, options: [text, ...] }], durationDays, closesAt }, where type is single_choice, multiple_choice or scale_1_5 (no type = single_choice; with scale_1_5 the options are ignored), and closesAt is the Polish time YYYY-MM-DDTHH:mm or empty.
  *
  * @param body - PL: odczytany JSON zapytania (dowolna wartość). EN: the parsed JSON of the request (any value).
  * @param now - PL: chwila, od której termin musi być w przyszłości. EN: the moment from which the closing time must be in the future.

@@ -33,6 +33,20 @@ export function percentOf(votes: number, total: number): number {
 }
 
 /**
+ * PL: Liczy średnią ze skali 1–5: pozycja odpowiedzi (1…5) ważona liczbą głosów, zaokrąglona do jednego miejsca po przecinku. Bez głosów średniej nie ma (undefined).
+ * EN: Counts the average of the 1–5 scale: the option position (1…5) weighted by the vote count, rounded to one decimal place. Without votes there is no average (undefined).
+ *
+ * @param options - PL: odpowiedzi skali w kolejności „1”…„5” z liczbą głosów. EN: the scale options in the order "1"…"5" with their vote counts.
+ * @returns PL: średnia albo undefined, gdy nikt nie głosował. EN: the average, or undefined when nobody voted.
+ */
+export function scaleAverage(options: { votes: number }[]): number | undefined {
+  const total = options.reduce((sum, option) => sum + option.votes, 0);
+  if (total === 0) return undefined;
+  const weighted = options.reduce((sum, option, place) => sum + (place + 1) * option.votes, 0);
+  return Math.round((weighted / total) * 10) / 10;
+}
+
+/**
  * PL: Dodaje udział w procentach do odpowiedzi jednego pytania.
  * EN: Adds the percent share to the options of one question.
  *
@@ -46,7 +60,14 @@ export function toQuestionResult(prompt: string, type: QuestionType, options: { 
   // EN: The share is counted from the vote sum of this question. With multiple choice it is the sum of checked boxes, so the shares do not add up to 100 in people.
   const total = options.reduce((sum, option) => sum + option.votes, 0);
   const withShare: OptionResult[] = options.map((option) => ({ ...option, percent: percentOf(option.votes, total) }));
-  return { prompt, type, options: withShare };
+  const result: QuestionResult = { prompt, type, options: withShare };
+  // PL: Skala 1–5 dostaje oprócz udziałów średnią. Bez głosów średniej nie ma, więc pole zostaje pominięte.
+  // EN: The 1–5 scale gets the average on top of the shares. Without votes there is no average, so the field is left out.
+  if (type === 'scale_1_5') {
+    const average = scaleAverage(options);
+    if (average !== undefined) result.average = average;
+  }
+  return result;
 }
 
 /**

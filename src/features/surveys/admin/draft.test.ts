@@ -93,3 +93,17 @@ describe('termin zamknięcia / closing time', () => {
     expect(validateDraft({ ...valid, closesAt: '2026-10-21T09:00' }, now).closesAt).toBe('Termin nie może być później niż ostatni dzień ankiety.');
   });
 });
+
+// PL: Skala 1–5 ma stałe odpowiedzi, więc brak wierszy odpowiedzi nie jest błędem, a treść zapytania dostaje „1”…„5”.
+// EN: The 1–5 scale has fixed options, so having no option rows is not an error, and the request body gets "1"…"5".
+describe('skala 1–5 / the 1–5 scale', () => {
+  const scale = updateQuestion({ ...newDraft(), title: 'T' }, 1, (question) => ({ ...question, prompt: 'P', type: 'scale_1_5', options: [] }));
+
+  it('bez odpowiedzi nie daje błędu / without options it gives no error', () => {
+    expect(hasErrors(validateDraft(scale, now))).toBe(false);
+  });
+
+  it('wysyła odpowiedzi 1…5 niezależnie od szkicu / sends the options 1…5 whatever the draft has', () => {
+    expect(toRequestBody(scale).questions).toEqual([{ prompt: 'P', type: 'scale_1_5', options: ['1', '2', '3', '4', '5'] }]);
+  });
+});

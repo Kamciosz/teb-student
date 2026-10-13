@@ -17,9 +17,12 @@ export const TO_AGREE = {
     legend: 'Rodzaj pytania',
     single: 'Jeden wybór',
     multiple: 'Wiele wyborów',
+    scale: 'Skala 1–5',
   },
   /** PL: Dopisek w wynikach wielokrotnego wyboru. EN: The note in the multiple choice results. */
   multipleNote: 'Uczeń mógł zaznaczyć kilka odpowiedzi.',
   /** PL: Liczba zaznaczeń w wynikach wielokrotnego wyboru. EN: The number of checked boxes in the multiple choice results. */
   checkedCount: (count: number) => `Zaznaczeń: ${count}`,
+  /** PL: Średnia w wynikach skali 1–5, z przecinkiem dziesiętnym. EN: The average in the 1–5 scale results, with a decimal comma. */
+  average: (value: number) => `Średnia: ${value.toFixed(1).replace('.', ',')}`,
 } as const;
