@@ -82,9 +82,9 @@ export function fetchSurvey(surveyId: string): Promise<SurveyDetail> {
  * @returns PL: 'ok', 'already_voted' (409) albo 'ended' (410). Inny błąd rzuca ApiError. EN: 'ok', 'already_voted' (409) or 'ended' (410). Any other error throws ApiError.
  */
 export async function sendAnswers(surveyId: string, answers: AnswerMap): Promise<SendResult> {
-  // PL: Zamień mapę na listę par pytanie–odpowiedź, jakiej oczekuje serwer.
-  // EN: Turn the map into the list of question–option pairs the server expects.
-  const body = { answers: Object.entries(answers).map(([questionId, optionId]) => ({ questionId, optionId })) };
+  // PL: Zamień mapę na listę pytań z wybranymi odpowiedziami, jakiej oczekuje serwer.
+  // EN: Turn the map into the list of questions with their chosen options, the shape the server expects.
+  const body = { answers: Object.entries(answers).map(([questionId, optionIds]) => ({ questionId, optionIds })) };
   const response = await fetch(`${API_BASE}/${encodeURIComponent(surveyId)}/answers`, {
     method: 'POST',
     headers: requestHeaders(),

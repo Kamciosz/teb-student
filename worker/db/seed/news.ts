@@ -85,7 +85,9 @@ const NEWSLETTER_BODY = {
 const PUBLISHED_SPECS: PublishedSpec[] = [
   // PL: Ważny wpis z przykładu na pulpicie i na liście aktualności.
   // EN: The important entry from the dashboard and news list examples.
-  { id: 'seed-wazne-3ta', type: 'important', title: 'Jutro 3TA zaczyna o 9:50', body: paragraphsDoc(['Dwie pierwsze lekcje przeniesione na piątek.']), source: 'Sekretariat', agoMs: 20 * MINUTE_MS },
+  // PL: Autor z konta testowego (seed-user-1), żeby wpis pokazał podpis.
+  // EN: The author from the test account (seed-user-1), so the entry shows a signature.
+  { id: 'seed-wazne-3ta', type: 'important', title: 'Jutro 3TA zaczyna o 9:50', body: paragraphsDoc(['Dwie pierwsze lekcje przeniesione na piątek.']), source: 'Sekretariat', authorUserId: 'seed-user-1', agoMs: 20 * MINUTE_MS },
   // PL: Wymyślony wpis sportowy, bo w przykładach nie ma typu „Sport”.
   // EN: An invented sports entry, because the examples have no "Sport" type.
   { id: 'seed-koszykowka', type: 'sport', title: 'Mecz koszykówki klas drugich', body: paragraphsDoc(['Mecz w środę o 14:30 w hali.', 'Kibice wchodzą bez biletu.']), source: 'Samorząd', agoMs: 3 * HOUR_MS },
@@ -106,7 +108,9 @@ const PUBLISHED_SPECS: PublishedSpec[] = [
   { id: 'seed-dzien-otwarty', type: 'event', title: 'Dzień otwarty: szukamy 20 osób', body: paragraphsDoc(['Dzień otwarty szkoły odbędzie się 14.11.']), source: 'Samorząd', agoMs: 10 * DAY_MS },
   // PL: Wpis z nagłówkiem, listą i linkiem w treści.
   // EN: An entry with a heading, a list and a link in the content.
-  { id: 'seed-gazetka', type: 'news', title: 'Gazetka szkolna szuka autorów', body: NEWSLETTER_BODY, source: 'Gazetka', agoMs: 20 * DAY_MS },
+  // PL: Autor z drugiego konta testowego (seed-user-2). Wpis bez autora zostaje w pozostałych.
+  // EN: The author from the second test account (seed-user-2). The other entries stay without an author.
+  { id: 'seed-gazetka', type: 'news', title: 'Gazetka szkolna szuka autorów', body: NEWSLETTER_BODY, source: 'Gazetka', authorUserId: 'seed-user-2', agoMs: 20 * DAY_MS },
 ];
 
 /**

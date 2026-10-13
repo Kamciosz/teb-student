@@ -93,7 +93,7 @@ surveysVoteApp.post('/:surveyId/answers', async (context) => {
   // EN: The answers must have a valid shape and match this survey's questions.
   const answers = parseAnswersBody(await context.req.json().catch(() => null));
   const questions = await loadQuestions(db, survey.id);
-  const check = answers === null ? null : checkAnswers(questions.map((q) => ({ questionId: q.id, optionIds: q.options.map((o) => o.id) })), answers);
+  const check = answers === null ? null : checkAnswers(questions.map((q) => ({ questionId: q.id, type: q.type, optionIds: q.options.map((o) => o.id) })), answers);
   if (check === null || !check.ok) return context.json({ error: 'invalid_answers' }, 400);
 
   // PL: Zapisz głos. Drugi głos tego ucznia (także równoległy) kończy się 409, a liczniki zostają nietknięte.
