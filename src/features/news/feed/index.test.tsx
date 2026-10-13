@@ -32,6 +32,7 @@ const entry: NewsEntrySummary = {
   publishedAt: '2026-10-09T10:00:00.000Z',
   title: 'Dzień sportu',
   excerpt: 'Zapisy w sali gimnastycznej',
+  pinned: false,
 };
 
 // PL: Grupa testów drzwi podtoru 3a.
@@ -51,6 +52,20 @@ describe('drzwi podtoru 3a / the door of subtrack 3a', () => {
     expect(html).toContain('Dzień sportu');
     expect(html).toContain('Zapisy w sali gimnastycznej');
     expect(html).toContain('href="/news/feed/wpis-1"');
+  });
+
+  // PL: Przypięty wpis ma znacznik „Przypięte”, zwykły go nie ma.
+  // EN: A pinned entry has the "Przypięte" tag, a plain one does not.
+  it('pokazuje znacznik „Przypięte” tylko przy przypiętym wpisie / shows the "Przypięte" tag only on a pinned entry', () => {
+    const draw = (item: NewsEntrySummary) =>
+      renderToStaticMarkup(
+        <MemoryRouter>
+          <EntryCard entry={item} />
+        </MemoryRouter>,
+      );
+
+    expect(draw({ ...entry, pinned: true })).toContain('Przypięte');
+    expect(draw(entry)).not.toContain('Przypięte');
   });
 
   // PL: Treść rysuje się z dokumentu wpisu, bez pobierania z serwera.

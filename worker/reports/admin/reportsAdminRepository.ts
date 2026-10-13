@@ -153,15 +153,15 @@ export async function getReport(db: D1Database, id: string): Promise<CouncilDeta
 }
 
 /**
- * PL: Zmienia etap zgłoszenia. Etap, czas zmiany i nowy wiersz historii idą w jednym `batch`, więc albo są wszystkie, albo żaden. Ten sam etap nie zmienia nic i nie dopisuje historii.
- * EN: Changes a report's stage. The stage, the change time and the new history row go in one `batch`, so either all exist or none. The same stage changes nothing and adds no history.
+ * PL: Zmienia etap zgłoszenia. Etap, czas zmiany i nowy wiersz historii (z odpowiedzią dla autora, jeśli jest) idą w jednym `batch`, więc albo są wszystkie, albo żaden. Ten sam etap nie zmienia nic i nie dopisuje historii, więc też nie zapisuje odpowiedzi.
+ * EN: Changes a report's stage. The stage, the change time and the new history row (with the answer for the author, if any) go in one `batch`, so either all exist or none. The same stage changes nothing and adds no history, so it does not save the answer either.
  *
  * @param db - PL: baza D1. EN: the D1 database.
- * @param change - PL: numer zgłoszenia, nowy etap i numer osoby z Samorządu. EN: the report id, the new stage and the Student Council member's id.
+ * @param change - PL: numer zgłoszenia, nowy etap, odpowiedź dla autora (albo `null`) i numer osoby z Samorządu. EN: the report id, the new stage, the answer for the author (or `null`) and the Student Council member's id.
  * @returns PL: `not_found`, `unchanged` albo `changed`. EN: `not_found`, `unchanged` or `changed`.
  * @throws PL: błąd bazy, gdy zapis się nie uda. EN: a database error when the write fails.
  */
-export async function changeReportStage(db: D1Database, change: { id: string; stage: ReportStage; memberId: string }): Promise<StageChangeResult> {
+export async function changeReportStage(db: D1Database, change: { id: string; stage: ReportStage; note: string | null; memberId: string }): Promise<StageChangeResult> {
   // PL: Sprawdź, czy zgłoszenie istnieje i czy etap w ogóle się zmienia.
   // EN: Check that the report exists and that the stage really changes.
   const [current] = await drizzle(db).select({ stage: reports.stage }).from(reports).where(eq(reports.id, change.id));
@@ -173,7 +173,7 @@ export async function changeReportStage(db: D1Database, change: { id: string; st
   const now = Date.now();
   await drizzle(db).batch([
     drizzle(db).update(reports).set({ stage: change.stage, updatedAt: now }).where(eq(reports.id, change.id)),
-    drizzle(db).insert(reportStageChanges).values({ id: crypto.randomUUID(), reportId: change.id, stage: change.stage, changedBy: change.memberId, changedAt: now }),
+    drizzle(db).insert(reportStageChanges).values({ id: crypto.randomUUID(), reportId: change.id, stage: change.stage, note: change.note, changedBy: change.memberId, changedAt: now }),
   ]);
   return 'changed';
 }

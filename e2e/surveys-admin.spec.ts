@@ -15,13 +15,25 @@ import { expect, test, type Page } from '@playwright/test';
 
 // PL: Lista z makiety 6.5a: ankieta z 3 odpowiedziami (wyniki jeszcze ukryte), ankieta z 12 i zakończona z 21.
 // EN: The list from mockup 6.5a: a survey with 3 responses (results still hidden), one with 12 and an ended one with 21.
+// PL: Pierwsza ankieta ma termin zamknięcia 15.10 o 12:00 (czas polski), a „wybor-klasy” zamknięta przez termin przed końcem dnia.
+// EN: The first survey has a closing time of 15.10 at 12:00 (Polish time), and "wybor-klasy" was closed by its time before the last day.
 const LIST = {
   active: [
-    { id: 'dodatkowe', title: 'Zajęcia dodatkowe w II semestrze', questionCount: 3, endsOn: '2026-10-15', responseCount: 3 },
-    { id: 'stolowka', title: 'Obiad w stołówce', questionCount: 1, endsOn: '2026-10-18', responseCount: 12 },
+    { id: 'dodatkowe', title: 'Zajęcia dodatkowe w II semestrze', questionCount: 3, endsOn: '2026-10-15', responseCount: 3, closesAt: Date.parse('2026-10-15T10:00:00Z') },
+    { id: 'stolowka', title: 'Obiad w stołówce', questionCount: 1, endsOn: '2026-10-18', responseCount: 12, closesAt: null },
   ],
-  ended: [{ id: 'dzwonki', title: 'Plan dzwonków', questionCount: 1, endsOn: '2026-09-30', responseCount: 21 }],
+  ended: [
+    { id: 'wybor-klasy', title: 'Wybór klasy na wycieczkę', questionCount: 2, endsOn: '2026-10-20', responseCount: 9, closesAt: Date.parse('2026-10-10T08:00:00Z') },
+    { id: 'dzwonki', title: 'Plan dzwonków', questionCount: 1, endsOn: '2026-09-30', responseCount: 21, closesAt: null },
+  ],
 };
+
+// PL: Termin zamknięcia za dwa dni o 12:00 czasu polskiego: zawsze w przyszłości i w 7-dniowym oknie ankiety.
+// EN: A closing time two days from now at 12:00 Polish time: always in the future and inside the 7-day window of the survey.
+function closingSoonWarsaw(): string {
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() + 2 * 86_400_000));
+  return `${day}T12:00`;
+}
 
 // PL: Wyniki z makiety 6.5d: dwa pytania, pierwsze z udziałami 42, 33, 17 i 8 procent.
 // EN: The results from mockup 6.5d: two questions, the first with shares of 42, 33, 17 and 8 percent.
@@ -88,10 +100,11 @@ test('lista pokazuje ankiety z liczbą odpowiedzi i przycisk „Nowa ankieta” 
   await page.goto('/surveys/admin');
 
   await expect(page.getByRole('heading', { name: 'Ankiety', level: 1 })).toBeVisible();
-  await expect(page.getByText('3 pytania · do 15.10')).toBeVisible();
+  await expect(page.getByText('3 pytania · do 15.10, 12:00')).toBeVisible();
   await expect(page.getByText('Wyniki zobaczysz od 5 odpowiedzi. Teraz: 3.')).toBeVisible();
   await expect(page.getByText('1 pytanie · do 18.10')).toBeVisible();
   await expect(page.getByText('12 odpowiedzi', { exact: true })).toBeVisible();
+  await expect(page.getByText('Zamknięta · 9 odpowiedzi')).toBeVisible();
   await expect(page.getByText('Zakończona 30.09 · 21 odpowiedzi')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Nowa ankieta' })).toBeVisible();
 });
@@ -186,7 +199,33 @@ test('nowa ankieta: błędy, limity od 2 do 5 odpowiedzi i wysłanie / a new sur
   await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
 
   await expect(page).toHaveURL(/\/surveys\/admin$/);
-  expect(mock.posted).toEqual([{ title: 'Dzień sportu', durationDays: 14, questions: [{ prompt: 'W co chcesz zagrać na dniu sportu?', options: ['Siatkówka', 'Koszykówka', 'Piłka nożna'] }] }]);
+  expect(mock.posted).toEqual([{ title: 'Dzień sportu', durationDays: 14, questions: [{ prompt: 'W co chcesz zagrać na dniu sportu?', options: ['Siatkówka', 'Koszykówka', 'Piłka nożna'] }], closesAt: null }]);
+});
+
+// PL: Termin zamknięcia: przeszłość daje błąd i nic nie idzie na serwer, a przyszły termin trafia do zapisu.
+// EN: The closing time: the past gives an error and nothing goes to the server, and a future time goes into the write.
+test('termin zamknięcia: przeszłość daje błąd, przyszłość idzie na serwer / closing time: the past gives an error, the future goes to the server', async ({ page }) => {
+  const mock = await mockPanelServer(page);
+  await page.goto('/surveys/admin/new');
+  await page.getByLabel('Tytuł ankiety', { exact: true }).fill('Wycieczka');
+  await page.getByLabel('Pytanie 1', { exact: true }).fill('Dokąd jedziemy?');
+  await page.getByLabel('Odpowiedź A', { exact: true }).fill('Muzeum');
+  await page.getByLabel('Odpowiedź B', { exact: true }).fill('Zoo');
+
+  // PL: Termin z 2020 roku jest na pewno w przeszłości, więc test nie zależy od dzisiejszej daty.
+  // EN: A time from 2020 is surely in the past, so the test does not depend on today's date.
+  await page.getByLabel('Zamknij ankietę (data i godzina)', { exact: true }).fill('2020-01-01T09:00');
+  await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
+  await expect(page.getByText('Termin musi być w przyszłości.')).toBeVisible();
+  expect(mock.posted).toHaveLength(0);
+
+  const closing = closingSoonWarsaw();
+  await page.getByLabel('Zamknij ankietę (data i godzina)', { exact: true }).fill(closing);
+  await expect(page.getByText('Termin musi być w przyszłości.')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
+
+  await expect(page).toHaveURL(/\/surveys\/admin$/);
+  expect(mock.posted).toEqual([{ title: 'Wycieczka', durationDays: 7, questions: [{ prompt: 'Dokąd jedziemy?', options: ['Muzeum', 'Zoo'] }], closesAt: closing }]);
 });
 
 // PL: Błąd zapisu: komunikat nad przyciskiem, a przycisk zostaje aktywny, żeby ponowić.

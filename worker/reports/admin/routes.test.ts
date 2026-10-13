@@ -367,9 +367,69 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
   // PL: Zbyt duża treść to 413.
   // EN: An oversized body is 413.
   it('zbyt duża treść daje 413 / an oversized body gives 413', async () => {
-    // PL: Treść większa niż 1 KB jest odrzucona, zanim ją odczytamy.
-    // EN: A body larger than 1 KB is rejected before we read it.
-    const response = await patchStage('seed-projektor', { stage: 'resolved', padding: 'x'.repeat(2048) });
+    // PL: Treść większa niż 4 KB jest odrzucona, zanim ją odczytamy.
+    // EN: A body larger than 4 KB is rejected before we read it.
+    const response = await patchStage('seed-projektor', { stage: 'resolved', padding: 'x'.repeat(5000) });
     expect(response.status).toBe(413);
+  });
+
+  // PL: Odpowiedź dla autora zapisuje się w wierszu historii nowego etapu, bez dodatkowego wiersza. Przycięte spacje nie trafiają do bazy.
+  // EN: The answer for the author is saved in the history row of the new stage, with no extra row. Trimmed spaces do not reach the database.
+  it('zapisuje odpowiedź w wierszu historii / saves the answer in the history row', async () => {
+    // PL: Zmień etap i dołącz odpowiedź ze spacjami na początku i na końcu.
+    // EN: Change the stage and attach an answer with spaces at the start and the end.
+    const response = await patchStage('seed-projektor', { stage: 'resolved', note: '  Projektor naprawiony, dziękujemy.  ' });
+    const rows = await db.prepare('SELECT stage, note FROM report_stage_changes WHERE report_id = ? ORDER BY changed_at').bind('seed-projektor').all<{ stage: string; note: string | null }>();
+
+    // PL: Odpowiedź przeszła, a w historii jest jeden nowy wiersz z przyciętą odpowiedzią.
+    // EN: The answer went through, and the history has one new row with the trimmed answer.
+    expect(response.status).toBe(200);
+    expect(rows.results.length).toBe(3);
+    expect(rows.results.at(-1)).toEqual({ stage: 'resolved', note: 'Projektor naprawiony, dziękujemy.' });
+  });
+
+  // PL: Odpowiedź z 500 znakami, w tym polskimi literami (po dwa bajty), mieści się w limicie i przechodzi.
+  // EN: An answer of 500 characters, including Polish letters (two bytes each), fits the limit and goes through.
+  it('500 znaków przechodzi / 500 characters pass', async () => {
+    // PL: Wyślij odpowiedź dokładnie na granicy limitu.
+    // EN: Send an answer exactly at the limit.
+    const response = await patchStage('seed-projektor', { stage: 'resolved', note: 'ą'.repeat(500) });
+    const row = await db.prepare("SELECT length(note) AS n FROM report_stage_changes WHERE report_id = ? AND stage = 'resolved'").bind('seed-projektor').first<{ n: number }>();
+
+    // PL: Odpowiedź przeszła, a baza liczy 500 znaków.
+    // EN: The answer went through, and the database counts 500 characters.
+    expect(response.status).toBe(200);
+    expect(row?.n).toBe(500);
+  });
+
+  // PL: Odpowiedź dłuższa niż 500 znaków albo nie-tekst to 400, a etap i historia zostają bez zmian.
+  // EN: An answer longer than 500 characters, or one that is not text, is 400, and the stage and the history stay unchanged.
+  it('za długa odpowiedź daje 400 i nic nie zmienia / a too long answer gives 400 and changes nothing', async () => {
+    // PL: Wyślij 501 znaków i liczbę zamiast tekstu.
+    // EN: Send 501 characters and a number instead of text.
+    const tooLong = await patchStage('seed-projektor', { stage: 'resolved', note: 'ą'.repeat(501) });
+    const notText = await patchStage('seed-projektor', { stage: 'resolved', note: 12 });
+    const row = await db.prepare('SELECT stage FROM reports WHERE id = ?').bind('seed-projektor').first();
+    const count = await db.prepare('SELECT COUNT(*) AS n FROM report_stage_changes WHERE report_id = ?').bind('seed-projektor').first<{ n: number }>();
+
+    // PL: Oba zapytania to 400, etap w zgłoszeniu to dalej „w trakcie”, a historia ma dwa wiersze.
+    // EN: Both requests are 400, the report stage is still "in progress", and the history has two rows.
+    expect([tooLong.status, notText.status]).toEqual([400, 400]);
+    expect(row).toEqual({ stage: 'in_progress' });
+    expect(count?.n).toBe(2);
+  });
+
+  // PL: Pusta odpowiedź (same spacje) to brak odpowiedzi: zmiana etapu idzie, a `note` w bazie jest pusty.
+  // EN: An empty answer (only spaces) means no answer: the stage change goes through, and `note` in the database is empty.
+  it('pusta odpowiedź zapisuje brak odpowiedzi / an empty answer saves no answer', async () => {
+    // PL: Wyślij etap z odpowiedzią złożoną z samych spacji.
+    // EN: Send a stage with an answer made of spaces only.
+    const response = await patchStage('seed-projektor', { stage: 'resolved', note: '   ' });
+    const row = await db.prepare("SELECT note FROM report_stage_changes WHERE report_id = ? AND stage = 'resolved'").bind('seed-projektor').first<{ note: string | null }>();
+
+    // PL: Zmiana przeszła, a odpowiedź w wierszu historii to `null`.
+    // EN: The change went through, and the answer in the history row is `null`.
+    expect(response.status).toBe(200);
+    expect(row).toEqual({ note: null });
   });
 });

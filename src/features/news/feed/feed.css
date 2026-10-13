@@ -173,6 +173,14 @@
   font-weight: 700;
 }
 
+/* PL: Znacznik „Przypięte”: obrys zamiast wypełnienia, żeby nie walczył z typem wpisu. */
+/* EN: The "Przypięte" tag: an outline instead of a fill, so it does not compete with the entry type. */
+.news-tag--pinned {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
 /* PL: Przyciski: wypełniony i z samym obrysem. Wysokość co najmniej 48 px.
    EN: Buttons: filled and outline only. At least 48 px tall. */
 .news-button {
@@ -202,6 +210,18 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* PL: Podpis autora i stopka „Redakcja gazetki” pod treścią wpisu.
+   EN: The author's signature and the "Redakcja gazetki" footer under the entry content. */
+.news-entry__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--t-sm);
 }
 
 /* PL: Treść wpisu: akapity, nagłówki, listy, cytat i linki.

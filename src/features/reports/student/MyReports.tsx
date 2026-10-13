@@ -1,11 +1,12 @@
 /**
- * PL: Ekran „Moje zgłoszenia” (ekran 3.5): lista zgłoszeń ucznia z paskiem etapu (przyjęte, w trakcie, załatwione). Bez internetu pokazuje ostatnio zapisaną listę (pasek „Brak internetu” jest wspólny dla aplikacji).
- * EN: The "Moje zgłoszenia" screen (screen 3.5): the student's report list with the stage bar (received, in progress, resolved). Without internet it shows the last saved list (the "Brak internetu" banner is shared by the app).
+ * PL: Ekran „Moje zgłoszenia” (ekran 3.5): lista zgłoszeń ucznia z paskiem etapu (przyjęte, w trakcie, załatwione) i osią historii z odpowiedziami Samorządu, wzorem FixMyStreet. Bez internetu pokazuje ostatnio zapisaną listę (pasek „Brak internetu” jest wspólny dla aplikacji). Teksty nowej osi („Historia zgłoszenia”, „Odpowiedź Samorządu”) są do uzgodnienia z zespołem.
+ * EN: The "Moje zgłoszenia" screen (screen 3.5): the student's report list with the stage bar (received, in progress, resolved) and the history axis with the Student Council answers, after FixMyStreet. Without internet it shows the last saved list (the "Brak internetu" banner is shared by the app). The texts of the new axis ("Historia zgłoszenia", "Odpowiedź Samorządu") are to be agreed with the team.
  *
  * @author Szymon
  * @since 2026-10-09
  * @uses src/features/reports/student/queries.ts::useMyReports
  * @uses src/features/reports/student/reportView.ts::stageSegments
+ * @uses src/features/reports/student/reportView.ts::stageLabel
  * @used_by src/features/reports/student/ReportsStudentScreen.tsx::MyReports
  */
 
@@ -18,7 +19,33 @@ import { FlowTop } from './FlowTop';
 import type { MyReport } from './api';
 import { useMyReports } from './queries';
 import { STAGE_ORDER, categoryLabel } from './reportOptions';
-import { formatShortDate, stageSegments } from './reportView';
+import { formatShortDate, stageLabel, stageSegments } from './reportView';
+
+/**
+ * PL: Rysuje oś historii zgłoszenia: każdy etap z datą, a przy nim odpowiedź Samorządu, jeśli jest.
+ * EN: Draws the history axis of a report: each stage with its date, and the Student Council answer next to it, if there is one.
+ *
+ * @param props - PL: wpisy historii do pokazania. EN: the history entries to show.
+ * @returns PL: lista osi historii. EN: the history axis list.
+ */
+function ReportHistory({ entries }: { entries: MyReport['history'] }) {
+  return (
+    <ol className="rs-history" aria-label="Historia zgłoszenia">
+      {entries.map((entry) => (
+        <li key={`${entry.stage}-${entry.changedAt}`}>
+          <span className="rs-small">{formatShortDate(entry.changedAt)}</span>
+          <span className="rs-history-stage">{stageLabel(entry.stage)}</span>
+          {entry.note ? (
+            <p className="rs-note">
+              <span className="rs-note-label">Odpowiedź Samorządu</span>
+              {entry.note}
+            </p>
+          ) : null}
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 /**
  * PL: Rysuje jeden kafel zgłoszenia: znacznik, datę, opis, pasek etapu i podpisy.
@@ -49,6 +76,7 @@ function ReportTile({ report }: { report: MyReport }) {
         ))}
       </div>
       {report.stage === 'resolved' ? <span className="rs-small">Załatwione {formatShortDate(report.updatedAt)}</span> : null}
+      <ReportHistory entries={report.history} />
     </li>
   );
 }
