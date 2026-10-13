@@ -237,12 +237,29 @@
 
 /* PL: Własne elementy w edytorze: film (miniatura), zdjęcie z podpisem, karta linku i źródła. Obrazy nigdy nie są szersze niż kolumna.
    EN: The custom elements in the editor: a video (a thumbnail), a photo with a caption, a link card and sources. Images are never wider than the column. */
+.editor-video {
+  position: relative;
+}
+
 .editor-video img,
 .editor-figure img {
   display: block;
   width: 100%;
   height: auto;
   border-radius: var(--r);
+}
+
+/* PL: Napis „Film z YouTube” na miniaturze, żeby redaktor wiedział, co wstawił. Nie zasłania obrazu całego.
+   EN: The "Film z YouTube" label on the thumbnail, so the editor knows what was inserted. It does not cover the whole image. */
+.editor-video__label {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: var(--r);
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: var(--t-sm);
 }
 
 .editor-figure figcaption {
