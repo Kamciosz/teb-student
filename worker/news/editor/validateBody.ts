@@ -19,7 +19,7 @@ import { Node as ProseNode } from '@tiptap/pm/model';
 // EN: The allowed element list, the limits and the address checks, shared with the phone.
 import { NEWS_EXTENSIONS } from '../../../src/features/news/editor/document/extensions';
 import { MAX_BODY_BYTES, MAX_CAPTION_CHARS, MAX_DEPTH, MAX_IMAGE_SIDE, MAX_SOURCES, MAX_TEXT_CHARS } from '../../../src/features/news/editor/document/limits';
-import { normalizeHttpsUrl, parseYouTubeId, socialNetworkName } from '../../../src/features/news/editor/document/urls';
+import { YOUTUBE_ID_PATTERN, normalizeHttpsUrl, socialNetworkName } from '../../../src/features/news/editor/document/urls';
 
 /**
  * PL: Powody odrzucenia treści. Telefon zamienia je na polski komunikat, serwer zwraca sam kod.
@@ -78,9 +78,9 @@ function checkNode(node: ProseNode): BodyRejection | null {
   const attrs = node.attrs;
   switch (node.type.name) {
     case 'youtube':
-      // PL: Film: tylko identyfikator z 11 znaków, nie adres.
-      // EN: A video: only an 11-character id, not an address.
-      return parseYouTubeId(`https://youtu.be/${String(attrs.videoId)}`) === attrs.videoId ? null : 'bad_video';
+      // PL: Film: tylko tekst z identyfikatorem z 11 znaków, nie adres i nie brak wartości (null).
+      // EN: A video: only text with an 11-character id, not an address and not a missing value (null).
+      return typeof attrs.videoId === 'string' && YOUTUBE_ID_PATTERN.test(attrs.videoId) ? null : 'bad_video';
     case 'heading':
       // PL: Schemat nie sprawdza wartości pól, więc poziom nagłówka pilnujemy sami: 2 albo 3 (h1 to tytuł wpisu).
       // EN: The schema does not check field values, so we guard the heading level ourselves: 2 or 3 (h1 is the entry title).

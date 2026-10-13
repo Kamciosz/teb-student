@@ -5,16 +5,20 @@
  * @author Jakub
  * @since 2026-10-12
  * @uses src/features/surveys/admin/surveyQueries.ts::useSurveyResults
+ * @uses src/features/surveys/admin/surveyQueries.ts::useIsOnline
+ * @uses src/features/surveys/admin/surveyApi.ts::fetchResultsCsv
  * @used_by src/features/surveys/admin/SurveysAdminScreen.tsx::SurveysAdminScreen
  */
 
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { describeQuestions, describeResponses, formatShortDate, OPTION_LETTERS } from './format';
-import { LockIcon } from './icons';
+import { LockIcon, WifiOffIcon } from './icons';
 import { ErrorMessage, PanelNote, ScreenTop } from './PanelParts';
-import { useSurveyResults } from './surveyQueries';
-import type { OptionResult, SurveyResults } from './types';
+import { fetchResultsCsv } from './surveyApi';
+import { useIsOnline, useSurveyResults } from './surveyQueries';
+import { TO_AGREE } from './texts';
+import type { OptionResult, QuestionResult, SurveyResults } from './types';
 
 /**
  * PL: Rysuje nagłówek wyników: etykieta „Ankieta”, tytuł i podpis (liczba pytań albo odpowiedzi z terminem).
@@ -86,6 +90,69 @@ function ResultBar({ letter, option }: { letter: string; option: OptionResult })
 }
 
 /**
+ * PL: Przycisk „Pobierz CSV” pod wynikami. Pobiera plik z serwera i zapisuje go w telefonie. Bez internetu jest nieaktywny, a obok stoi notatka.
+ * EN: The "Pobierz CSV" button under the results. It fetches the file from the server and saves it on the phone. Without internet it is inactive, with a note beside it.
+ *
+ * @param props - PL: numer ankiety. EN: the survey id.
+ * @returns PL: przycisk, notatka i ewentualny błąd. EN: the button, the note and a possible error.
+ */
+function DownloadCsvButton({ surveyId }: { surveyId: string }) {
+  const isOnline = useIsOnline();
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  /**
+   * PL: Pobiera plik i uruchamia zapis w przeglądarce. Tymczasowy adres zwalniamy po chwili, żeby pobranie zdążyło ruszyć.
+   * EN: Fetches the file and starts the save in the browser. The temporary address is released after a moment, so the download has time to start.
+   */
+  async function download() {
+    setBusy(true);
+    setFailed(false);
+    try {
+      const { file, filename } = await fetchResultsCsv(surveyId);
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button type="button" className="sa-button sa-button--outline" disabled={!isOnline || busy} onClick={() => void download()}>
+        Pobierz CSV
+      </button>
+      {isOnline ? null : <PanelNote icon={<WifiOffIcon />} text="Pobranie wymaga internetu." />}
+      {failed ? <ErrorMessage text="Nie udało się pobrać pliku. Spróbuj ponownie za chwilę." /> : null}
+    </>
+  );
+}
+
+/**
+ * PL: Przy wielokrotnym wyborze pokazuje liczbę zaznaczeń (suma głosów wszystkich odpowiedzi) i dopisek, że uczeń mógł zaznaczyć kilka odpowiedzi. Przy jednokrotnym nic nie rysuje.
+ * EN: With multiple choice it shows the number of checked boxes (the sum of the votes of all options) and a note that the student could check several options. With single choice it draws nothing.
+ *
+ * @param props - PL: pytanie z wynikami. EN: the question with its results.
+ * @returns PL: notatka albo nic. EN: the note or nothing.
+ */
+function MultipleChoiceNote({ question }: { question: QuestionResult }) {
+  if (question.type !== 'multiple_choice') return null;
+  const checked = question.options.reduce((sum, option) => sum + option.votes, 0);
+  return (
+    <>
+      <p className="sa-small">{TO_AGREE.checkedCount(checked)}</p>
+      <p className="sa-small">{TO_AGREE.multipleNote}</p>
+    </>
+  );
+}
+
+/**
  * PL: Rysuje ekran 6.5d dla jednego pytania. Przy kilku pytaniach „Następne pytanie” przełącza je, a „Wstecz” wraca do poprzedniego.
  * EN: Draws screen 6.5d for one question. With several questions "Następne pytanie" switches them, and "Wstecz" returns to the previous one.
  *
@@ -104,12 +171,14 @@ function QuestionResults({ results }: { results: SurveyResults }) {
       <ResultsHeader results={results} summary={describeResponses(results.responseCount)} />
       <p className="sa-label sa-label--tight">{`Pytanie ${index + 1}`}</p>
       <h2 className="sa-h2">{question.prompt}</h2>
+      <MultipleChoiceNote question={question} />
       <ul className="sa-tile sa-results">
         {question.options.map((option, place) => (
           <ResultBar key={place} letter={OPTION_LETTERS[place] ?? ''} option={option} />
         ))}
       </ul>
       <PanelNote icon={<LockIcon />} text="Wyniki są zbiorcze. Nie widać, kto co wybrał." />
+      <DownloadCsvButton surveyId={results.id} />
       {index < questions.length - 1 ? (
         <button type="button" className="sa-button sa-button--outline" onClick={() => setIndex(index + 1)}>
           Następne pytanie

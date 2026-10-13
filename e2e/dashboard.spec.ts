@@ -61,13 +61,16 @@ test('kafelki pokazują ważny wpis, ankietę, zgłoszenie i trzy ogłoszenia / 
   await expect(page.locator('[data-subtrack="9"]')).toBeVisible();
 });
 
-// PL: Plan dzwonków jest pusty, a pulpit go nie widzi, więc licznik pokazuje pusty stan.
-// EN: The bell plan is empty and the dashboard cannot see it, so the countdown shows the empty state.
-test('licznik do dzwonka pokazuje pusty stan / the bell countdown shows the empty state', async ({ page }) => {
+// PL: Plan dzwonków jest pusty, więc w godzinie lekcji nagłówek nie pokazuje minut, tylko kreskę i napis o braku planu. Zegar jest ustawiony na lekcję, żeby test nie zależał od pory dnia.
+// EN: The bell plan is empty, so during a lesson hour the header shows no minutes, only the dash and the no-plan text. The clock is set to a lesson, so the test does not depend on the time of day.
+test('pusty plan: nagłówek bez licznika w godzinie lekcji / empty plan: the header without a countdown during a lesson hour', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
   await mockDashboard(page, FULL);
   await page.goto('/');
 
-  await expect(page.getByLabel('Licznik do dzwonka')).toContainText('Brak planu dzwonków');
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('Brak planu dzwonków');
+  await expect(bell).not.toContainText(/\d+\s*min/);
 });
 
 // PL: Każdy kafelek prowadzi do właściwego ekranu.
@@ -183,4 +186,37 @@ test('na lokalnej bazie: wpisy z bazy, ankieta i zgłoszenia puste bez sesji / o
   await expect(page.getByRole('region', { name: 'Ogłoszenia' }).getByRole('listitem')).toHaveCount(3);
   await expect(page.getByRole('region', { name: 'Ankieta' })).toContainText('Nie ma ankiet do wypełnienia.');
   await expect(page.getByRole('region', { name: 'Zgłoszenia' })).toContainText('Nie masz jeszcze żadnych zgłoszeń.');
+});
+
+// PL: Zmiana kolejności kafelków w trybie edycji przetrwa przeładowanie strony, a tryb edycji po przeładowaniu jest wyłączony.
+// EN: A change of the tile order in edit mode survives a page reload, and the edit mode is off after the reload.
+test('zmiana kolejności kafelków przetrwa przeładowanie / a tile order change survives a reload', async ({ page }) => {
+  await mockDashboard(page, FULL);
+  await page.goto('/');
+
+  // PL: Domyślnie „Ważne” stoi nad „Ankietą”.
+  // EN: By default "Ważne" stands above the "Ankieta".
+  const importantBox = page.getByText('Jutro 3TA zaczyna o 9:50');
+  await expect(importantBox).toBeVisible();
+
+  await page.getByRole('button', { name: 'Zmień układ' }).click();
+  // PL: Przycisk „Wyżej” ma pole dotyku co najmniej 44×44 px.
+  // EN: The "Wyżej" button has a touch area of at least 44×44 px.
+  const up = page.getByRole('button', { name: 'Wyżej: Ankieta' });
+  const box = await up.boundingBox();
+  expect(box?.width).toBeGreaterThanOrEqual(44);
+  expect(box?.height).toBeGreaterThanOrEqual(44);
+  await up.click();
+  await page.getByRole('button', { name: 'Gotowe' }).click();
+
+  const survey = await page.getByRole('region', { name: 'Ankieta' }).boundingBox();
+  expect(survey!.y).toBeLessThan((await importantBox.boundingBox())!.y);
+
+  await page.reload();
+
+  // PL: Po przeładowaniu kolejność nadal jest ta sama, a tryb edycji wrócił wyłączony.
+  // EN: After the reload the order is still the same, and the edit mode is off again.
+  await expect(page.getByRole('button', { name: 'Zmień układ' })).toBeVisible();
+  const surveyAfter = await page.getByRole('region', { name: 'Ankieta' }).boundingBox();
+  expect(surveyAfter!.y).toBeLessThan((await importantBox.boundingBox())!.y);
 });
