@@ -48,6 +48,8 @@ export type NewsEntrySummary = {
   title: string;
   /** PL: Krótki opis z początku treści. EN: A short description from the start of the content. */
   excerpt: string;
+  /** PL: Czy wpis jest przypięty na górze listy. Serwer zawsze podaje pole; brak (podgląd z edytora) znaczy „nieprzypięty”. EN: Whether the entry is pinned to the top of the list. The server always sends the field; missing (the editor preview) means "not pinned". */
+  pinned?: boolean;
 };
 
 /**
