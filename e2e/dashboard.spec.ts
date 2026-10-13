@@ -61,13 +61,16 @@ test('kafelki pokazują ważny wpis, ankietę, zgłoszenie i trzy ogłoszenia / 
   await expect(page.locator('[data-subtrack="9"]')).toBeVisible();
 });
 
-// PL: Plan dzwonków jest pusty, a pulpit go nie widzi, więc licznik pokazuje pusty stan.
-// EN: The bell plan is empty and the dashboard cannot see it, so the countdown shows the empty state.
-test('licznik do dzwonka pokazuje pusty stan / the bell countdown shows the empty state', async ({ page }) => {
+// PL: Plan dzwonków jest pusty, więc w godzinie lekcji nagłówek nie pokazuje minut, tylko kreskę i napis o braku planu. Zegar jest ustawiony na lekcję, żeby test nie zależał od pory dnia.
+// EN: The bell plan is empty, so during a lesson hour the header shows no minutes, only the dash and the no-plan text. The clock is set to a lesson, so the test does not depend on the time of day.
+test('pusty plan: nagłówek bez licznika w godzinie lekcji / empty plan: the header without a countdown during a lesson hour', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
   await mockDashboard(page, FULL);
   await page.goto('/');
 
-  await expect(page.getByLabel('Licznik do dzwonka')).toContainText('Brak planu dzwonków');
+  const bell = page.getByLabel('Licznik do dzwonka');
+  await expect(bell).toContainText('Brak planu dzwonków');
+  await expect(bell).not.toContainText(/\d+\s*min/);
 });
 
 // PL: Każdy kafelek prowadzi do właściwego ekranu.
