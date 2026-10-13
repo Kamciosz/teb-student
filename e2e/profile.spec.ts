@@ -219,11 +219,19 @@ test('większy tekst zostaje po ponownym uruchomieniu / the larger text stays af
   await expect(page.locator('html')).toHaveAttribute('data-tekst', 'duzy');
 });
 
-// PL: „Pobierz moje dane” zapisuje plik moje-dane-teb.json z kontem i profilem z serwera.
-// EN: "Pobierz moje dane" saves the file moje-dane-teb.json with the account and the profile from the server.
+// PL: „Pobierz moje dane” zapisuje plik moje-dane-teb.json z kontem, profilem, zgłoszeniami i ankietami z serwera. Lista brakujących danych jest pusta.
+// EN: "Pobierz moje dane" saves the file moje-dane-teb.json with the account, the profile, the reports and the surveys from the server. The list of missing data is empty.
 test('pobranie moich danych zapisuje plik JSON / downloading my data saves a JSON file', async ({ page }) => {
   await stubServer(page);
-  const exported = { version: 1, exportedAt: new Date().toISOString(), account: { id: 'u1', email: EMAIL, name: '' }, profile: { ...START_PROFILE, name: 'Ola' }, missing: ['Zgłoszenia ucznia'] };
+  const exported = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    account: { id: 'u1', email: EMAIL, name: '', createdAt: 1759968000000 },
+    profile: { ...START_PROFILE, name: 'Ola' },
+    reports: [{ id: 'z1', category: 'safety', place: 'corridor', placeDetail: null, description: 'Mokra podłoga', stage: 'received', createdAt: 1759968000000, updatedAt: 1759968000000 }],
+    surveys: [{ id: 'a1', label: null, title: 'Ankieta o stołówce', endsOn: '2026-12-01' }],
+    missing: [],
+  };
   await page.route('**/api/profile/export', (route) => route.fulfill({ json: exported }));
   await page.goto('/profile/ustawienia');
 
@@ -234,12 +242,14 @@ test('pobranie moich danych zapisuje plik JSON / downloading my data saves a JSO
   const download = await downloading;
   expect(download.suggestedFilename()).toBe('moje-dane-teb.json');
 
-  // PL: Zawartość pliku to konto i profil ucznia z serwera.
-  // EN: The file content is the student's account and profile from the server.
+  // PL: Zawartość pliku to konto, profil, zgłoszenia i ankiety ucznia z serwera, bez brakujących danych.
+  // EN: The file content is the student's account, profile, reports and surveys from the server, with no missing data.
   const data = JSON.parse(await readFile((await download.path()) as string, 'utf-8')) as typeof exported;
   expect(data.account.email).toBe(EMAIL);
   expect(data.profile.name).toBe('Ola');
-  expect(data.missing).toEqual(['Zgłoszenia ucznia']);
+  expect(data.reports.map((report) => report.description)).toEqual(['Mokra podłoga']);
+  expect(data.surveys.map((survey) => survey.title)).toEqual(['Ankieta o stołówce']);
+  expect(data.missing).toEqual([]);
 });
 
 // PL: Gdy serwer nie odda danych, pokazuje się komunikat o błędzie i nic się nie pobiera.
