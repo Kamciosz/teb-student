@@ -16,7 +16,7 @@ import type { MediaKind } from '../db/schema/media';
 /** PL: Jeden megabajt w bajtach. EN: One megabyte in bytes. */
 const MEGABYTE = 1024 * 1024;
 
-/** PL: Najwięcej bajtów zdjęcia: telefon zmniejsza zdjęcie do JPEG, a gdy nie umie, wysyła oryginał do 20 MB (HEIC). EN: The most bytes of a photo: the phone shrinks a photo to JPEG, and when it cannot, it sends the original up to 20 MB (HEIC). */
+/** PL: Najwięcej bajtów zdjęcia. Telefon zmniejsza zdjęcie do JPEG, a gdy nie umie, zdjęcia nie wysyła. EN: The most bytes of a photo. The phone shrinks a photo to JPEG, and when it cannot, it does not send the photo. */
 export const MAX_PHOTO_BYTES = 20 * MEGABYTE;
 
 /** PL: Najwięcej bajtów filmu (bez przekodowania na telefonie). EN: The most bytes of a video (no transcoding on the phone). */
@@ -26,14 +26,12 @@ export const MAX_VIDEO_BYTES = 50 * MEGABYTE;
 export const MAX_SIDE_PIXELS = 10_000;
 
 /**
- * PL: Typy plików, które przyjmujemy, z rodzajem każdego z nich. Zdjęcia: JPEG (zwykle z telefonu po zmniejszeniu), HEIC/HEIF (oryginał, gdy zmniejszenie się nie udało) i PNG. Filmy: MP4 i MOV z iPhone'a.
- * EN: The file types we accept, with the kind of each. Photos: JPEG (usually from the phone after shrinking), HEIC/HEIF (the original, when shrinking failed) and PNG. Videos: MP4 and MOV from an iPhone.
+ * PL: Typy plików, które przyjmujemy, z rodzajem każdego z nich. Zdjęcia: JPEG (zwykle z telefonu po zmniejszeniu) i PNG. Filmy: MP4 i MOV z iPhone'a. HEIC i HEIF są celowo pominięte: ich oryginał niesie EXIF z lokalizacją, więc dostają 415.
+ * EN: The file types we accept, with the kind of each. Photos: JPEG (usually from the phone after shrinking) and PNG. Videos: MP4 and MOV from an iPhone. HEIC and HEIF are left out on purpose: their original carries EXIF with the location, so they get 415.
  */
 const KIND_BY_MIME: Readonly<Record<string, MediaKind>> = {
   'image/jpeg': 'photo',
   'image/png': 'photo',
-  'image/heic': 'photo',
-  'image/heif': 'photo',
   'video/mp4': 'video',
   'video/quicktime': 'video',
 };
@@ -71,8 +69,8 @@ export function maxBytesOf(kind: MediaKind): number {
 export type DimensionsResult = { ok: true; width: number | null; height: number | null } | { ok: false };
 
 /**
- * PL: Czyta szerokość i wysokość z adresu zapytania (?width=&height=). Brak obu jest dozwolony (zdjęcie HEIC bez wymiarów). Jedno bez drugiego albo zły zapis to błąd.
- * EN: Reads the width and the height from the request address (?width=&height=). Having neither is allowed (a HEIC photo without dimensions). Only one of them, or a bad value, is an error.
+ * PL: Czyta szerokość i wysokość z adresu zapytania (?width=&height=). Brak obu jest dozwolony (film wysłany bez przeróbek nie ma wymiarów). Jedno bez drugiego albo zły zapis to błąd.
+ * EN: Reads the width and the height from the request address (?width=&height=). Having neither is allowed (a video sent unchanged has no dimensions). Only one of them, or a bad value, is an error.
  *
  * @param width - PL: wartość parametru width albo undefined. EN: the value of the width parameter, or undefined.
  * @param height - PL: wartość parametru height albo undefined. EN: the value of the height parameter, or undefined.
