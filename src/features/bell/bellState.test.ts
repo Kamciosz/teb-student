@@ -47,31 +47,43 @@ describe('plan przykładowy (PRZYKŁAD)', () => {
   it('w czasie lekcji liczy minuty do końca lekcji, a numer lekcji od 1', () => {
     // PL: 09:10 to druga lekcja (08:55–09:40): zostało 30 minut.
     // EN: 09:10 is the second lesson (08:55–09:40): 30 minutes left.
-    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 9, 10))).toEqual({ kind: 'lesson', lessonNo: 2, minutesLeft: 30 });
+    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 9, 10))).toEqual({ kind: 'lesson', lessonNo: 2, minutesLeft: 30, next: { lessonNo: 3, start: '09:50' } });
   });
 
   it('początek lekcji jest włącznie', () => {
     // PL: 08:00:00 to już pierwsza lekcja, pełne 45 minut.
     // EN: 08:00:00 is already the first lesson, a full 45 minutes.
-    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 8, 0))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 45 });
+    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 8, 0))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 45, next: { lessonNo: 2, start: '08:55' } });
   });
 
   it('zaokrągla minuty w górę: 14 min 30 s pokazuje się jako 15', () => {
     // PL: 08:30:30 do końca lekcji o 08:45 zostaje 14 min 30 s, pokazujemy 15.
     // EN: At 08:30:30 with the lesson ending at 08:45, 14 min 30 s remain; we show 15.
-    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 8, 30, 30))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 15 });
+    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 8, 30, 30))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 15, next: { lessonNo: 2, start: '08:55' } });
   });
 
   it('w przerwie liczy minuty do początku następnej lekcji', () => {
     // PL: 08:50 to przerwa między pierwszą a drugą lekcją: do 08:55 zostało 5 minut.
     // EN: 08:50 is the break between the first and second lesson: 5 minutes to 08:55.
-    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 8, 50))).toEqual({ kind: 'break', minutesLeft: 5 });
+    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 8, 50))).toEqual({ kind: 'break', minutesLeft: 5, next: { lessonNo: 2, start: '08:55' } });
+  });
+
+  it('w przerwie wskazuje lekcję, do której zostało', () => {
+    // PL: 09:45 to przerwa przed trzecią lekcją (09:50): zostało 5 minut, a następna jest lekcja 3.
+    // EN: 09:45 is the break before the third lesson (09:50): 5 minutes left, and the next one is lesson 3.
+    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 9, 45))).toEqual({ kind: 'break', minutesLeft: 5, next: { lessonNo: 3, start: '09:50' } });
+  });
+
+  it('w ostatniej lekcji dnia nie ma następnej lekcji', () => {
+    // PL: 10:00 to trzecia, ostatnia lekcja z przykładu (09:50–10:35): następnej nie ma, więc next to null.
+    // EN: 10:00 is the third, last lesson of the example (09:50–10:35): there is no next one, so next is null.
+    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 10, 0))).toEqual({ kind: 'lesson', lessonNo: 3, minutesLeft: 35, next: null });
   });
 
   it('koniec lekcji to już przerwa (koniec jest wyłączony)', () => {
     // PL: 08:45:00 kończy pierwszą lekcję: od tej chwili to przerwa, do 08:55 zostaje 10 minut.
     // EN: 08:45:00 ends the first lesson: from this moment it is a break, 10 minutes to 08:55.
-    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 8, 45))).toEqual({ kind: 'break', minutesLeft: 10 });
+    expect(bellStateAt(EXAMPLE_PLAN, clock(1, 8, 45))).toEqual({ kind: 'break', minutesLeft: 10, next: { lessonNo: 2, start: '08:55' } });
   });
 
   it('przed pierwszą lekcją nic nie pokazuje', () => {
@@ -99,15 +111,15 @@ describe('strefa czasu Europe/Warsaw', () => {
   it('czas zimowy i letni daje tę samą godzinę lekcyjną (23.10 CEST, 26.10 CET)', () => {
     // PL: 23.10.2026 08:10 w Warszawie to 06:10 UTC (czas letni); 26.10.2026 08:10 to 07:10 UTC (czas zimowy). Oba muszą dać ten sam stan.
     // EN: 23.10.2026 08:10 in Warsaw is 06:10 UTC (summer time); 26.10.2026 08:10 is 07:10 UTC (winter time). Both must give the same state.
-    expect(getBellState(EXAMPLE_PLAN, new Date('2026-10-23T06:10:00Z'))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 35 });
-    expect(getBellState(EXAMPLE_PLAN, new Date('2026-10-26T07:10:00Z'))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 35 });
+    expect(getBellState(EXAMPLE_PLAN, new Date('2026-10-23T06:10:00Z'))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 35, next: { lessonNo: 2, start: '08:55' } });
+    expect(getBellState(EXAMPLE_PLAN, new Date('2026-10-26T07:10:00Z'))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 35, next: { lessonNo: 2, start: '08:55' } });
   });
 
   it('czas letni i zimowy wiosną: 27.03 CET, 30.03 CEST', () => {
     // PL: 27.03.2026 08:10 w Warszawie to 07:10 UTC (czas zimowy); 30.03.2026 08:10 to 06:10 UTC (czas letni).
     // EN: 27.03.2026 08:10 in Warsaw is 07:10 UTC (winter time); 30.03.2026 08:10 is 06:10 UTC (summer time).
-    expect(getBellState(EXAMPLE_PLAN, new Date('2026-03-27T07:10:00Z'))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 35 });
-    expect(getBellState(EXAMPLE_PLAN, new Date('2026-03-30T06:10:00Z'))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 35 });
+    expect(getBellState(EXAMPLE_PLAN, new Date('2026-03-27T07:10:00Z'))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 35, next: { lessonNo: 2, start: '08:55' } });
+    expect(getBellState(EXAMPLE_PLAN, new Date('2026-03-30T06:10:00Z'))).toEqual({ kind: 'lesson', lessonNo: 1, minutesLeft: 35, next: { lessonNo: 2, start: '08:55' } });
   });
 
   it('zegar liczy dzień tygodnia i godzinę w Warszawie, nie w strefie komputera', () => {

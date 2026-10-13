@@ -9,6 +9,7 @@
  * @used_by src/features/profile/queries.ts::applyLook
  * @used_by src/features/profile/SettingsScreen.tsx::PALETTES
  * @used_by src/features/profile/look.test.ts::applyLook
+ * @used_by src/features/profile/textSize.ts::browserRoot
  */
 
 /** PL: Szkoła: L to liceum (niebieski akcent), T to technikum (czerwony akcent). EN: The school: L is the lyceum (blue accent), T is the technical school (red accent). */
@@ -59,7 +60,7 @@ export type LookStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
  *
  * @returns PL: element <html> albo undefined. EN: the <html> element or undefined.
  */
-function browserRoot(): LookTarget | undefined {
+export function browserRoot(): LookTarget | undefined {
   return typeof document === 'undefined' ? undefined : document.documentElement;
 }
 
@@ -69,7 +70,7 @@ function browserRoot(): LookTarget | undefined {
  *
  * @returns PL: pamięć albo undefined. EN: the storage or undefined.
  */
-function browserStorage(): LookStorage | undefined {
+export function browserStorage(): LookStorage | undefined {
   try {
     return typeof window === 'undefined' ? undefined : window.localStorage;
   } catch {

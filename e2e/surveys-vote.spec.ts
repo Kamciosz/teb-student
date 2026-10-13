@@ -22,6 +22,7 @@ const SURVEY = {
   title: 'Zajęcia dodatkowe w II semestrze',
   isActive: true,
   hasVoted: false,
+  closesAt: null,
   questions: [
     { id: 'q1', prompt: 'Jakie zajęcia dodatkowe chcesz w drugim semestrze?', options: ['Koło programowania gier', 'Siatkówka', 'Przygotowanie do matury z matematyki', 'Fotografia'] },
     { id: 'q2', prompt: 'Ile razy w tygodniu możesz zostać po lekcjach?', options: ['Raz', 'Dwa razy', 'Trzy razy lub więcej', 'Nie mogę zostawać'] },
@@ -38,9 +39,11 @@ type MockServer = { voted: boolean; received: unknown[] };
  * EN: Attaches the mock survey server under /api/surveys/vote. After the first vote it answers 409, like the real server.
  *
  * @param page - PL: strona testu. EN: the test page.
+ * @param options - PL: godzina zamknięcia (ISO) albo null i czy ankieta jest już zamknięta. EN: the closing hour (ISO) or null, and whether the survey is already closed.
  * @returns PL: stan atrapy do sprawdzenia w teście. EN: the mock state to check in the test.
  */
-async function mockSurveyServer(page: Page): Promise<MockServer> {
+async function mockSurveyServer(page: Page, options: { closesAt?: string | null; closed?: boolean } = {}): Promise<MockServer> {
+  const { closesAt = null, closed = false } = options;
   const server: MockServer = { voted: false, received: [] };
   await page.route('**/api/surveys/vote/**', async (route) => {
     const request = route.request();
@@ -52,12 +55,12 @@ async function mockSurveyServer(page: Page): Promise<MockServer> {
       return route.fulfill({ status: 201, json: { status: 'ok' } });
     }
     if (path === '/' || path === '') {
-      const filled = { id: 'stolowka', label: null, title: 'Obiad w stołówce', questionCount: 1, daysLeft: 9, hasVoted: true };
-      const open = { id: SURVEY.id, label: SURVEY.label, title: SURVEY.title, questionCount: 3, daysLeft: 3, hasVoted: server.voted };
-      const ended = [{ id: 'dzwonki', title: 'Plan dzwonków', endsOn: '2026-09-30' }];
+      const filled = { id: 'stolowka', label: null, title: 'Obiad w stołówce', questionCount: 1, daysLeft: 9, hasVoted: true, closesAt: null };
+      const open = { id: SURVEY.id, label: SURVEY.label, title: SURVEY.title, questionCount: 3, daysLeft: 3, hasVoted: server.voted, closesAt };
+      const ended = [{ id: 'dzwonki', title: 'Plan dzwonków', endsOn: '2026-09-30', endedOn: '2026-09-30' }];
       return route.fulfill({ json: { active: [open, filled], ended } });
     }
-    return route.fulfill({ json: { ...SURVEY, hasVoted: server.voted } });
+    return route.fulfill({ json: { ...SURVEY, hasVoted: server.voted, closesAt, isActive: !closed } });
   });
   return server;
 }
@@ -73,8 +76,26 @@ test('lista pokazuje aktywne ankiety z dniami do końca, wypełnioną i zakończ
   await expect(page.getByText('3 pytania · 1 minuta')).toBeVisible();
   await expect(page.getByText('dni', { exact: true })).toBeVisible();
   await expect(page.getByText('Wypełniona', { exact: true })).toBeVisible();
-  await expect(page.getByText('Zakończona 30.09')).toBeVisible();
+  await expect(page.getByText('Ankieta zamknięta · 30.09')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Menu główne' })).toBeVisible();
+});
+
+// PL: Ankieta z godziną zamknięcia: lista pokazuje „Do …” w czasie polskim, niezależnie od strefy telefonu.
+// EN: A survey with a closing hour: the list shows "Do …" in Polish time, whatever the phone's zone.
+test('ankieta z godziną zamknięcia pokazuje „Do …” w czasie polskim / a survey with a closing hour shows "Do …" in Polish time', async ({ page }) => {
+  await mockSurveyServer(page, { closesAt: '2026-10-23T18:00:00.000Z' });
+  await page.goto('/surveys/vote');
+  await expect(page.getByText('Do 23.10, 20:00')).toBeVisible();
+});
+
+// PL: Ankieta po godzinie zamknięcia: szczegóły pokazują stan „Ankieta zamknięta”, bez pytań i bez „Dalej”.
+// EN: A survey past its closing hour: the details show the "Ankieta zamknięta" state, without questions and without "Dalej".
+test('po terminie szczegóły ankiety pokazują „Ankieta zamknięta” / after the deadline the survey details show "Ankieta zamknięta"', async ({ page }) => {
+  await mockSurveyServer(page, { closesAt: '2026-10-23T18:00:00.000Z', closed: true });
+  await page.goto('/surveys/vote/dodatkowe');
+  await expect(page.getByRole('heading', { name: 'Ankieta zamknięta' })).toBeVisible();
+  await expect(page.getByText('Ta ankieta jest już zamknięta, więc nie przyjmujemy odpowiedzi.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Dalej' })).toHaveCount(0);
 });
 
 // PL: Cały przepływ: trzy pytania, „Dalej” po wyborze, wysłanie i brak drugiego wypełnienia.
