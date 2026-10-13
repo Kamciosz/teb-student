@@ -9,7 +9,7 @@
  */
 
 /** PL: Nazwy ikon, których używa profil. EN: The names of the icons the profile uses. */
-export type IconName = 'arrow-left' | 'chevron-right' | 'file-text' | 'log-out' | 'trash-2' | 'sliders-horizontal' | 'list-checks';
+export type IconName = 'arrow-left' | 'chevron-right' | 'file-text' | 'log-out' | 'trash-2' | 'sliders-horizontal' | 'list-checks' | 'layout-dashboard';
 
 /** PL: Ścieżki SVG każdej ikony w siatce 24 na 24. EN: The SVG paths of every icon in a 24 by 24 grid. */
 const SHAPES: Record<IconName, string[]> = {
@@ -20,6 +20,7 @@ const SHAPES: Record<IconName, string[]> = {
   'trash-2': ['M3 6h18', 'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6', 'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2', 'M10 11v6', 'M14 11v6'],
   'sliders-horizontal': ['M21 4h-7', 'M10 4H3', 'M21 12h-9', 'M8 12H3', 'M21 20h-5', 'M12 20H3', 'M14 2v4', 'M8 10v4', 'M16 18v4'],
   'list-checks': ['m3 17 2 2 4-4', 'm3 7 2 2 4-4', 'M13 6h8', 'M13 12h8', 'M13 18h8'],
+  'layout-dashboard': ['M3 3h7v9H3z', 'M14 3h7v5h-7z', 'M14 12h7v9h-7z', 'M3 16h7v5H3z'],
 };
 
 /**
