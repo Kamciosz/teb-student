@@ -28,7 +28,7 @@ import type { NewsEntryRow } from '../../db/schema';
 import { excerptFromBody } from './excerpt';
 // PL: Zapytania do bazy.
 // EN: The database queries.
-import { SEARCH_MAX_LENGTH, findPublishedEntry, listPublishedEntries } from './queries';
+import { SEARCH_MAX_LENGTH, findPublishedEntry, listPublishedEntries, type PublishedEntry } from './queries';
 
 /**
  * PL: Wpis na liście: bez treści, z krótkim opisem.
@@ -47,6 +47,8 @@ export type NewsEntrySummary = {
   title: string;
   /** PL: Krótki opis z początku treści. EN: A short description from the start of the content. */
   excerpt: string;
+  /** PL: Czy wpis jest przypięty na górze listy. EN: Whether the entry is pinned to the top of the list. */
+  pinned: boolean;
 };
 
 /**
@@ -60,6 +62,8 @@ export type NewsEntryDetail = NewsEntrySummary & {
   linkUrl: string | null;
   /** PL: Napis na przycisku z linkiem albo null. EN: The label on the link button, or null. */
   linkLabel: string | null;
+  /** PL: Imię i nazwisko autora z konta albo null, gdy wpis nie ma autora, konto usunięto lub imię jest puste. E-mail autora nie wychodzi. EN: The author's name from the account, or null when the entry has no author, the account was deleted or the name is empty. The author's e-mail does not leave the server. */
+  authorName: string | null;
 };
 
 /**
@@ -79,18 +83,19 @@ function toSummary(row: NewsEntryRow): NewsEntrySummary {
     publishedAt: (row.publishedAt as Date).toISOString(),
     title: row.title,
     excerpt: excerptFromBody(row.body),
+    pinned: row.pinnedAt !== null,
   };
 }
 
 /**
- * PL: Zamienia wiersz bazy na pojedynczy wpis.
- * EN: Turns a database row into a single entry.
+ * PL: Zamienia wpis z autorem na pojedynczy wpis do odpowiedzi.
+ * EN: Turns an entry with its author into a single entry for the response.
  *
- * @param row - PL: wiersz widoczny dla ucznia. EN: a row visible to a student.
- * @returns PL: wpis z treścią i linkiem. EN: the entry with the content and the link.
+ * @param published - PL: wpis widoczny dla ucznia z imieniem autora. EN: an entry visible to a student with the author's name.
+ * @returns PL: wpis z treścią, linkiem i autorem. EN: the entry with the content, the link and the author.
  */
-function toDetail(row: NewsEntryRow): NewsEntryDetail {
-  return { ...toSummary(row), body: row.body, linkUrl: row.linkUrl, linkLabel: row.linkLabel };
+function toDetail({ entry, authorName }: PublishedEntry): NewsEntryDetail {
+  return { ...toSummary(entry), body: entry.body, linkUrl: entry.linkUrl, linkLabel: entry.linkLabel, authorName };
 }
 
 /**
@@ -120,8 +125,8 @@ async function withDatabase(
  */
 export const newsFeedApp = new Hono<{ Bindings: Env }>();
 
-// PL: Lista opublikowanych wpisów od najnowszego. Parametr q szuka w tytule i treści; bez niego jest cała lista.
-// EN: The list of published entries, newest first. The q parameter searches the title and the content; without it there is the whole list.
+// PL: Lista widocznych wpisów: przypięte na górze, potem od najnowszego. Parametr q szuka w tytule i treści; bez niego jest cała lista.
+// EN: The list of visible entries: pinned on top, then newest first. The q parameter searches the title and the content; without it there is the whole list.
 newsFeedApp.get('/', async (context) => {
   // PL: Szukany tekst bez spacji na brzegach. Za długi dostaje 400, zanim dotknie bazy.
   // EN: The searched text without spaces at the edges. A too long one gets 400 before it touches the database.
@@ -131,11 +136,11 @@ newsFeedApp.get('/', async (context) => {
   return withDatabase(context, async (db) => context.json({ entries: (await listPublishedEntries(db, term)).map(toSummary) }));
 });
 
-// PL: Jeden opublikowany wpis. Szkic i nieznany numer to to samo: 404.
-// EN: One published entry. A draft and an unknown id are the same: 404.
+// PL: Jeden widoczny wpis. Szkic, wpis zaplanowany na później i nieznany numer to to samo: 404.
+// EN: One visible entry. A draft, an entry scheduled for later and an unknown id are the same: 404.
 newsFeedApp.get('/:id', (context) =>
   withDatabase(context, async (db) => {
-    const row = await findPublishedEntry(db, context.req.param('id'));
-    return row ? context.json({ entry: toDetail(row) }) : context.json({ error: 'not_found' }, 404);
+    const found = await findPublishedEntry(db, context.req.param('id'));
+    return found ? context.json({ entry: toDetail(found) }) : context.json({ error: 'not_found' }, 404);
   }),
 );

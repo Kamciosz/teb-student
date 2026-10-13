@@ -74,7 +74,7 @@ export function useChangeStage(id: string) {
   // EN: `networkMode: 'always'` shows an error instead of waiting for the network; the button is disabled offline anyway.
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (stage: string) => changeReportStage({ id, stage }),
+    mutationFn: (change: { stage: string; note: string | null }) => changeReportStage({ id, stage: change.stage, note: change.note }),
     networkMode: 'always',
     onSuccess: (detail) => {
       // PL: Odpowiedź serwera to aktualny szczegół, więc wstawiamy go do pamięci i odświeżamy listę.
