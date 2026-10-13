@@ -1,0 +1,37 @@
+/*
+ * PL: Pusty stan: wyśrodkowany tekst na kaflu, z odstępem na dodatkową treść. Kolory tylko przez var(--...).
+ * EN: The empty state: centered text on the tile, with a gap for the extra content. Colors only through var(--...).
+ */
+
+/* PL: Blok pustego stanu: kolumna, zwęża się w wąskim ekranie i zawija długi tekst.
+   EN: The empty state block: a column, narrows on a narrow screen and wraps long text. */
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 24px 16px;
+  border-radius: var(--r);
+  background: var(--tile-2);
+  color: var(--ink-2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* PL: Tytuł pustego stanu: czytelny, ale nie krzyczy.
+   EN: The empty state title: readable, but not shouting. */
+.ui-empty-title {
+  font-size: var(--t-md);
+  font-weight: 600;
+}
+
+/* PL: Dodatkowa treść (np. przycisk) zachowuje wysokość dotyku z jej własnego stylu.
+   EN: The extra content (for example a button) keeps the touch height from its own style. */
+.ui-empty-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}

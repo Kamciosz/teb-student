@@ -10,6 +10,15 @@
  * @uses src/shared/query/AppQueryProvider.tsx::AppQueryProvider
  * @uses src/shared/query/clearQueryData.ts::clearQueryData
  * @uses src/shared/ui/OfflineBanner.tsx::OfflineBanner
+ * @uses src/shared/ui/Button.tsx::Button
+ * @uses src/shared/ui/Chip.tsx::Chip
+ * @uses src/shared/ui/TextField.tsx::TextField
+ * @uses src/shared/ui/Tile.tsx::Tile
+ * @uses src/shared/ui/Badge.tsx::Badge
+ * @uses src/shared/ui/ProgressBar.tsx::ProgressBar
+ * @uses src/shared/ui/ProgressBar.tsx::clampPercent
+ * @uses src/shared/ui/Sheet.tsx::Sheet
+ * @uses src/shared/ui/EmptyState.tsx::EmptyState
  * @used_by src/features/dashboard/index.ts::DashboardScreen
  * @used_by src/app/routes.test.ts::DOCK_ITEMS
  */
@@ -32,3 +41,27 @@ export { clearQueryData } from './query/clearQueryData';
 // PL: Pasek braku internetu (jeden, w korzeniu aplikacji).
 // EN: The no-internet bar (one, at the app root).
 export { OfflineBanner } from './ui/OfflineBanner';
+// PL: Przycisk w trzech wariantach (accent, soft, outline).
+// EN: The button in three variants (accent, soft, outline).
+export { Button } from './ui/Button';
+// PL: Wybieralny znacznik (wybrany albo nie).
+// EN: The selectable chip (selected or not).
+export { Chip } from './ui/Chip';
+// PL: Pole tekstowe z etykietą i komunikatem o błędzie.
+// EN: The text field with a label and an error message.
+export { TextField } from './ui/TextField';
+// PL: Kafelek (karta) z tłem i zawijaniem tekstu.
+// EN: The tile (card) with a background and text wrapping.
+export { Tile } from './ui/Tile';
+// PL: Mała etykieta statusu w kształcie pigułki.
+// EN: The small status label in a pill shape.
+export { Badge } from './ui/Badge';
+// PL: Pasek postępu z odczytem dla czytnika; clampPercent przycina wartość do 0–100 %.
+// EN: The progress bar with reading for the screen reader; clampPercent clips the value to 0–100%.
+export { ProgressBar, clampPercent } from './ui/ProgressBar';
+// PL: Arkusz wysuwany z dołu (modalne okno z fokusem i Escape).
+// EN: The sheet sliding up from the bottom (a modal window with focus and Escape).
+export { Sheet } from './ui/Sheet';
+// PL: Pusty stan z tytułem i treścią dodatkową.
+// EN: The empty state with a title and extra content.
+export { EmptyState } from './ui/EmptyState';

@@ -33,8 +33,13 @@
 
 /* PL: Licznik do dzwonka, wyrównany do prawej.
    EN: The bell countdown, aligned to the right. */
+/* PL: Licznik jest linkiem do /bell, więc ma kolor i podkreślenie jak tekst, nie jak link.
+   EN: The countdown is a link to /bell, so it has the text colour and no underline, not link styling. */
 .dash-bell {
+  display: block;
   text-align: right;
+  color: inherit;
+  text-decoration: none;
 }
 
 .dash-bell__num {
