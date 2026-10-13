@@ -16,26 +16,38 @@ import { Icon } from './icons';
 import { Notice } from './Notice';
 import { PanelTop } from './PanelTop';
 import { StagePicker } from './StagePicker';
-import type { AdminReport, StageChange } from './api';
+import type { AdminReport, AdminStudent, StageChange } from './api';
 import { useAdminReport, useChangeStage, useIsOnline } from './queries';
 import { categoryLabel, formatShortDate, placeText, stageLabel } from './reportView';
 
 /**
- * PL: Rysuje kafel autora. Zgłoszenie anonimowe pokazuje napis o anonimowości. Zgłoszenie z autorem pokazuje tylko, że autor zrezygnował z anonimowości: nazwę i klasę poda dopiero drzwi modułu profilu.
- * EN: Draws the author tile. An anonymous report shows the anonymity label. A report with an author shows only that the author gave up anonymity: the name and class will come only from the profile module's door.
+ * PL: Rysuje kafel autora (ekran 6.4c). Zgłoszenie anonimowe pokazuje napis o anonimowości i nie ma danych autora. Zgłoszenie z autorem pokazuje imię i klasę, gdy serwer je poda; bez nich zostaje sam napis „Autor zgłosił bez anonimowości.”.
+ * EN: Draws the author tile (screen 6.4c). An anonymous report shows the anonymity label and has no author data. A report with an author shows the name and class when the server gives them; without them only the label "Autor zgłosił bez anonimowości." stays.
  *
- * @param props - PL: czy zgłoszenie jest anonimowe. EN: whether the report is anonymous.
+ * @param props - PL: czy zgłoszenie jest anonimowe i imię z klasą autora (albo `null`). EN: whether the report is anonymous, and the author's name and class (or `null`).
  * @returns PL: drzewo elementów kafla. EN: the tree of tile elements.
  */
-function AuthorTile({ isAnonymous }: { isAnonymous: boolean }) {
-  // PL: Przy anonimowym zgłoszeniu nie ma żadnych danych autora, więc pokazujemy tylko napis. Z autorem pokazujemy tylko tę informację.
-  // EN: An anonymous report has no author data at all, so we show only the label. With an author we show only that information.
+function AuthorTile({ isAnonymous, student }: { isAnonymous: boolean; student: AdminStudent | null }) {
+  // PL: Anonimowe: tylko napis. Z autorem: „Imię · Klasa” (tylko części, które są), pod spodem napis o zgłoszeniu bez anonimowości.
+  // EN: Anonymous: only the label. With an author: "Name · Class" (only the parts that exist), with the label about the signed report under it.
+  if (isAnonymous) {
+    return (
+      <div className="ra-author">
+        <Icon name="user-round" />
+        <div>
+          <p>Zgłoszenie anonimowe</p>
+          <p className="ra-small">Samorząd nie widzi, kto je wysłał.</p>
+        </div>
+      </div>
+    );
+  }
+  const who = [student?.name.trim() ?? '', student?.className.trim() ?? ''].filter(Boolean).join(' · ');
   return (
     <div className="ra-author">
       <Icon name="user-round" />
       <div>
-        {isAnonymous ? <p>Zgłoszenie anonimowe</p> : null}
-        <p className="ra-small">{isAnonymous ? 'Samorząd nie widzi, kto je wysłał.' : 'Autor zgłosił bez anonimowości.'}</p>
+        {who ? <p>{who}</p> : null}
+        <p className="ra-small">Autor zgłosił bez anonimowości.</p>
       </div>
     </div>
   );
@@ -88,10 +100,10 @@ function ReportHead({ report }: { report: AdminReport }) {
  * PL: Rysuje szczegół załadowanego zgłoszenia i zapis etapu.
  * EN: Draws the detail of a loaded report and the stage saving.
  *
- * @param props - PL: zgłoszenie z historią. EN: the report with its history.
+ * @param props - PL: zgłoszenie z historią i autor. EN: the report with its history and the author.
  * @returns PL: drzewo elementów. EN: the tree of elements.
  */
-function DetailBody({ report, history }: { report: AdminReport; history: StageChange[] }) {
+function DetailBody({ report, history, student }: { report: AdminReport; history: StageChange[]; student: AdminStudent | null }) {
   // PL: Wybrany etap to stan ekranu; `null` znaczy, że Samorząd jeszcze nic nie wybrał.
   // EN: The chosen stage is the screen state; `null` means the Student Council has not chosen anything yet.
   const [picked, setPicked] = useState<string | null>(null);
@@ -106,7 +118,7 @@ function DetailBody({ report, history }: { report: AdminReport; history: StageCh
   return (
     <>
       <ReportHead report={report} />
-      <AuthorTile isAnonymous={report.isAnonymous} />
+      <AuthorTile isAnonymous={report.isAnonymous} student={student} />
       <h3 className="ra-label">Etap</h3>
       <StagePicker value={stage} onChange={setPicked} />
       <h3 className="ra-label">Historia</h3>
@@ -138,7 +150,7 @@ export function ReportDetail() {
   return (
     <>
       <PanelTop title="Zgłoszenie" to="/reports/admin" backLabel="Wróć" />
-      {query.data ? <DetailBody key={query.data.report.id} report={query.data.report} history={query.data.history} /> : null}
+      {query.data ? <DetailBody key={query.data.report.id} report={query.data.report} history={query.data.history} student={query.data.student} /> : null}
       {!query.data && query.isError ? <Notice text="Nie udało się pobrać zgłoszeń. Spróbuj ponownie za chwilę." /> : null}
       {!query.data && !query.isError ? <div role="status" aria-busy="true" /> : null}
     </>
