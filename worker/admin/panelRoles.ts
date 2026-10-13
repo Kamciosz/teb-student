@@ -12,7 +12,7 @@
 
 // PL: Warunek „równa się” i klient bazy do zapytania o role.
 // EN: The "equals" condition and the database client for the roles query.
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 // PL: Tabela ról, lista ról i typ roli.
 // EN: The roles table, the list of roles and the role type.
@@ -76,4 +76,63 @@ export async function getPanelLevel(db: D1Database, userId: string): Promise<Pan
   // PL: Zwróć najwyższą z nich.
   // EN: Return the highest of them.
   return highestPanelRole(rows.map((row) => row.role));
+}
+
+/**
+ * PL: Nadaje uczniowi rolę w panelu. Gdy już ją ma, nic się nie zmienia (rola jest jedna na ucznia i rodzaj).
+ * EN: Grants the student a panel role. When they already have it, nothing changes (a role is held once per student and kind).
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @param userId - PL: numer ucznia (konta). EN: the student (account) id.
+ * @param role - PL: rola do nadania. EN: the role to grant.
+ * @param now - PL: chwila nadania (do zapisu w bazie). EN: the moment of granting (for the database).
+ * @throws PL: błąd bazy. EN: a database error.
+ */
+export async function grantPanelRole(db: D1Database, userId: string, role: PanelRole, now: Date = new Date()): Promise<void> {
+  // PL: Wstaw wiersz roli. Gdy wiersz już jest, zostaw go bez zmian.
+  // EN: Insert the role row. When the row is already there, leave it unchanged.
+  await drizzle(db).insert(panelRoles).values({ userId, role, grantedAt: now.getTime() }).onConflictDoNothing();
+}
+
+/**
+ * PL: Odbiera uczniowi rolę w panelu. Gdy jej nie ma, nic się nie dzieje.
+ * EN: Revokes a panel role from the student. When they do not have it, nothing happens.
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @param userId - PL: numer ucznia (konta). EN: the student (account) id.
+ * @param role - PL: rola do odebrania. EN: the role to revoke.
+ * @throws PL: błąd bazy. EN: a database error.
+ */
+export async function revokePanelRole(db: D1Database, userId: string, role: PanelRole): Promise<void> {
+  // PL: Usuń wiersz tej roli tylko tego ucznia.
+  // EN: Delete the row of this role for this student only.
+  await drizzle(db).delete(panelRoles).where(and(eq(panelRoles.userId, userId), eq(panelRoles.role, role)));
+}
+
+/**
+ * PL: Czyta wszystkie role ucznia w panelu (nie tylko najwyższą), żeby pokazać dwa przełączniki na ekranie roli.
+ * EN: Reads all of the student's panel roles (not only the highest), to show the two switches on the role screen.
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @param userId - PL: numer ucznia (konta). EN: the student (account) id.
+ * @returns PL: lista ról ucznia (może być pusta). EN: the list of the student's roles (may be empty).
+ */
+export async function getPanelRoles(db: D1Database, userId: string): Promise<PanelRole[]> {
+  // PL: Zapytanie ma warunek po numerze ucznia, więc nie czyta cudzych ról.
+  // EN: The query has a condition on the student id, so it reads nobody else's roles.
+  const rows = await drizzle(db).select({ role: panelRoles.role }).from(panelRoles).where(eq(panelRoles.userId, userId));
+  return rows.map((row) => row.role);
+}
+
+/**
+ * PL: Lista uczniów, którzy mają rolę Samorządu albo redakcji (bez administratora). Każdy numer ucznia jest raz, z wszystkimi jego rolami z tej listy.
+ * EN: The list of students who have the Council or editorial role (without the administrator). Each student id appears once, with all of their roles from this list.
+ *
+ * @param db - PL: baza D1. EN: the D1 database.
+ * @returns PL: pary numer ucznia i rola, bez administratora. EN: pairs of student id and role, without the administrator.
+ */
+export async function listRoleHolders(db: D1Database): Promise<{ userId: string; role: PanelRole }[]> {
+  // PL: Weź tylko role, które da się nadać w ekranie 6.3 (Samorząd i redakcja).
+  // EN: Take only the roles that can be granted on screen 6.3 (the Council and the editorial team).
+  return drizzle(db).select({ userId: panelRoles.userId, role: panelRoles.role }).from(panelRoles).where(inArray(panelRoles.role, ['council', 'editor']));
 }

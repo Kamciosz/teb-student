@@ -6,22 +6,27 @@
  * @since 2026-10-11
  * @uses src/shared/index.ts::Dock
  * @uses src/features/dashboard/queries.ts::useDashboard
+ * @uses src/features/dashboard/TileRows.tsx::TileRows
+ * @uses src/features/dashboard/tileOrder.ts::loadTileOrder
  * @used_by src/features/dashboard/index.ts::DashboardScreen
  */
 
+// PL: Stan ekranu: kolejność i tryb edycji.
+// EN: The screen state: the order and the edit mode.
+import { useState } from 'react';
 // PL: Dolny pasek nawigacji.
 // EN: The bottom navigation bar.
 import { Dock } from '../../shared';
-// PL: Górny rząd i cztery kafelki.
-// EN: The top row and the four tiles.
-import { AnnouncementsTile } from './AnnouncementsTile';
+// PL: Górny rząd i kafelki w zapisanej kolejności.
+// EN: The top row and the tiles in the saved order.
 import { DashboardHeader } from './DashboardHeader';
-import { ImportantTile } from './ImportantTile';
-import { ReportTile } from './ReportTile';
-import { SurveyTile } from './SurveyTile';
+import { TileRows } from './TileRows';
 // PL: Dane pulpitu.
 // EN: The dashboard data.
 import { useDashboard } from './queries';
+// PL: Kolejność kafelków i jej zapis.
+// EN: The tile order and its saving.
+import { loadTileOrder, moveTile, saveTileOrder, type TileId } from './tileOrder';
 // PL: Style pulpitu.
 // EN: The dashboard styles.
 import './dashboard.css';
@@ -73,18 +78,25 @@ export function DashboardScreen() {
   const query = useDashboard();
   const data = query.data;
 
+  // PL: Kolejność kafelków z zapisu w telefonie (albo domyślna) i tryb edycji. Tryb edycji nie zapisuje się, po odświeżeniu wraca wyłączony.
+  // EN: The tile order from the phone's saved copy (or the default) and the edit mode. The edit mode is not saved, so after a refresh it is off again.
+  const [order, setOrder] = useState<TileId[]>(() => loadTileOrder());
+  const [editing, setEditing] = useState(false);
+
+  // PL: Przesunięcie kafelka od razu zapisuje nową kolejność.
+  // EN: Moving a tile saves the new order at once.
+  const handleMove = (id: TileId, step: -1 | 1) => {
+    const next = moveTile(order, id, step);
+    setOrder(next);
+    saveTileOrder(next);
+  };
+
   return (
     <>
       <main className="dash" data-subtrack="9">
-        <DashboardHeader />
+        <DashboardHeader editing={editing} onToggleEdit={() => setEditing((on) => !on)} />
         <FetchNote query={query} />
-        <ImportantTile entry={data?.important ?? null} />
-        {/* PL: Ankieta i zgłoszenia obok siebie, a na bardzo wąskim ekranie jedno pod drugim. EN: The survey and reports side by side, and one under the other on a very narrow screen. */}
-        <div className="dash-pair">
-          <SurveyTile survey={data?.survey ?? null} />
-          <ReportTile report={data?.report ?? null} />
-        </div>
-        <AnnouncementsTile rows={data?.announcements ?? []} />
+        <TileRows order={order} data={data} editing={editing} onMove={handleMove} />
       </main>
       {/* PL: Dolny pasek nawigacji, jak na ekranie 2.1. EN: The bottom navigation bar, as on screen 2.1. */}
       <Dock />
