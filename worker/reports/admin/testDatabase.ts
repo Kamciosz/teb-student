@@ -1,6 +1,6 @@
 /**
- * PL: Pomocnik testów serwera 4b: czyści tabele zgłoszeń i ról w bazie testowej D1, wpisuje dane testowe z REPORTS_SEED i REPORT_STAGE_CHANGES_SEED (plik podtoru 4a, tylko import) i nadaje wskazaną rolę zalogowanemu uczniowi. Tabele zakłada wspólna konfiguracja testów (worker/shared/testSetup.ts).
- * EN: A helper for the 4b server tests: empties the report and role tables in the D1 test database, inserts the test data from REPORTS_SEED and REPORT_STAGE_CHANGES_SEED (a 4a file, import only) and grants the given role to the signed-in student. The tables are created by the shared test setup (worker/shared/testSetup.ts).
+ * PL: Pomocnik testów serwera 4b: czyści tabele zgłoszeń, ról i dziennika zmian w bazie testowej D1, wpisuje dane testowe z REPORTS_SEED i REPORT_STAGE_CHANGES_SEED (plik podtoru 4a, tylko import) i nadaje wskazaną rolę zalogowanemu uczniowi. Tabele zakłada wspólna konfiguracja testów (worker/shared/testSetup.ts).
+ * EN: A helper for the 4b server tests: empties the report, role and change diary tables in the D1 test database, inserts the test data from REPORTS_SEED and REPORT_STAGE_CHANGES_SEED (a 4a file, import only) and grants the given role to the signed-in student. The tables are created by the shared test setup (worker/shared/testSetup.ts).
  *
  * @author Szymon
  * @since 2026-10-12
@@ -17,7 +17,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { env } from 'cloudflare:workers';
 // PL: Tabela ról w panelu i typ roli. Test nadaje rolę wprost w bazie, bo drzwi modułu admin nie mają funkcji nadającej role.
 // EN: The panel roles table and the role type. The test grants the role directly in the database, because the admin module door has no function that grants roles.
-import { panelRoles, type PanelRole } from '../../db/schema/admin';
+import { diaryEntries, panelRoles, type PanelRole } from '../../db/schema/admin';
 // PL: Tabele i zestawy danych testowych.
 // EN: The tables and the test data sets.
 import { reports, reportStageChanges } from '../../db/schema/reports';
@@ -38,6 +38,7 @@ export async function resetDatabase(authorId: string, role: PanelRole | null): P
   await db.delete(reportStageChanges);
   await db.delete(reports);
   await db.delete(panelRoles);
+  await db.delete(diaryEntries);
 
   // PL: Wpisz zgłoszenia, potem historię.
   // EN: Insert the reports, then the history.

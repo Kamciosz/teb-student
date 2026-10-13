@@ -10,6 +10,7 @@
  * @uses worker/news/admin/queries.ts::unpinEntry
  * @uses worker/news/admin/queries.ts::deleteEntry
  * @uses worker/news/editor/index.ts::requireNewsAuthor
+ * @uses worker/admin/index.ts::recordDiaryEntry
  * @used_by worker/news/admin/index.ts::newsAdminApp
  * @used_by worker/news/admin/routes.test.ts::createNewsAdminApp
  */
@@ -21,6 +22,9 @@ import type { StudentEnv } from '../../auth';
 // PL: Strażnik autora wpisów z drzwi podtoru 3b.
 // EN: The entry author guard from the door of subtrack 3b.
 import { requireNewsAuthor } from '../editor';
+// PL: Zapis w dzienniku zmian przez drzwi podtoru 8.
+// EN: Writing to the change diary through the door of subtrack 8.
+import { recordDiaryEntry } from '../../admin';
 import { deleteEntry, listPanelEntries, pinEntry, publishDraft, unpinEntry } from './queries';
 
 /**
@@ -57,13 +61,16 @@ export function createNewsAdminApp(guard: MiddlewareHandler<StudentEnv>) {
   // EN: The list of all entries with drafts, without the content.
   app.get('/', (context) => withDatabase(context, async () => context.json({ entries: await listPanelEntries(context.env.DB) })));
 
-  // PL: Publikacja szkicu: 200 po publikacji, 409 gdy wpis już jest opublikowany, 404 gdy go nie ma.
-  // EN: Publishing a draft: 200 after publishing, 409 when the entry is already published, 404 when it does not exist.
+  // PL: Publikacja szkicu: 200 po publikacji, 409 gdy wpis już jest opublikowany, 404 gdy go nie ma. Po udanej publikacji jeden wpis w dzienniku (bez treści, tylko id wpisu).
+  // EN: Publishing a draft: 200 after publishing, 409 when the entry is already published, 404 when it does not exist. After a successful publish, one diary entry (no content, only the entry id).
   app.post('/:id/publish', (context) =>
     withDatabase(context, async () => {
-      const result = await publishDraft(context.env.DB, context.req.param('id'));
+      const id = context.req.param('id');
+      const result = await publishDraft(context.env.DB, id);
       if (result === 'not_found') return context.json({ error: 'not_found' }, 404);
-      return result === 'already_published' ? context.json({ error: 'already_published' }, 409) : context.json({ id: context.req.param('id') });
+      if (result === 'already_published') return context.json({ error: 'already_published' }, 409);
+      await recordDiaryEntry(context.env.DB, { actorId: context.get('student').id, action: 'news_published', targetId: id });
+      return context.json({ id });
     }),
   );
 
@@ -87,10 +94,15 @@ export function createNewsAdminApp(guard: MiddlewareHandler<StudentEnv>) {
     }),
   );
 
-  // PL: Usunięcie wpisu: 200 albo 404, gdy go nie ma.
-  // EN: Deleting an entry: 200 or 404 when it does not exist.
+  // PL: Usunięcie wpisu: 200 albo 404, gdy go nie ma. Po udanym usunięciu jeden wpis w dzienniku (bez treści, tylko id wpisu).
+  // EN: Deleting an entry: 200 or 404 when it does not exist. After a successful delete, one diary entry (no content, only the entry id).
   app.delete('/:id', (context) =>
-    withDatabase(context, async () => ((await deleteEntry(context.env.DB, context.req.param('id'))) ? context.json({ id: context.req.param('id') }) : context.json({ error: 'not_found' }, 404))),
+    withDatabase(context, async () => {
+      const id = context.req.param('id');
+      if (!(await deleteEntry(context.env.DB, id))) return context.json({ error: 'not_found' }, 404);
+      await recordDiaryEntry(context.env.DB, { actorId: context.get('student').id, action: 'news_deleted', targetId: id });
+      return context.json({ id });
+    }),
   );
 
   return app;
