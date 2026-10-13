@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { MIN_RESPONSES, shapeResults, toQuestionResult } from './results';
+import { MIN_RESPONSES, scaleAverage, shapeResults, toQuestionResult } from './results';
 
 // PL: Dane ankiety bez wyników.
 // EN: The survey data without results.
@@ -38,12 +38,34 @@ describe('toQuestionResult', () => {
   });
 });
 
+describe('scaleAverage', () => {
+  it('liczy średnią z pozycji 1…5 ważonych głosami, do jednego miejsca / counts the average of positions 1…5 weighted by votes, to one decimal place', () => {
+    expect(scaleAverage([{ votes: 1 }, { votes: 0 }, { votes: 1 }, { votes: 0 }, { votes: 0 }])).toBe(2);
+    expect(scaleAverage([{ votes: 2 }, { votes: 1 }, { votes: 0 }, { votes: 0 }, { votes: 0 }])).toBe(1.3);
+    expect(scaleAverage([{ votes: 0 }, { votes: 0 }, { votes: 0 }, { votes: 1 }, { votes: 2 }])).toBe(4.7);
+  });
+
+  it('bez głosów średniej nie ma / without votes there is no average', () => {
+    expect(scaleAverage([{ votes: 0 }, { votes: 0 }, { votes: 0 }, { votes: 0 }, { votes: 0 }])).toBeUndefined();
+  });
+});
+
 describe('shapeResults', () => {
   it('poniżej progu zwraca liczbę i nie pobiera rozkładu / below the threshold returns the count and does not fetch the distribution', async () => {
     const load = vi.fn(async () => []);
     const result = await shapeResults(survey, MIN_RESPONSES - 1, load);
     expect(result).toEqual({ ...survey, responseCount: 4, minResponses: 5 });
     expect(load).not.toHaveBeenCalled();
+  });
+
+  it('skala 1–5 dostaje średnią od progu, a bez głosów pola nie ma / the 1–5 scale gets the average from the threshold, and without votes there is no field', async () => {
+    const scale = toQuestionResult('Jak oceniasz?', 'scale_1_5', [
+      { label: '1', votes: 2 }, { label: '2', votes: 1 }, { label: '3', votes: 0 }, { label: '4', votes: 0 }, { label: '5', votes: 0 },
+    ]);
+    const empty = toQuestionResult('Jak oceniasz?', 'scale_1_5', ['1', '2', '3', '4', '5'].map((label) => ({ label, votes: 0 })));
+    const result = await shapeResults(survey, MIN_RESPONSES, async () => [scale, empty]);
+    expect(result.questions?.[0]?.average).toBe(1.3);
+    expect(result.questions?.[1]).not.toHaveProperty('average');
   });
 
   it('od progu dopisuje pytania / from the threshold adds the questions', async () => {

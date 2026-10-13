@@ -153,6 +153,18 @@ function MultipleChoiceNote({ question }: { question: QuestionResult }) {
 }
 
 /**
+ * PL: Przy skali 1–5 pokazuje średnią, jeśli serwer ją przysłał (dopiero od progu odpowiedzi i gdy ktoś głosował). Przy innych typach nic nie rysuje.
+ * EN: With the 1–5 scale it shows the average, if the server sent it (only from the response threshold and when somebody voted). With other types it draws nothing.
+ *
+ * @param props - PL: pytanie z wynikami. EN: the question with its results.
+ * @returns PL: notatka albo nic. EN: the note or nothing.
+ */
+function AverageNote({ question }: { question: QuestionResult }) {
+  if (question.average === undefined) return null;
+  return <p className="sa-small">{TO_AGREE.average(question.average)}</p>;
+}
+
+/**
  * PL: Rysuje ekran 6.5d dla jednego pytania. Przy kilku pytaniach „Następne pytanie” przełącza je, a „Wstecz” wraca do poprzedniego.
  * EN: Draws screen 6.5d for one question. With several questions "Następne pytanie" switches them, and "Wstecz" returns to the previous one.
  *
@@ -172,9 +184,10 @@ function QuestionResults({ results }: { results: SurveyResults }) {
       <p className="sa-label sa-label--tight">{`Pytanie ${index + 1}`}</p>
       <h2 className="sa-h2">{question.prompt}</h2>
       <MultipleChoiceNote question={question} />
+      <AverageNote question={question} />
       <ul className="sa-tile sa-results">
         {question.options.map((option, place) => (
-          <ResultBar key={place} letter={OPTION_LETTERS[place] ?? ''} option={option} />
+          <ResultBar key={place} letter={question.type === 'scale_1_5' ? '' : OPTION_LETTERS[place] ?? ''} option={option} />
         ))}
       </ul>
       <PanelNote icon={<LockIcon />} text="Wyniki są zbiorcze. Nie widać, kto co wybrał." />
