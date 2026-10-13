@@ -15,7 +15,7 @@
 
 import { onlineManager, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSyncExternalStore } from 'react';
-import { deleteEntry, fetchPanelEntries, publishEntry } from './api';
+import { deleteEntry, fetchPanelEntries, pinEntry, publishEntry, unpinEntry } from './api';
 
 /** PL: Klucz listy w pamięci podręcznej. EN: The list key in the cache. */
 const LIST_KEY = ['news', 'admin', 'list'] as const;
@@ -70,6 +70,26 @@ export function usePublishEntry() {
  */
 export function useDeleteEntry() {
   return useListMutation(deleteEntry);
+}
+
+/**
+ * PL: Przypina wpis o podanym numerze. Przy komplecie trzech przypiętych zapytanie kończy się błędem PinLimitError.
+ * EN: Pins the entry with the given id. When three are already pinned, the query ends with a PinLimitError.
+ *
+ * @returns PL: mutacja, której `mutate` przyjmuje numer wpisu. EN: a mutation whose `mutate` takes the entry id.
+ */
+export function usePinEntry() {
+  return useListMutation(pinEntry);
+}
+
+/**
+ * PL: Odpina wpis o podanym numerze.
+ * EN: Unpins the entry with the given id.
+ *
+ * @returns PL: mutacja, której `mutate` przyjmuje numer wpisu. EN: a mutation whose `mutate` takes the entry id.
+ */
+export function useUnpinEntry() {
+  return useListMutation(unpinEntry);
 }
 
 /**
