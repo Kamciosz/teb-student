@@ -110,12 +110,15 @@ test.beforeEach(async ({ page }) => {
 
 // PL: Plan w main jest pusty: ekran pokazuje tylko siebie, bez licznika (nawet w godzinach lekcji).
 // EN: The plan in main is empty: the screen shows no countdown (even during lesson hours).
-test('bez planu dzwonków licznik się nie pokazuje', async ({ page }) => {
+test('bez planu dzwonków licznik się nie pokazuje, a jest napis', async ({ page }) => {
   // PL: Poniedziałek 19.10.2026 09:10 w Warszawie (czas letni: 07:10 UTC), pora drugiej lekcji.
   // EN: Monday 19.10.2026 09:10 in Warsaw (summer time: 07:10 UTC), the time of the second lesson.
   await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
   await page.goto('/bell');
   await expect(page.getByLabel('Licznik do dzwonka')).toHaveCount(0);
+  // PL: Zamiast pustego ekranu pokazujemy krótki napis (taki sam jak na pulpicie).
+  // EN: Instead of an empty screen we show a short text (the same as on the dashboard).
+  await expect(page.getByText('Brak planu dzwonków')).toBeVisible();
 });
 
 // PL: W czasie lekcji licznik pokazuje minuty do dzwonka i etykietę „do dzwonka”.
@@ -127,6 +130,9 @@ test('w czasie lekcji pokazuje minuty do dzwonka', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
   await page.goto('/bell');
   const countdown = page.getByLabel('Licznik do dzwonka');
+  // PL: Z planem napis „Brak planu dzwonków” nie pokazuje się.
+  // EN: With a plan the "Brak planu dzwonków" text is not shown.
+  await expect(page.getByText('Brak planu dzwonków')).toHaveCount(0);
   await expect(countdown).toContainText('30');
   await expect(countdown).toContainText('min');
   await expect(countdown).toContainText('do dzwonka');

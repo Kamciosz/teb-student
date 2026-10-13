@@ -5,13 +5,14 @@
  * @author Szymon Sosnowski
  * @since 2026-10-13
  * @uses src/features/bell/index.ts::currentBellState
+ * @uses src/features/bell/index.ts::hasBellPlan
  * @used_by vitest.config.ts::include
  */
 
 // PL: Funkcje testowe Vitest, sterowanie czasem i podmiana modułu planu.
 // EN: Vitest test functions, clock control and the plan module stub.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { currentBellState } from './index';
+import { currentBellState, hasBellPlan } from './index';
 
 // PL: Plany PRZYKŁADOWE trzymane w zmiennej, którą test może zmieniać (w main oba są puste).
 // EN: EXAMPLE plans held in a variable the test can change (both are empty in main).
@@ -108,5 +109,34 @@ describe('currentBellState', () => {
       minutesLeft: 30,
       next: null,
     });
+  });
+});
+
+describe('hasBellPlan', () => {
+  it('przy pustym planie daje false', () => {
+    // PL: Plan zwykły pusty, dzień nieskrócony: nie ma żadnej lekcji, więc false.
+    // EN: The regular plan is empty, the day is not shortened: there is no lesson, so false.
+    plan.BELL_PLAN = [];
+    expect(hasBellPlan(new Date('2026-10-23T06:10:00Z'))).toBe(false);
+  });
+
+  it('z lekcją w planie daje true', () => {
+    // PL: Domyślny przykładowy plan ma lekcje, więc true.
+    // EN: The default example plan has lessons, so true.
+    expect(hasBellPlan(new Date('2026-10-23T06:10:00Z'))).toBe(true);
+  });
+
+  it('w dniu skróconym z pustym planem skróconym daje false', () => {
+    // PL: Zwykły plan ma lekcje, ale dzień 23.10 jest skrócony, a plan skrócony jest pusty: false, bo to ten plan obowiązuje.
+    // EN: The regular plan has lessons, but 23.10 is shortened and the shortened plan is empty: false, because that plan applies.
+    plan.SHORTENED_BELL_PLAN = [];
+    expect(hasBellPlan(new Date('2026-10-23T06:10:00Z'), new Set(['2026-10-23']))).toBe(false);
+  });
+
+  it('w dniu nieskróconym nie patrzy na pusty plan skrócony', () => {
+    // PL: Plan skrócony pusty, ale dzień 23.10 nie jest skrócony: plan zwykły ma lekcje, więc true.
+    // EN: The shortened plan is empty, but 23.10 is not shortened: the regular plan has lessons, so true.
+    plan.SHORTENED_BELL_PLAN = [];
+    expect(hasBellPlan(new Date('2026-10-23T06:10:00Z'), new Set(['2026-10-24']))).toBe(true);
   });
 });
