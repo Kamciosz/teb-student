@@ -63,4 +63,6 @@ export type NewsEntryDetail = NewsEntrySummary & {
   linkUrl: string | null;
   /** PL: Napis na przycisku z linkiem albo null. EN: The label on the link button, or null. */
   linkLabel: string | null;
+  /** PL: Imię i nazwisko autora z konta albo null, gdy wpis nie ma autora. Adresu e-mail serwer nie podaje. EN: The author's name and surname from the account, or null when the entry has no author. The server does not give the e-mail address. */
+  authorName: string | null;
 };

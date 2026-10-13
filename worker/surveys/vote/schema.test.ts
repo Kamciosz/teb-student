@@ -18,7 +18,7 @@ import { getTableConfig } from 'drizzle-orm/sqlite-core';
 import { describe, expect, it } from 'vitest';
 // PL: Tabele, które sprawdzamy.
 // EN: The tables under test.
-import { surveyOptions, surveyParticipation, surveyQuestions } from '../../db/schema/surveys';
+import { surveyOptions, surveyParticipation, surveyQuestions, surveyTextAnswers } from '../../db/schema/surveys';
 
 /**
  * PL: Nazwy kolumn z nazwą kolumny po przecinku.
@@ -54,5 +54,10 @@ describe('schemat ankiet / survey schema', () => {
 
   it('„kto głosował” nie ma odpowiedzi ani czasu / "who voted" has no answers and no time', () => {
     expect(columnNames(surveyParticipation).sort()).toEqual(['survey_id', 'user_id']);
+  });
+
+  it('teksty odpowiedzi nie mają ucznia ani czasu / text answers have no student or time', () => {
+    expect(columnNames(surveyTextAnswers).sort()).toEqual(['id', 'question_id', 'text']);
+    expect(columnNames(surveyTextAnswers).filter((name) => IDENTIFYING_COLUMN.test(name))).toEqual([]);
   });
 });

@@ -17,7 +17,7 @@ import { and, desc, eq, isNotNull, isNull, lte, or, sql, type SQL } from 'drizzl
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
 // PL: Tabela wpisów i typ jej wiersza.
 // EN: The entries table and its row type.
-import { newsEntries, type NewsEntryRow } from '../../db/schema';
+import { newsEntries, user, type NewsEntryRow } from '../../db/schema';
 
 /**
  * PL: Najwięcej wpisów na liście. Telefon filtruje tę listę u siebie, więc jedna odpowiedź musi starczyć na wszystkie typy.
@@ -63,6 +63,24 @@ const BODY_TEXT = sql`(SELECT group_concat(value, '') FROM json_tree(${newsEntri
 function foldCase(text: SQL): SQL {
   const replaced = POLISH_CAPITALS.reduce<SQL>((inner, [upper, lower]) => sql`replace(${inner}, ${upper}, ${lower})`, text);
   return sql`lower(${replaced})`;
+}
+
+/**
+ * PL: Opublikowany wpis razem z imieniem autora. Imię to null, gdy wpis nie ma autora, konto zostało usunięte albo imię jest puste. E-mail autora tu nie trafia.
+ * EN: A published entry together with the author's name. The name is null when the entry has no author, the account was deleted or the name is empty. The author's e-mail does not get here.
+ */
+export type PublishedEntry = { entry: NewsEntryRow; authorName: string | null };
+
+/**
+ * PL: Zamienia imię z konta na tekst do pokazania albo null, gdy imienia nie ma lub jest same spacje.
+ * EN: Turns the name from the account into a text to show, or null when there is no name or it is only spaces.
+ *
+ * @param name - PL: imię z konta albo null z lewego złączenia. EN: the name from the account, or null from the left join.
+ * @returns PL: imię bez spacji na brzegach albo null. EN: the name without spaces at the edges, or null.
+ */
+function toAuthorName(name: string | null): string | null {
+  const trimmed = name?.trim() ?? '';
+  return trimmed === '' ? null : trimmed;
 }
 
 /**
@@ -121,12 +139,19 @@ export async function listPublishedEntries(db: DrizzleD1Database, term = '', now
  * @param db - PL: baza Drizzle zbudowana na D1. EN: the Drizzle database built on D1.
  * @param id - PL: numer wpisu z adresu. EN: the entry id from the address.
  * @param now - PL: chwila, od której liczymy widoczność (domyślnie teraz). EN: the moment from which visibility is counted (by default now).
- * @returns PL: wiersz albo `undefined`. EN: the row or `undefined`.
+ * @returns PL: wpis z imieniem autora albo `undefined`. EN: the entry with the author's name, or `undefined`.
  * @throws PL: błąd bazy. EN: a database error.
  */
-export async function findPublishedEntry(db: DrizzleD1Database, id: string, now = new Date()): Promise<NewsEntryRow | undefined> {
-  // PL: Warunek widoczności plus numer. Numer idzie jako parametr zapytania, nie jako tekst SQL.
-  // EN: The visibility condition plus the id. The id goes as a query parameter, not as SQL text.
-  const rows = await db.select().from(newsEntries).where(and(visibleToStudent(now), eq(newsEntries.id, id))).limit(1);
-  return rows[0];
+export async function findPublishedEntry(db: DrizzleD1Database, id: string, now = new Date()): Promise<PublishedEntry | undefined> {
+  // PL: Warunek widoczności plus numer. Numer idzie jako parametr zapytania, nie jako tekst SQL. Imię bierzemy z konta autora przez lewe złączenie: wpis bez autora (albo po usunięciu konta) zostaje, a imię jest puste. Z konta czytamy tylko imię.
+  // EN: The visibility condition plus the id. The id goes as a query parameter, not as SQL text. The name comes from the author's account through a left join: an entry without an author (or after the account is deleted) stays, and the name is empty. Only the name is read from the account.
+  const rows = await db
+    .select({ entry: newsEntries, authorName: user.name })
+    .from(newsEntries)
+    .leftJoin(user, eq(user.id, newsEntries.authorUserId))
+    .where(and(visibleToStudent(now), eq(newsEntries.id, id)))
+    .limit(1);
+  const row = rows[0];
+  if (!row) return undefined;
+  return { entry: row.entry, authorName: toAuthorName(row.authorName) };
 }

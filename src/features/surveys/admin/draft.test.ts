@@ -54,7 +54,16 @@ describe('sprawdzanie / validation', () => {
     const base = { ...newDraft(), title: ' Dzień sportu ' };
     const draft = updateQuestion(base, 1, (question) => ({ ...question, prompt: ' W co zagrać? ', options: ['Siatkówka', '', 'Koszykówka'] }));
     expect(hasErrors(validateDraft(draft, now))).toBe(false);
-    expect(toRequestBody(draft)).toEqual({ title: 'Dzień sportu', durationDays: 7, questions: [{ prompt: 'W co zagrać?', options: ['Siatkówka', 'Koszykówka'] }], closesAt: null });
+    expect(toRequestBody(draft)).toEqual({ title: 'Dzień sportu', durationDays: 7, questions: [{ prompt: 'W co zagrać?', type: 'single_choice', options: ['Siatkówka', 'Koszykówka'] }], closesAt: null });
+  });
+
+  it('nowe pytanie to jeden wybór, a wybrany typ idzie do treści zapytania / a new question is single choice, and the chosen type goes into the request body', () => {
+    // PL: Dodane pytanie dostaje domyślny typ, a zmieniony typ trafia do treści zapytania.
+    // EN: The added question gets the default type, and the changed type goes into the request body.
+    const added = addQuestion({ ...newDraft(), title: 'T' });
+    expect(added.questions[1]?.type).toBe('single_choice');
+    const draft = updateQuestion(added, 2, (question) => ({ ...question, prompt: 'P', type: 'multiple_choice', options: ['A', 'B'] }));
+    expect(toRequestBody(draft).questions.map((question) => question.type)).toEqual(['single_choice', 'multiple_choice']);
   });
 });
 
@@ -82,5 +91,19 @@ describe('termin zamknięcia / closing time', () => {
     // PL: 7 dni od 13.10 to ostatni dzień 20.10, więc 21.10 jest za późno.
     // EN: 7 days from 13.10 end on 20.10, so 21.10 is too late.
     expect(validateDraft({ ...valid, closesAt: '2026-10-21T09:00' }, now).closesAt).toBe('Termin nie może być później niż ostatni dzień ankiety.');
+  });
+});
+
+// PL: Skala 1–5 ma stałe odpowiedzi, więc brak wierszy odpowiedzi nie jest błędem, a treść zapytania dostaje „1”…„5”.
+// EN: The 1–5 scale has fixed options, so having no option rows is not an error, and the request body gets "1"…"5".
+describe('skala 1–5 / the 1–5 scale', () => {
+  const scale = updateQuestion({ ...newDraft(), title: 'T' }, 1, (question) => ({ ...question, prompt: 'P', type: 'scale_1_5', options: [] }));
+
+  it('bez odpowiedzi nie daje błędu / without options it gives no error', () => {
+    expect(hasErrors(validateDraft(scale, now))).toBe(false);
+  });
+
+  it('wysyła odpowiedzi 1…5 niezależnie od szkicu / sends the options 1…5 whatever the draft has', () => {
+    expect(toRequestBody(scale).questions).toEqual([{ prompt: 'P', type: 'scale_1_5', options: ['1', '2', '3', '4', '5'] }]);
   });
 });

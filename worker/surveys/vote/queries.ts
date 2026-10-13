@@ -1,8 +1,8 @@
 /**
  * PL: Zapytania do bazy podtoru 5a: lista ankiet, szczegóły ankiety, zapis głosu i kasowanie śladu wypełnienia. Każda funkcja dostaje bazę jako parametr, żeby dało się ją sprawdzić na innej bazie.
- *     Zapis głosu to jedna paczka (db.batch, w D1 jedna transakcja): wiersz „kto głosował” i zwiększenie liczników. Telefon nigdy nie dostaje liczników, bo zapytania o odpowiedzi ich nie wybierają.
+ *     Zapis głosu to jedna paczka (db.batch, w D1 jedna transakcja): wiersz „kto głosował”, zwiększenie liczników i teksty krótkich odpowiedzi (bez numeru ucznia). Telefon nigdy nie dostaje liczników ani tekstów, bo zapytania o odpowiedzi ich nie wybierają.
  * EN: The subtrack 5a database queries: the survey list, the survey details, writing a vote and deleting the participation trace. Every function takes the database as a parameter, so it can be checked on another database.
- *     Writing a vote is one batch (db.batch, one transaction in D1): the "who voted" row and the counter increments. The phone never receives the counters, because the option queries do not select them.
+ *     Writing a vote is one batch (db.batch, one transaction in D1): the "who voted" row, the counter increments and the short-answer texts (without a student id). The phone never receives the counters or the texts, because the option queries do not select them.
  *
  * @author Jakub
  * @since 2026-10-09
@@ -18,13 +18,19 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 // PL: Tabele modułu surveys.
 // EN: The tables of the surveys module.
-import { surveyOptions, surveyParticipation, surveyQuestions, surveys } from '../../db/schema/surveys';
+import { surveyOptions, surveyParticipation, surveyQuestions, surveys, surveyTextAnswers } from '../../db/schema/surveys';
+// PL: Typ paczki zapytań D1 (pierwsza pozycja jest wymagana).
+// EN: The type of a D1 query batch (the first item is required).
+import type { BatchItem } from 'drizzle-orm/batch';
 // PL: Baza i rozpoznanie błędu drugiego głosu.
 // EN: The database and the recognition of the second-vote error.
 import { isUniqueViolation, type VoteDatabase } from './database';
 // PL: Składanie listy ankiet.
 // EN: Building the survey list.
 import { buildSurveyList, type SurveyRow } from './surveyList';
+// PL: Tekst krótkiej odpowiedzi po sprawdzeniu.
+// EN: A short-answer text after the check.
+import type { TextAnswer } from './validation';
 // PL: Kształty odpowiedzi.
 // EN: The response shapes.
 import type { SurveyList, SurveyQuestion } from './types';
@@ -123,7 +129,7 @@ export async function loadQuestions(db: VoteDatabase, surveyId: string): Promise
   // PL: Pytania ankiety w kolejności.
   // EN: The survey questions in order.
   const questions = await db
-    .select({ id: surveyQuestions.id, prompt: surveyQuestions.prompt })
+    .select({ id: surveyQuestions.id, type: surveyQuestions.type, prompt: surveyQuestions.prompt })
     .from(surveyQuestions)
     .where(eq(surveyQuestions.surveyId, surveyId))
     .orderBy(asc(surveyQuestions.position));
@@ -146,27 +152,42 @@ export async function loadQuestions(db: VoteDatabase, surveyId: string): Promise
 }
 
 /**
- * PL: Zapisuje głos: wiersz „kto głosował” i zwiększenie liczników wybranych odpowiedzi, w jednej paczce. Odpowiedzi ucznia nie są zapisane nigdzie poza licznikami.
- * EN: Writes a vote: the "who voted" row and the counter increments of the picked options, in one batch. The student's answers are stored nowhere except in the counters.
+ * PL: Zapisuje głos: wiersz „kto głosował”, zwiększenie liczników wybranych odpowiedzi i teksty krótkich odpowiedzi, w jednej paczce. Teksty są zapisane bez numeru ucznia, a liczniki to jedyne miejsce z wyborami.
+ * EN: Writes a vote: the "who voted" row, the counter increments of the picked options and the short-answer texts, in one batch. The texts are stored without a student id, and the counters are the only place with the picks.
  *
  * @param db - PL: baza. EN: the database.
- * @param vote - PL: numer ankiety, numer ucznia i numery wybranych odpowiedzi. EN: the survey id, the student id and the ids of the picked options.
- * @throws PL: AlreadyVotedError, gdy uczeń już głosował (paczka cofa się w całości); inny błąd bazy bez zmian. EN: AlreadyVotedError when the student has already voted (the batch rolls back entirely); any other database error unchanged.
+ * @param vote - PL: numer ankiety, numer ucznia, numery wybranych odpowiedzi i teksty. EN: the survey id, the student id, the ids of the picked options and the texts.
+ * @throws PL: AlreadyVotedError, gdy uczeń już głosował (paczka cofa się w całości, także teksty); inny błąd bazy bez zmian. EN: AlreadyVotedError when the student has already voted (the batch rolls back entirely, texts included); any other database error unchanged.
  */
 export async function recordVote(
   db: VoteDatabase,
-  vote: { surveyId: string; userId: string; optionIds: string[] },
+  vote: { surveyId: string; userId: string; optionIds: string[]; texts: TextAnswer[] },
 ): Promise<void> {
   try {
-    // PL: Paczka w D1 to jedna transakcja: złamany klucz drugiego głosu cofa też zwiększenie liczników.
-    // EN: A batch in D1 is one transaction: the broken key of a second vote also rolls back the counter increments.
-    await db.batch([
+    // PL: Wiersz „kto głosował” jest pierwszy, żeby złamany klucz drugiego głosu został wykryty przed resztą. Pozostałe pozycje dokładamy tylko wtedy, gdy są potrzebne: pusta lista w inArray albo values([]) nie przechodzi w drizzle.
+    // EN: The "who voted" row goes first, so a broken key of a second vote is found before the rest. The other items are added only when needed: an empty list in inArray or values([]) does not work in drizzle.
+    const statements: [BatchItem<'sqlite'>, ...BatchItem<'sqlite'>[]] = [
       db.insert(surveyParticipation).values({ surveyId: vote.surveyId, userId: vote.userId }),
-      db
-        .update(surveyOptions)
-        .set({ votes: sql`${surveyOptions.votes} + 1` })
-        .where(inArray(surveyOptions.id, vote.optionIds)),
-    ]);
+    ];
+    if (vote.optionIds.length > 0) {
+      statements.push(
+        db
+          .update(surveyOptions)
+          .set({ votes: sql`${surveyOptions.votes} + 1` })
+          .where(inArray(surveyOptions.id, vote.optionIds)),
+      );
+    }
+    if (vote.texts.length > 0) {
+      // PL: Tekst bez numeru ucznia: wiersz ma tylko pytanie i treść.
+      // EN: The text without a student id: the row has only the question and the text.
+      statements.push(
+        db.insert(surveyTextAnswers).values(vote.texts.map((item) => ({ questionId: item.questionId, text: item.text }))),
+      );
+    }
+
+    // PL: Paczka w D1 to jedna transakcja: złamany klucz drugiego głosu cofa też liczniki i teksty.
+    // EN: A batch in D1 is one transaction: the broken key of a second vote also rolls back the counters and the texts.
+    await db.batch(statements);
   } catch (error) {
     // PL: Drugi głos tego ucznia to nie awaria, tylko odpowiedź „już wypełniona”.
     // EN: A second vote from this student is not a failure, only the answer "already filled in".

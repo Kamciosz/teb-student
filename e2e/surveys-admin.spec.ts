@@ -40,8 +40,17 @@ function closingSoonWarsaw(): string {
 const FULL_RESULTS = {
   id: 'stolowka', title: 'Obiad w stołówce', endsOn: '2026-10-18', questionCount: 2, responseCount: 12, minResponses: 5,
   questions: [
-    { prompt: 'Jak oceniasz obiady w stołówce?', options: [{ label: 'Dobrze', votes: 5, percent: 42 }, { label: 'Różnie', votes: 4, percent: 33 }, { label: 'Słabo', votes: 2, percent: 17 }, { label: 'Nie jadam w stołówce', votes: 1, percent: 8 }] },
-    { prompt: 'Co poprawić?', options: [{ label: 'Porcje', votes: 7, percent: 58 }, { label: 'Smak', votes: 5, percent: 42 }] },
+    { prompt: 'Jak oceniasz obiady w stołówce?', type: 'single_choice', options: [{ label: 'Dobrze', votes: 5, percent: 42 }, { label: 'Różnie', votes: 4, percent: 33 }, { label: 'Słabo', votes: 2, percent: 17 }, { label: 'Nie jadam w stołówce', votes: 1, percent: 8 }] },
+    { prompt: 'Co poprawić?', type: 'single_choice', options: [{ label: 'Porcje', votes: 7, percent: 58 }, { label: 'Smak', votes: 5, percent: 42 }] },
+  ],
+};
+
+// PL: Wyniki ankiety z wielokrotnym wyborem: 5 odpowiedzi i 4 zaznaczenia (3 i 1), udziały liczone od zaznaczeń.
+// EN: The results of a multiple choice survey: 5 responses and 4 checked boxes (3 and 1), the shares counted from the checks.
+const MULTI_RESULTS = {
+  id: 'wielokrotna', title: 'Wybory klasowe', endsOn: '2026-10-18', questionCount: 1, responseCount: 5, minResponses: 5,
+  questions: [
+    { prompt: 'Co lubisz jeść?', type: 'multiple_choice', options: [{ label: 'Pizzę', votes: 3, percent: 75 }, { label: 'Sałatkę', votes: 1, percent: 25 }] },
   ],
 };
 
@@ -88,6 +97,7 @@ async function mockPanelServer(page: Page, overrides: Partial<Mock> = {}): Promi
     if (path === '/stolowka/results') return route.fulfill({ json: FULL_RESULTS });
     if (path === '/stolowka/results/csv') return route.fulfill({ headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="ankieta-stolowka-wyniki.csv"' }, body: FULL_CSV });
     if (path === '/dodatkowe/results') return route.fulfill({ json: FEW_RESULTS });
+    if (path === '/wielokrotna/results') return route.fulfill({ json: MULTI_RESULTS });
     return route.fulfill({ json: LIST });
   });
   return mock;
@@ -199,7 +209,7 @@ test('nowa ankieta: błędy, limity od 2 do 5 odpowiedzi i wysłanie / a new sur
   await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
 
   await expect(page).toHaveURL(/\/surveys\/admin$/);
-  expect(mock.posted).toEqual([{ title: 'Dzień sportu', durationDays: 14, questions: [{ prompt: 'W co chcesz zagrać na dniu sportu?', options: ['Siatkówka', 'Koszykówka', 'Piłka nożna'] }], closesAt: null }]);
+  expect(mock.posted).toEqual([{ title: 'Dzień sportu', durationDays: 14, questions: [{ prompt: 'W co chcesz zagrać na dniu sportu?', type: 'single_choice', options: ['Siatkówka', 'Koszykówka', 'Piłka nożna'] }], closesAt: null }]);
 });
 
 // PL: Termin zamknięcia: przeszłość daje błąd i nic nie idzie na serwer, a przyszły termin trafia do zapisu.
@@ -225,7 +235,44 @@ test('termin zamknięcia: przeszłość daje błąd, przyszłość idzie na serw
   await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
 
   await expect(page).toHaveURL(/\/surveys\/admin$/);
-  expect(mock.posted).toEqual([{ title: 'Wycieczka', durationDays: 7, questions: [{ prompt: 'Dokąd jedziemy?', options: ['Muzeum', 'Zoo'] }], closesAt: closing }]);
+  expect(mock.posted).toEqual([{ title: 'Wycieczka', durationDays: 7, questions: [{ prompt: 'Dokąd jedziemy?', type: 'single_choice', options: ['Muzeum', 'Zoo'] }], closesAt: closing }]);
+});
+
+// PL: Wybór „Wiele wyborów” przy pytaniu idzie na serwer jako multiple_choice, a domyślnie pytanie to „Jeden wybór”.
+// EN: Choosing "Wiele wyborów" for a question sends multiple_choice to the server, and by default a question is "Jeden wybór".
+test('rodzaj pytania „Wiele wyborów” idzie na serwer / the question type "Wiele wyborów" goes to the server', async ({ page }) => {
+  const mock = await mockPanelServer(page);
+  await page.goto('/surveys/admin/new');
+  await page.getByLabel('Tytuł ankiety', { exact: true }).fill('Wybory klasowe');
+  await page.getByLabel('Pytanie 1', { exact: true }).fill('Co lubisz jeść?');
+  await page.getByLabel('Odpowiedź A', { exact: true }).fill('Pizzę');
+  await page.getByLabel('Odpowiedź B', { exact: true }).fill('Sałatkę');
+  await expect(page.getByRole('radio', { name: 'Jeden wybór' })).toBeChecked();
+
+  await page.getByText('Wiele wyborów', { exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Wiele wyborów' })).toBeChecked();
+  await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
+
+  await expect(page).toHaveURL(/\/surveys\/admin$/);
+  expect(mock.posted).toEqual([{ title: 'Wybory klasowe', durationDays: 7, questions: [{ prompt: 'Co lubisz jeść?', type: 'multiple_choice', options: ['Pizzę', 'Sałatkę'] }], closesAt: null }]);
+});
+
+// PL: Skala 1–5 nie pokazuje pól odpowiedzi, a panel sam wysyła odpowiedzi „1”…„5”.
+// EN: The 1–5 scale shows no option fields, and the panel sends the options "1"…"5" itself.
+test('skala 1–5 idzie na serwer z odpowiedziami 1…5 / the 1–5 scale goes to the server with the options 1…5', async ({ page }) => {
+  const mock = await mockPanelServer(page);
+  await page.goto('/surveys/admin/new');
+  await page.getByLabel('Tytuł ankiety', { exact: true }).fill('Ocena stołówki');
+  await page.getByLabel('Pytanie 1', { exact: true }).fill('Jak oceniasz obiady?');
+
+  await page.getByText('Skala 1–5', { exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Skala 1–5' })).toBeChecked();
+  await expect(page.getByLabel('Odpowiedź A', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Dodaj odpowiedź' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Opublikuj ankietę' }).click();
+
+  await expect(page).toHaveURL(/\/surveys\/admin$/);
+  expect(mock.posted).toEqual([{ title: 'Ocena stołówki', durationDays: 7, questions: [{ prompt: 'Jak oceniasz obiady?', type: 'scale_1_5', options: ['1', '2', '3', '4', '5'] }], closesAt: null }]);
 });
 
 // PL: Błąd zapisu: komunikat nad przyciskiem, a przycisk zostaje aktywny, żeby ponowić.
@@ -288,6 +335,18 @@ test('wyniki od 5 odpowiedzi: udziały i „Następne pytanie” / results from 
   await expect(page.getByRole('button', { name: 'Następne pytanie' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Wstecz' }).click();
   await expect(page.getByText('Pytanie 1')).toBeVisible();
+});
+
+// PL: Wyniki wielokrotnego wyboru: liczba zaznaczeń i dopisek, że uczeń mógł zaznaczyć kilka odpowiedzi.
+// EN: The multiple choice results: the number of checked boxes and the note that the student could check several options.
+test('wyniki wielokrotnego wyboru pokazują zaznaczenia i dopisek / multiple choice results show the checks and the note', async ({ page }) => {
+  await mockPanelServer(page);
+  await page.goto('/surveys/admin/wielokrotna');
+
+  await expect(page.getByText('Co lubisz jeść?')).toBeVisible();
+  await expect(page.getByText('Zaznaczeń: 4', { exact: true })).toBeVisible();
+  await expect(page.getByText('Uczeń mógł zaznaczyć kilka odpowiedzi.')).toBeVisible();
+  for (const share of ['3 · 75%', '1 · 25%']) await expect(page.getByText(share, { exact: true })).toBeVisible();
 });
 
 // PL: „Pobierz CSV” zapisuje plik z nazwą z serwera i treścią z BOM-em.

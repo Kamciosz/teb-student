@@ -28,7 +28,7 @@ import type { NewsEntryRow } from '../../db/schema';
 import { excerptFromBody } from './excerpt';
 // PL: Zapytania do bazy.
 // EN: The database queries.
-import { SEARCH_MAX_LENGTH, findPublishedEntry, listPublishedEntries } from './queries';
+import { SEARCH_MAX_LENGTH, findPublishedEntry, listPublishedEntries, type PublishedEntry } from './queries';
 
 /**
  * PL: Wpis na liście: bez treści, z krótkim opisem.
@@ -62,6 +62,8 @@ export type NewsEntryDetail = NewsEntrySummary & {
   linkUrl: string | null;
   /** PL: Napis na przycisku z linkiem albo null. EN: The label on the link button, or null. */
   linkLabel: string | null;
+  /** PL: Imię i nazwisko autora z konta albo null, gdy wpis nie ma autora, konto usunięto lub imię jest puste. E-mail autora nie wychodzi. EN: The author's name from the account, or null when the entry has no author, the account was deleted or the name is empty. The author's e-mail does not leave the server. */
+  authorName: string | null;
 };
 
 /**
@@ -86,14 +88,14 @@ function toSummary(row: NewsEntryRow): NewsEntrySummary {
 }
 
 /**
- * PL: Zamienia wiersz bazy na pojedynczy wpis.
- * EN: Turns a database row into a single entry.
+ * PL: Zamienia wpis z autorem na pojedynczy wpis do odpowiedzi.
+ * EN: Turns an entry with its author into a single entry for the response.
  *
- * @param row - PL: wiersz widoczny dla ucznia. EN: a row visible to a student.
- * @returns PL: wpis z treścią i linkiem. EN: the entry with the content and the link.
+ * @param published - PL: wpis widoczny dla ucznia z imieniem autora. EN: an entry visible to a student with the author's name.
+ * @returns PL: wpis z treścią, linkiem i autorem. EN: the entry with the content, the link and the author.
  */
-function toDetail(row: NewsEntryRow): NewsEntryDetail {
-  return { ...toSummary(row), body: row.body, linkUrl: row.linkUrl, linkLabel: row.linkLabel };
+function toDetail({ entry, authorName }: PublishedEntry): NewsEntryDetail {
+  return { ...toSummary(entry), body: entry.body, linkUrl: entry.linkUrl, linkLabel: entry.linkLabel, authorName };
 }
 
 /**
@@ -138,7 +140,7 @@ newsFeedApp.get('/', async (context) => {
 // EN: One visible entry. A draft, an entry scheduled for later and an unknown id are the same: 404.
 newsFeedApp.get('/:id', (context) =>
   withDatabase(context, async (db) => {
-    const row = await findPublishedEntry(db, context.req.param('id'));
-    return row ? context.json({ entry: toDetail(row) }) : context.json({ error: 'not_found' }, 404);
+    const found = await findPublishedEntry(db, context.req.param('id'));
+    return found ? context.json({ entry: toDetail(found) }) : context.json({ error: 'not_found' }, 404);
   }),
 );
