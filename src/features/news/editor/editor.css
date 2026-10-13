@@ -205,45 +205,38 @@
   text-align: right;
 }
 
-/* PL: Treść w polu edytora i w podglądzie: ta sama typografia co u ucznia (akapity, nagłówki, listy, cytat, linki).
-   EN: The content in the editor field and in the preview: the same typography as for the student (paragraphs, headings, lists, the quote, links). */
-.editor-surface > * + *,
-.editor-preview .ProseMirror > * + * {
+/* PL: Treść w polu edytora: ta sama typografia co u ucznia (akapity, nagłówki, listy, cytat, linki). Podgląd używa stylów z feed.css.
+   EN: The content in the editor field: the same typography as for the student (paragraphs, headings, lists, the quote, links). The preview uses the styles from feed.css. */
+.editor-surface > * + * {
   margin-top: 12px;
 }
 
-.editor-surface h2,
-.editor-preview h2 {
+.editor-surface h2 {
   font-size: var(--t-lg);
   line-height: 1.2;
 }
 
-.editor-surface h3,
-.editor-preview h3 {
+.editor-surface h3 {
   font-size: var(--t-md);
 }
 
 .editor-surface ul,
-.editor-surface ol,
-.editor-preview ul,
-.editor-preview ol {
+.editor-surface ol {
   padding-left: 24px;
 }
 
-.editor-surface blockquote,
-.editor-preview blockquote {
+.editor-surface blockquote {
   padding-left: 12px;
   border-left: 3px solid var(--line);
   color: var(--ink-2);
 }
 
-.editor-surface a,
-.editor-preview a {
+.editor-surface a {
   color: var(--accent);
 }
 
-/* PL: Własne elementy w edytorze i podglądzie: film (miniatura), zdjęcie z podpisem, karta linku i źródła. Obrazy nigdy nie są szersze niż kolumna.
-   EN: The custom elements in the editor and the preview: a video (a thumbnail), a photo with a caption, a link card and sources. Images are never wider than the column. */
+/* PL: Własne elementy w edytorze: film (miniatura), zdjęcie z podpisem, karta linku i źródła. Obrazy nigdy nie są szersze niż kolumna.
+   EN: The custom elements in the editor: a video (a thumbnail), a photo with a caption, a link card and sources. Images are never wider than the column. */
 .editor-video img,
 .editor-figure img {
   display: block;
@@ -279,41 +272,26 @@
   outline: 3px solid var(--focus);
 }
 
-/* PL: Podgląd wpisu: kafel jak wpis u ucznia (znacznik, źródło z chwilą, tytuł, treść).
-   EN: The entry preview: a tile like the student's entry (the tag, the source with the moment, the title, the content). */
-.editor-entry {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  border-radius: var(--r);
-  background: var(--tile);
-}
-
-.editor-entry__meta {
+/* PL: Kafelek „dodaj” w sekcji „Zdjęcia i wideo” (ekran 5.1): obrys przerywany, plus w środku. Rząd zawija się na wąskim ekranie.
+   EN: The "add" tile in the "Zdjęcia i wideo" section (screen 5.1): a dashed outline, a plus in the middle. The row wraps on a narrow screen. */
+.editor-media {
   display: flex;
   flex-wrap: wrap;
+  gap: 12px;
+}
+
+.editor-media__add {
+  display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.editor-entry__meta small {
+  justify-content: center;
+  width: 110px;
+  height: 110px;
+  padding: 0;
+  border: 1.5px dashed var(--ink-2);
+  border-radius: var(--r);
+  background: transparent;
   color: var(--ink-2);
-  font-size: var(--t-sm);
-}
-
-.editor-entry__title {
-  font-size: var(--t-xl);
-  line-height: 1.12;
-}
-
-.editor-tag {
-  padding: 2px 8px;
-  border-radius: var(--r-sm);
-  background: var(--ink);
-  color: var(--bg);
-  font-size: var(--t-xs);
-  font-weight: 700;
+  cursor: default;
 }
 
 /* PL: Przyciski: wypełniony i z samym obrysem. Wysokość co najmniej 48 px.

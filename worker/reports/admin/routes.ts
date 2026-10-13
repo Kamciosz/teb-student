@@ -1,6 +1,6 @@
 /**
- * PL: Router Hono podtoru 4b (zgłoszenia w panelu). Trzy adresy pod /api/reports/admin: GET / oddaje listę zgłoszeń, GET /:id oddaje zgłoszenie z historią etapów, PATCH /:id zmienia etap. Żaden adres nie oddaje numeru autora. Router jest podpięty w worker/mounts.ts.
- * EN: The Hono router of subtrack 4b (reports in the panel). Three routes under /api/reports/admin: GET / returns the report list, GET /:id returns a report with its stage history, PATCH /:id changes the stage. No route returns the author id. The router is mounted in worker/mounts.ts.
+ * PL: Router Hono podtoru 4b (zgłoszenia w panelu). Trzy adresy pod /api/reports/admin: GET / oddaje listę zgłoszeń, GET /:id oddaje zgłoszenie z historią etapów i, przy zgłoszeniu nieanonimowym, imię i klasę autora, PATCH /:id zmienia etap. Żaden adres nie oddaje numeru autora. Router jest podpięty w worker/mounts.ts.
+ * EN: The Hono router of subtrack 4b (reports in the panel). Three routes under /api/reports/admin: GET / returns the report list, GET /:id returns a report with its stage history and, for a signed report, the author's name and class, PATCH /:id changes the stage. No route returns the author id. The router is mounted in worker/mounts.ts.
  *
  * @author Szymon
  * @since 2026-10-12
