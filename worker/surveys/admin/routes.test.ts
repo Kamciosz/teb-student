@@ -20,7 +20,7 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { panelRoles } from '../../db/schema/admin';
 import { user } from '../../db/schema/auth';
-import { surveyOptions, surveyQuestions, surveys } from '../../db/schema/surveys';
+import { surveyOptions, surveyParticipation, surveyQuestions, surveyTextAnswers, surveys } from '../../db/schema/surveys';
 // PL: Router logowania kodem z drzwi modułu auth, żeby zalogować ucznia tak jak w aplikacji.
 // EN: The code sign-in router from the auth module door, to sign a student in the way the app does.
 import { authEmailApp } from '../../auth';
@@ -118,6 +118,25 @@ async function seedCsvSurvey(): Promise<void> {
 }
 
 /**
+ * PL: Wkłada ankietę z pytaniem krótkiej odpowiedzi (z teksami) i skalą 1–5. Liczba osób bierze się z tabeli „kto wypełnił”, bo ta ankieta nie ma pytania jednokrotnego wyboru.
+ * EN: Inserts a survey with a short-answer question (with the texts) and a 1–5 scale. The number of people comes from the "who filled it in" table, because this survey has no single-choice question.
+ *
+ * @param id - PL: numer ankiety. EN: the survey id.
+ * @param texts - PL: teksty krótkiej odpowiedzi w kolejności wstawiania. EN: the short-answer texts in the insert order.
+ * @param people - PL: ile osób wypełniło ankietę. EN: how many people filled the survey in.
+ */
+async function seedShortTextSurvey(id: string, texts: string[], people: number): Promise<void> {
+  await db.insert(surveys).values({ id, title: `Ankieta ${id}`, endsOn: '2099-12-31' });
+  await db.insert(surveyQuestions).values([
+    { id: `${id}-tekst`, surveyId: id, position: 1, prompt: 'Co zmienić?', type: 'short_text' },
+    { id: `${id}-skala`, surveyId: id, position: 2, prompt: 'Jak oceniasz?', type: 'scale_1_5' },
+  ]);
+  await db.insert(surveyOptions).values([1, 0, 1, 2, 1].map((count, index) => ({ id: `${id}-s${index}`, questionId: `${id}-skala`, position: index + 1, label: String(index + 1), votes: count })));
+  await db.insert(surveyTextAnswers).values(texts.map((text) => ({ questionId: `${id}-tekst`, text })));
+  await db.insert(surveyParticipation).values(Array.from({ length: people }, (_, index) => ({ surveyId: id, userId: `${id}-u${index}` })));
+}
+
+/**
  * PL: Podaje chwilę w formacie pola formularza (RRRR-MM-DDTHH:mm, czas polski). Czas względny do zegara, bo ankieta trwa 7 dni od dziś.
  * EN: Gives a moment in the form field format (YYYY-MM-DDTHH:mm, Polish time). The time is relative to the clock, because the survey runs 7 days from today.
  *
@@ -140,6 +159,50 @@ beforeAll(async () => {
   // EN: A survey whose closing time has passed, although its last day still runs.
   await db.insert(surveys).values({ id: 'zamknieta', title: 'Ankieta zamknieta', endsOn: '2099-12-31', closesAt: new Date('2020-01-01T09:00:00Z') });
   await seedCsvSurvey();
+  await seedShortTextSurvey('krotka4', ['Zupa'], 4);
+  await seedShortTextSurvey('krotka5', ['Zupa', 'Łyżwy', 'Lody', '=1+1', 'Za drogo, "bardzo"'], 5);
+  // PL: Ankieta tylko z wielokrotnym wyborem: 7 zaznaczeń od 5 osób, więc liczba osób to 5, nie 7.
+  // EN: A survey with multiple choice only: 7 checked boxes from 5 people, so the number of people is 5, not 7.
+  await db.insert(surveys).values({ id: 'wielokrotna', title: 'Ankieta wielokrotna', endsOn: '2099-12-31' });
+  await db.insert(surveyQuestions).values({ id: 'wielokrotna-q', surveyId: 'wielokrotna', position: 1, prompt: 'Co lubisz?', type: 'multiple_choice' });
+  await db.insert(surveyOptions).values([
+    { id: 'wielokrotna-o0', questionId: 'wielokrotna-q', position: 1, label: 'Ryby', votes: 4 },
+    { id: 'wielokrotna-o1', questionId: 'wielokrotna-q', position: 2, label: 'Psy', votes: 3 },
+  ]);
+  await db.insert(surveyParticipation).values(['w1', 'w2', 'w3', 'w4', 'w5'].map((userId) => ({ surveyId: 'wielokrotna', userId })));
+  // PL: Ankieta z pytaniem jednokrotnym (5 osób) i wielokrotnym (9 zaznaczeń): liczba osób to 5, z pytania jednokrotnego.
+  // EN: A survey with a single-choice question (5 people) and a multiple-choice one (9 checked boxes): the number of people is 5, from the single-choice question.
+  await db.insert(surveys).values({ id: 'mieszana', title: 'Ankieta mieszana', endsOn: '2099-12-31' });
+  await db.insert(surveyQuestions).values([
+    { id: 'mieszana-q1', surveyId: 'mieszana', position: 1, prompt: 'Jednokrotnie', type: 'single_choice' },
+    { id: 'mieszana-q2', surveyId: 'mieszana', position: 2, prompt: 'Wielokrotnie', type: 'multiple_choice' },
+  ]);
+  await db.insert(surveyOptions).values([
+    { id: 'mieszana-o1', questionId: 'mieszana-q1', position: 1, label: 'Tak', votes: 3 },
+    { id: 'mieszana-o2', questionId: 'mieszana-q1', position: 2, label: 'Nie', votes: 2 },
+    { id: 'mieszana-o3', questionId: 'mieszana-q2', position: 1, label: 'Kawa', votes: 6 },
+    { id: 'mieszana-o4', questionId: 'mieszana-q2', position: 2, label: 'Herbata', votes: 3 },
+  ]);
+  // PL: Krótka odpowiedź: ankieta z 4 osobami (poniżej progu) i z 5 (od progu). Odpowiedzi wpisane w kolejności od najmniej alfabetycznej, żeby sortowanie było widać.
+  // EN: A short answer: a survey with 4 people (below the threshold) and one with 5 (from the threshold). The answers are inserted in an order that is not alphabetical, so the sorting shows.
+  await db.insert(surveys).values([
+    { id: 'krotka-niska', title: 'Ankieta krótka niska', endsOn: '2099-12-31' },
+    { id: 'krotka', title: 'Ankieta krótka', endsOn: '2099-12-31' },
+  ]);
+  await db.insert(surveyQuestions).values([
+    { id: 'krotka-niska-q', surveyId: 'krotka-niska', position: 1, prompt: 'Co zjadłeś?', type: 'short_text' },
+    { id: 'krotka-q', surveyId: 'krotka', position: 1, prompt: 'Co zjadłeś?', type: 'short_text' },
+  ]);
+  await db.insert(surveyTextAnswers).values([
+    { questionId: 'krotka-niska-q', text: 'Tajna-odpowiedz-niska' },
+    { questionId: 'krotka-q', text: 'Mleko' },
+    { questionId: 'krotka-q', text: 'Zupa' },
+    { questionId: 'krotka-q', text: 'Arbuz' },
+    { questionId: 'krotka-q', text: 'Łosoś' },
+    { questionId: 'krotka-q', text: 'Lody' },
+  ]);
+  await db.insert(surveyParticipation).values(['k1', 'k2', 'k3', 'k4'].map((userId) => ({ surveyId: 'krotka-niska', userId })));
+  await db.insert(surveyParticipation).values(['k1', 'k2', 'k3', 'k4', 'k5'].map((userId) => ({ surveyId: 'krotka', userId })));
 });
 
 describe('dostęp / access', () => {
@@ -213,6 +276,49 @@ describe('próg 5 odpowiedzi / the 5-response threshold', () => {
   });
 });
 
+describe('wielokrotny wybór / multiple choice', () => {
+  it('liczy osoby z tabeli „kto głosował”, a nie zaznaczenia, i podaje rodzaj pytania / counts people from the "who voted" table, not the checked boxes, and gives the question type', async () => {
+    const body = (await (await asStaff('/wielokrotna/results', {})).json()) as { responseCount: number; questions: { type: string; options: { percent: number }[] }[] };
+
+    expect(body.responseCount).toBe(5);
+    expect(body.questions[0]?.type).toBe('multiple_choice');
+    // PL: Udziały liczymy od zaznaczeń: 4 z 7 to 57 procent, 3 z 7 to 43.
+    // EN: The shares are counted from the checked boxes: 4 of 7 is 57 percent, 3 of 7 is 43.
+    expect(body.questions[0]?.options.map((option) => option.percent)).toEqual([57, 43]);
+  });
+
+  it('w ankiecie z pytaniem jednokrotnym liczy osoby z tego pytania, a nie z zaznaczeń w wielokrotnym / in a survey with a single-choice question it counts people from that question, not from the checked boxes of the multiple-choice one', async () => {
+    const body = (await (await asStaff('/mieszana/results', {})).json()) as { responseCount: number; questions: { type: string }[] };
+
+    expect(body.responseCount).toBe(5);
+    expect(body.questions.map((question) => question.type)).toEqual(['single_choice', 'multiple_choice']);
+  });
+});
+
+describe('krótka odpowiedź / short answer', () => {
+  it('poniżej progu nie ma żadnej treści odpowiedzi w odpowiedzi HTTP / below the threshold there is no answer text in the HTTP response', async () => {
+    const response = await asStaff('/krotka-niska/results', {});
+    const text = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(JSON.parse(text)).toMatchObject({ responseCount: 4, minResponses: 5 });
+    expect(text).not.toContain('Tajna-odpowiedz-niska');
+    expect(text).not.toContain('texts');
+  });
+
+  it('od progu lista jest alfabetyczna, niezależna od kolejności wpisania, i bez danych autora / from the threshold the list is alphabetical, independent of the insertion order, and has no author data', async () => {
+    const response = await asStaff('/krotka/results', {});
+    const text = await response.text();
+    const body = JSON.parse(text) as { responseCount: number; questions: unknown[] };
+
+    expect(body.responseCount).toBe(5);
+    // PL: Dokładny kształt pytania: bez identyfikatorów wierszy i bez czasu, same treści w porządku alfabetycznym.
+    // EN: The exact shape of the question: no row identifiers and no time, only the texts in alphabetical order.
+    expect(body.questions).toEqual([{ prompt: 'Co zjadłeś?', type: 'short_text', options: [], texts: ['Arbuz', 'Lody', 'Łosoś', 'Mleko', 'Zupa'] }]);
+    for (const forbidden of ['userId', 'createdAt']) expect(text).not.toContain(`"${forbidden}"`);
+  });
+});
+
 describe('lista / the list', () => {
   it('dzieli ankiety na trwające i zakończone i podaje liczbę odpowiedzi, bez liczników głosów / splits surveys into running and ended and gives the response count, without vote counters', async () => {
     const response = await asStaff('/', {});
@@ -221,6 +327,7 @@ describe('lista / the list', () => {
 
     expect(response.status).toBe(200);
     expect(body.active.find((survey) => survey.id === 'dwanascie')).toMatchObject({ responseCount: 12, questionCount: 1 });
+    expect(body.active.find((survey) => survey.id === 'wielokrotna')).toMatchObject({ responseCount: 5 });
     expect(body.ended.find((survey) => survey.id === 'stara')).toMatchObject({ responseCount: 21 });
     expect(body.ended.map((survey) => survey.id)).toContain('zamknieta');
     expect(body.active.map((survey) => survey.id)).not.toContain('zamknieta');
@@ -257,6 +364,7 @@ describe('tworzenie ankiety / creating a survey', () => {
     { name: 'z jedną odpowiedzią', body: { title: 'Zła-2', questions: [{ prompt: 'P', options: ['A'] }], durationDays: 7 } },
     { name: 'z sześcioma odpowiedziami', body: { title: 'Zła-3', questions: [{ prompt: 'P', options: ['A', 'B', 'C', 'D', 'E', 'F'] }], durationDays: 7 } },
     { name: 'z czasem 5 dni', body: { title: 'Zła-4', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 5 } },
+    { name: 'z nieznanym typem pytania', body: { title: 'Zła-7', questions: [{ prompt: 'P', type: 'open_text', options: ['A', 'B'] }], durationDays: 7 } },
     { name: 'z terminem w przeszłości', body: { title: 'Zła-5', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 7, closesAt: '2020-01-01T12:00' } },
     { name: 'z terminem po ostatnim dniu', body: { title: 'Zła-6', questions: [{ prompt: 'P', options: ['A', 'B'] }], durationDays: 7, closesAt: warsawIn(Date.now() + 30 * 86400e3) } },
   ])('ankieta $name daje 400 i nic nie zapisuje / a survey $name gives 400 and writes nothing', async ({ body }) => {
@@ -264,6 +372,25 @@ describe('tworzenie ankiety / creating a survey', () => {
 
     expect((await publish(body)).status).toBe(400);
     expect(await db.select().from(surveys)).toHaveLength(before.length);
+  });
+
+  it('zapisuje typ każdego pytania, a pytanie bez typu to jednokrotny wybór / writes the type of each question, and a question without a type is single choice', async () => {
+    const response = await publish({ title: 'Z typami', questions: [{ prompt: 'Wiele', type: 'multiple_choice', options: ['A', 'B'] }, { prompt: 'Jeden', options: ['A', 'B'] }], durationDays: 7 });
+    const { id } = (await response.json()) as { id: string };
+
+    expect(response.status).toBe(201);
+    const questions = await db.select().from(surveyQuestions).where(eq(surveyQuestions.surveyId, id)).orderBy(surveyQuestions.position);
+    expect(questions.map((question) => [question.prompt, question.type])).toEqual([['Wiele', 'multiple_choice'], ['Jeden', 'single_choice']]);
+  });
+
+  it('krótka odpowiedź zapisuje się bez odpowiedzi do wyboru, nawet gdy telefon je przysłał / a short answer is stored without options, even when the phone sent them', async () => {
+    const response = await publish({ title: 'Krótka', questions: [{ prompt: 'Co zjadłeś?', type: 'short_text', options: ['A', 'B'] }], durationDays: 7 });
+    const { id } = (await response.json()) as { id: string };
+
+    expect(response.status).toBe(201);
+    const [question] = await db.select().from(surveyQuestions).where(eq(surveyQuestions.surveyId, id));
+    expect([question?.type, question?.prompt]).toEqual(['short_text', 'Co zjadłeś?']);
+    expect(await db.select().from(surveyOptions).where(eq(surveyOptions.questionId, question!.id))).toEqual([]);
   });
 
   it('zapisuje termin zamknięcia jako chwilę UTC / writes the closing time as a UTC moment', async () => {
@@ -302,11 +429,11 @@ describe('wyniki jako CSV / results as CSV', () => {
     // EN: A question with a comma, a quote and a new line goes in quotes, and the inner quotes are doubled.
     const quoted = `"Co, ""naprawdę""?\nTak"`;
     const expected = [
-      '﻿Pytanie,Odpowiedź,Liczba głosów,Procent',
-      `${quoted},"A, B",3,60`,
-      `${quoted},"C ""x""",1,20`,
-      `${quoted},D,1,20`,
-      `${quoted},Nie wiem,0,0`,
+      '﻿Pytanie,Odpowiedź,Liczba głosów,Procent,Średnia',
+      `${quoted},"A, B",3,60,`,
+      `${quoted},"C ""x""",1,20,`,
+      `${quoted},D,1,20,`,
+      `${quoted},Nie wiem,0,0,`,
     ].join('\r\n') + '\r\n';
 
     expect(response.status).toBe(200);
@@ -316,6 +443,40 @@ describe('wyniki jako CSV / results as CSV', () => {
     // PL: Dekodujemy z zachowaniem BOM-u, bo domyślny dekoder by go zjadł i porównanie nie pokazałoby błędu.
     // EN: We decode keeping the BOM, because the default decoder would eat it and the comparison would not show the error.
     expect(new TextDecoder('utf-8', { ignoreBOM: true, fatal: false }).decode(bytes)).toBe(expected);
+  });
+
+  it('krótka odpowiedź i skala: wiersz na tekst w kolejności alfabetycznej i średnia z przecinkiem / a short answer and a scale: a row per text in the alphabetical order and the average with a decimal comma', async () => {
+    const response = await asStaff('/krotka5/results/csv', {});
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const text = new TextDecoder('utf-8', { ignoreBOM: true, fatal: false }).decode(bytes);
+    // PL: Kolejność jak na ekranie wyników: „Ł” po „L”, „Za” przed „Zupą”, a formuła i odpowiedź z przecinkiem zapisane bezpiecznie.
+    // EN: The order as on the results screen: "Ł" after "L", "Za" before "Zupa", and the formula and the answer with a comma written safely.
+    const expected = [
+      '﻿Pytanie,Odpowiedź,Liczba głosów,Procent,Średnia',
+      'Co zmienić?,\'=1+1,,,',
+      'Co zmienić?,Lody,,,',
+      'Co zmienić?,Łyżwy,,,',
+      'Co zmienić?,"Za drogo, ""bardzo""",,,',
+      'Co zmienić?,Zupa,,,',
+      'Jak oceniasz?,1,1,20,',
+      'Jak oceniasz?,2,0,0,',
+      'Jak oceniasz?,3,1,20,',
+      'Jak oceniasz?,4,2,40,',
+      'Jak oceniasz?,5,1,20,',
+      'Jak oceniasz?,Średnia,,,"3,4"',
+    ].join('\r\n') + '\r\n';
+
+    expect(response.status).toBe(200);
+    expect(text).toBe(expected);
+  });
+
+  it('krótka odpowiedź poniżej progu daje 409 i nie zdradza tekstów / a short answer below the threshold gives 409 and does not reveal the texts', async () => {
+    const response = await asStaff('/krotka4/results/csv', {});
+    const text = await response.text();
+
+    expect(response.status).toBe(409);
+    expect(JSON.parse(text)).toEqual({ error: 'too_few_responses' });
+    for (const forbidden of ['Zupa', 'Co zmienić?', 'Jak oceniasz?']) expect(text).not.toContain(forbidden);
   });
 
   it('nieznana ankieta daje 404 / an unknown survey gives 404', async () => {

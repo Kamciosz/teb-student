@@ -21,6 +21,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 // PL: Tabela wpisów.
 // EN: The entries table.
 import { newsEntries } from '../../db/schema/news';
+// PL: Tabela kont, z której bierzemy imię autora.
+// EN: The accounts table, from which we take the author's name.
+import { user } from '../../db/schema/auth';
 // PL: Router, który sprawdzamy.
 // EN: The router under test.
 import { newsFeedApp } from './routes';
@@ -126,6 +129,30 @@ describe('GET /:id', () => {
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: 'not_found' });
+  });
+
+  // PL: Wpis z autorem pokazuje imię i nazwisko z konta, a e-mail autora nie wychodzi w odpowiedzi.
+  // EN: An entry with an author shows the name and surname from the account, and the author's e-mail does not leave in the response.
+  it('podaje imię autora i nie zdradza e-maila / gives the author name and does not reveal the e-mail', async () => {
+    await db.insert(user).values({ id: 'autor-route', name: 'Adam Wymyślony', email: 'adam.wymyslony@example.com', emailVerified: true }).onConflictDoNothing();
+    await db.insert(newsEntries).values({ id: 'z-autorem', type: 'news', status: 'published', title: 'Z autorem', body: BODY, source: 'Samorząd', authorUserId: 'autor-route', publishedAt: PUBLISHED_AT });
+
+    const response = await newsFeedApp.request('/z-autorem', {}, env);
+    const text = await response.text();
+    const { entry } = JSON.parse(text) as { entry: { authorName: string | null } };
+
+    expect(response.status).toBe(200);
+    expect(entry.authorName).toBe('Adam Wymyślony');
+    expect(text).not.toContain('adam.wymyslony@example.com');
+  });
+
+  // PL: Wpis bez autora ma authorName równe null, a nie brak pola.
+  // EN: An entry without an author has authorName equal to null, not a missing field.
+  it('bez autora authorName to null / without an author authorName is null', async () => {
+    const response = await newsFeedApp.request('/e1', {}, env);
+    const { entry } = (await response.json()) as { entry: Record<string, unknown> };
+
+    expect(entry).toHaveProperty('authorName', null);
   });
 });
 

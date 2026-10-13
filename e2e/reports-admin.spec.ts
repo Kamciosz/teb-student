@@ -14,6 +14,9 @@ import { expect, test, type Page } from '@playwright/test';
 
 /** PL: Zgłoszenie podstawionego API. EN: A report of the stubbed API. */
 type StubReport = { id: string; isAnonymous: boolean; category: string; place: string; placeDetail: string | null; description: string; stage: string; createdAt: number; updatedAt: number; joinCount: number };
+// PL: Wiersz historii w podstawionym API: etap, chwila i odpowiedź dla autora (albo `null`).
+// EN: A history row in the stubbed API: the stage, the moment and the answer for the author (or `null`).
+type StubChange = { stage: string; changedAt: number; note: string | null };
 
 /**
  * PL: Kafle listy zgłoszeń. Menu panelu też jest listą, więc szukamy po nazwie listy.
@@ -65,7 +68,7 @@ async function stubAdminApi(page: Page, reports: StubReport[] = sampleReports())
   await stubPanelLevel(page, 'council');
   // PL: Historia każdego zgłoszenia, najnowszy etap pierwszy.
   // EN: The history of every report, newest stage first.
-  const history = new Map(reports.map((item) => [item.id, [{ stage: item.stage, changedAt: item.updatedAt }]]));
+  const history = new Map<string, StubChange[]>(reports.map((item) => [item.id, [{ stage: item.stage, changedAt: item.updatedAt, note: null }]]));
   await page.route(/\/api\/reports\/admin(\/.*)?$/, async (route) => {
     const request = route.request();
     const id = new URL(request.url()).pathname.split('/')[4];
@@ -76,10 +79,13 @@ async function stubAdminApi(page: Page, reports: StubReport[] = sampleReports())
     if (!found) return route.fulfill({ status: 404, json: { error: 'not_found' } });
     // PL: Zmiana etapu dopisuje wiersz historii.
     // EN: A stage change appends a history row.
+    // PL: Odpowiedź z treści zapytania trafia do nowego wiersza, tak jak na serwerze.
+    // EN: The answer from the request body goes into the new row, as on the server.
     if (request.method() === 'PATCH') {
-      found.stage = (request.postDataJSON() as { stage: string; note: string | null }).stage;
+      const body = request.postDataJSON() as { stage: string; note: string | null };
+      found.stage = body.stage;
       found.updatedAt = Date.UTC(2026, 9, 12, 8);
-      history.get(id)?.unshift({ stage: found.stage, changedAt: found.updatedAt });
+      history.get(id)?.unshift({ stage: found.stage, changedAt: found.updatedAt, note: body.note });
     }
     // PL: Imię i klasa autora tylko przy zgłoszeniu nieanonimowym, jak na serwerze.
     // EN: The author's name and class only for a signed report, as on the server.
@@ -242,6 +248,27 @@ test('odpowiedź dla autora trafia do zapisu i znika po zapisie / the answer for
   expect((await patch).postDataJSON()).toEqual({ stage: 'resolved', note: text });
   await expect(note).toHaveValue('');
   await expect(page.getByText('0/500')).toBeVisible();
+});
+
+// PL: Odpowiedź zapisana przy zmianie etapu widać w historii pod tym wpisem, a starszy wpis bez odpowiedzi nie pokazuje nic.
+// EN: The answer saved with a stage change shows in the history under that entry, and an older entry without an answer shows nothing.
+test('odpowiedź dla autora jest w historii pod wpisem zmiany / the answer for the author is in the history under the change entry', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.goto('/reports/admin/r3');
+  const text = 'Projektor naprawiony, dziękujemy.';
+
+  // PL: Wybierz etap, wpisz odpowiedź i zapisz.
+  // EN: Choose the stage, type the answer and save.
+  await page.getByRole('radio', { name: 'Załatwione' }).click();
+  await page.getByRole('textbox', { name: 'Odpowiedź dla autora' }).fill(text);
+  await page.getByRole('button', { name: 'Zapisz etap' }).click();
+
+  // PL: Najnowszy wpis historii niesie odpowiedź, a starszy (wpływ zgłoszenia) nie ma żadnej.
+  // EN: The newest history entry carries the answer, and the older one (the arrival of the report) has none.
+  const history = page.getByRole('list', { name: 'Historia' }).getByRole('listitem');
+  await expect(history).toHaveCount(2);
+  await expect(history.first()).toContainText(text);
+  await expect(history.nth(1)).not.toContainText('Odpowiedź dla autora');
 });
 
 // PL: Błąd zapisu pokazuje komunikat, a przycisk zostaje aktywny, żeby ponowić.
