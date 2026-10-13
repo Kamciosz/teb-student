@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżki Samorządu w podtorze 3c: lista wpisów ze szkicami w ramie panelu, publikacja szkicu, przypinanie i odpinanie (najwyżej trzy), usuwanie z potwierdzeniem i anulowaniem, pusty stan, odmowa serwera, błąd publikacji, przejście do kreatora „Nowy wpis”, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga roli z podtoru 8 i zalogowania); serwer sprawdzają testy Vitest (worker/news/admin/routes.test.ts), także to, że uczeń nie widzi szkiców.
- * EN: Test of the Student Council path in subtrack 3c: the entry list with drafts in the panel frame, publishing a draft, pinning and unpinning (at most three), deleting with a confirmation and a cancel, the empty state, a server refusal, a publish error, the way to the "Nowy wpis" wizard, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/news/admin/routes.test.ts), including that a student does not see drafts.
+ * PL: Test ścieżki Samorządu w podtorze 3c: lista wpisów ze szkicami w ramie panelu, znacznik zaplanowanego wpisu, publikacja szkicu, przypinanie i odpinanie (najwyżej trzy), usuwanie z potwierdzeniem i anulowaniem, pusty stan, odmowa serwera, błąd publikacji, przejście do kreatora „Nowy wpis”, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga roli z podtoru 8 i zalogowania); serwer sprawdzają testy Vitest (worker/news/admin/routes.test.ts), także to, że uczeń nie widzi szkiców.
+ * EN: Test of the Student Council path in subtrack 3c: the entry list with drafts in the panel frame, the scheduled tag of an entry, publishing a draft, pinning and unpinning (at most three), deleting with a confirmation and a cancel, the empty state, a server refusal, a publish error, the way to the "Nowy wpis" wizard, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/news/admin/routes.test.ts), including that a student does not see drafts.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -13,7 +13,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /** PL: Wpis podstawionego API. EN: An entry of the stubbed API. */
-type StubEntry = { id: string; type: string; status: 'draft' | 'published'; title: string; source: string; publishedAt: string | null; pinnedAt: string | null };
+type StubEntry = { id: string; type: string; status: 'draft' | 'published'; title: string; source: string; publishedAt: string | null; pinnedAt: string | null; publishAt: string | null };
 
 /**
  * PL: Kafle listy wpisów. Menu panelu też jest listą, więc szukamy po nazwie listy.
@@ -31,8 +31,8 @@ function tiles(page: Page) {
 /** PL: Dwa wpisy: szkic i opublikowany, szkic pierwszy jak na serwerze. EN: Two entries: a draft and a published one, the draft first like on the server. */
 function sampleEntries(): StubEntry[] {
   return [
-    { id: 'e-szkic', type: 'news', status: 'draft', title: 'Turniej e-sportowy klas', source: 'Samorząd', publishedAt: null, pinnedAt: null },
-    { id: 'e-pub', type: 'event', status: 'published', title: 'Dzień sportu', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null },
+    { id: 'e-szkic', type: 'news', status: 'draft', title: 'Turniej e-sportowy klas', source: 'Samorząd', publishedAt: null, pinnedAt: null, publishAt: null },
+    { id: 'e-pub', type: 'event', status: 'published', title: 'Dzień sportu', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null, publishAt: null },
   ];
 }
 
@@ -139,10 +139,10 @@ test('Samorząd przypina i odpina wpis opublikowany / the Student Council pins a
 test('czwarte przypięcie pokazuje limit / a fourth pin shows the limit', async ({ page }) => {
   const pinnedAt = '2026-10-09T10:00:00.000Z';
   await stubAdminApi(page, [
-    { id: 'p-1', type: 'news', status: 'published', title: 'Pierwszy', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt },
-    { id: 'p-2', type: 'news', status: 'published', title: 'Drugi', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt },
-    { id: 'p-3', type: 'news', status: 'published', title: 'Trzeci', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt },
-    { id: 'p-4', type: 'news', status: 'published', title: 'Czwarty', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt: null },
+    { id: 'p-1', type: 'news', status: 'published', title: 'Pierwszy', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt, publishAt: null },
+    { id: 'p-2', type: 'news', status: 'published', title: 'Drugi', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt, publishAt: null },
+    { id: 'p-3', type: 'news', status: 'published', title: 'Trzeci', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt, publishAt: null },
+    { id: 'p-4', type: 'news', status: 'published', title: 'Czwarty', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt: null, publishAt: null },
   ]);
   await page.goto('/news/admin');
 
@@ -247,6 +247,19 @@ test('szkic ma przycisk „Edytuj” prowadzący do kreatora / a draft has an "E
   await expect(page).toHaveURL(/\/news\/editor\/e-szkic$/);
   await page.getByRole('button', { name: 'Dalej' }).click();
   await expect(page.getByLabel('Tytuł')).toHaveValue('Turniej e-sportowy klas');
+});
+
+// PL: Opublikowany wpis z chwilą startu w przyszłości ma znacznik z godziną w Warszawie; wpis, którego chwila minęła, znacznika nie ma.
+// EN: A published entry with a start moment in the future has the tag with the Warsaw hour; an entry whose moment has passed has no tag.
+test('zaplanowany wpis pokazuje znacznik z godziną w Warszawie / a scheduled entry shows the tag with the Warsaw hour', async ({ page }) => {
+  await stubAdminApi(page, [
+    { id: 'z-1', type: 'news', status: 'published', title: 'Zapisy na obóz', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null, publishAt: '2030-03-05T07:30:00.000Z' },
+    { id: 'z-2', type: 'news', status: 'published', title: 'Dzień otwarty', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null, publishAt: '2026-10-09T10:00:00.000Z' },
+  ]);
+  await page.goto('/news/admin');
+
+  await expect(tiles(page).first()).toContainText('Zaplanowany na 5.03, 08:30');
+  await expect(tiles(page).last()).not.toContainText('Zaplanowany');
 });
 
 // PL: Przy 320 px lista i arkusz nie przewijają się w poziomie, a przyciski mieszczą się w oknie i mają co najmniej 44 px.

@@ -22,6 +22,7 @@ export type PanelEntry = {
   source: string;
   publishedAt: string | null;
   pinnedAt: string | null;
+  publishAt: string | null;
 };
 
 /**
