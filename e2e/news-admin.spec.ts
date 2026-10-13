@@ -37,6 +37,26 @@ function sampleEntries(): StubEntry[] {
 }
 
 /**
+ * PL: Podstawia sesję zalogowanej redaktorki i jej rolę w panelu (editor), jak w e2e/admin.spec.ts.
+ * EN: Stubs a signed-in editor session and her panel role (editor), as in e2e/admin.spec.ts.
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ */
+async function stubSession(page: Page): Promise<void> {
+  // PL: Sesja: zalogowana osoba.
+  // EN: The session: a signed-in person.
+  await page.route('**/api/auth/email/get-session', (route) => {
+    const now = new Date().toISOString();
+    const session = { id: 's1', userId: 'u1', token: 't1', createdAt: now, updatedAt: now, expiresAt: new Date(Date.now() + 86_400_000).toISOString() };
+    const user = { id: 'u1', email: 'ola.testowa@teb.edu.pl', name: '', emailVerified: true, createdAt: now, updatedAt: now };
+    return route.fulfill({ json: { session, user } });
+  });
+  // PL: Rola w panelu: redaktorka.
+  // EN: The panel role: an editor.
+  await page.route('**/api/admin/me', (route) => route.fulfill({ json: { level: 'editor' } }));
+}
+
+/**
  * PL: Podstawia API panelu z pamięcią: GET oddaje listę, POST /:id/publish zmienia szkic w opublikowany, DELETE /:id usuwa wpis.
  * EN: Stubs the panel API with memory: GET returns the list, POST /:id/publish turns a draft into a published entry, DELETE /:id removes the entry.
  *
@@ -44,6 +64,7 @@ function sampleEntries(): StubEntry[] {
  * @param entries - PL: wpisy na start. EN: the entries to start with.
  */
 async function stubAdminApi(page: Page, entries: StubEntry[] = sampleEntries()): Promise<void> {
+  await stubSession(page);
   await page.route(/\/api\/news\/admin(\/.*)?$/, async (route) => {
     const request = route.request();
     const [, , , , id, action] = new URL(request.url()).pathname.split('/');
@@ -60,14 +81,13 @@ async function stubAdminApi(page: Page, entries: StubEntry[] = sampleEntries()):
   });
 }
 
-// PL: Lista pokazuje szkic i wpis opublikowany; „Opublikuj” ma tylko szkic; rama panelu ma menu z czterema częściami.
-// EN: The list shows the draft and the published entry; only the draft has "Opublikuj"; the panel frame has the menu with four sections.
+// PL: Lista pokazuje szkic i wpis opublikowany; „Opublikuj” ma tylko szkic.
+// EN: The list shows the draft and the published entry; only the draft has "Opublikuj".
 test('lista pokazuje szkic i wpis opublikowany w ramie panelu / the list shows a draft and a published entry in the panel frame', async ({ page }) => {
   await stubAdminApi(page);
   await page.goto('/news/admin');
 
   await expect(page.locator('[data-subtrack="3c"]')).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Panel Samorządu' }).getByRole('link')).toHaveCount(4);
   await expect(tiles(page)).toHaveCount(2);
   await expect(tiles(page).first()).toContainText('Turniej e-sportowy klas');
   await expect(tiles(page).first()).toContainText('Szkic');
@@ -128,6 +148,7 @@ test('pusta lista i przejście do kreatora / the empty list and the way to the w
 // PL: Odmowa serwera (403 bez roli) pokazuje komunikat błędu pobrania, a nie dane.
 // EN: A server refusal (403 without a role) shows the fetch error message, not data.
 test('odmowa serwera pokazuje błąd pobrania / a server refusal shows the fetch error', async ({ page }) => {
+  await stubSession(page);
   await page.route(/\/api\/news\/admin$/, (route) => route.fulfill({ status: 403, json: { error: 'role_required' } }));
   await page.goto('/news/admin');
 
@@ -146,6 +167,28 @@ test('błąd publikacji zostawia przycisk aktywny / a publish error leaves the b
 
   await expect(page.getByRole('alert')).toContainText('Nie udało się opublikować wpisu. Spróbuj ponownie za chwilę.');
   await expect(page.getByRole('button', { name: /^Opublikuj/ })).toBeEnabled();
+});
+
+// PL: Przycisk „Edytuj” jest tylko przy szkicu i prowadzi do kreatora z jego numerem, a kreator wczytuje szkic z serwera.
+// EN: The "Edytuj" button is only on a draft and leads to the wizard with its id, and the wizard loads the draft from the server.
+test('szkic ma przycisk „Edytuj” prowadzący do kreatora / a draft has an "Edytuj" button leading to the wizard', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.route('**/api/news/editor/entries/e-szkic', (route) =>
+    route.fulfill({ status: 200, json: { id: 'e-szkic', type: 'news', title: 'Turniej e-sportowy klas', status: 'draft', body: { type: 'doc', content: [] } } }),
+  );
+  await page.goto('/news/admin');
+
+  // PL: Tylko szkic ma „Edytuj”, wpis opublikowany go nie ma.
+  // EN: Only the draft has "Edytuj", the published entry does not.
+  const edit = page.getByRole('link', { name: 'Edytuj: Turniej e-sportowy klas' });
+  await expect(page.getByRole('link', { name: /^Edytuj/ })).toHaveCount(1);
+  await expect(edit).toHaveAttribute('href', '/news/editor/e-szkic');
+
+  await edit.click();
+
+  await expect(page).toHaveURL(/\/news\/editor\/e-szkic$/);
+  await page.getByRole('button', { name: 'Dalej' }).click();
+  await expect(page.getByLabel('Tytuł')).toHaveValue('Turniej e-sportowy klas');
 });
 
 // PL: Przy 320 px lista i arkusz nie przewijają się w poziomie, a przyciski mieszczą się w oknie i mają co najmniej 44 px.

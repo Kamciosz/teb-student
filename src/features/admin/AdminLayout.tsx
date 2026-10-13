@@ -1,47 +1,33 @@
 /**
- * PL: Rama panelu Samorządu: menu panelu nad treścią i miejsce na ekran wybranej części panelu. Rama niczego nie pobiera i nie sprawdza roli, bo ekran 3c pokazuje się w niej bez logowania (e2e/news-admin.spec.ts). Rolę sprawdza PanelGate, który każdy ekran panelu zakłada sam, a uprawnienia i tak sprawdza serwer (requirePanelRole). Ekrany części panelu leżą w katalogach ich modułów (wpisy, zgłoszenia, ankiety).
- * EN: The Student Council panel frame: the panel menu above the content and a place for the screen of the chosen panel section. The frame fetches nothing and checks no role, because the 3c screen shows in it without signing in (e2e/news-admin.spec.ts). The role is checked by PanelGate, which every panel screen puts on itself, and the server checks permissions anyway (requirePanelRole). The screens of the panel sections live in the directories of their modules (entries, reports, surveys).
+ * PL: Rama panelu Samorządu: bramka roli nad ekranem wybranej części panelu. Menu panelu usunął podtor 8, a jego główny ekran (kafle części) prowadzi do części. Rama pobiera rolę przez PanelGate, więc uczeń bez roli widzi ekran 6.1d zamiast każdej części panelu. Uprawnienia i tak sprawdza serwer (requirePanelRole). Ekrany części panelu leżą w katalogach ich modułów (wpisy, zgłoszenia, ankiety).
+ * EN: The Student Council panel frame: a role gate above the screen of the chosen panel section. Subtrack 8 removed the panel menu, and its main screen (the section tiles) leads to the sections. The frame reads the role through PanelGate, so a student without a role sees screen 6.1d instead of every panel section. The server checks permissions anyway (requirePanelRole). The screens of the panel sections live in the directories of their modules (entries, reports, surveys).
  *
  * @author Bohdan
  * @since 2026-10-09
- * @uses src/shared/index.ts::PANEL_MENU_ITEMS
+ * @uses src/features/admin/PanelGate.tsx::PanelGate
  * @used_by src/features/admin/index.ts::AdminLayout
  */
 
-// PL: NavLink to link, który sam oznacza bieżący ekran. Outlet to miejsce na ekran wybranej części panelu.
-// EN: NavLink is a link that marks the current screen itself. Outlet is the place for the screen of the chosen panel section.
-import { NavLink, Outlet } from 'react-router';
-// PL: Lista wpisów menu panelu.
-// EN: The list of panel menu entries.
-import { PANEL_MENU_ITEMS } from '../../shared';
-// PL: Style panelu (menu ramy i ekrany podtoru 8).
-// EN: The panel styles (the frame menu and the subtrack 8 screens).
-import './admin.css';
+// PL: Outlet to miejsce na ekran wybranej części panelu.
+// EN: Outlet is the place for the screen of the chosen panel section.
+import { Outlet } from 'react-router';
+// PL: Bramka roli: przepuszcza każdą rolę panelu (domyślne minimum), a ucznia bez roli zatrzymuje na ekranie 6.1d.
+// EN: The role gate: lets through every panel role (the default minimum) and stops a student without a role on screen 6.1d.
+import { PanelGate } from './PanelGate';
 
 /**
- * PL: Rysuje ramę panelu: menu i wybrany ekran. Nie pobiera danych i nie zmienia nic poza ekranem. Uprawnienia sprawdza serwer, a nie ta rama.
- * EN: Draws the panel frame: the menu and the chosen screen. It fetches no data and changes nothing outside the screen. The server checks permissions, not this frame.
+ * PL: Rysuje ramę panelu: bramkę roli i wybrany ekran. Nie pobiera danych poza rolą i nie zmienia nic poza ekranem. Uprawnienia sprawdza serwer, a nie ta rama.
+ * EN: Draws the panel frame: the role gate and the chosen screen. It fetches no data beyond the role and changes nothing outside the screen. The server checks permissions, not this frame.
  *
  * @returns PL: drzewo elementów ramy. EN: the tree of frame elements.
  */
 export function AdminLayout() {
-  // PL: Zwróć ramę: menu panelu i pod nim ekran, który wybrał router.
-  // EN: Return the frame: the panel menu and, under it, the screen the router chose.
+  // PL: Zwróć ramę: ekran wybrany przez router, pokazany tylko dla roli panelu.
+  // EN: Return the frame: the screen the router chose, shown only to a panel role.
   return (
-    <>
-      {/* PL: Menu panelu. Nazwa „Panel Samorządu” jest z nazwy przepływu w docs/projekt/EKRANY.md. EN: The panel menu. The name "Panel Samorządu" comes from the flow name in docs/projekt/EKRANY.md. */}
-      <nav className="ad-menu" aria-label="Panel Samorządu">
-        <ul>
-          {/* PL: Po jednym linku na wpis menu. EN: One link per menu entry. */}
-          {PANEL_MENU_ITEMS.map((item) => (
-            <li key={item.path}>
-              <NavLink className="ad-menu-link" to={item.path}>{item.label}</NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
+    <PanelGate>
       {/* PL: Tu router wstawia ekran wybranej części panelu. EN: The router puts the screen of the chosen panel section here. */}
       <Outlet />
-    </>
+    </PanelGate>
   );
 }
