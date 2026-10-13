@@ -22,7 +22,8 @@ const EXAMPLE_PLAN_JS = `export const BELL_PLAN = [
   { start: '08:00', end: '08:45' },
   { start: '08:55', end: '09:40' },
   { start: '09:50', end: '10:35' },
-];`;
+];
+export const SHORTENED_BELL_PLAN = [];`;
 
 // PL: Podstawia plan przykładowy w miejsce modułu planu.
 // EN: Stubs the example plan in place of the plan module.

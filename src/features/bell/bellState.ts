@@ -54,6 +54,20 @@ export type BellState =
 export type WarsawClock = { weekday: number; secondsOfDay: number };
 
 /**
+ * PL: Dzień w strefie szkoły w formacie RRRR-MM-DD. Po nim sprawdzamy, czy dzień jest skrócony.
+ * EN: The day in the school zone as YYYY-MM-DD. It is used to check whether the day is shortened.
+ *
+ * @param now - PL: chwila w czasie. EN: the moment in time.
+ * @returns PL: dzień RRRR-MM-DD. EN: the day as YYYY-MM-DD.
+ */
+export function warsawDate(now: Date): string {
+  // PL: Rozbij wynik Intl na części po nazwie, tak jak w zegarze.
+  // EN: Split the Intl result into parts by name, as in the clock.
+  const parts = Object.fromEntries(clockFormat.formatToParts(now).map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+/**
  * PL: Zamienia godzinę, minutę i sekundę na sekundy od północy.
  * EN: Converts hour, minute and second into seconds since midnight.
  *
