@@ -20,7 +20,7 @@ import { StagePicker } from './StagePicker';
 import type { AdminReport, AdminStudent, StageChange } from './api';
 import { useAdminReport, useChangeStage, useIsOnline } from './queries';
 import { STAGE_NOTE_MAX_LENGTH } from './reportLabels';
-import { categoryLabel, formatShortDate, placeText, stageLabel } from './reportView';
+import { categoryLabel, formatShortDate, joinText, placeText, stageLabel } from './reportView';
 
 /**
  * PL: Rysuje kafel autora (ekran 6.4c). Zgłoszenie anonimowe pokazuje napis o anonimowości i nie ma danych autora. Zgłoszenie z autorem pokazuje imię i klasę, gdy serwer je poda; bez nich zostaje sam napis „Autor zgłosił bez anonimowości.”.
@@ -97,20 +97,24 @@ function History({ rows }: { rows: StageChange[] }) {
 }
 
 /**
- * PL: Rysuje nagłówek zgłoszenia: znacznik kategorii, datę z miejscem i opis.
- * EN: Draws the report header: the category tag, the date with the place and the description.
+ * PL: Rysuje nagłówek zgłoszenia: znacznik kategorii, datę z miejscem, liczbę osób i opis.
+ * EN: Draws the report header: the category tag, the date with the place, the number of people and the description.
  *
  * @param props - PL: zgłoszenie. EN: the report.
  * @returns PL: drzewo elementów nagłówka. EN: the tree of header elements.
  */
 function ReportHead({ report }: { report: AdminReport }) {
-  // PL: Znacznik kategorii, data z miejscem i opis zgłoszenia.
-  // EN: The category tag, the date with the place and the report description.
+  // PL: Liczba osób („Mnie też”) albo `null`, gdy nikt nie dołączył lub brak danych.
+  // EN: The number of people ("Me too") or `null`, when nobody joined or there is no data.
+  const joins = joinText(report.joinCount);
+  // PL: Znacznik kategorii, data z miejscem, liczba osób i opis zgłoszenia.
+  // EN: The category tag, the date with the place, the number of people and the report description.
   return (
     <>
       <div className="ra-tile-head">
         <span className="ra-tag">{categoryLabel(report.category)}</span>
         <span className="ra-small">{formatShortDate(report.createdAt)} · {placeText(report)}</span>
+        {joins ? <span className="ra-small">{joins}</span> : null}
       </div>
       <h2 className="ra-title">{report.description}</h2>
     </>

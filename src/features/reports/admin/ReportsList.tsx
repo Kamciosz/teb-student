@@ -17,7 +17,7 @@ import { PanelTop } from './PanelTop';
 import type { AdminReport } from './api';
 import { useAdminReports } from './queries';
 import { ALL_STAGES, FILTERS } from './reportLabels';
-import { categoryLabel, filterByStage, formatShortDate, placeText, stageLabel } from './reportView';
+import { categoryLabel, filterByStage, formatShortDate, joinText, placeText, stageLabel } from './reportView';
 
 /**
  * PL: Rysuje jeden kafel zgłoszenia, który prowadzi do szczegółu (ekran 6.4b).
@@ -27,14 +27,18 @@ import { categoryLabel, filterByStage, formatShortDate, placeText, stageLabel } 
  * @returns PL: drzewo elementów kafla. EN: the tree of tile elements.
  */
 function ReportTile({ report }: { report: AdminReport }) {
-  // PL: Cały kafel jest linkiem do szczegółu: znacznik kategorii, data z miejscem, opis, napis o anonimowości i znacznik etapu.
-  // EN: The whole tile is a link to the detail: the category tag, the date with the place, the description, the anonymity label and the stage tag.
+  // PL: Liczba osób („Mnie też”) albo `null`, gdy nikt nie dołączył lub brak danych.
+  // EN: The number of people ("Me too") or `null`, when nobody joined or there is no data.
+  const joins = joinText(report.joinCount);
+  // PL: Cały kafel jest linkiem do szczegółu: znacznik kategorii, data z miejscem, liczba osób, opis, napis o anonimowości i znacznik etapu.
+  // EN: The whole tile is a link to the detail: the category tag, the date with the place, the number of people, the description, the anonymity label and the stage tag.
   return (
     <li>
       <Link className="ra-tile" to={report.id}>
         <span className="ra-tile-head">
           <span className="ra-tag">{categoryLabel(report.category)}</span>
           <span className="ra-small">{formatShortDate(report.createdAt)} · {placeText(report)}</span>
+          {joins ? <span className="ra-small">{joins}</span> : null}
         </span>
         <span className="ra-desc">{report.description}</span>
         <span className="ra-tile-foot">
