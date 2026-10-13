@@ -10,24 +10,27 @@
 
 import { Link } from 'react-router';
 import { ChevronRightIcon, PlusIcon, WifiOffIcon } from './icons';
-import { describeQuestions, describeResponses, formatShortDate, MIN_RESPONSES } from './format';
+import { describeQuestions, describeResponses, formatClosesAt, formatShortDate, MIN_RESPONSES } from './format';
 import { ErrorMessage, PanelNote, ScreenTop } from './PanelParts';
 import { useIsOnline, usePanelSurveys } from './surveyQueries';
 import type { PanelSurvey } from './types';
 
 /**
- * PL: Kafel jednej ankiety: tytuł, liczba pytań z terminem i, dla trwającej, stan odpowiedzi. Prowadzi do wyników.
- * EN: The tile of one survey: the title, the question count with the deadline and, for a running one, the response state. Leads to the results.
+ * PL: Kafel jednej ankiety: tytuł, liczba pytań z terminem i, dla trwającej, stan odpowiedzi. Ankieta z terminem zamknięcia pokazuje jego godzinę, a zamknięta przez termin, „Zamknięta”. Prowadzi do wyników.
+ * EN: The tile of one survey: the title, the question count with the deadline and, for a running one, the response state. A survey with a closing time shows its hour, and one closed by its time shows "Zamknięta". Leads to the results.
  *
  * @param props - PL: ankieta i czy już się skończyła. EN: the survey and whether it has ended.
  * @returns PL: kafel. EN: the tile.
  */
 function SurveyTile({ survey, isEnded }: { survey: PanelSurvey; isEnded: boolean }) {
-  // PL: Trwająca: „3 pytania · do 15.10”. Zakończona: „Zakończona 30.09 · 21 odpowiedzi”.
-  // EN: Running: "3 pytania · do 15.10". Ended: "Zakończona 30.09 · 21 odpowiedzi".
-  const caption = isEnded
-    ? `Zakończona ${formatShortDate(survey.endsOn)} · ${describeResponses(survey.responseCount)}`
-    : `${describeQuestions(survey.questionCount)} · do ${formatShortDate(survey.endsOn)}`;
+  // PL: Trwająca: „3 pytania · do 15.10” albo „3 pytania · do 15.10, 12:00”. Zakończona: „Zakończona 30.09 · 21 odpowiedzi”. Zamknięta przed czasem: „Zamknięta · 21 odpowiedzi”.
+  // EN: Running: "3 pytania · do 15.10" or "3 pytania · do 15.10, 12:00". Ended: "Zakończona 30.09 · 21 odpowiedzi". Closed before its time: "Zamknięta · 21 odpowiedzi".
+  const caption = (() => {
+    if (isEnded && survey.closesAt !== null) return `Zamknięta · ${describeResponses(survey.responseCount)}`;
+    if (isEnded) return `Zakończona ${formatShortDate(survey.endsOn)} · ${describeResponses(survey.responseCount)}`;
+    const deadline = survey.closesAt === null ? formatShortDate(survey.endsOn) : formatClosesAt(survey.closesAt);
+    return `${describeQuestions(survey.questionCount)} · do ${deadline}`;
+  })();
   const isHidden = survey.responseCount < MIN_RESPONSES;
 
   return (
