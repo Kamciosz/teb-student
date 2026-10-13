@@ -24,6 +24,8 @@ export type PanelSurvey = {
   questionCount: number;
   /** PL: Ostatni dzień ankiety, RRRR-MM-DD (czas polski). EN: The last day of the survey, YYYY-MM-DD (Polish time). */
   endsOn: string;
+  /** PL: Chwila zamknięcia w milisekundach UTC albo null, gdy ankieta kończy się tylko ostatnim dniem. EN: The closing moment in UTC milliseconds, or null when the survey ends only on its last day. */
+  closesAt: number | null;
   /** PL: Ile osób wypełniło ankietę (osób, a nie głosów). EN: How many people filled the survey in (people, not votes). */
   responseCount: number;
 };
