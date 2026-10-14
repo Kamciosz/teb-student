@@ -136,6 +136,38 @@ test('uczeń wysyła zgłoszenie i widzi je w „Moich zgłoszeniach” / studen
   await expect(tile.getByText('Odpowiedź Samorządu')).toHaveCount(0);
 });
 
+// PL: Zdjęcie nieobowiązkowe: wybrany plik dochodzi do zgłoszenia jako photoId, a „Usuń zdjęcie” go zdejmuje.
+// EN: The optional photo: the chosen file reaches the report as photoId, and "Usuń zdjęcie" removes it.
+test('zdjęcie do zgłoszenia trafia jako photoId / the photo goes to the report as photoId', async ({ page }) => {
+  // PL: Jednopikselowy PNG wystarcza, żeby przeglądarka uznała plik za obraz.
+  // EN: A one-pixel PNG is enough for the browser to take the file as an image.
+  const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+  let sent: { photoId?: string } = {};
+  await page.route('**/api/media/report-photo', (route) => route.fulfill({ status: 201, json: { id: 'e2e-photo-1' } }));
+  await page.route('**/api/reports/student', (route) => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: { reports: [] } });
+    sent = route.request().postDataJSON() as { photoId?: string };
+    return route.fulfill({ status: 201, json: { id: 'e2e-photo-report' } });
+  });
+  await fillToDescription(page, `Zdjęcie ściany ${Date.now()}`);
+
+  // PL: Wybierz plik, sprawdź nazwę, usuń i wybierz ponownie.
+  // EN: Choose a file, check its name, remove it and choose again.
+  const fileInput = page.locator('input[type="file"]');
+  await fileInput.setInputFiles({ name: 'sciana.png', mimeType: 'image/png', buffer: tinyPng });
+  await expect(page.getByText('Zdjęcie dołączone:')).toBeVisible();
+  await page.getByRole('button', { name: 'Usuń zdjęcie' }).click();
+  await expect(page.getByText('Zdjęcie dołączone:')).toHaveCount(0);
+  await fileInput.setInputFiles({ name: 'sciana.png', mimeType: 'image/png', buffer: tinyPng });
+  await expect(page.getByText('sciana.png')).toBeVisible();
+
+  // PL: Wyślij; numer zdjęcia musi być w treści zgłoszenia.
+  // EN: Send; the photo id must be in the report body.
+  await page.getByRole('button', { name: 'Wyślij zgłoszenie' }).click();
+  await expect(page.getByRole('heading', { name: 'Wysłane' })).toBeVisible();
+  expect(sent.photoId).toBe('e2e-photo-1');
+});
+
 // PL: Odpowiedź Samorządu przy zmianie etapu widzi uczeń na osi historii przy swoim zgłoszeniu.
 // EN: The student sees the Student Council answer given with a stage change on the history axis of their report.
 test('uczeń widzi odpowiedź Samorządu przy etapie / student sees the Student Council answer next to the stage', async ({ page }) => {

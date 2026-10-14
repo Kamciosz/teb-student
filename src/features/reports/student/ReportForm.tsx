@@ -7,6 +7,8 @@
  * @uses src/features/reports/student/ReportSteps.tsx::StepCategory
  * @uses src/features/reports/student/SimilarReports.tsx::SimilarReports
  * @uses src/features/reports/student/queries.ts::useSendReport
+ * @uses src/features/reports/student/useReportPhoto.ts::useReportPhoto
+ * @uses src/features/reports/student/ReportPhotoField.tsx::ReportPhotoField
  * @used_by src/features/reports/student/ReportsStudentScreen.tsx::ReportForm
  */
 
@@ -25,6 +27,10 @@ import { SimilarReports } from './SimilarReports';
 // PL: Wysyłanie zgłoszenia.
 // EN: Sending the report.
 import { useSendReport } from './queries';
+// PL: Zdjęcie do zgłoszenia (nieobowiązkowe): stan trzyma formularz, pole go tylko pokazuje.
+// EN: The photo for the report (optional): the form holds the state, the field only shows it.
+import { ReportPhotoField } from './ReportPhotoField';
+import { useReportPhoto } from './useReportPhoto';
 
 /** PL: Pusty szkic: nic nie wybrane, anonimowo włączone. EN: The empty draft: nothing chosen, anonymity on. */
 const EMPTY_DRAFT: Draft = { category: '', place: '', placeDetail: '', description: '', isAnonymous: true };
@@ -112,6 +118,12 @@ export function ReportForm() {
   const [step, setStep] = useState<Step>(1);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const send = useSendReport();
+  // PL: Zdjęcie żyje w formularzu, więc przetrwa cofnięcie z kroku opisu.
+  // EN: The photo lives in the form, so it survives going back from the description step.
+  const photo = useReportPhoto((photoId) => setDraft((current) => ({ ...current, photoId })));
+  // PL: W trakcie wysyłki zdjęcia albo po jego błędzie nie wysyłamy zgłoszenia.
+  // EN: While the photo is uploading or after its error the report is not sent.
+  const photoBlocks = photo.state.status === 'uploading' || photo.state.status === 'error';
 
   // PL: Po wysłaniu pokazujemy samo potwierdzenie.
   // EN: After sending we show the confirmation alone.
@@ -140,9 +152,10 @@ export function ReportForm() {
       <FlowTop title="Zgłoś problem" step={step} to="/" button={{ icon: 'x', label: 'Zamknij' }} />
       <form onSubmit={(event) => event.preventDefault()} noValidate>
         <CurrentStep draft={draft} onChange={(patch) => setDraft({ ...draft, ...patch })} />
+        {step === 3 ? <ReportPhotoField {...photo} /> : null}
       </form>
       {send.error ? <p className="rs-error" role="alert">{errorMessage(send.error)}</p> : null}
-      <FormFooter step={step} canContinue={isStepComplete(step, draft) && !send.isPending} onBack={() => setStep(step === 3 ? 2 : 1)} onNext={onNext} />
+      <FormFooter step={step} canContinue={isStepComplete(step, draft) && !send.isPending && !(step === 3 && photoBlocks)} onBack={() => setStep(step === 3 ? 2 : 1)} onNext={onNext} />
     </>
   );
 }

@@ -7,6 +7,7 @@
  * @uses worker/reports/student/validation.ts::parseReportInput
  * @uses worker/reports/student/validation.ts::isOneOf
  * @uses worker/reports/student/reportsRepository.ts::createReport
+ * @uses worker/reports/student/checkReportPhoto.ts::checkReportPhoto
  * @uses worker/reports/student/reportsRepository.ts::listReportsByAuthor
  * @uses worker/reports/student/similarReports.ts::listSimilarReports
  * @uses worker/reports/student/joinReport.ts::joinReport
@@ -27,6 +28,9 @@ import { requireStudent, type StudentEnv } from '../../auth';
 // PL: Zapis i odczyt zgłoszeń.
 // EN: Saving and reading reports.
 import { createReport, listReportsByAuthor } from './reportsRepository';
+// PL: Sprawdzenie, czy zdjęcie w zgłoszeniu jest plikiem tego ucznia.
+// EN: The check that the photo in the report is a file of this student.
+import { checkReportPhoto } from './checkReportPhoto';
 // PL: Sprawdzanie danych z telefonu.
 // EN: Checking the data from the phone.
 import { isOneOf, parseReportInput } from './validation';
@@ -62,9 +66,18 @@ reportsStudentApp.post('/', bodyLimit({ maxSize: MAX_BODY_BYTES, onError: (conte
   const parsed = parseReportInput(body);
   if (!parsed.ok) return context.json({ error: 'invalid_report', fields: parsed.fields }, 400);
 
-  // PL: Zapisz zgłoszenie dla ucznia z sesji, a nie z treści zapytania.
-  // EN: Save the report for the student from the session, not the one from the request body.
-  const id = await createReport(context.env.DB, context.get('student').id, parsed.value);
+  // PL: Numer ucznia bierzemy z sesji, a nie z treści zapytania.
+  // EN: The student id comes from the session, not from the request body.
+  const studentId = context.get('student').id;
+
+  // PL: Zdjęcie, jeśli jest, musi być plikiem tego ucznia. Sprawdzamy przed zapisem.
+  // EN: The photo, if any, must be a file of this student. We check it before saving.
+  const photoProblem = await checkReportPhoto(context.env.DB, studentId, parsed.value.photoId);
+  if (photoProblem) return context.json({ error: photoProblem.error }, photoProblem.status);
+
+  // PL: Zapisz zgłoszenie dla ucznia z sesji.
+  // EN: Save the report for the student from the session.
+  const id = await createReport(context.env.DB, studentId, parsed.value);
   return context.json({ id }, 201);
 });
 

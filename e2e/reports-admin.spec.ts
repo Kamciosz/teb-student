@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżki Samorządu w podtorze 4b: lista zgłoszeń z filtrem po etapie, stany puste, szczegół (anonimowe i z autorem), zmiana etapu z odpowiedzią dla autora (licznik i limit 500 znaków) i historią, błąd zapisu, błąd pobrania, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga zalogowania i roli Samorządu), także rola ucznia z bramki PanelGate; serwer sprawdzają testy Vitest (worker/reports/admin/routes.test.ts), także to, że odpowiedź nie zawiera autora.
- * EN: Test of the Student Council path in subtrack 4b: the report list with the stage filter, the empty states, the detail (anonymous and with an author), the stage change with the answer for the author (counter and 500-character limit) and history, the save error, the fetch error, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/reports/admin/routes.test.ts), including that the response contains no author.
+ * PL: Test ścieżki Samorządu w podtorze 4b: lista zgłoszeń z filtrem po etapie, stany puste, szczegół (anonimowe i z autorem), zdjęcie w szczegółach, zmiana etapu z odpowiedzią dla autora (licznik i limit 500 znaków) i historią, błąd zapisu, błąd pobrania, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga zalogowania i roli Samorządu), także rola ucznia z bramki PanelGate; serwer sprawdzają testy Vitest (worker/reports/admin/routes.test.ts), także to, że odpowiedź nie zawiera autora.
+ * EN: Test of the Student Council path in subtrack 4b: the report list with the stage filter, the empty states, the detail (anonymous and with an author), the photo in the detail, the stage change with the answer for the author (counter and 500-character limit) and history, the save error, the fetch error, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/reports/admin/routes.test.ts), including that the response contains no author.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -13,7 +13,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /** PL: Zgłoszenie podstawionego API. EN: A report of the stubbed API. */
-type StubReport = { id: string; isAnonymous: boolean; category: string; place: string; placeDetail: string | null; description: string; stage: string; createdAt: number; updatedAt: number; joinCount: number };
+type StubReport = { id: string; isAnonymous: boolean; category: string; place: string; placeDetail: string | null; description: string; photoId: string | null; stage: string; createdAt: number; updatedAt: number; joinCount: number };
 // PL: Wiersz historii w podstawionym API: etap, chwila i odpowiedź dla autora (albo `null`).
 // EN: A history row in the stubbed API: the stage, the moment and the answer for the author (or `null`).
 type StubChange = { stage: string; changedAt: number; note: string | null };
@@ -36,9 +36,9 @@ function sampleReports(): StubReport[] {
   // PL: Pierwsze zgłoszenie ma autora, dwa pozostałe są anonimowe.
   // EN: The first report has an author, the other two are anonymous.
   return [
-    { id: 'r1', isAnonymous: false, category: 'safety', place: 'corridor', placeDetail: null, description: 'Na schodach przy szatni jest mokro i ślisko.', stage: 'received', createdAt: Date.UTC(2026, 9, 11, 8), updatedAt: Date.UTC(2026, 9, 11, 8), joinCount: 3 },
-    { id: 'r2', isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Można by postawić kosz do koszykówki przy boisku.', stage: 'received', createdAt: Date.UTC(2026, 9, 9, 8), updatedAt: Date.UTC(2026, 9, 9, 8), joinCount: 0 },
-    { id: 'r3', isAnonymous: true, category: 'room_equipment', place: 'classroom', placeDetail: 'Sala 204', description: 'Nie działa projektor w sali 204.', stage: 'in_progress', createdAt: Date.UTC(2026, 9, 6, 8), updatedAt: Date.UTC(2026, 9, 7, 8), joinCount: 1 },
+    { id: 'r1', isAnonymous: false, category: 'safety', place: 'corridor', placeDetail: null, description: 'Na schodach przy szatni jest mokro i ślisko.', stage: 'received', createdAt: Date.UTC(2026, 9, 11, 8), updatedAt: Date.UTC(2026, 9, 11, 8), photoId: 'photo-r1', joinCount: 3 },
+    { id: 'r2', isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Można by postawić kosz do koszykówki przy boisku.', stage: 'received', createdAt: Date.UTC(2026, 9, 9, 8), updatedAt: Date.UTC(2026, 9, 9, 8), photoId: null, joinCount: 0 },
+    { id: 'r3', isAnonymous: true, category: 'room_equipment', place: 'classroom', placeDetail: 'Sala 204', description: 'Nie działa projektor w sali 204.', stage: 'in_progress', createdAt: Date.UTC(2026, 9, 6, 8), updatedAt: Date.UTC(2026, 9, 7, 8), photoId: null, joinCount: 1 },
   ];
 }
 
@@ -209,6 +209,32 @@ test('Samorząd zmienia etap i widzi historię / the Student Council changes the
   // EN: After going back the list shows the new stage.
   await page.getByRole('link', { name: 'Wróć' }).click();
   await expect(page.getByRole('link', { name: /Nie działa projektor/ })).toContainText('Załatwione');
+});
+
+// PL: Jednopikselowy PNG, którym podstawiamy plik zdjęcia z modułu mediów.
+// EN: A one-pixel PNG, which stands in for the photo file of the media module.
+const PIXEL_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+// PL: Zdjęcie w szczególe jest linkiem do pełnego pliku w nowej karcie, a bez zdjęcia nie ma go wcale.
+// EN: The photo in the detail is a link to the full file in a new tab, and without a photo there is none at all.
+test('zdjęcie w szczególe: podgląd i link w nowej karcie / the photo in the detail: preview and a link in a new tab', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.route(/\/api\/media\/.+$/, (route) => route.fulfill({ contentType: 'image/png', body: Buffer.from(PIXEL_PNG, 'base64') }));
+
+  // PL: Zgłoszenie r1 ma zdjęcie: link prowadzi do pliku i otwiera się w nowej karcie, a podgląd się wczytuje.
+  // EN: Report r1 has a photo: the link goes to the file and opens in a new tab, and the preview loads.
+  await page.goto('/reports/admin/r1');
+  const link = page.getByRole('link', { name: 'Zdjęcie dołączone do zgłoszenia' });
+  await expect(link).toHaveAttribute('href', '/api/media/photo-r1');
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(link).toHaveAttribute('rel', /noopener/);
+  await expect(page.getByRole('img', { name: 'Zdjęcie dołączone do zgłoszenia' })).toHaveJSProperty('naturalWidth', 1);
+
+  // PL: Zgłoszenie r3 nie ma zdjęcia, więc na ekranie nie ma ani obrazka, ani linku.
+  // EN: Report r3 has no photo, so the screen has neither an image nor a link.
+  await page.goto('/reports/admin/r3');
+  await expect(page.getByText('Samorząd nie widzi, kto je wysłał.')).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Zdjęcie dołączone do zgłoszenia' })).toHaveCount(0);
 });
 
 // PL: Odpowiedź dla autora ma licznik i limit 500 znaków; pole nie przyjmie więcej.

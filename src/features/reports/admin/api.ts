@@ -21,6 +21,8 @@ export type AdminReport = {
   place: string;
   placeDetail: string | null;
   description: string;
+  /** PL: Numer zdjęcia do `/api/media/<id>` albo `null`, gdy zgłoszenie zdjęcia nie ma. EN: The photo id for `/api/media/<id>`, or `null` when the report has no photo. */
+  photoId: string | null;
   stage: string;
   createdAt: number;
   updatedAt: number;

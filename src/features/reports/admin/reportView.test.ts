@@ -28,7 +28,7 @@ import { categoryLabel, filterByStage, formatShortDate, joinText, placeText, sor
 function report(id: string, stage: string): AdminReport {
   // PL: Pola nieistotne dla filtra mają stałe wartości.
   // EN: The fields irrelevant to the filter have constant values.
-  return { id, isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Opis', stage, createdAt: 1, updatedAt: 1, joinCount: 0 };
+  return { id, isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Opis', photoId: null, stage, createdAt: 1, updatedAt: 1, joinCount: 0 };
 }
 
 // PL: Grupa testów filtra.

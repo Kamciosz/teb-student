@@ -21,6 +21,8 @@ export type NewReport = {
   placeDetail: string;
   description: string;
   isAnonymous: boolean;
+  /** PL: Numer zdjęcia z modułu media, o ile uczeń je dołączył. EN: The media photo id, if the student attached a photo. */
+  photoId?: string;
 };
 
 /** PL: Jeden wpis historii zgłoszenia: etap, odpowiedź Samorządu (albo `null`) i chwila zmiany. EN: One history entry of a report: the stage, the Student Council answer (or `null`) and the time of the change. */

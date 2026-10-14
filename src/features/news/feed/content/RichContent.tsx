@@ -6,6 +6,7 @@
  * @since 2026-10-09
  * @uses src/features/news/feed/content/sanitize.ts::sanitizeDocument
  * @uses src/features/news/feed/content/YouTubePlayer.tsx::YouTubePlayer
+ * @uses src/features/news/feed/content/LinkCard.tsx::LinkCard
  * @uses src/features/news/feed/content/NewsImage.tsx::NewsImage
  * @uses src/features/news/feed/content/SourceList.tsx::SourceList
  * @used_by src/features/news/feed/EntryScreen.tsx::RichContent
@@ -18,6 +19,9 @@ import type { ReactNode } from 'react';
 // PL: Czyszczenie treści i typy bloków.
 // EN: Content cleaning and block types.
 import { sanitizeDocument, type SafeBlock, type SafeInline } from './sanitize';
+// PL: Karta linku do mediów społecznościowych.
+// EN: The social media link card.
+import { LinkCard } from './LinkCard';
 // PL: Odtwarzacz filmu.
 // EN: The video player.
 import { YouTubePlayer } from './YouTubePlayer';
@@ -85,6 +89,8 @@ function renderBlock(block: SafeBlock, key: number): ReactNode {
       return <blockquote key={key}>{renderBlocks(block.children)}</blockquote>;
     case 'youtube':
       return <YouTubePlayer key={key} videoId={block.videoId} />;
+    case 'linkCard':
+      return <LinkCard key={key} href={block.href} network={block.network} />;
     case 'image':
       return (
         <NewsImage

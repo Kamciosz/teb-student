@@ -50,6 +50,7 @@ describe('liczba zgłoszeń / number of reports', () => {
       placeDetail: null,
       description: 'Nie działa światło w sali',
       isAnonymous: true,
+      photoId: null,
     });
     expect(await countReports(db)).toBe(before + 1);
   });
