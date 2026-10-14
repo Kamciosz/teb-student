@@ -21,7 +21,7 @@ import { Hono } from 'hono';
 import { requireStudent, type StudentEnv } from '../../auth';
 // PL: Termin ankiety.
 // EN: The survey deadline.
-import { isSurveyActive, warsawToday } from './deadline';
+import { isSurveyOpen, shownClosesAt, warsawToday } from './deadline';
 // PL: Otwarcie bazy z bindingu D1.
 // EN: Opening the database from the D1 binding.
 import { openDatabase } from './database';
@@ -41,7 +41,10 @@ export const surveysVoteApp = new Hono<StudentEnv>().use(requireStudent);
 // PL: GET / – lista ankiet: trwające z liczbą dni i znacznikiem „wypełniona” oraz zakończone.
 // EN: GET / – the survey list: running ones with the days left and the "filled" mark, and ended ones.
 surveysVoteApp.get('/', async (context) => {
-  return context.json(await listSurveys(openDatabase(context.env.DB), context.get('student').id, warsawToday(new Date())));
+  // PL: Jedna chwila na całą odpowiedź: dzień i godzina zamknięcia liczymy z tego samego momentu.
+  // EN: One moment for the whole response: the day and the closing hour are counted from the same moment.
+  const now = new Date();
+  return context.json(await listSurveys(openDatabase(context.env.DB), context.get('student').id, warsawToday(now), now));
 });
 
 // PL: GET /:surveyId – szczegóły ankiety do wypełnienia: pytania i odpowiedzi, bez liczników głosów.
@@ -56,12 +59,15 @@ surveysVoteApp.get('/:surveyId', async (context) => {
 
   // PL: Złóż szczegóły: pytania, termin i znacznik „wypełniona”.
   // EN: Build the details: the questions, the deadline and the "filled" mark.
+  const now = new Date();
+  const closesAt = shownClosesAt(survey.endsOn, survey.closesAt);
   return context.json({
     id: survey.id,
     label: survey.label,
     title: survey.title,
-    isActive: isSurveyActive(survey.endsOn, warsawToday(new Date())),
+    isActive: isSurveyOpen(survey.endsOn, survey.closesAt, warsawToday(now), now),
     hasVoted: await hasVoted(db, survey.id, context.get('student').id),
+    closesAt: closesAt === null ? null : closesAt.toISOString(),
     questions: await loadQuestions(db, survey.id),
   });
 });
@@ -76,19 +82,24 @@ surveysVoteApp.post('/:surveyId/answers', async (context) => {
   // EN: The survey must exist and still be running.
   const survey = await findSurvey(db, context.req.param('surveyId'));
   if (survey === null) return context.json({ error: 'not_found' }, 404);
-  if (!isSurveyActive(survey.endsOn, warsawToday(new Date()))) return context.json({ error: 'survey_ended' }, 410);
+  // PL: Po terminie (dzień ends_on albo godzina closes_at) głos odrzucamy z 410, zanim cokolwiek zapiszemy.
+  // EN: After the deadline (the ends_on day or the closes_at hour) the vote is rejected with 410, before anything is written.
+  const now = new Date();
+  if (!isSurveyOpen(survey.endsOn, survey.closesAt, warsawToday(now), now)) {
+    return context.json({ error: 'survey_ended' }, 410);
+  }
 
   // PL: Odpowiedzi muszą mieć dobry kształt i pasować do pytań tej ankiety.
   // EN: The answers must have a valid shape and match this survey's questions.
   const answers = parseAnswersBody(await context.req.json().catch(() => null));
   const questions = await loadQuestions(db, survey.id);
-  const check = answers === null ? null : checkAnswers(questions.map((q) => ({ questionId: q.id, optionIds: q.options.map((o) => o.id) })), answers);
+  const check = answers === null ? null : checkAnswers(questions.map((q) => ({ questionId: q.id, type: q.type, optionIds: q.options.map((o) => o.id) })), answers);
   if (check === null || !check.ok) return context.json({ error: 'invalid_answers' }, 400);
 
-  // PL: Zapisz głos. Drugi głos tego ucznia (także równoległy) kończy się 409, a liczniki zostają nietknięte.
-  // EN: Write the vote. A second vote from this student (also a parallel one) ends with 409, and the counters stay untouched.
+  // PL: Zapisz głos. Drugi głos tego ucznia (także równoległy) kończy się 409, a liczniki i teksty zostają nietknięte.
+  // EN: Write the vote. A second vote from this student (also a parallel one) ends with 409, and the counters and the texts stay untouched.
   try {
-    await recordVote(db, { surveyId: survey.id, userId, optionIds: check.optionIds });
+    await recordVote(db, { surveyId: survey.id, userId, optionIds: check.optionIds, texts: check.texts });
   } catch (error) {
     if (error instanceof AlreadyVotedError) return context.json({ error: 'already_voted' }, 409);
     throw error;

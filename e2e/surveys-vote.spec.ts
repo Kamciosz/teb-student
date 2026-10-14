@@ -1,7 +1,7 @@
 /**
- * PL: Test ekranów ankiet dla ucznia (podtor 5a) na atrapie serwera: lista z dniami do końca, jedno pytanie na ekranie, „Dalej” po wyborze, wysłanie głosu, brak drugiego wypełnienia, błąd bez internetu, lista z zapisu w telefonie i szerokość 320 px.
+ * PL: Test ekranów ankiet dla ucznia (podtor 5a) na atrapie serwera: lista z dniami do końca, jedno pytanie na ekranie, „Dalej” po wyborze, wysłanie głosu, brak drugiego wypełnienia, błąd bez internetu, lista z zapisu w telefonie, skala 1–5 jako przyciski, krótka odpowiedź z licznikiem znaków i szerokość 320 px.
  *     Ekrany sprawdzamy na atrapie serwera (page.route), bo atrapa nie zależy od dnia uruchomienia (termin ankiety). Jeden test odpytuje prawdziwy serwer i sprawdza, że bez sesji ucznia odpowiada 401. Zasadę „jeden głos na ucznia” sprawdzają testy serwera na prawdziwej D1 (worker/surveys/vote/vote.test.ts).
- * EN: Test of the survey screens for the student (subtrack 5a) against a mock server: the list with the days left, one question per screen, "Dalej" after a choice, sending the vote, no second filling, the offline error, the list from the phone's saved data and the 320 px width.
+ * EN: Test of the survey screens for the student (subtrack 5a) against a mock server: the list with the days left, one question per screen, "Dalej" after a choice, sending the vote, no second filling, the offline error, the list from the phone's saved data, the 1–5 scale as buttons, a short answer with a character counter and the 320 px width.
  *     The screens are checked against a mock server (page.route), because a mock does not depend on the day of the run (the survey deadline). One test queries the real server and checks that it answers 401 without a student session. The "one vote per student" rule is checked by the server tests on a real D1 (worker/surveys/vote/vote.test.ts).
  *
  * @author Jakub
@@ -22,11 +22,43 @@ const SURVEY = {
   title: 'Zajęcia dodatkowe w II semestrze',
   isActive: true,
   hasVoted: false,
+  closesAt: null,
   questions: [
-    { id: 'q1', prompt: 'Jakie zajęcia dodatkowe chcesz w drugim semestrze?', options: ['Koło programowania gier', 'Siatkówka', 'Przygotowanie do matury z matematyki', 'Fotografia'] },
-    { id: 'q2', prompt: 'Ile razy w tygodniu możesz zostać po lekcjach?', options: ['Raz', 'Dwa razy', 'Trzy razy lub więcej', 'Nie mogę zostawać'] },
-    { id: 'q3', prompt: 'Który dzień tygodnia pasuje Ci najlepiej?', options: ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek'] },
+    { id: 'q1', type: 'single_choice', prompt: 'Jakie zajęcia dodatkowe chcesz w drugim semestrze?', options: ['Koło programowania gier', 'Siatkówka', 'Przygotowanie do matury z matematyki', 'Fotografia'] },
+    { id: 'q2', type: 'single_choice', prompt: 'Ile razy w tygodniu możesz zostać po lekcjach?', options: ['Raz', 'Dwa razy', 'Trzy razy lub więcej', 'Nie mogę zostawać'] },
+    { id: 'q3', type: 'single_choice', prompt: 'Który dzień tygodnia pasuje Ci najlepiej?', options: ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek'] },
   ].map((question) => ({ ...question, options: question.options.map((label, index) => ({ id: `${question.id}-${index}`, label })) })),
+};
+
+// PL: Ankieta z jednym pytaniem wielokrotnego wyboru: można zaznaczyć kilka odpowiedzi naraz.
+// EN: A survey with one multiple-choice question: several options can be picked at once.
+const MULTI_SURVEY = {
+  ...SURVEY,
+  id: 'wybor',
+  title: 'Dni po lekcjach (kilka odpowiedzi)',
+  questions: [
+    { id: 'm1', type: 'multiple_choice', prompt: 'Które dni tygodnia pasują Ci do zostania po lekcjach?', options: ['Poniedziałek', 'Wtorek', 'Środa'] },
+  ].map((question) => ({ ...question, options: question.options.map((label, index) => ({ id: `${question.id}-${index}`, label })) })),
+};
+
+// PL: Ankieta z pytaniem skali 1–5: pięć zwykłych odpowiedzi „1”…„5”, wybiera się jedną, z opisami skrajnych wartości.
+// EN: A survey with a 1–5 scale question: five ordinary options "1"…"5", one is picked, with captions for the extreme values.
+const SCALE_SURVEY = {
+  ...SURVEY,
+  id: 'skala',
+  title: 'Ocena zajęć dodatkowych',
+  questions: [
+    { id: 's1', type: 'scale_1_5', prompt: 'Jak oceniasz zajęcia dodatkowe?', options: ['1', '2', '3', '4', '5'] },
+  ].map((question) => ({ ...question, options: question.options.map((label, index) => ({ id: `${question.id}-${index}`, label })) })),
+};
+
+// PL: Ankieta z pytaniem krótkiej odpowiedzi: pole tekstowe bez wyborów, odpowiedź to tekst od 1 do 200 znaków.
+// EN: A survey with a short-answer question: a text field with no choices, the answer is a text of 1 to 200 characters.
+const SHORT_SURVEY = {
+  ...SURVEY,
+  id: 'krotka',
+  title: 'Uwagi do zajęć dodatkowych',
+  questions: [{ id: 'k1', type: 'short_text', prompt: 'Co chcesz zmienić w zajęciach dodatkowych?', options: [] }],
 };
 
 // PL: Stan atrapy serwera: czy uczeń już zagłosował i jakie odpowiedzi wysłał.
@@ -38,9 +70,11 @@ type MockServer = { voted: boolean; received: unknown[] };
  * EN: Attaches the mock survey server under /api/surveys/vote. After the first vote it answers 409, like the real server.
  *
  * @param page - PL: strona testu. EN: the test page.
+ * @param options - PL: godzina zamknięcia (ISO) albo null, czy ankieta jest już zamknięta i którą ankietę pokazać. EN: the closing hour (ISO) or null, whether the survey is already closed, and which survey to show.
  * @returns PL: stan atrapy do sprawdzenia w teście. EN: the mock state to check in the test.
  */
-async function mockSurveyServer(page: Page): Promise<MockServer> {
+async function mockSurveyServer(page: Page, options: { closesAt?: string | null; closed?: boolean; survey?: typeof SURVEY | typeof MULTI_SURVEY | typeof SCALE_SURVEY | typeof SHORT_SURVEY } = {}): Promise<MockServer> {
+  const { closesAt = null, closed = false, survey = SURVEY } = options;
   const server: MockServer = { voted: false, received: [] };
   await page.route('**/api/surveys/vote/**', async (route) => {
     const request = route.request();
@@ -52,12 +86,12 @@ async function mockSurveyServer(page: Page): Promise<MockServer> {
       return route.fulfill({ status: 201, json: { status: 'ok' } });
     }
     if (path === '/' || path === '') {
-      const filled = { id: 'stolowka', label: null, title: 'Obiad w stołówce', questionCount: 1, daysLeft: 9, hasVoted: true };
-      const open = { id: SURVEY.id, label: SURVEY.label, title: SURVEY.title, questionCount: 3, daysLeft: 3, hasVoted: server.voted };
-      const ended = [{ id: 'dzwonki', title: 'Plan dzwonków', endsOn: '2026-09-30' }];
+      const filled = { id: 'stolowka', label: null, title: 'Obiad w stołówce', questionCount: 1, daysLeft: 9, hasVoted: true, closesAt: null };
+      const open = { id: SURVEY.id, label: SURVEY.label, title: SURVEY.title, questionCount: 3, daysLeft: 3, hasVoted: server.voted, closesAt };
+      const ended = [{ id: 'dzwonki', title: 'Plan dzwonków', endsOn: '2026-09-30', endedOn: '2026-09-30' }];
       return route.fulfill({ json: { active: [open, filled], ended } });
     }
-    return route.fulfill({ json: { ...SURVEY, hasVoted: server.voted } });
+    return route.fulfill({ json: { ...survey, hasVoted: server.voted, closesAt, isActive: !closed } });
   });
   return server;
 }
@@ -73,8 +107,26 @@ test('lista pokazuje aktywne ankiety z dniami do końca, wypełnioną i zakończ
   await expect(page.getByText('3 pytania · 1 minuta')).toBeVisible();
   await expect(page.getByText('dni', { exact: true })).toBeVisible();
   await expect(page.getByText('Wypełniona', { exact: true })).toBeVisible();
-  await expect(page.getByText('Zakończona 30.09')).toBeVisible();
+  await expect(page.getByText('Ankieta zamknięta · 30.09')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Menu główne' })).toBeVisible();
+});
+
+// PL: Ankieta z godziną zamknięcia: lista pokazuje „Do …” w czasie polskim, niezależnie od strefy telefonu.
+// EN: A survey with a closing hour: the list shows "Do …" in Polish time, whatever the phone's zone.
+test('ankieta z godziną zamknięcia pokazuje „Do …” w czasie polskim / a survey with a closing hour shows "Do …" in Polish time', async ({ page }) => {
+  await mockSurveyServer(page, { closesAt: '2026-10-23T18:00:00.000Z' });
+  await page.goto('/surveys/vote');
+  await expect(page.getByText('Do 23.10, 20:00')).toBeVisible();
+});
+
+// PL: Ankieta po godzinie zamknięcia: szczegóły pokazują stan „Ankieta zamknięta”, bez pytań i bez „Dalej”.
+// EN: A survey past its closing hour: the details show the "Ankieta zamknięta" state, without questions and without "Dalej".
+test('po terminie szczegóły ankiety pokazują „Ankieta zamknięta” / after the deadline the survey details show "Ankieta zamknięta"', async ({ page }) => {
+  await mockSurveyServer(page, { closesAt: '2026-10-23T18:00:00.000Z', closed: true });
+  await page.goto('/surveys/vote/dodatkowe');
+  await expect(page.getByRole('heading', { name: 'Ankieta zamknięta' })).toBeVisible();
+  await expect(page.getByText('Ta ankieta jest już zamknięta, więc nie przyjmujemy odpowiedzi.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Dalej' })).toHaveCount(0);
 });
 
 // PL: Cały przepływ: trzy pytania, „Dalej” po wyborze, wysłanie i brak drugiego wypełnienia.
@@ -107,7 +159,7 @@ test('jedno pytanie na ekranie, „Dalej” po wyborze, głos idzie raz / one qu
   await page.getByText('Wtorek').click();
   await page.getByRole('button', { name: 'Wyślij odpowiedzi' }).click();
   await expect(page.getByRole('heading', { name: 'Odpowiedzi wysłane' })).toBeVisible();
-  expect(server.received).toEqual([{ answers: [{ questionId: 'q1', optionId: 'q1-1' }, { questionId: 'q2', optionId: 'q2-1' }, { questionId: 'q3', optionId: 'q3-1' }] }]);
+  expect(server.received).toEqual([{ answers: [{ questionId: 'q1', optionIds: ['q1-1'] }, { questionId: 'q2', optionIds: ['q2-1'] }, { questionId: 'q3', optionIds: ['q3-1'] }] }]);
 
   // PL: Ankieta jest teraz oznaczona jako wypełniona, a jej adres pokazuje komunikat zamiast pytań.
   // EN: The survey is now marked as filled, and its address shows a message instead of the questions.
@@ -115,6 +167,64 @@ test('jedno pytanie na ekranie, „Dalej” po wyborze, głos idzie raz / one qu
   await expect(page.getByText('Wypełniona', { exact: true })).toHaveCount(2);
   await page.goto('/surveys/vote/dodatkowe');
   await expect(page.getByRole('heading', { name: 'Już wypełniona' })).toBeVisible();
+});
+
+// PL: Pytanie wielokrotnego wyboru: pola wyboru zamiast radio, „Wyślij” dopiero po zaznaczeniu, odznaczenie wraca do zera, a wysłane są wszystkie zaznaczone.
+// EN: A multiple-choice question: checkboxes instead of radios, "Wyślij" only after a pick, unpicking goes back to zero, and all picked options are sent.
+test('pytanie wielokrotnego wyboru: kilka zaznaczeń i wysłanie wszystkich / a multiple-choice question: several picks and all of them are sent', async ({ page }) => {
+  const server = await mockSurveyServer(page, { survey: MULTI_SURVEY });
+  await page.goto('/surveys/vote/wybor');
+
+  await expect(page.getByText('Możesz zaznaczyć kilka odpowiedzi.')).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: /Poniedziałek/ })).toBeVisible();
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Wyślij odpowiedzi' })).toBeDisabled();
+
+  await page.getByLabel(/Poniedziałek/).check();
+  await page.getByLabel(/Środa/).check();
+  await expect(page.getByLabel(/Poniedziałek/)).toBeChecked();
+  await expect(page.getByLabel(/Środa/)).toBeChecked();
+  await page.getByLabel(/Poniedziałek/).uncheck();
+  await expect(page.getByRole('button', { name: 'Wyślij odpowiedzi' })).toBeEnabled();
+  await page.getByLabel(/Poniedziałek/).check();
+
+  await page.getByRole('button', { name: 'Wyślij odpowiedzi' }).click();
+  await expect(page.getByRole('heading', { name: 'Odpowiedzi wysłane' })).toBeVisible();
+  // PL: Kolejność wyboru zależy od kliknięć, więc porównujemy posortowane numery.
+  // EN: The order of the picks depends on the clicks, so we compare the sorted ids.
+  const [sent] = server.received as { answers: { questionId: string; optionIds: string[] }[] }[];
+  expect(sent.answers.map((answer) => ({ questionId: answer.questionId, optionIds: [...answer.optionIds].sort() }))).toEqual([{ questionId: 'm1', optionIds: ['m1-0', 'm1-2'] }]);
+});
+
+// PL: Pytanie skali 1–5: pięć przycisków w jednym rzędzie z opisami „wcale” i „bardzo”, „Wyślij” dopiero po wyborze, wysłana jest jedna wartość. Telefon 320 px: przyciski mieszczą się bez przewijania.
+// EN: A 1–5 scale question: five buttons in one row with the captions "wcale" and "bardzo", "Wyślij" only after a pick, and one value is sent. A 320 px phone: the buttons fit without scrolling.
+test('skala 1–5: pięć przycisków, wybór „4” i wysłanie przy 320 px / the 1–5 scale: five buttons, pick "4" and send at 320 px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  const server = await mockSurveyServer(page, { survey: SCALE_SURVEY });
+  await page.goto('/surveys/vote/skala');
+
+  await expect(page.getByRole('heading', { name: 'Jak oceniasz zajęcia dodatkowe?' })).toBeVisible();
+  await expect(page.getByRole('radio')).toHaveCount(5);
+  await expect(page.getByText('wcale', { exact: true })).toBeVisible();
+  await expect(page.getByText('bardzo', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Wyślij odpowiedzi' })).toBeDisabled();
+
+  // PL: Przycisk to segment (pole radio jest ukryte), więc to jego wymiary liczymy: co najmniej 44 px na 44 px.
+  // EN: The button is the segment (the radio is hidden), so its size is what counts: at least 44 px by 44 px.
+  const segments = page.locator('.vote-scale__segment');
+  await expect(segments).toHaveCount(5);
+  for (let index = 0; index < 5; index += 1) {
+    const box = await segments.nth(index).boundingBox();
+    expect(box && box.width >= 44 && box.height >= 44).toBe(true);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBe(0);
+
+  await page.getByLabel('4', { exact: true }).check();
+  await expect(page.getByLabel('4', { exact: true })).toBeChecked();
+  await page.getByRole('button', { name: 'Wyślij odpowiedzi' }).click();
+  await expect(page.getByRole('heading', { name: 'Odpowiedzi wysłane' })).toBeVisible();
+  expect(server.received).toEqual([{ answers: [{ questionId: 's1', optionIds: ['s1-3'] }] }]);
 });
 
 // PL: Zmiana ankiety w trakcie: serwer odmawia drugiego głosu i telefon pokazuje komunikat.
@@ -175,6 +285,38 @@ test('prawdziwy serwer: bez sesji ucznia 401 na każdym adresie / the real serve
     expect(response.status()).toBe(401);
     expect(await response.text()).not.toContain('Zajęcia dodatkowe');
   }
+});
+
+// PL: Pytanie krótkiej odpowiedzi: podpowiedź o anonimowości pod polem połączona z nim, licznik „x / 200 znaków”, „Wyślij” zablokowane przy pustym, samych spacjach i za długim tekście, a wysłany jest tekst przycięty z obu stron.
+// EN: A short-answer question: the anonymity hint under the field tied to it, the "x / 200 characters" counter, "Wyślij" blocked for an empty or spaces-only text and for a text that is too long, and the text sent is trimmed at both ends.
+test('krótka odpowiedź: licznik, blokada przy pustym i za długim tekście, wysłany tekst przycięty / a short answer: counter, blocked when empty or too long, the trimmed text is sent', async ({ page }) => {
+  const server = await mockSurveyServer(page, { survey: SHORT_SURVEY });
+  await page.goto('/surveys/vote/krotka');
+
+  const field = page.getByLabel('Twoja odpowiedź');
+  const send = page.getByRole('button', { name: 'Wyślij odpowiedzi' });
+  await expect(field).toBeVisible();
+  await expect(page.getByText('Nie wpisuj imienia ani klasy. Odpowiedź jest anonimowa.')).toBeVisible();
+  await expect(field).toHaveAccessibleDescription(/Nie wpisuj imienia ani klasy\. Odpowiedź jest anonimowa\./);
+  await expect(page.getByText('0 / 200 znaków')).toBeVisible();
+  await expect(send).toBeDisabled();
+
+  await field.fill('   ');
+  await expect(page.getByText('0 / 200 znaków')).toBeVisible();
+  await expect(send).toBeDisabled();
+
+  await field.fill('a'.repeat(201));
+  await expect(page.getByText('201 / 200 znaków')).toBeVisible();
+  await expect(page.getByText('Za dużo znaków. Skróć odpowiedź.')).toBeVisible();
+  await expect(send).toBeDisabled();
+
+  await field.fill('  Chcę więcej gier i robotyki  ');
+  await expect(page.getByText('27 / 200 znaków')).toBeVisible();
+  await expect(send).toBeEnabled();
+  await send.click();
+
+  await expect(page.getByRole('heading', { name: 'Odpowiedzi wysłane' })).toBeVisible();
+  expect(server.received).toEqual([{ answers: [{ questionId: 'k1', optionIds: [], text: 'Chcę więcej gier i robotyki' }] }]);
 });
 
 // PL: Telefon o szerokości 320 px: bez przewijania w bok, przycisk „Dalej” w całości na ekranie.

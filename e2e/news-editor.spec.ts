@@ -1,5 +1,5 @@
 /**
- * PL: Test kreatora „Nowy wpis” (podtor 3b) w przeglądarce: trzy kroki z ekranów 5.1–5.3, formatowanie, link, film z YouTube, wklejanie z Worda, zapis szkicu, wysyłka do korekty i publikacja, zatwierdzenie wpisu w korekcie przez redaktora, który nie jest autorem, błędy serwera, brak internetu (wpis zostaje w edytorze), szerokość 320 px i zamknięty zapis bez sesji na prawdziwym serwerze. Odpowiedzi serwera są podstawione (page.route), bo logowanie na porcie podtoru nie działa lokalnie (403). Test oblewa na gałęzi bez zmiany, bo tam adres /news/editor pokazuje tylko „W budowie”.
+ * PL: Test kreatora „Nowy wpis” (podtor 3b) w przeglądarce: trzy kroki z ekranów 5.1–5.3, formatowanie, link, film z YouTube, wklejanie z Worda, zapis szkicu, wysyłka do korekty, zatwierdzenie wpisu w korekcie przez redaktora, który nie jest autorem, publikacja i zaplanowana publikacja o wybranej godzinie (w Warszawie, także w dniu zmiany czasu, i bez dnia), błędy serwera, brak internetu (wpis zostaje w edytorze), szerokość 320 px i zamknięty zapis bez sesji na prawdziwym serwerze. Odpowiedzi serwera są podstawione (page.route), bo logowanie na porcie podtoru nie działa lokalnie (403). Test oblewa na gałęzi bez zmiany, bo tam adres /news/editor pokazuje tylko „W budowie”.
  * EN: Test of the "Nowy wpis" wizard (subtrack 3b) in the browser: three steps from screens 5.1–5.3, formatting, a link, a YouTube video, pasting from Word, saving a draft and a publication, server errors, no internet (the entry stays in the editor), the 320 px width and writing closed without a session on the real server. The server answers are stubbed (page.route), because sign-in on the subtrack port does not work locally (403). The test fails on a branch without the change, because there the /news/editor address shows only "W budowie".
  *
  * @author Szymon
@@ -193,6 +193,70 @@ test('film z YouTube zapisuje sam identyfikator i nie wstawia ramki / a YouTube 
   expect(sent.body?.content.find((node) => node.type === 'youtube')?.attrs).toEqual({ videoId: 'dQw4w9WgXcQ' });
 });
 
+// PL: Miniatura w edytorze ma widoczny napis „Film z YouTube”, a w edytorze nie ma żadnej ramki.
+// EN: The thumbnail in the editor has the visible label "Film z YouTube", and the editor has no frame at all.
+test('miniatura filmu ma napis i w edytorze nie ma ramki / the video thumbnail has a label and the editor has no frame', async ({ page }) => {
+  await fillEntry(page, 'Zobacz film.');
+  await page.getByRole('button', { name: 'Film' }).click();
+  await page.getByLabel('Adres filmu z YouTube').fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  await page.getByRole('button', { name: 'Dodaj film' }).click();
+  await expect(page.locator('.editor-video')).toContainText('Film z YouTube');
+  await expect(page.locator('.editor-video img')).toHaveAttribute('alt', '');
+  await expect(page.locator('.editor-surface iframe')).toHaveCount(0);
+});
+
+// PL: Zły adres filmu pokazuje komunikat w formularzu i nie wstawia węzła.
+// EN: A bad video address shows a message in the form and inserts no node.
+test('zły adres filmu pokazuje komunikat i nic nie wstawia / a bad video address shows a message and inserts nothing', async ({ page }) => {
+  await fillEntry(page, 'Zobacz film.');
+  await page.getByRole('button', { name: 'Film' }).click();
+  await page.getByLabel('Adres filmu z YouTube').fill('https://evil.example/watch?v=dQw4w9WgXcQ');
+  await page.getByRole('button', { name: 'Dodaj film' }).click();
+  await expect(page.getByRole('alert')).toHaveText('To nie jest adres filmu z YouTube.');
+  await expect(page.locator('.editor-video')).toHaveCount(0);
+});
+
+// PL: Skrócony adres „shorts” z parametrem udostępniania też daje sam identyfikator.
+// EN: A "shorts" address with the share parameter also gives the id only.
+test('adres shorts z parametrem udostępniania zapisuje identyfikator / a shorts address with the share parameter stores the id', async ({ page }) => {
+  const sent: { body?: { content: { type: string; attrs?: { videoId: string } }[] } } = {};
+  await page.route(ENTRIES, (route) => {
+    sent.body = route.request().postDataJSON().body;
+    return route.fulfill({ status: 201, json: { id: 'abc' } });
+  });
+  await fillEntry(page, 'Zobacz krótki film.');
+  await page.getByRole('button', { name: 'Film' }).click();
+  await page.getByLabel('Adres filmu z YouTube').fill('https://youtube.com/shorts/dQw4w9WgXcQ?feature=share');
+  await page.getByRole('button', { name: 'Dodaj film' }).click();
+  await openPreview(page);
+  await page.getByRole('button', { name: 'Opublikuj' }).click();
+  await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
+  expect(sent.body?.content.find((node) => node.type === 'youtube')?.attrs).toEqual({ videoId: 'dQw4w9WgXcQ' });
+});
+
+// PL: Wklejony HTML z obcym adresem w miejscu identyfikatora nie tworzy filmu i adres nie trafia do treści. Poprawny identyfikator w tym samym HTML zostaje.
+// EN: Pasted HTML with a foreign address in place of the id creates no video, and the address never reaches the content. A valid id in the same HTML stays.
+test('wklejony HTML z obcym adresem filmu nie trafia do treści / pasted HTML with a foreign video address does not reach the content', async ({ page }) => {
+  const sent: { body?: { content: { type: string; attrs?: { videoId: string } }[] } } = {};
+  await page.route(ENTRIES, (route) => {
+    sent.body = route.request().postDataJSON().body;
+    return route.fulfill({ status: 201, json: { id: 'abc' } });
+  });
+  await fillEntry(page, 'Zobacz film.');
+  const html = '<p>Obok</p><div data-youtube-video="https://evil.example/x"></div><div data-youtube-video="dQw4w9WgXcQ"></div>';
+  await page.getByRole('textbox', { name: 'Opis' }).evaluate((node, pasted) => {
+    const data = new DataTransfer();
+    data.setData('text/html', pasted);
+    node.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+  }, html);
+  await expect(page.locator('.editor-video')).toHaveCount(1);
+  await openPreview(page);
+  await page.getByRole('button', { name: 'Opublikuj' }).click();
+  await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
+  expect(JSON.stringify(sent.body)).not.toContain('evil.example');
+  expect(sent.body?.content.find((node) => node.type === 'youtube')?.attrs).toEqual({ videoId: 'dQw4w9WgXcQ' });
+});
+
 // PL: Lista z Worda (akapity z mso-list) staje się prawdziwą listą po wklejeniu.
 // EN: A Word list (paragraphs with mso-list) becomes a real list after pasting.
 test('wklejona lista z Worda staje się listą / a pasted Word list becomes a list', async ({ page }) => {
@@ -323,6 +387,65 @@ test('przy 320 px nic nie wychodzi poza ekran / at 320 px nothing goes off the s
 test('prawdziwy serwer nie przyjmuje wpisu bez sesji / the real server does not accept an entry without a session', async ({ request }) => {
   const response = await request.post('/api/news/editor/entries', { data: { type: 'news', title: 'T', status: 'published', body: { type: 'doc', content: [] } } });
   expect([401, 503]).toContain(response.status());
+});
+
+// PL: Zaplanowana publikacja: godzina z formularza idzie na serwer jako chwila w Warszawie, także w dniu zmiany czasu (25 października 2026). Przeglądarka jest w Nowym Jorku, więc wynik zależy tylko od strefy Warszawy.
+// EN: A scheduled publication: the time from the form goes to the server as a Warsaw moment, also on the clock-change day (25 October 2026). The browser is in New York, so the result depends only on Warsaw's zone.
+test.describe('zaplanowana publikacja / a scheduled publication', () => {
+  test.use({ timezoneId: 'America/New_York' });
+
+  // PL: Zimowy czas (UTC+1): 12:00 w Warszawie to 11:00 UTC.
+  // EN: Winter time (UTC+1): 12:00 in Warsaw is 11:00 UTC.
+  test('dzień po zmianie czasu idzie jako 11:00 UTC / the day after the clock change goes as 11:00 UTC', async ({ page }) => {
+    let sent: Record<string, unknown> | null = null;
+    await page.route(ENTRIES, (route) => {
+      sent = route.request().postDataJSON();
+      return route.fulfill({ status: 201, json: { id: 'abc' } });
+    });
+    await fillEntry(page, 'Zapisy drużyn trwają do piątku.');
+    await openPreview(page);
+    await page.getByLabel('Opublikuj o wybranej godzinie').check();
+    await page.getByLabel('Dzień publikacji').fill('2026-10-26');
+    await page.getByLabel('Godzina publikacji').fill('12:00');
+    await page.getByRole('button', { name: 'Opublikuj' }).click();
+    await expect(page.getByText('Wpis pojawi się poniedziałek, 26 października o 12:00.')).toBeVisible();
+    expect(sent).toMatchObject({ status: 'published', publishAt: Date.UTC(2026, 9, 26, 11, 0) });
+  });
+
+  // PL: Letni czas, dzień przed zmianą (UTC+2): 12:00 w Warszawie to 10:00 UTC.
+  // EN: Summer time, the day before the change (UTC+2): 12:00 in Warsaw is 10:00 UTC.
+  test('dzień przed zmianą czasu idzie jako 10:00 UTC / the day before the clock change goes as 10:00 UTC', async ({ page }) => {
+    let sent: Record<string, unknown> | null = null;
+    await page.route(ENTRIES, (route) => {
+      sent = route.request().postDataJSON();
+      return route.fulfill({ status: 201, json: { id: 'abc' } });
+    });
+    await fillEntry(page, 'Zapisy drużyn trwają do piątku.');
+    await openPreview(page);
+    await page.getByLabel('Opublikuj o wybranej godzinie').check();
+    await page.getByLabel('Dzień publikacji').fill('2026-10-24');
+    await page.getByLabel('Godzina publikacji').fill('12:00');
+    await page.getByRole('button', { name: 'Opublikuj' }).click();
+    await expect(page.getByText('Wpis pojawi się sobota, 24 października o 12:00.')).toBeVisible();
+    expect(sent).toMatchObject({ status: 'published', publishAt: Date.UTC(2026, 9, 24, 10, 0) });
+  });
+
+  // PL: Zaznaczona publikacja bez dnia nie wysyła nic: redaktor dostaje komunikat przy polu.
+  // EN: A ticked publication without a day sends nothing: the editor gets a message at the field.
+  test('bez dnia nic nie idzie na serwer / without a day nothing goes to the server', async ({ page }) => {
+    const sends: string[] = [];
+    await page.route(ENTRIES, (route) => {
+      sends.push(route.request().url());
+      return route.fulfill({ status: 201, json: { id: 'abc' } });
+    });
+    await fillEntry(page, 'Zapisy drużyn trwają do piątku.');
+    await openPreview(page);
+    await page.getByLabel('Opublikuj o wybranej godzinie').check();
+    await page.getByLabel('Godzina publikacji').fill('12:00');
+    await page.getByRole('button', { name: 'Opublikuj' }).click();
+    await expect(page.getByRole('alert')).toHaveText('Wpisz dzień i godzinę publikacji.');
+    expect(sends).toEqual([]);
+  });
 });
 
 // PL: Adres jednego szkicu na serwerze edytora (GET i PUT /entries/:id).

@@ -20,7 +20,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { sendAnswers } from './surveyApi';
 import { SURVEYS_VOTE_KEY } from './surveyQueries';
-import type { AnswerMap } from './types';
+import type { AnswerMap, TextMap } from './types';
 
 /** PL: Co poszło nie tak przy wysyłaniu: nic, głos już jest, ankieta się skończyła albo nie udało się wysłać. EN: What went wrong when sending: nothing, the vote already exists, the survey ended or sending failed. */
 export type Problem = 'none' | 'already_voted' | 'ended' | 'failed';
@@ -30,10 +30,11 @@ export type Problem = 'none' | 'already_voted' | 'ended' | 'failed';
  * EN: Gives the function that sends the vote and the sending and problem state.
  *
  * @param surveyId - PL: numer ankiety. EN: the survey id.
- * @param answers - PL: odpowiedzi do wysłania. EN: the answers to send.
+ * @param answers - PL: wybrane odpowiedzi do wysłania. EN: the chosen options to send.
+ * @param texts - PL: krótkie odpowiedzi do wysłania. EN: the short answers to send.
  * @returns PL: funkcja wysyłająca, znacznik trwania i problem. EN: the send function, the in-progress flag and the problem.
  */
-export function useVoteSubmit(surveyId: string, answers: AnswerMap): { submit: () => Promise<void>; sending: boolean; problem: Problem } {
+export function useVoteSubmit(surveyId: string, answers: AnswerMap, texts: TextMap): { submit: () => Promise<void>; sending: boolean; problem: Problem } {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sending, setSending] = useState(false);
@@ -52,7 +53,7 @@ export function useVoteSubmit(surveyId: string, answers: AnswerMap): { submit: (
     setSending(true);
     setProblem('none');
     try {
-      const result = await sendAnswers(surveyId, answers);
+      const result = await sendAnswers(surveyId, answers, texts);
       // PL: Po głosie (i po 409 oraz 410) zapisana lista jest nieaktualna. Oznaczamy ją tylko do odświeżenia: pobierze się przy wejściu na listę, a otwarty ekran nie miga.
       // EN: After a vote (and after 409 and 410) the saved list is outdated. We only mark it stale: it refetches when the list opens, and the open screen does not flicker.
       await queryClient.invalidateQueries({ queryKey: SURVEYS_VOTE_KEY, refetchType: 'none' });

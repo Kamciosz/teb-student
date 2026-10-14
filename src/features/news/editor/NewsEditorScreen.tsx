@@ -25,6 +25,7 @@ import { ReviewStep } from './ReviewStep';
 import { TO_AGREE } from './texts';
 import { TypeStep, type EntryType } from './TypeStep';
 import { WizardTop } from './WizardTop';
+import { formatWarsawMoment } from './warsawTime';
 
 /**
  * PL: Dane, od których kreator startuje, gdy edytujemy szkic.
@@ -134,27 +135,34 @@ function EntryWizard({ draftId, start }: { draftId?: string; start?: StartData }
   // EN: The sending state: in progress, the error message and the result after success.
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [savedStatus, setSavedStatus] = useState<'draft' | 'in_review' | 'published' | null>(null);
+  // PL: Zapisany wpis: stan i zaplanowana chwila publikacji (albo null, gdy od razu). Pokazuje potwierdzenie.
+  // EN: The saved entry: the status and the scheduled publication moment (or null, when immediate). It drives the confirmation.
+  const [saved, setSaved] = useState<{ status: 'draft' | 'in_review' | 'published'; publishAt: number | null } | null>(null);
 
   // PL: Wysyła wpis: nowy albo zmiany w szkicu. Błąd zostawia wpis w edytorze i pokazuje komunikat, sukces pokazuje potwierdzenie.
   // EN: Sends the entry: a new one or changes to the draft. An error leaves the entry in the editor and shows a message, success shows the confirmation.
-  async function save(status: 'draft' | 'in_review' | 'published'): Promise<void> {
+  async function save(status: 'draft' | 'in_review' | 'published', publishAt: number | null): Promise<void> {
     if (body === null || isSaving) return;
     setIsSaving(true);
     setMessage(null);
-    const entry = { type, title: title.trim(), status, body };
+    const entry = { type, title: title.trim(), status, body, publishAt };
     const result = draftId ? await updateEntry(draftId, entry) : await sendEntry(entry);
     setIsSaving(false);
-    if (result.ok) setSavedStatus(status);
+    if (result.ok) setSaved({ status, publishAt });
     else setMessage(result.message);
   }
 
-  // PL: Po zapisie pokazujemy potwierdzenie z przejściem do panelu.
-  // EN: After saving we show the confirmation with a link to the panel.
-  if (savedStatus) {
+  // PL: Po zapisie pokazujemy potwierdzenie z przejściem do panelu. Zaplanowana publikacja mówi, kiedy wpis się pojawi.
+  // EN: After saving we show the confirmation with a link to the panel. A scheduled publication says when the entry will appear.
+  if (saved) {
+    const confirmation = saved.status === 'draft'
+      ? TO_AGREE.savedDraft
+      : saved.status === 'in_review'
+        ? TO_AGREE.sentToReview
+        : saved.publishAt === null ? TO_AGREE.savedPublished : TO_AGREE.scheduledFor(formatWarsawMoment(saved.publishAt));
     return (
       <main className="editor-screen" data-subtrack="3b">
-        <p role="status" className="editor-done">{savedStatus === 'draft' ? TO_AGREE.savedDraft : savedStatus === 'in_review' ? TO_AGREE.sentToReview : TO_AGREE.savedPublished}</p>
+        <p role="status" className="editor-done">{confirmation}</p>
         <Link className="editor-button editor-button--wide" to="/news/admin">{TO_AGREE.goToPanel}</Link>
       </main>
     );
@@ -174,7 +182,7 @@ function EntryWizard({ draftId, start }: { draftId?: string; start?: StartData }
           onNext={() => setStep(3)}
         />
       ) : null}
-      {step === 3 && body ? <PreviewStep type={type} title={title.trim()} body={body} isSaving={isSaving} message={message} onSave={(status) => void save(status)} /> : null}
+      {step === 3 && body ? <PreviewStep type={type} title={title.trim()} body={body} isSaving={isSaving} message={message} onSave={(status, publishAt) => void save(status, publishAt)} /> : null}
     </main>
   );
 }

@@ -6,21 +6,22 @@
  * @since 2026-10-12
  * @uses worker/db/schema/reports.ts::reports
  * @uses worker/db/schema/reports.ts::reportStageChanges
+ * @uses worker/db/schema/reports.ts::reportJoins
  * @uses worker/profile/index.ts::getStudentNames
  * @used_by worker/reports/admin/routes.ts::listReports
  * @used_by worker/reports/admin/routes.ts::getReport
  * @used_by worker/reports/admin/routes.ts::changeReportStage
  */
 
-// PL: desc sortuje malejąco, eq porównuje wartości w warunku WHERE.
-// EN: desc sorts in descending order, eq compares values in a WHERE condition.
-import { desc, eq } from 'drizzle-orm';
+// PL: count liczy wiersze, desc sortuje malejąco, eq porównuje wartości w warunku WHERE.
+// EN: count counts rows, desc sorts in descending order, eq compares values in a WHERE condition.
+import { count, desc, eq } from 'drizzle-orm';
 // PL: Drizzle dla bazy D1.
 // EN: Drizzle for the D1 database.
 import { drizzle } from 'drizzle-orm/d1';
 // PL: Tabele i typy modułu (schemat należy do podtoru 4a, tu tylko czytamy).
 // EN: The module tables and types (the schema belongs to subtrack 4a, here we only read it).
-import { reports, reportStageChanges, type ReportCategory, type ReportPlace, type ReportStage } from '../../db/schema/reports';
+import { reportJoins, reports, reportStageChanges, type ReportCategory, type ReportPlace, type ReportStage } from '../../db/schema/reports';
 // PL: Imiona i klasy uczniów z modułu profilu, przez jego drzwi (index.ts).
 // EN: The names and classes of students from the profile module, through its door (index.ts).
 import { getStudentNames } from '../../profile';
@@ -48,6 +49,8 @@ export type CouncilReport = {
   createdAt: number;
   /** PL: Chwila ostatniej zmiany etapu, milisekundy od 1970. EN: When the stage last changed, milliseconds since 1970. */
   updatedAt: number;
+  /** PL: Ile osób dołączyło („Mnie też”). Sama liczba, bez numerów osób. EN: How many people joined ("Me too"). Only the number, no person ids. */
+  joinCount: number;
 };
 
 /** PL: Imię i klasa autora zgłoszenia nieanonimowego. EN: The name and class of the author of a signed report. */
@@ -58,7 +61,7 @@ export type CouncilStudent = {
   className: string;
 };
 
-/** PL: Szczegół zgłoszenia: zgłoszenie, historia i autor (tylko przy zgłoszeniu nieanonimowym). EN: The report detail: the report, the history and the author (only for a signed report). */
+/** PL: Szczegół zgłoszenia: zgłoszenie, historia z odpowiedziami dla autora i autor (tylko przy zgłoszeniu nieanonimowym). EN: The report detail: the report, the history with the answers for the author, and the author (only for a signed report). */
 export type CouncilDetail = {
   report: CouncilReport;
   history: StageChange[];
@@ -71,6 +74,8 @@ export type StageChange = {
   stage: ReportStage;
   /** PL: Chwila zmiany, milisekundy od 1970. EN: When the change happened, milliseconds since 1970. */
   changedAt: number;
+  /** PL: Odpowiedź dla autora zapisana przy tej zmianie, albo `null`, gdy jej nie było. EN: The answer for the author saved with this change, or `null` when there was none. */
+  note: string | null;
 };
 
 /** PL: Wynik zmiany etapu. EN: The result of a stage change. */
@@ -90,6 +95,9 @@ const COUNCIL_FIELDS = {
   stage: reports.stage,
   createdAt: reports.createdAt,
   updatedAt: reports.updatedAt,
+  // PL: Liczba wierszy dołączeń; `count(userId)` nie liczy pustego złączenia, więc zgłoszenie bez dołączeń ma 0. Numer osoby nigdy nie jest wybierany.
+  // EN: The number of join rows; `count(userId)` does not count an empty join, so a report without joins has 0. The person's id is never selected.
+  joinCount: count(reportJoins.userId),
 };
 
 /**
@@ -103,7 +111,12 @@ const COUNCIL_FIELDS = {
 export async function listReports(db: D1Database): Promise<CouncilReport[]> {
   // PL: Wybierz tylko dozwolone pola i posortuj od najnowszego.
   // EN: Select only the allowed fields and sort from the newest.
-  return drizzle(db).select(COUNCIL_FIELDS).from(reports).orderBy(desc(reports.createdAt));
+  return drizzle(db)
+    .select(COUNCIL_FIELDS)
+    .from(reports)
+    .leftJoin(reportJoins, eq(reportJoins.reportId, reports.id))
+    .groupBy(reports.id)
+    .orderBy(desc(reports.createdAt));
 }
 
 /**
@@ -134,7 +147,12 @@ async function signedStudent(db: D1Database, authorId: string | null): Promise<C
 export async function getReport(db: D1Database, id: string): Promise<CouncilDetail | null> {
   // PL: Najpierw zgłoszenie z numerem autora; bez zgłoszenia nie ma po co czytać historii.
   // EN: The report first, with the author id; without the report there is no point reading the history.
-  const [row] = await drizzle(db).select({ ...COUNCIL_FIELDS, authorId: reports.authorId }).from(reports).where(eq(reports.id, id));
+  const [row] = await drizzle(db)
+    .select({ ...COUNCIL_FIELDS, authorId: reports.authorId })
+    .from(reports)
+    .leftJoin(reportJoins, eq(reportJoins.reportId, reports.id))
+    .where(eq(reports.id, id))
+    .groupBy(reports.id);
   if (!row) return null;
 
   // PL: Numer autora zostaje w tej funkcji i nie trafia do wyniku.
@@ -142,10 +160,10 @@ export async function getReport(db: D1Database, id: string): Promise<CouncilDeta
   const { authorId, ...report } = row;
   const student = report.isAnonymous ? null : await signedStudent(db, authorId);
 
-  // PL: Historia: etap i chwila, bez osoby, która go zmieniła.
-  // EN: The history: the stage and the moment, without the person who changed it.
+  // PL: Historia: etap, chwila i odpowiedź dla autora, bez osoby, która go zmieniła.
+  // EN: The history: the stage, the moment and the answer for the author, without the person who changed it.
   const history = await drizzle(db)
-    .select({ stage: reportStageChanges.stage, changedAt: reportStageChanges.changedAt })
+    .select({ stage: reportStageChanges.stage, changedAt: reportStageChanges.changedAt, note: reportStageChanges.note })
     .from(reportStageChanges)
     .where(eq(reportStageChanges.reportId, id))
     .orderBy(desc(reportStageChanges.changedAt));
@@ -153,15 +171,15 @@ export async function getReport(db: D1Database, id: string): Promise<CouncilDeta
 }
 
 /**
- * PL: Zmienia etap zgłoszenia. Etap, czas zmiany i nowy wiersz historii idą w jednym `batch`, więc albo są wszystkie, albo żaden. Ten sam etap nie zmienia nic i nie dopisuje historii.
- * EN: Changes a report's stage. The stage, the change time and the new history row go in one `batch`, so either all exist or none. The same stage changes nothing and adds no history.
+ * PL: Zmienia etap zgłoszenia. Etap, czas zmiany i nowy wiersz historii (z odpowiedzią dla autora, jeśli jest) idą w jednym `batch`, więc albo są wszystkie, albo żaden. Ten sam etap nie zmienia nic i nie dopisuje historii, więc też nie zapisuje odpowiedzi.
+ * EN: Changes a report's stage. The stage, the change time and the new history row (with the answer for the author, if any) go in one `batch`, so either all exist or none. The same stage changes nothing and adds no history, so it does not save the answer either.
  *
  * @param db - PL: baza D1. EN: the D1 database.
- * @param change - PL: numer zgłoszenia, nowy etap i numer osoby z Samorządu. EN: the report id, the new stage and the Student Council member's id.
+ * @param change - PL: numer zgłoszenia, nowy etap, odpowiedź dla autora (albo `null`) i numer osoby z Samorządu. EN: the report id, the new stage, the answer for the author (or `null`) and the Student Council member's id.
  * @returns PL: `not_found`, `unchanged` albo `changed`. EN: `not_found`, `unchanged` or `changed`.
  * @throws PL: błąd bazy, gdy zapis się nie uda. EN: a database error when the write fails.
  */
-export async function changeReportStage(db: D1Database, change: { id: string; stage: ReportStage; memberId: string }): Promise<StageChangeResult> {
+export async function changeReportStage(db: D1Database, change: { id: string; stage: ReportStage; note: string | null; memberId: string }): Promise<StageChangeResult> {
   // PL: Sprawdź, czy zgłoszenie istnieje i czy etap w ogóle się zmienia.
   // EN: Check that the report exists and that the stage really changes.
   const [current] = await drizzle(db).select({ stage: reports.stage }).from(reports).where(eq(reports.id, change.id));
@@ -173,7 +191,7 @@ export async function changeReportStage(db: D1Database, change: { id: string; st
   const now = Date.now();
   await drizzle(db).batch([
     drizzle(db).update(reports).set({ stage: change.stage, updatedAt: now }).where(eq(reports.id, change.id)),
-    drizzle(db).insert(reportStageChanges).values({ id: crypto.randomUUID(), reportId: change.id, stage: change.stage, changedBy: change.memberId, changedAt: now }),
+    drizzle(db).insert(reportStageChanges).values({ id: crypto.randomUUID(), reportId: change.id, stage: change.stage, note: change.note, changedBy: change.memberId, changedAt: now }),
   ]);
   return 'changed';
 }

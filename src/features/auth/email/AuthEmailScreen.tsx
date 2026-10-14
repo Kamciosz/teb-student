@@ -7,13 +7,15 @@
  * @uses src/features/auth/email/useAuthSession.ts::useAuthSession
  * @uses src/features/auth/email/EmailStep.tsx::EmailStep
  * @uses src/features/auth/email/CodeStep.tsx::CodeStep
+ * @uses src/features/auth/email/DevicesScreen.tsx::DevicesScreen
  * @used_by src/features/auth/email/index.ts::AuthEmailScreen
  */
 
 import { useState } from 'react';
-import { Navigate } from 'react-router';
+import { Navigate, useParams } from 'react-router';
 import './authEmail.css';
 import { CodeStep } from './CodeStep';
+import { DevicesScreen } from './DevicesScreen';
 import { EmailStep } from './EmailStep';
 import { useAuthSession } from './useAuthSession';
 
@@ -28,6 +30,17 @@ export function AuthEmailScreen() {
   // PL: Adres, na który poszedł kod. Dopóki go nie ma, pokazujemy krok adresu.
   // EN: The address the code went to. Until it exists, we show the address step.
   const [sentTo, setSentTo] = useState<string | null>(null);
+  // PL: Adres /auth/email/urzadzenia pokazuje listę urządzeń zamiast logowania.
+  // EN: The address /auth/email/urzadzenia shows the device list instead of sign-in.
+  const onDevices = useParams()['*'] === 'urzadzenia';
+
+  if (onDevices) {
+    // PL: Lista urządzeń wymaga zalogowania; niezalogowanego odsyłamy do logowania.
+    // EN: The device list needs a sign-in; a signed-out student is sent to sign-in.
+    if (session.status === 'signed-out') return <Navigate to="/auth/email" replace />;
+    if (session.status === 'loading') return <main className="auth-email" data-subtrack="1a" aria-busy="true" />;
+    return <DevicesScreen />;
+  }
 
   // PL: Zalogowany uczeń nie ma tu nic do roboty: pulpit jest pod adresem głównym.
   // EN: A signed-in student has nothing to do here: the dashboard is at the root address.
