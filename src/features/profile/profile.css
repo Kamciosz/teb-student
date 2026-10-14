@@ -56,6 +56,9 @@
 .pf-btn-accent { background: var(--accent); color: var(--on-accent); }
 .pf-btn-soft { background: var(--tile); color: var(--ink); }
 .pf-btn:disabled { opacity: .5; cursor: default; }
+/* PL: Przycisk „Usuń” przy kluczu: obok nazwy, nie na całą szerokość; wysokość nadal min. 44 px.
+   EN: The "Usuń" (delete) button on a key: next to the name, not full width; the height is still at least 44 px. */
+.pf-passkey-delete { flex: none; width: auto; min-height: 44px; margin-top: 0; padding: 8px 16px; }
 
 /* PL: Większy tekst: gdy <html> ma data-tekst="duzy", zmienne rozmiarów z tokens.css rosną o 25–33 procent. Reguła jest w tym pliku, a nie w src/shared, więc cała aplikacja dostaje większe litery bez zmian w tokens.css.
    EN: Larger text: when <html> has data-tekst="duzy", the size variables from tokens.css grow by 25–33 percent. The rule is in this file, not in src/shared, so the whole app gets larger letters without changes in tokens.css. */

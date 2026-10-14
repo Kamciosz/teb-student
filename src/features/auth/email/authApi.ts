@@ -16,10 +16,19 @@
 // EN: The Better Auth client (without React: useQuery handles the session) and its e-mail code plugin.
 import { createAuthClient } from 'better-auth/client';
 import { emailOTPClient } from 'better-auth/client/plugins';
+// PL: Wtyczka kluczy dostępu (Face ID, odcisk palca) po stronie telefonu.
+// EN: The passkey plugin (Face ID, fingerprint) on the phone's side.
+import { passkeyClient } from '@better-auth/passkey/client';
 // PL: Czyszczenie danych zapisanych w telefonie, ze wspólnej części aplikacji.
 // EN: Clearing the data saved on the phone, from the shared part of the app.
 import { clearQueryData } from '../../../shared';
-import { describeSendError, describeVerifyError, MESSAGES, type ClientError } from './authMessages';
+import {
+  describePasskeySignInError,
+  describeSendError,
+  describeVerifyError,
+  MESSAGES,
+  type ClientError,
+} from './authMessages';
 
 /**
  * PL: Wynik rozmowy z serwerem: udało się albo błąd z komunikatem dla ucznia.
@@ -28,13 +37,47 @@ import { describeSendError, describeVerifyError, MESSAGES, type ClientError } fr
 export type AuthResult = { ok: true } | { ok: false; message: string };
 
 /**
+ * PL: Wynik logowania kluczem. Gdy uczeń anulował, message jest null i nie pokazujemy błędu.
+ * EN: The result of signing in with a key. When the student cancelled, message is null and no error is shown.
+ */
+export type PasskeyResult = { ok: true } | { ok: false; message: string | null };
+
+/**
  * PL: Klient logowania. Adres serwera to adres aplikacji, a ścieżka jest ta sama co w worker/mounts.ts.
  * EN: The sign-in client. The server address is the app address, and the path is the same as in worker/mounts.ts.
  */
 export const authClient = createAuthClient({
   basePath: '/api/auth/email',
-  plugins: [emailOTPClient()],
+  plugins: [emailOTPClient(), passkeyClient()],
 });
+
+/**
+ * PL: Czy telefon umie logowanie kluczem. Bez tego przycisk Face ID się nie pokazuje.
+ * EN: Whether the phone can sign in with a key. Without it the Face ID button is not shown.
+ *
+ * @returns PL: true, gdy przeglądarka ma WebAuthn. EN: true when the browser has WebAuthn.
+ */
+export function isPasskeySupported(): boolean {
+  return typeof window !== 'undefined' && typeof window.PublicKeyCredential === 'function';
+}
+
+/**
+ * PL: Loguje kluczem dostępu. Po sukcesie serwer zakłada zwykłą sesję, tak jak po kodzie z maila.
+ * EN: Signs in with a passkey. After success the server starts a normal session, just like after the e-mail code.
+ *
+ * @returns PL: wynik; przy anulowaniu message jest null. EN: the result; on cancel the message is null.
+ */
+export async function signInWithPasskey(): Promise<PasskeyResult> {
+  try {
+    const { error } = await authClient.signIn.passkey();
+    if (!error) return { ok: true };
+    return { ok: false, message: describePasskeySignInError(error as ClientError) };
+  } catch {
+    // PL: Wyjątek z fetch to brak sieci.
+    // EN: An exception from fetch means no network.
+    return { ok: false, message: MESSAGES.offline };
+  }
+}
 
 /**
  * PL: Prosi serwer o kod logowania na podany adres. Serwer jeszcze raz sprawdza domenę szkolną.
