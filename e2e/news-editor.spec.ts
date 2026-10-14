@@ -1,6 +1,6 @@
 /**
- * PL: Test kreatora „Nowy wpis” (podtor 3b) w przeglądarce: trzy kroki z ekranów 5.1–5.3, formatowanie, link, film z YouTube, wklejanie z Worda, zapis szkicu, wysyłka do korekty, zatwierdzenie wpisu w korekcie przez redaktora, który nie jest autorem, publikacja i zaplanowana publikacja o wybranej godzinie (w Warszawie, także w dniu zmiany czasu, i bez dnia), błędy serwera, brak internetu (wpis zostaje w edytorze), szerokość 320 px i zamknięty zapis bez sesji na prawdziwym serwerze. Odpowiedzi serwera są podstawione (page.route), bo logowanie na porcie podtoru nie działa lokalnie (403). Test oblewa na gałęzi bez zmiany, bo tam adres /news/editor pokazuje tylko „W budowie”.
- * EN: Test of the "Nowy wpis" wizard (subtrack 3b) in the browser: three steps from screens 5.1–5.3, formatting, a link, a YouTube video, pasting from Word, saving a draft and a publication, server errors, no internet (the entry stays in the editor), the 320 px width and writing closed without a session on the real server. The server answers are stubbed (page.route), because sign-in on the subtrack port does not work locally (403). The test fails on a branch without the change, because there the /news/editor address shows only "W budowie".
+ * PL: Test kreatora „Nowy wpis” (podtor 3b) w przeglądarce: trzy kroki z ekranów 5.1–5.3, formatowanie, link, film z YouTube, wklejanie z Worda, zapis szkicu, zdjęcie z przycisku „Zdjęcie” (wysyłka ze stubem /api/media/upload, stan wysyłania i błędy), wysyłka do korekty, zatwierdzenie wpisu w korekcie przez redaktora, który nie jest autorem, publikacja i zaplanowana publikacja o wybranej godzinie (w Warszawie, także w dniu zmiany czasu, i bez dnia), błędy serwera, brak internetu (wpis zostaje w edytorze), szerokość 320 px i zamknięty zapis bez sesji na prawdziwym serwerze. Odpowiedzi serwera są podstawione (page.route), bo logowanie na porcie podtoru nie działa lokalnie (403). Test oblewa na gałęzi bez zmiany, bo tam adres /news/editor pokazuje tylko „W budowie”.
+ * EN: Test of the "Nowy wpis" wizard (subtrack 3b) in the browser: three steps from screens 5.1–5.3, formatting, a link, a YouTube video, pasting from Word, saving a draft, a photo from the "Zdjęcie" button (upload stubbed at /api/media/upload, the sending state and errors), and a publication, server errors, no internet (the entry stays in the editor), the 320 px width and writing closed without a session on the real server. The server answers are stubbed (page.route), because sign-in on the subtrack port does not work locally (403). The test fails on a branch without the change, because there the /news/editor address shows only "W budowie".
  *
  * @author Szymon
  * @since 2026-10-12
@@ -9,6 +9,7 @@
  */
 
 import { expect, test, type Page } from '@playwright/test';
+import { writeFileSync } from 'node:fs';
 
 // PL: Adres zapisu wpisu na serwerze edytora.
 // EN: The entry save address on the editor server.
@@ -291,6 +292,119 @@ for (const [status, json, message] of [
     await expect(page.getByRole('button', { name: 'Opublikuj' })).toBeEnabled();
   });
 }
+
+// PL: Adres wysyłki zdjęcia z przycisku „Zdjęcie” na pasku edytora.
+// EN: The address of the photo upload from the "Zdjęcie" button on the editor toolbar.
+const UPLOAD = '**/api/media/upload*';
+
+/**
+ * PL: Rysuje w przeglądarce zdjęcie JPEG o podanym rozmiarze (jak w e2e/media.spec.ts).
+ * EN: Draws a JPEG photo of the given size in the browser (as in e2e/media.spec.ts).
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ * @param width - PL: szerokość w px. EN: the width in px.
+ * @param height - PL: wysokość w px. EN: the height in px.
+ * @returns PL: plik JPEG. EN: the JPEG file.
+ */
+async function makePhoto(page: Page, width: number, height: number): Promise<Buffer> {
+  const dataUrl = await page.evaluate(
+    ({ w, h }: { w: number; h: number }) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('brak kontekstu płótna / no canvas context');
+      context.fillStyle = '#2060c0';
+      context.fillRect(0, 0, w, h);
+      return canvas.toDataURL('image/jpeg', 0.9);
+    },
+    { w: width, h: height },
+  );
+  return Buffer.from(dataUrl.split(',')[1], 'base64');
+}
+
+// PL: Zdjęcie z przycisku trafia do treści jako węzeł image. W trakcie wysyłki przycisk jest zablokowany i widać informację.
+// EN: A photo from the button goes into the content as an image node. While it is sent the button is disabled and a note shows.
+test('zdjęcie z przycisku wchodzi do treści wpisu / a photo from the button goes into the entry content', async ({ page }, testInfo) => {
+  const sent: { body?: { content: { type: string; attrs?: object }[] } } = {};
+  await page.route(ENTRIES, (route) => {
+    sent.body = route.request().postDataJSON().body;
+    return route.fulfill({ status: 201, json: { id: 'abc' } });
+  });
+  // PL: Wysyłkę wstrzymujemy, żeby sprawdzić stan wysyłania, a potem puszczamy.
+  // EN: We hold the upload to check the sending state, then let it go.
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  await page.route(UPLOAD, async (route) => {
+    await gate;
+    await route.fulfill({ status: 201, json: { id: 'abc123' } });
+  });
+  await fillEntry(page, 'Zobacz zdjęcie.');
+  const path = testInfo.outputPath('zdjecie.jpg');
+  writeFileSync(path, await makePhoto(page, 2000, 1000));
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Zdjęcie', exact: true }).click();
+  (await chooser).setFiles(path);
+
+  const photoButton = page.getByRole('button', { name: 'Zdjęcie', exact: true });
+  await expect(photoButton).toBeDisabled();
+  await expect(page.getByText('Wysyłam zdjęcie…')).toBeVisible();
+  release();
+  // PL: Przycisk wraca dopiero po wstawieniu zdjęcia, więc po tym kroku węzeł jest już w treści.
+  // EN: The button comes back only after the photo is inserted, so after this step the node is already in the content.
+  await expect(photoButton).toBeEnabled();
+  await expect(page.getByText('Wysyłam zdjęcie…')).toHaveCount(0);
+  await openPreview(page);
+  await page.getByRole('button', { name: 'Opublikuj' }).click();
+  await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
+  expect(sent.body?.content.find((node) => node.type === 'image')?.attrs).toEqual({ src: '/api/media/abc123', width: 1600, height: 800, alt: '', caption: '' });
+});
+
+// PL: Odmowa serwera pokazuje komunikat po polsku pod paskiem, nic nie wstawia i przycisk znów działa.
+// EN: A refusal from the server shows a Polish message under the toolbar, inserts nothing, and the button works again.
+test('odmowa wysyłki pokazuje komunikat i nic nie wstawia / a refused upload shows a message and inserts nothing', async ({ page }, testInfo) => {
+  const sent: { body?: { content: { type: string }[] } } = {};
+  await page.route(ENTRIES, (route) => {
+    sent.body = route.request().postDataJSON().body;
+    return route.fulfill({ status: 201, json: { id: 'abc' } });
+  });
+  let uploads = 0;
+  await page.route(UPLOAD, (route) => {
+    uploads += 1;
+    return route.fulfill({ status: 403, json: { error: 'role_required' } });
+  });
+  await fillEntry(page, 'Treść');
+  const path = testInfo.outputPath('zdjecie.jpg');
+  writeFileSync(path, await makePhoto(page, 800, 600));
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Zdjęcie', exact: true }).click();
+  (await chooser).setFiles(path);
+  await expect(page.getByRole('alert')).toHaveText('Nie masz uprawnień do wysyłania zdjęć i filmów.');
+  await expect(page.getByRole('button', { name: 'Zdjęcie', exact: true })).toBeEnabled();
+  expect(uploads).toBe(1);
+  await openPreview(page);
+  await page.getByRole('button', { name: 'Opublikuj' }).click();
+  await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
+  expect(sent.body?.content.some((node) => node.type === 'image')).toBe(false);
+});
+
+// PL: Plik, którego przeglądarka nie czyta (np. HEIC), nie idzie na serwer, a użytkownik dostaje prośbę o JPG albo PNG.
+// EN: A file the browser cannot read (e.g. HEIC) does not go to the server, and the user gets a request for JPG or PNG.
+test('plik, którego przeglądarka nie czyta, pokazuje prośbę o JPG albo PNG / a file the browser cannot read asks for JPG or PNG', async ({ page }, testInfo) => {
+  let uploads = 0;
+  await page.route(UPLOAD, (route) => {
+    uploads += 1;
+    return route.fulfill({ status: 201, json: { id: 'nie-powinno-byc' } });
+  });
+  await fillEntry(page, 'Treść');
+  const path = testInfo.outputPath('zdjecie.jpg');
+  writeFileSync(path, 'to nie jest zdjęcie');
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Zdjęcie', exact: true }).click();
+  (await chooser).setFiles(path);
+  await expect(page.getByRole('alert')).toHaveText('Tego formatu zdjęcia nie da się wysłać. Wybierz zdjęcie w formacie JPG albo PNG.');
+  expect(uploads).toBe(0);
+});
 
 // PL: Bez internetu: komunikat o braku sieci, a wpis zostaje i po powrocie sieci da się go wysłać.
 // EN: Without internet: a no-network message, and the entry stays and can be sent after the network returns.

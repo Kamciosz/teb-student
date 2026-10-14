@@ -1,10 +1,11 @@
 /**
- * PL: Pasek narzędzi edytora (styl ekranu 5.2: przyciski 44 × 44 px, zawijane do kolejnego wiersza, więc przy 320 px nic nie wychodzi poza ekran). Ma formatowanie tekstu, listy, cytat, link, film z YouTube, kartę linku, źródła oraz cofnij i ponów. Przyciski adresów otwierają okienko AddressPanel.
- * EN: The editor toolbar (the style of screen 5.2: 44 × 44 px buttons, wrapped to the next row, so at 320 px nothing goes off the screen). It has text formatting, lists, a quote, a link, a YouTube video, a link card, sources, and undo and redo. The address buttons open the AddressPanel.
+ * PL: Pasek narzędzi edytora (styl ekranu 5.2: przyciski 44 × 44 px, zawijane do kolejnego wiersza, więc przy 320 px nic nie wychodzi poza ekran). Ma formatowanie tekstu, listy, cytat, link, film z YouTube, kartę linku, źródła, zdjęcie oraz cofnij i ponów. Przyciski adresów otwierają okienko AddressPanel.
+ * EN: The editor toolbar (the style of screen 5.2: 44 × 44 px buttons, wrapped to the next row, so at 320 px nothing goes off the screen). It has text formatting, lists, a quote, a link, a YouTube video, a link card, sources, a photo, and undo and redo. The address buttons open the AddressPanel.
  *
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/news/editor/AddressPanel.tsx::AddressPanel
+ * @uses src/features/news/editor/PhotoButton.tsx::PhotoButton
  * @uses src/features/news/editor/texts.ts::TO_AGREE
  * @used_by src/features/news/editor/RichEditor.tsx::EditorToolbar
  */
@@ -13,6 +14,7 @@ import type { Editor } from '@tiptap/core';
 import { useEditorState } from '@tiptap/react';
 import { useState } from 'react';
 import { AddressPanel, type AddressKind } from './AddressPanel';
+import { PhotoButton } from './PhotoButton';
 import { TO_AGREE } from './texts';
 
 /**
@@ -106,6 +108,8 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             {button.text}
           </button>
         ))}
+        {/* PL: Zdjęcie: wysyłka i wstawienie do treści. EN: Photo: upload and insertion into the content. */}
+        <PhotoButton editor={editor} />
         {/* PL: Cofnij i ponów. EN: Undo and redo. */}
         <button type="button" className="editor-tool" aria-label={TO_AGREE.buttons.undo} disabled={!state.canUndo} onClick={() => editor.chain().focus().undo().run()}>↶</button>
         <button type="button" className="editor-tool" aria-label={TO_AGREE.buttons.redo} disabled={!state.canRedo} onClick={() => editor.chain().focus().redo().run()}>↷</button>

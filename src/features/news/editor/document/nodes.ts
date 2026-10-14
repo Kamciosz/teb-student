@@ -54,8 +54,8 @@ export const YouTubeVideo = Node.create({
 });
 
 /**
- * PL: Zdjęcie z podpisem. Adres zdjęcia musi być https (sprawdza serwer). Wymiary rezerwują miejsce na ekranie, żeby wpis nie skakał podczas ładowania.
- * EN: A photo with a caption. The photo address must be https (the server checks it). The dimensions reserve space on the screen so the entry does not jump while loading.
+ * PL: Zdjęcie z podpisem. Adres zdjęcia to /api/media/<id> (zdjęcie wysłane przez przycisk „Zdjęcie”); serwer sprawdza, czy adres ma ten kształt. Wymiary rezerwują miejsce na ekranie, żeby wpis nie skakał podczas ładowania.
+ * EN: A photo with a caption. The photo address is /api/media/<id> (a photo sent with the "Zdjęcie" button); the server checks that the address has this shape. The dimensions reserve space on the screen so the entry does not jump while loading.
  */
 export const CaptionedImage = Node.create({
   name: 'image',
