@@ -83,11 +83,11 @@ describe('BellCountdown', () => {
   });
 
   it('w czasie lekcji pokazuje następną lekcję z godziną', () => {
-    // PL: 08:10 w Warszawie to pierwsza lekcja z przykładu; następna jest lekcja 2 o 8:55 (bez zera z przodu).
-    // EN: 08:10 in Warsaw is the first example lesson; the next one is lesson 2 at 8:55 (no leading zero).
+    // PL: 08:10 w Warszawie to pierwsza lekcja z przykładu; następna jest lekcja 1 o 8:55 (bez zera z przodu).
+    // EN: 08:10 in Warsaw is the first example lesson; the next one is lesson 1 at 8:55 (no leading zero).
     vi.setSystemTime(new Date('2026-10-23T06:10:00Z'));
     const html = renderToString(<BellCountdown />);
-    expect(html).toContain('Następna: lekcja 2 o 8:55');
+    expect(html).toContain('Następna: lekcja 1 o 8:55');
   });
 
   it('w ostatniej lekcji dnia nie pokazuje następnej lekcji', () => {
@@ -100,12 +100,12 @@ describe('BellCountdown', () => {
   });
 
   it('w przerwie pokazuje minuty do lekcji', () => {
-    // PL: 08:50 w Warszawie to przerwa między lekcjami z przykładu: 5 minut do następnej, czyli do lekcji 2.
-    // EN: 08:50 in Warsaw is the break between the example lessons: 5 minutes to the next one, that is lesson 2.
+    // PL: 08:50 w Warszawie to przerwa między lekcjami z przykładu: 5 minut do następnej, czyli do lekcji 1.
+    // EN: 08:50 in Warsaw is the break between the example lessons: 5 minutes to the next one, that is lesson 1.
     vi.setSystemTime(new Date('2026-10-23T06:50:00Z'));
     const html = renderToString(<BellCountdown />);
     expect(html).toContain('>5<');
-    expect(html).toContain('Przerwa, do lekcji 2');
+    expect(html).toContain('Przerwa, do lekcji 1');
   });
 
   it('w weekend nic nie rysuje', () => {
@@ -116,21 +116,21 @@ describe('BellCountdown', () => {
   });
 
   it('w dniu skróconym liczy według skróconego planu', () => {
-    // PL: 08:10 w Warszawie w dniu skróconym: lekcja 1 kończy się o 8:30, czyli 20 minut; następna jest lekcja 2 o 8:40 (w zwykłym planie byłoby 50 minut i 8:55).
-    // EN: 08:10 in Warsaw on a shortened day: lesson 1 ends at 8:30, so 20 minutes; the next one is lesson 2 at 8:40 (the regular plan would give 50 minutes and 8:55).
+    // PL: 08:10 w Warszawie w dniu skróconym: lekcja 0 kończy się o 8:30, czyli 20 minut; następna jest lekcja 1 o 8:40 (w zwykłym planie byłoby 50 minut i 8:55).
+    // EN: 08:10 in Warsaw on a shortened day: lesson 0 ends at 8:30, so 20 minutes; the next one is lesson 1 at 8:40 (the regular plan would give 50 minutes and 8:55).
     vi.setSystemTime(new Date('2026-10-23T06:10:00Z'));
     const html = renderToString(<BellCountdown shortenedDays={new Set([SHORTENED_DAY])} />);
     expect(html).toContain('>20<');
-    expect(html).toContain('Następna: lekcja 2 o 8:40');
+    expect(html).toContain('Następna: lekcja 1 o 8:40');
   });
 
   it('w dniu skróconym przerwa jest z krótszego planu', () => {
-    // PL: 08:35 w Warszawie w dniu skróconym to przerwa (lekcja 1 skończyła się o 8:30); w zwykłym planie to jeszcze lekcja.
-    // EN: 08:35 in Warsaw on a shortened day is a break (lesson 1 ended at 8:30); in the regular plan it is still a lesson.
+    // PL: 08:35 w Warszawie w dniu skróconym to przerwa (lekcja 0 skończyła się o 8:30); w zwykłym planie to jeszcze lekcja.
+    // EN: 08:35 in Warsaw on a shortened day is a break (lesson 0 ended at 8:30); in the regular plan it is still a lesson.
     vi.setSystemTime(new Date('2026-10-23T06:35:00Z'));
     const html = renderToString(<BellCountdown shortenedDays={new Set([SHORTENED_DAY])} />);
     expect(html).toContain('>5<');
-    expect(html).toContain('Przerwa, do lekcji 2');
+    expect(html).toContain('Przerwa, do lekcji 1');
     // PL: Sprawdzamy cały tekst etykiety, bo aria-label „Licznik do dzwonka” też zawiera te słowa.
     // EN: We check the whole label text, because the aria-label "Licznik do dzwonka" also contains these words.
     expect(html).not.toContain('>do dzwonka<');
