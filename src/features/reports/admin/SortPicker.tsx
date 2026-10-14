@@ -1,6 +1,6 @@
 /**
- * PL: Przełącznik kolejności listy zgłoszeń: „Najnowsze” i „Najwięcej osób” jako dwa przyciski obok siebie, a nie lista rozwijana. Wzór jak „Pasek wyboru” z przepływu 6 (StagePicker). Teksty do uzgodnienia z zespołem (TO_AGREE).
- * EN: The list order switch of the reports: "Najnowsze" and "Najwięcej osób" as two buttons side by side, not a dropdown. The pattern of the "Pasek wyboru" from flow 6 (StagePicker). The texts are to be agreed with the team (TO_AGREE).
+ * PL: Przełącznik kolejności listy zgłoszeń: „Najnowsze” i „Najwięcej osób” jako dwa przyciski obok siebie, a nie lista rozwijana. Wzór jak „Pasek wyboru” z przepływu 6 (StagePicker).
+ * EN: The list order switch of the reports: "Najnowsze" and "Najwięcej osób" as two buttons side by side, not a dropdown. The pattern of the "Pasek wyboru" from flow 6 (StagePicker).
  *
  * @author Szymon
  * @since 2026-10-13

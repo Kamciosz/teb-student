@@ -196,7 +196,7 @@ test('pytanie wielokrotnego wyboru: kilka zaznaczeń i wysłanie wszystkich / a 
   expect(sent.answers.map((answer) => ({ questionId: answer.questionId, optionIds: [...answer.optionIds].sort() }))).toEqual([{ questionId: 'm1', optionIds: ['m1-0', 'm1-2'] }]);
 });
 
-// PL: Pytanie skali 1–5: pięć przycisków w jednym rzędzie z opisami „wcale” i „bardzo”, „Wyślij” dopiero po wyborze, wysłana jest jedna wartość. Telefon 320 px: przyciski mieszczą się bez przewijania.
+// PL: Pytanie skali 1–5: pięć przycisków w jednym rzędzie z opisami „zdecydowanie nie” i „zdecydowanie tak”, „Wyślij” dopiero po wyborze, wysłana jest jedna wartość. Telefon 320 px: przyciski mieszczą się bez przewijania.
 // EN: A 1–5 scale question: five buttons in one row with the captions "wcale" and "bardzo", "Wyślij" only after a pick, and one value is sent. A 320 px phone: the buttons fit without scrolling.
 test('skala 1–5: pięć przycisków, wybór „4” i wysłanie przy 320 px / the 1–5 scale: five buttons, pick "4" and send at 320 px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
@@ -205,8 +205,8 @@ test('skala 1–5: pięć przycisków, wybór „4” i wysłanie przy 320 px / 
 
   await expect(page.getByRole('heading', { name: 'Jak oceniasz zajęcia dodatkowe?' })).toBeVisible();
   await expect(page.getByRole('radio')).toHaveCount(5);
-  await expect(page.getByText('wcale', { exact: true })).toBeVisible();
-  await expect(page.getByText('bardzo', { exact: true })).toBeVisible();
+  await expect(page.getByText('zdecydowanie nie', { exact: true })).toBeVisible();
+  await expect(page.getByText('zdecydowanie tak', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Wyślij odpowiedzi' })).toBeDisabled();
 
   // PL: Przycisk to segment (pole radio jest ukryte), więc to jego wymiary liczymy: co najmniej 44 px na 44 px.

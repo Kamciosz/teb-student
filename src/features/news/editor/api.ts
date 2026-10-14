@@ -4,13 +4,13 @@
  *
  * @author Szymon
  * @since 2026-10-12
- * @uses src/features/news/editor/texts.ts::TO_AGREE
+ * @uses src/features/news/editor/texts.ts::TEXTS
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::sendEntry
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::loadDraft
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::updateEntry
  */
 
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 
 // PL: Adres serwera edytora (worker/mounts.ts).
 // EN: The editor server address (worker/mounts.ts).
@@ -84,28 +84,28 @@ function entryUrl(id: string): string {
  * @returns PL: komunikat dla redaktora. EN: the message for the editor.
  */
 async function messageForError(response: Response, fallback: string): Promise<string> {
-  if (response.status === 401) return TO_AGREE.signedOut;
-  if (response.status === 404) return TO_AGREE.draftNotFound;
-  if (response.status === 413) return TO_AGREE.rejected.too_large ?? fallback;
+  if (response.status === 401) return TEXTS.signedOut;
+  if (response.status === 404) return TEXTS.draftNotFound;
+  if (response.status === 413) return TEXTS.rejected.too_large ?? fallback;
   if (response.status === 403) {
     // PL: Autor, który chce zatwierdzić własny wpis, dostaje osobny komunikat. Brak roli dostaje ogólny.
     // EN: An author who wants to approve their own entry gets a separate message. A missing role gets the general one.
     const data = (await response.json().catch(() => ({}))) as { error?: string };
-    return data.error === 'own_entry' ? TO_AGREE.ownEntry : TO_AGREE.forbidden;
+    return data.error === 'own_entry' ? TEXTS.ownEntry : TEXTS.forbidden;
   }
   if (response.status === 409) {
     // PL: Serwer podaje, dlaczego zmiana nie przeszła: wpis w korekcie, już nie w korekcie, albo już opublikowany.
     // EN: The server says why the change did not go through: the entry is in review, no longer in review, or already published.
     const data = (await response.json().catch(() => ({}))) as { error?: string };
-    if (data.error === 'in_review') return TO_AGREE.inReview;
-    if (data.error === 'not_in_review') return TO_AGREE.notInReview;
-    return TO_AGREE.alreadyPublished;
+    if (data.error === 'in_review') return TEXTS.inReview;
+    if (data.error === 'not_in_review') return TEXTS.notInReview;
+    return TEXTS.alreadyPublished;
   }
   if (response.status === 422) {
     // PL: Serwer podaje powód odrzucenia. Nieznany powód daje ogólny komunikat.
     // EN: The server gives the rejection reason. An unknown reason gives the general message.
     const data = (await response.json().catch(() => ({}))) as { reason?: string };
-    return TO_AGREE.rejected[data.reason ?? ''] ?? fallback;
+    return TEXTS.rejected[data.reason ?? ''] ?? fallback;
   }
   return fallback;
 }
@@ -122,11 +122,11 @@ async function messageForError(response: Response, fallback: string): Promise<st
 async function send(url: string, method: 'POST' | 'PUT', entry: EntryToSend): Promise<SendResult> {
   try {
     const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
-    return response.ok ? { ok: true } : { ok: false, message: await messageForError(response, TO_AGREE.failed) };
+    return response.ok ? { ok: true } : { ok: false, message: await messageForError(response, TEXTS.failed) };
   } catch {
     // PL: Zapytanie nie dotarło do serwera: nie ma internetu. Wpis zostaje w edytorze.
     // EN: The request did not reach the server: there is no internet. The entry stays in the editor.
-    return { ok: false, message: TO_AGREE.offline };
+    return { ok: false, message: TEXTS.offline };
   }
 }
 
@@ -163,11 +163,11 @@ export function updateEntry(id: string, entry: EntryToSend): Promise<SendResult>
 export async function approveEntry(id: string): Promise<SendResult> {
   try {
     const response = await fetch(`${entryUrl(id)}/approve`, { method: 'POST' });
-    return response.ok ? { ok: true } : { ok: false, message: await messageForError(response, TO_AGREE.failed) };
+    return response.ok ? { ok: true } : { ok: false, message: await messageForError(response, TEXTS.failed) };
   } catch {
     // PL: Brak internetu: zatwierdzenie nie doszło, wpis zostaje w korekcie.
     // EN: No internet: the approval did not arrive, the entry stays in review.
-    return { ok: false, message: TO_AGREE.offline };
+    return { ok: false, message: TEXTS.offline };
   }
 }
 
@@ -181,11 +181,11 @@ export async function approveEntry(id: string): Promise<SendResult> {
 export async function loadDraft(id: string): Promise<LoadResult> {
   try {
     const response = await fetch(entryUrl(id));
-    if (!response.ok) return { ok: false, message: await messageForError(response, TO_AGREE.draftLoadFailed) };
+    if (!response.ok) return { ok: false, message: await messageForError(response, TEXTS.draftLoadFailed) };
     return { ok: true, draft: (await response.json()) as DraftToEdit };
   } catch {
     // PL: Brak internetu przy wczytaniu: nic nie ma do pokazania poza komunikatem.
     // EN: No internet while loading: there is nothing to show but the message.
-    return { ok: false, message: TO_AGREE.draftLoadFailed };
+    return { ok: false, message: TEXTS.draftLoadFailed };
   }
 }

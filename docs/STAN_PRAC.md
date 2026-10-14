@@ -2,6 +2,8 @@
 
 Stan na 14.10.2026. `main` po scaleniu #170. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
 
+Teksty zatwierdził Szymon 14.10.2026.
+
 ## Co jest w `main`
 
 Do #61 (stan z 12.10): szkielet, PWA i baza D1, logowanie kodem (1a), aktualności (3a), zgłoszenia (4a), głosowanie w ankiecie (5a), pulpit (9). Od #62 do #156 weszło:
@@ -81,7 +83,7 @@ Po scaleniu usuń kopię roboczą (`git worktree remove ../teb-<podtor>`) i gał
 ## Decyzje do podjęcia
 
 - **Zespół:** `PLAN_APLIKACJI.md` i `TECHNOLOGIE.md` nadal mówią, że telefon wysyła oryginał HEIC, gdy go nie odczyta. Po #130 telefon tego nie robi: pokazuje błąd. Trzeba poprawić dokumenty albo wrócić do wysyłania oryginału.
-- **Zespół:** plik z `GET /api/media/<id>` dostaje każdy zalogowany uczeń, który zna numer pliku. Dotyczy to też zdjęć ze zgłoszeń anonimowych. Czy zostawić tak, czy ograniczyć zdjęcia zgłoszeń do autora i Samorządu?
+- **Zespół (decyzja):** zdjęcie zgłoszenia widzi tylko autor i administracja. Inni uczniowie dostają 404 (`GET /api/media/<id>` i `/<id>/meta`). Pozostałe pliki zostają dostępne dla zalogowanych uczniów.
 - **Zespół:** karta linku z adresem spoza listy serwisów społecznościowych znika z wpisu bez komunikatu w czytniku.
 - **Zespół:** zdjęcie w edytorze bez sieci nie czeka w kolejce, tylko pokazuje błąd.
 - **Szymon:** Face ID przez `@better-auth/passkey`, czas świeżej sesji 24 h (#108).
@@ -89,7 +91,6 @@ Po scaleniu usuń kopię roboczą (`git worktree remove ../teb-<podtor>`) i gał
 - **Zespół:** czy `AGENTS.md` i `CLAUDE.md` mają trafić do `.gitignore`.
 - **Zespół:** wpisy dziennika ucznia znikają razem z kontem. Czy tak ma zostać?
 - **Zespół:** krótka odpowiedź w ankiecie może zdradzić autora w małej grupie. Pod polem jest podpowiedź, ale wyniki pokazujemy dopiero od 5 odpowiedzi.
-- **Zespół:** teksty oznaczone `TO_AGREE` w nowych ekranach.
 
 - **Bohdan:** ADR 0003 (adresy podtorów), 0004 (przeglądarki), 0005 (krój pisma).
 - **Adam:** czy wyłączyć wymóg aktualnej gałęzi przed scaleniem. Przez niego każde scalenie czeka na CI dwa razy.

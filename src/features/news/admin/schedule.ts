@@ -5,7 +5,7 @@
  * @author Szymon
  * @since 2026-10-13
  * @uses src/features/news/admin/api.ts::PanelEntry
- * @uses src/features/news/admin/texts.ts::TO_AGREE
+ * @uses src/features/news/admin/texts.ts::TEXTS
  * @used_by src/features/news/admin/EntryTile.tsx::EntryTile
  * @used_by src/features/news/admin/schedule.test.ts::formatScheduled
  */
@@ -13,7 +13,7 @@
 // PL: Typ wpisu listy panelu i teksty znacznika.
 // EN: The panel list entry type and the tag texts.
 import type { PanelEntry } from './api';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 
 /** PL: Strefa szkoły: od niej zależy, o której godzinie uczeń zobaczy wpis. EN: The school zone: it decides the hour the student sees the entry. */
 const SCHOOL_TIME_ZONE = 'Europe/Warsaw';
@@ -61,5 +61,5 @@ export function isScheduled(entry: PanelEntry, now: number = Date.now()): boolea
  * @returns PL: na przykład „Zaplanowany na 25.10, 01:00”, albo null. EN: for example "Zaplanowany na 25.10, 01:00", or null.
  */
 export function scheduledLabel(entry: PanelEntry, now?: number): string | null {
-  return isScheduled(entry, now) && entry.publishAt !== null ? TO_AGREE.scheduled(formatScheduled(entry.publishAt)) : null;
+  return isScheduled(entry, now) && entry.publishAt !== null ? TEXTS.scheduled(formatScheduled(entry.publishAt)) : null;
 }

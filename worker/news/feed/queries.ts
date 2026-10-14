@@ -17,7 +17,7 @@ import { and, desc, eq, isNotNull, isNull, lte, or, sql, type SQL } from 'drizzl
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
 // PL: Tabela wpisów i typ jej wiersza.
 // EN: The entries table and its row type.
-import { newsEntries, user, type NewsEntryRow } from '../../db/schema';
+import { newsEntries, panelRoles, user, type NewsEntryRow } from '../../db/schema';
 
 /**
  * PL: Najwięcej wpisów na liście. Telefon filtruje tę listę u siebie, więc jedna odpowiedź musi starczyć na wszystkie typy.
@@ -66,10 +66,10 @@ function foldCase(text: SQL): SQL {
 }
 
 /**
- * PL: Opublikowany wpis razem z imieniem autora. Imię to null, gdy wpis nie ma autora, konto zostało usunięte albo imię jest puste. E-mail autora tu nie trafia.
- * EN: A published entry together with the author's name. The name is null when the entry has no author, the account was deleted or the name is empty. The author's e-mail does not get here.
+ * PL: Opublikowany wpis razem z imieniem autora i flagą redakcji. Imię to null, gdy wpis nie ma autora, konto zostało usunięte albo imię jest puste. Flaga byEditorialTeam jest true tylko wtedy, gdy autor ma rolę „editor” w panelu. E-mail autora tu nie trafia.
+ * EN: A published entry together with the author's name and the editorial flag. The name is null when the entry has no author, the account was deleted or the name is empty. The flag byEditorialTeam is true only when the author has the "editor" role in the panel. The author's e-mail does not get here.
  */
-export type PublishedEntry = { entry: NewsEntryRow; authorName: string | null };
+export type PublishedEntry = { entry: NewsEntryRow; authorName: string | null; byEditorialTeam: boolean };
 
 /**
  * PL: Zamienia imię z konta na tekst do pokazania albo null, gdy imienia nie ma lub jest same spacje.
@@ -143,15 +143,16 @@ export async function listPublishedEntries(db: DrizzleD1Database, term = '', now
  * @throws PL: błąd bazy. EN: a database error.
  */
 export async function findPublishedEntry(db: DrizzleD1Database, id: string, now = new Date()): Promise<PublishedEntry | undefined> {
-  // PL: Warunek widoczności plus numer. Numer idzie jako parametr zapytania, nie jako tekst SQL. Imię bierzemy z konta autora przez lewe złączenie: wpis bez autora (albo po usunięciu konta) zostaje, a imię jest puste. Z konta czytamy tylko imię.
-  // EN: The visibility condition plus the id. The id goes as a query parameter, not as SQL text. The name comes from the author's account through a left join: an entry without an author (or after the account is deleted) stays, and the name is empty. Only the name is read from the account.
+  // PL: Warunek widoczności plus numer. Numer idzie jako parametr zapytania, nie jako tekst SQL. Imię bierzemy z konta autora przez lewe złączenie: wpis bez autora (albo po usunięciu konta) zostaje, a imię jest puste. Z konta czytamy tylko imię. Rolę redakcji czytamy z tabeli ról tym samym sposobem: złączenie wiąże autora z rolą „editor”. Klucz tabeli (użytkownik, rola) daje co najwyżej jeden wiersz, więc wpisów nie przybywa. Tylko odczyt.
+  // EN: The visibility condition plus the id. The id goes as a query parameter, not as SQL text. The name comes from the author's account through a left join: an entry without an author (or after the account is deleted) stays, and the name is empty. Only the name is read from the account. The editorial role is read from the roles table the same way: the join ties the author to the "editor" role. The table key (user, role) gives at most one row, so no entries are added. Read-only.
   const rows = await db
-    .select({ entry: newsEntries, authorName: user.name })
+    .select({ entry: newsEntries, authorName: user.name, editorRole: panelRoles.role })
     .from(newsEntries)
     .leftJoin(user, eq(user.id, newsEntries.authorUserId))
+    .leftJoin(panelRoles, and(eq(panelRoles.userId, newsEntries.authorUserId), eq(panelRoles.role, 'editor')))
     .where(and(visibleToStudent(now), eq(newsEntries.id, id)))
     .limit(1);
   const row = rows[0];
   if (!row) return undefined;
-  return { entry: row.entry, authorName: toAuthorName(row.authorName) };
+  return { entry: row.entry, authorName: toAuthorName(row.authorName), byEditorialTeam: row.editorRole !== null };
 }

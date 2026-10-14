@@ -212,8 +212,8 @@
   gap: 16px;
 }
 
-/* PL: Podpis autora i stopka „Redakcja gazetki” pod treścią wpisu.
-   EN: The author's signature and the "Redakcja gazetki" footer under the entry content. */
+/* PL: Podpis autora i stopka „Redakcja gazetki” (tylko przy autorze z redakcji) pod treścią wpisu.
+   EN: The author's signature and the "Redakcja gazetki" footer (only for an author from the editorial team) under the entry content. */
 .news-entry__footer {
   display: flex;
   flex-direction: column;

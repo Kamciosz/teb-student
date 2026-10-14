@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
 // PL: Funkcje do sprawdzenia i teksty, z którymi je porównujemy.
 // EN: The functions under test and the texts we compare with.
 import { photoErrorMessage, photoImageNode } from './photoNode';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 
 // PL: Wzorzec adresu zdjęcia, który sprawdza serwer.
 // EN: The photo address pattern that the server checks.
@@ -44,11 +44,11 @@ describe('komunikat błędu na pasku / the error message on the toolbar', () => 
   });
 
   it('nie pokazuje angielskiego SyntaxError z nieczytelnej odpowiedzi serwera', () => {
-    expect(photoErrorMessage(new SyntaxError('Unexpected token < in JSON at position 0'))).toBe(TO_AGREE.photo.failed);
+    expect(photoErrorMessage(new SyntaxError('Unexpected token < in JSON at position 0'))).toBe(TEXTS.photo.failed);
   });
 
   it('nie pokazuje błędu innego typu (np. TypeError) ani wartości, która nie jest błędem', () => {
-    expect(photoErrorMessage(new TypeError('Failed to fetch'))).toBe(TO_AGREE.photo.failed);
-    expect(photoErrorMessage('cokolwiek')).toBe(TO_AGREE.photo.failed);
+    expect(photoErrorMessage(new TypeError('Failed to fetch'))).toBe(TEXTS.photo.failed);
+    expect(photoErrorMessage('cokolwiek')).toBe(TEXTS.photo.failed);
   });
 });

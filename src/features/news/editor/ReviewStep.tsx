@@ -18,7 +18,7 @@ import { Link } from 'react-router';
 import { EntryCard, RichContent } from '../feed';
 import { approveEntry, type DraftToEdit } from './api';
 import { previewEntry } from './previewEntry';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 import type { EntryType } from './TypeStep';
 
 /**
@@ -61,8 +61,8 @@ export function ReviewStep({ draft }: ReviewStepProps) {
   if (isApproved) {
     return (
       <main className="editor-screen" data-subtrack="3b">
-        <p role="status" className="editor-done">{TO_AGREE.savedPublished}</p>
-        <Link className="editor-button editor-button--wide" to="/news/admin">{TO_AGREE.goToPanel}</Link>
+        <p role="status" className="editor-done">{TEXTS.savedPublished}</p>
+        <Link className="editor-button editor-button--wide" to="/news/admin">{TEXTS.goToPanel}</Link>
       </main>
     );
   }
@@ -72,7 +72,7 @@ export function ReviewStep({ draft }: ReviewStepProps) {
   return (
     <main className="editor-screen" data-subtrack="3b">
       <section className="editor-step" aria-labelledby="editor-step-heading">
-        <h1 id="editor-step-heading">{TO_AGREE.reviewHeading}</h1>
+        <h1 id="editor-step-heading">{TEXTS.reviewHeading}</h1>
         {/* PL: Kafel z listy. Podgląd nie ma adresu na serwerze, więc kliknięcie kafla nic nie otwiera. EN: The list tile. The preview has no address on the server, so clicking the tile opens nothing. */}
         <div onClickCapture={(event) => event.preventDefault()}>
           <EntryCard entry={previewEntry(type, draft.title, body, publishedAt)} />
@@ -80,10 +80,10 @@ export function ReviewStep({ draft }: ReviewStepProps) {
         <RichContent body={body} />
         {draft.canApprove ? (
           <button type="button" className="editor-button editor-button--wide" disabled={isApproving} onClick={() => void approve()}>
-            {isApproving ? TO_AGREE.approving : TO_AGREE.approve}
+            {isApproving ? TEXTS.approving : TEXTS.approve}
           </button>
         ) : (
-          <p>{TO_AGREE.reviewWaiting}</p>
+          <p>{TEXTS.reviewWaiting}</p>
         )}
         {/* PL: Błąd zatwierdzenia. Czytnik ekranu odczytuje go od razu. EN: The approval error. A screen reader reads it at once. */}
         {message ? <p role="alert" className="editor-error">{message}</p> : null}

@@ -49,8 +49,8 @@ export const FILTERS: readonly { code: string; label: string }[] = [{ code: ALL_
 export type ReportOrder = 'newest' | 'most_joined';
 
 /**
- * PL: Opcje przełącznika kolejności, domyślnie „Najnowsze”. Teksty do uzgodnienia z zespołem (TO_AGREE).
- * EN: The options of the order switch, "Najnowsze" by default. The texts are to be agreed with the team (TO_AGREE).
+ * PL: Opcje przełącznika kolejności, domyślnie „Najnowsze”.
+ * EN: The options of the order switch, "Najnowsze" by default.
  */
 export const ORDERS: readonly { code: ReportOrder; label: string }[] = [
   { code: 'newest', label: 'Najnowsze' },
