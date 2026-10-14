@@ -116,6 +116,9 @@ export function getRuntimeAuth(env: Env): RuntimeAuth {
       (async () => {
         throw new AuthNotConfiguredError('Brak nadawcy kodu / No code sender');
       }),
+    // PL: Adres aplikacji dla kluczy dostępu. W dev bez BETTER_AUTH_URL to localhost.
+    // EN: The app address for passkeys. In dev without BETTER_AUTH_URL it is localhost.
+    appUrl: env.BETTER_AUTH_URL ?? (isDev ? 'http://localhost' : undefined),
   });
 
   // PL: Zapamiętaj wynik dla następnych zapytań.

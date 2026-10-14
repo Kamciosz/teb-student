@@ -39,9 +39,10 @@ export type TestRuntime = {
  * EN: Creates a fresh sign-in on the test D1 database.
  *
  * @param canSendCodes - PL: prawda, gdy nadawca kodu ma istnieć (domyślnie tak). EN: true when the code sender should exist (the default).
+ * @param appUrl - PL: adres aplikacji, z którego liczą się rpID i origin kluczy (domyślnie brak). EN: the app address that rpID and origin of the keys are computed from (none by default).
  * @returns PL: logowanie, lista wysłanych kodów i aplikacja. EN: the sign-in, the list of sent codes and the app.
  */
-export function createTestRuntime(canSendCodes = true): TestRuntime {
+export function createTestRuntime(canSendCodes = true, appUrl?: string): TestRuntime {
   const sent: CodeMessage[] = [];
 
   // PL: Ten sam adapter D1 co w Workerze, na bazie testowej pliku.
@@ -49,6 +50,7 @@ export function createTestRuntime(canSendCodes = true): TestRuntime {
   const auth = createAuth({
     database: createDatabaseAdapter(env.DB),
     secret: 'test-secret-test-secret-test-secret-00',
+    appUrl,
     sendCode: async (message) => {
       sent.push(message);
     },
