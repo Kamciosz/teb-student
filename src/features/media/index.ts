@@ -5,6 +5,7 @@
  * @author Bohdan
  * @since 2026-10-09
  * @uses src/features/media/MediaScreen.tsx::MediaScreen
+ * @uses src/features/media/editorPhoto.ts::uploadEditorPhoto
  * @uses src/features/media/reportPhoto.ts::uploadReportPhoto
  * @used_by src/app/routes.ts::APP_ROUTES
  */
@@ -12,6 +13,9 @@
 // PL: Ekran podtoru 2.
 // EN: The screen of subtrack 2.
 export { MediaScreen } from './MediaScreen';
+// PL: Wysyłka zdjęcia do treści wpisu w edytorze (podtor 3b).
+// EN: Sending a photo into the post content in the editor (subtrack 3b).
+export { uploadEditorPhoto, type EditorPhoto } from './editorPhoto';
 
 // PL: Wysyłka zdjęcia do zgłoszenia i jego błąd, gdy telefon nie odczyta pliku.
 // EN: Sending a photo for a report, and its error when the phone cannot read the file.
