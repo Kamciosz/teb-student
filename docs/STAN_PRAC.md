@@ -1,6 +1,6 @@
 # Stan prac
 
-Stan na 14.10.2026. `main` po scaleniu #152. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
+Stan na 14.10.2026. `main` po scaleniu #168. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
 
 ## Co jest w `main`
 
@@ -23,16 +23,26 @@ Do #61 (stan z 12.10): szkielet, PWA i baza D1, logowanie kodem (1a), aktualnoś
 | 8 | panel Samorządu, role, kody zaproszeń, pilotaż, dziennik zmian (publikacja, usunięcie, zmiana etapu) | #68, #69, #100, #111, #134, #148 |
 | 9 | kafelek dzwonka, kolejność kafelków, minuty do dzwonka, stan dnia w nagłówku | #102, #116, #136, #142, #149, #153 |
 
-Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (sprawdzone na #152). Usuwanie danych ucznia w modułach aktualności, mediów i panelu nie jest już atrapą.
+Od #157 do #168 weszły zdjęcia w zgłoszeniach i we wpisach:
+
+| Podtor | Co | Pull requesty |
+|---|---|---|
+| 2 | blokada zdjęć HEIC bez wysyłania oryginału, wysyłka zdjęcia do zgłoszenia i do treści wpisu | #130, #158, #159, #165 |
+| 3a | zdjęcia w treści wpisu (tylko adresy `/api/media/`), sekcja „Źródła”, karty linków do mediów społecznościowych | #160, #161, #162 |
+| 3b | zdjęcie w dokumencie wpisu (serwer), przycisk „Zdjęcie” w pasku edytora | #164, #168 |
+| 4a | kolumna `photo_id`, pole „Dodaj zdjęcie” w formularzu, serwer sprawdza, czy plik należy do ucznia | #127, #167 |
+| 4b | zdjęcie w szczegółach zgłoszenia w panelu | #166 |
+| — | skrypt różnic schematu bazy, ten plik | #163, #157 |
+
+Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (sprawdzone na #168). Usuwanie danych ucznia w modułach aktualności, mediów i panelu nie jest już atrapą.
 
 ## Otwarte pull requesty
 
-- #130 (podtor 2): blokada zdjęć HEIC. Gotowy do scalenia, czeka na decyzję Szymona.
-- #127 (podtor 4a): zdjęcie w zgłoszeniu. Wymaga zmiany drzwi modułu media, czeka na decyzję Szymona.
+- W pracy (podtor 3b): pola „Opis zdjęcia” i „Podpis” dla zdjęcia w treści wpisu.
 
 ## Przed pierwszym wdrożeniem
 
-Baza nie ma migracji. Lokalnie schemat zakłada `db:reset`. Na produkcji trzeba ręcznie dodać nowe tabele (m.in. `diary_entries`, `bell_shortened_days`, `media_files`) i kolumny (m.in. `author_user_id`, `pinned_at`, `publish_at` w aktualnościach). Pełną listę daje porównanie `worker/db/schema/` z bazą produkcyjną. Zapis wpisu w dzienniku nie jest w jednej transakcji z publikacją. Poprawić przy wdrożeniu.
+Baza nie ma migracji. Lokalnie schemat zakłada `db:reset`. Na produkcji trzeba ręcznie dodać nowe tabele (m.in. `diary_entries`, `bell_shortened_days`, `media_files`) i kolumny (m.in. `author_user_id`, `pinned_at`, `publish_at` w aktualnościach). Pełną listę daje `node scripts/dbDiff.ts`: porównuje `scripts/schemaSql.ts` z bazą i wypisuje brakujące `CREATE` i `ALTER` (#163). Zapis wpisu w dzienniku nie jest w jednej transakcji z publikacją. Poprawić przy wdrożeniu.
 
 ## Jak uruchomić agenta podtoru
 
@@ -70,7 +80,10 @@ Po scaleniu usuń kopię roboczą (`git worktree remove ../teb-<podtor>`) i gał
 
 ## Decyzje do podjęcia
 
-- **Szymon:** #130 (HEIC) i #127 (zdjęcie w zgłoszeniu).
+- **Zespół:** `PLAN_APLIKACJI.md` i `TECHNOLOGIE.md` nadal mówią, że telefon wysyła oryginał HEIC, gdy go nie odczyta. Po #130 telefon tego nie robi: pokazuje błąd. Trzeba poprawić dokumenty albo wrócić do wysyłania oryginału.
+- **Zespół:** plik z `GET /api/media/<id>` dostaje każdy zalogowany uczeń, który zna numer pliku. Dotyczy to też zdjęć ze zgłoszeń anonimowych. Czy zostawić tak, czy ograniczyć zdjęcia zgłoszeń do autora i Samorządu?
+- **Zespół:** karta linku z adresem spoza listy serwisów społecznościowych znika z wpisu bez komunikatu w czytniku.
+- **Zespół:** zdjęcie w edytorze bez sieci nie czeka w kolejce, tylko pokazuje błąd.
 - **Szymon:** Face ID przez `@better-auth/passkey`, czas świeżej sesji 24 h (#108).
 - **Kacper:** plan dzwonków, zwykły i skrócony.
 - **Zespół:** czy `AGENTS.md` i `CLAUDE.md` mają trafić do `.gitignore`.
