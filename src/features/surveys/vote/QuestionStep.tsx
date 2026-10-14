@@ -7,7 +7,7 @@
  * @uses src/features/surveys/vote/shortText.ts::countShortTextCharacters
  * @uses src/features/surveys/vote/shortText.ts::cleanShortText
  * @uses src/features/surveys/vote/shortText.ts::SHORT_TEXT_MAX_LENGTH
- * @uses src/features/surveys/vote/texts.ts::TO_AGREE
+ * @uses src/features/surveys/vote/texts.ts::TEXTS
  * @used_by src/features/surveys/vote/SurveyFlowScreen.tsx::SurveyFlowScreen
  * @used_by src/features/surveys/vote/QuestionStep.test.tsx::QuestionStep
  */
@@ -18,7 +18,7 @@ import { useEffect, useId, useRef } from 'react';
 import { LockIcon } from './icons';
 import { ScaleOptions } from './ScaleOptions';
 import { cleanShortText, countShortTextCharacters, SHORT_TEXT_MAX_LENGTH } from './shortText';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 import type { SurveyQuestion } from './types';
 
 // PL: Litery odpowiedzi. Ankieta ma najwyżej tyle odpowiedzi, ile liter; kolejne dostałyby myślnik.
@@ -86,14 +86,14 @@ export function QuestionStep({ question, number, selectedIds, onChange, text, on
       {isShortText ? (
         <div className="vote-text">
           <label className="vote-sr-only" htmlFor={inputId}>
-            {TO_AGREE.shortTextLabel}
+            {TEXTS.shortTextLabel}
           </label>
           <textarea id={inputId} className="vote-text__input" rows={4} value={text} onChange={(event) => onTextChange(event.target.value)} aria-describedby={`${hintId} ${counterId}`} />
           <p id={hintId} className="vote-small">
-            {TO_AGREE.shortTextHint}
+            {TEXTS.shortTextHint}
           </p>
           <div className="vote-text__meta">
-            {tooLong ? <span className="vote-small">{TO_AGREE.shortTextTooLong}</span> : null}
+            {tooLong ? <span className="vote-small">{TEXTS.shortTextTooLong}</span> : null}
             <span id={counterId} className="vote-counter">
               {length} / {SHORT_TEXT_MAX_LENGTH} znaków
             </span>

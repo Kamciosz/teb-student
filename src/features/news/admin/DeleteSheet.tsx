@@ -4,13 +4,13 @@
  *
  * @author Szymon
  * @since 2026-10-12
- * @uses src/features/news/admin/texts.ts::TO_AGREE
+ * @uses src/features/news/admin/texts.ts::TEXTS
  * @used_by src/features/news/admin/NewsAdminScreen.tsx::DeleteSheet
  */
 
 import { useEffect, useRef } from 'react';
 import type { PanelEntry } from './api';
-import { SCREEN, TO_AGREE } from './texts';
+import { SCREEN, TEXTS } from './texts';
 
 /**
  * PL: Dane arkusza.
@@ -37,8 +37,8 @@ export type DeleteSheetProps = {
 function hintFor(entry: PanelEntry): string {
   // PL: Każdy stan ma swój podpis, bo różnie wygląda skutek usunięcia.
   // EN: Each state has its own hint, because the effect of deleting differs.
-  if (entry.status === 'draft') return TO_AGREE.sheet.draftHint(entry.title);
-  return entry.status === 'in_review' ? TO_AGREE.sheet.reviewHint(entry.title) : TO_AGREE.sheet.publishedHint(entry.title);
+  if (entry.status === 'draft') return TEXTS.sheet.draftHint(entry.title);
+  return entry.status === 'in_review' ? TEXTS.sheet.reviewHint(entry.title) : TEXTS.sheet.publishedHint(entry.title);
 }
 
 /**
@@ -65,9 +65,9 @@ export function DeleteSheet({ entry, isDeleting, onConfirm, onCancel }: DeleteSh
   return (
     <div className="na-backdrop" onClick={onCancel}>
       <div className="na-sheet" role="dialog" aria-modal="true" aria-labelledby="na-sheet-title" onClick={(event) => event.stopPropagation()}>
-        <h2 id="na-sheet-title">{TO_AGREE.sheet.title}</h2>
+        <h2 id="na-sheet-title">{TEXTS.sheet.title}</h2>
         <p>{hintFor(entry)}</p>
-        <button type="button" className="na-btn" disabled={isDeleting} onClick={onConfirm}>{TO_AGREE.sheet.confirm}</button>
+        <button type="button" className="na-btn" disabled={isDeleting} onClick={onConfirm}>{TEXTS.sheet.confirm}</button>
         <button ref={cancelRef} type="button" className="na-btn na-btn-outline" disabled={isDeleting} onClick={onCancel}>{SCREEN.cancel}</button>
       </div>
     </div>

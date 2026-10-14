@@ -23,8 +23,8 @@ import { STAGE_NOTE_MAX_LENGTH } from './reportLabels';
 import { categoryLabel, formatShortDate, joinText, placeText, stageLabel } from './reportView';
 
 /**
- * PL: Rysuje zdjęcie dołączone do zgłoszenia. Podgląd ładuje się leniwie i nie wychodzi poza szerokość ekranu; kliknięcie otwiera pełny plik w nowej karcie. Napis alternatywny do uzgodnienia z zespołem (TO_AGREE).
- * EN: Draws the photo attached to the report. The preview loads lazily and stays within the screen width; a click opens the full file in a new tab. The alternative text is to be agreed with the team (TO_AGREE).
+ * PL: Rysuje zdjęcie dołączone do zgłoszenia. Podgląd ładuje się leniwie i nie wychodzi poza szerokość ekranu; kliknięcie otwiera pełny plik w nowej karcie.
+ * EN: Draws the photo attached to the report. The preview loads lazily and stays within the screen width; a click opens the full file in a new tab.
  *
  * @param props - PL: numer zdjęcia z modułu mediów. EN: the photo id from the media module.
  * @returns PL: link z podglądem zdjęcia. EN: the link with the photo preview.
@@ -74,7 +74,7 @@ function AuthorTile({ isAnonymous, student }: { isAnonymous: boolean; student: A
 }
 
 /**
- * PL: Rysuje pole „Odpowiedź dla autora” z licznikiem znaków. Pole ma `maxLength`, więc nie przyjmie więcej niż limit; licznik pokazuje, ile znaków jest wpisanych. Nazwa pola i licznik są do uzgodnienia z zespołem.
+ * PL: Rysuje pole „Odpowiedź dla autora” z licznikiem znaków. Pole ma `maxLength`, więc nie przyjmie więcej niż limit; licznik pokazuje, ile znaków jest wpisanych.
  * EN: Draws the "Odpowiedź dla autora" field with a character counter. The field has `maxLength`, so it does not take more than the limit; the counter shows how many characters are typed. The field name and the counter are to be agreed with the team.
  *
  * @param props - PL: bieżący tekst i funkcja, która go zmienia. EN: the current text and the function that changes it.

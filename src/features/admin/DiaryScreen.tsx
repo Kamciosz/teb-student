@@ -19,7 +19,7 @@ import { Icon } from './icons';
 import { useDiary } from './queries';
 import { ScreenTop } from './ScreenTop';
 
-/** PL: Nazwy działań po polsku. Teksty do uzgodnienia z Samorządem (TO_AGREE). EN: The action names in Polish. The texts are to be agreed with the Council (TO_AGREE). */
+/** PL: Nazwy działań po polsku. EN: The action names in Polish. */
 const ACTION_NAMES: Record<DiaryAction, string> = {
   invite_issued: 'Wydano kod zaproszenia',
   council_granted: 'Nadano rolę Samorządu',
@@ -27,9 +27,8 @@ const ACTION_NAMES: Record<DiaryAction, string> = {
   editor_granted: 'Nadano rolę redakcji',
   editor_revoked: 'Odebrano rolę redakcji',
   pilot_downloaded: 'Pobrano dane z pilotażu',
-  // TO_AGREE: poniższe teksty do uzgodnienia z Samorządem.
-  news_published: 'Opublikowano wpis w Samorządzie',
-  news_deleted: 'Usunięto wpis w Samorządzie',
+  news_published: 'Opublikowano wpis',
+  news_deleted: 'Usunięto wpis',
   report_stage_changed: 'Zmieniono etap zgłoszenia',
 };
 

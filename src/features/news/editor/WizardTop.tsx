@@ -9,7 +9,7 @@
  */
 
 import { Link } from 'react-router';
-import { SCREEN, TO_AGREE } from './texts';
+import { SCREEN, TEXTS } from './texts';
 
 // PL: Liczba kroków kreatora: typ, treść, podgląd.
 // EN: The number of wizard steps: type, content, preview.
@@ -39,11 +39,11 @@ export function WizardTop({ step, onBack }: WizardTopProps) {
       <div className="editor-top__row">
         {/* PL: Strzałka powrotu. Pole dotyku 44 × 44 px. EN: The back arrow. A 44 × 44 px touch area. */}
         {step === 1 ? (
-          <Link className="editor-top__back" to="/news/admin" aria-label={TO_AGREE.back}>
+          <Link className="editor-top__back" to="/news/admin" aria-label={TEXTS.back}>
             <span aria-hidden="true">←</span>
           </Link>
         ) : (
-          <button type="button" className="editor-top__back" aria-label={TO_AGREE.back} onClick={onBack}>
+          <button type="button" className="editor-top__back" aria-label={TEXTS.back} onClick={onBack}>
             <span aria-hidden="true">←</span>
           </button>
         )}
@@ -51,7 +51,7 @@ export function WizardTop({ step, onBack }: WizardTopProps) {
         <p className="editor-top__step">{step}/3</p>
       </div>
       {/* PL: Pasek postępu: odcinki do bieżącego kroku są wypełnione. EN: The progress bar: the segments up to the current step are filled. */}
-      <div className="editor-progress" role="progressbar" aria-label={TO_AGREE.stepOf(step)} aria-valuemin={1} aria-valuemax={3} aria-valuenow={step}>
+      <div className="editor-progress" role="progressbar" aria-label={TEXTS.stepOf(step)} aria-valuemin={1} aria-valuemax={3} aria-valuenow={step}>
         {STEPS.map((number) => (
           <span key={number} className={number <= step ? 'editor-progress__bar editor-progress__bar--on' : 'editor-progress__bar'} />
         ))}

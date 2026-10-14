@@ -10,7 +10,7 @@
 
 import { useEffect, useState, type ComponentType } from 'react';
 import type { RichEditorProps } from './RichEditor';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 
 /**
  * PL: Ładuje moduł z komponentem i pokazuje go, gdy jest gotowy.
@@ -33,13 +33,13 @@ function LazyComponent<Props extends object>({ load, props }: { load: () => Prom
   }, [load]);
 
   if (component) return <component.Component {...props} />;
-  if (!hasFailed) return <p role="status" className="editor-note">{TO_AGREE.loading}</p>;
+  if (!hasFailed) return <p role="status" className="editor-note">{TEXTS.loading}</p>;
   // PL: Nieudane pobranie modułu przeglądarka zapamiętuje do przeładowania strony, więc przycisk przeładowuje stronę.
   // EN: The browser remembers a failed module download until the page reloads, so the button reloads the page.
   return (
     <div className="editor-note" role="alert">
-      <p>{TO_AGREE.loadFailed}</p>
-      <button type="button" className="editor-button" onClick={() => window.location.reload()}>{TO_AGREE.reload}</button>
+      <p>{TEXTS.loadFailed}</p>
+      <button type="button" className="editor-button" onClick={() => window.location.reload()}>{TEXTS.reload}</button>
     </div>
   );
 }

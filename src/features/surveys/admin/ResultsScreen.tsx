@@ -17,7 +17,7 @@ import { LockIcon, WifiOffIcon } from './icons';
 import { ErrorMessage, PanelNote, ScreenTop } from './PanelParts';
 import { fetchResultsCsv } from './surveyApi';
 import { useIsOnline, useSurveyResults } from './surveyQueries';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 import type { OptionResult, QuestionResult, SurveyResults } from './types';
 
 /**
@@ -146,8 +146,8 @@ function MultipleChoiceNote({ question }: { question: QuestionResult }) {
   const checked = question.options.reduce((sum, option) => sum + option.votes, 0);
   return (
     <>
-      <p className="sa-small">{TO_AGREE.checkedCount(checked)}</p>
-      <p className="sa-small">{TO_AGREE.multipleNote}</p>
+      <p className="sa-small">{TEXTS.checkedCount(checked)}</p>
+      <p className="sa-small">{TEXTS.multipleNote}</p>
     </>
   );
 }
@@ -161,7 +161,7 @@ function MultipleChoiceNote({ question }: { question: QuestionResult }) {
  */
 function AverageNote({ question }: { question: QuestionResult }) {
   if (question.average === undefined) return null;
-  return <p className="sa-small">{TO_AGREE.average(question.average)}</p>;
+  return <p className="sa-small">{TEXTS.average(question.average)}</p>;
 }
 
 /**
@@ -174,7 +174,7 @@ function AverageNote({ question }: { question: QuestionResult }) {
 function TextAnswers({ texts }: { texts: string[] }) {
   return (
     <>
-      <p className="sa-small">{TO_AGREE.textsNote}</p>
+      <p className="sa-small">{TEXTS.textsNote}</p>
       <ul className="sa-tile sa-results">
         {texts.map((text, place) => (
           <li key={place} className="sa-result__label">

@@ -11,16 +11,16 @@
 import { addOption, MAX_OPTION_LENGTH, MAX_OPTIONS, MAX_PROMPT_LENGTH, MIN_OPTIONS, removeOption, type DraftQuestion, type QuestionErrors } from './draft';
 import { OPTION_LETTERS } from './format';
 import { PlusIcon, TriangleAlertIcon, XIcon } from './icons';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 import type { QuestionType } from './types';
 
 // PL: Rodzaje pytania do przełącznika, w kolejności na ekranie. Domyślnie „Jeden wybór”. Przy skali 1–5 odpowiedzi tworzy sama skala.
 // EN: The question types for the switch, in the screen order. "Jeden wybór" by default. With the 1–5 scale the options are made by the scale itself.
 const TYPE_CHOICES: { type: QuestionType; text: string }[] = [
-  { type: 'single_choice', text: TO_AGREE.questionType.single },
-  { type: 'multiple_choice', text: TO_AGREE.questionType.multiple },
-  { type: 'scale_1_5', text: TO_AGREE.questionType.scale },
-  { type: 'short_text', text: TO_AGREE.questionType.shortText },
+  { type: 'single_choice', text: TEXTS.questionType.single },
+  { type: 'multiple_choice', text: TEXTS.questionType.multiple },
+  { type: 'scale_1_5', text: TEXTS.questionType.scale },
+  { type: 'short_text', text: TEXTS.questionType.shortText },
 ];
 
 /** PL: Dane edytora pytania. EN: The question editor data. */
@@ -105,7 +105,7 @@ export function QuestionEditor({ question, number, errors, canRemove, onChange, 
       </div>
       {/* PL: Rodzaj pytania: przyciski segmentowe jak czas trwania. Każde pytanie ma własną grupę, więc przyciski jednego pytania nie łączą się z innym. EN: The question type: segment buttons like the duration. Each question has its own group, so one question's buttons do not join another's. */}
       <fieldset className="sa-type">
-        <legend className="sa-label">{TO_AGREE.questionType.legend}</legend>
+        <legend className="sa-label">{TEXTS.questionType.legend}</legend>
         <div className="sa-segment">
           {TYPE_CHOICES.map((choice) => (
             <label key={choice.type} className="sa-segment__choice">

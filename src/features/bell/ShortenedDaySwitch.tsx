@@ -1,6 +1,6 @@
 /**
- * PL: Przełącznik „Lekcje skrócone dziś” na ekranie dzwonka, widoczny tylko dla Samorządu. Włącza albo wyłącza skrócony plan na dzisiejszy dzień. Odmowa serwera (403) i inny błąd zapisu pokazują komunikat pod przełącznikiem.
- * EN: The "Lekcje skrócone dziś" (shortened lessons today) switch on the bell screen, shown only to the Student Council. It turns the shortened plan on or off for today. A refusal from the server (403) and any other save error show a message under the switch.
+ * PL: Przełącznik „Dziś lekcje skrócone” na ekranie dzwonka, widoczny tylko dla Samorządu. Włącza albo wyłącza skrócony plan na dzisiejszy dzień. Odmowa serwera (403) i inny błąd zapisu pokazują komunikat pod przełącznikiem.
+ * EN: The "Dziś lekcje skrócone" (shortened lessons today) switch on the bell screen, shown only to the Student Council. It turns the shortened plan on or off for today. A refusal from the server (403) and any other save error show a message under the switch.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-13
@@ -19,14 +19,14 @@ import { useSetShortenedDay, useShortenedDays } from './shortenedQueries';
 import { BellHttpError } from './shortenedApi';
 import { warsawDate } from './bellState';
 
-// PL: Napis przy przełączniku. TO_AGREE: tekstu nie ma w EKRANY.md, uzgodnić z Samorządem.
-// EN: The label next to the switch. TO_AGREE: the text is not in EKRANY.md, to be agreed with the Student Council.
-const LABEL = 'Lekcje skrócone dziś';
-// PL: Komunikat, gdy serwer odmówi (403, brak roli Samorządu). TO_AGREE: uzgodnić brzmienie.
-// EN: The message when the server refuses (403, no Student Council role). TO_AGREE: the wording to be agreed.
+// PL: Napis przy przełączniku.
+// EN: The label next to the switch.
+const LABEL = 'Dziś lekcje skrócone';
+// PL: Komunikat, gdy serwer odmówi (403, brak roli Samorządu).
+// EN: The message when the server refuses (403, no Student Council role).
 const REFUSED_TEXT = 'Tylko Samorząd może zmienić dzień skrócony.';
-// PL: Komunikat przy każdym innym błędzie zapisu. TO_AGREE: uzgodnić brzmienie.
-// EN: The message for any other save error. TO_AGREE: the wording to be agreed.
+// PL: Komunikat przy każdym innym błędzie zapisu.
+// EN: The message for any other save error.
 const FAILED_TEXT = 'Nie udało się zapisać. Sprawdź połączenie i spróbuj ponownie.';
 
 /**

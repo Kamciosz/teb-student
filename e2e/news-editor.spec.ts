@@ -54,28 +54,13 @@ test('krok 1 pokazuje typy wpisu i pasek postępu / step 1 shows the entry types
   await expect(page.getByText('1/3')).toBeVisible();
 });
 
-// PL: Kafelek „dodaj” w sekcji „Zdjęcia i wideo” jest tylko wyglądem: nie otwiera wyboru plików, nic nie wysyła i nie przenosi do kroku 2.
-// EN: The "add" tile in the "Zdjęcia i wideo" section is only a look: it does not open the file picker, sends nothing and does not move to step 2.
-test('kafelek dodaj nic nie robi w kroku 1 / the add tile does nothing in step 1', async ({ page }) => {
-  const requests: string[] = [];
-  let fileChooser = false;
-  page.on('request', (request) => {
-    if (request.url().includes('/api/')) requests.push(request.url());
-  });
-  page.on('filechooser', () => {
-    fileChooser = true;
-  });
+// PL: Krok 1 nie ma kafla dodawania zdjęć ani wideo: zdjęcia i filmy dodaje się dopiero w treści.
+// EN: Step 1 has no tile for adding photos or videos: photos and videos are added only in the content.
+test('krok 1 nie pokazuje kafla dodawania zdjęcia / step 1 shows no add-photo tile', async ({ page }) => {
   await page.goto('/news/editor');
-  await expect(page.getByText('Zdjęcia i wideo')).toBeVisible();
-  await expect(page.getByText('Pliki są zmniejszane przed wysłaniem. Zdjęcie przytniesz klikając ikonę kadrowania.')).toBeVisible();
-  const add = page.getByRole('button', { name: 'Dodaj zdjęcie albo wideo' });
-  await expect(add).toHaveAttribute('aria-disabled', 'true');
-  // PL: force omija tylko sprawdzenie „czy włączony”: aria-disabled="true" zatrzymałoby klik, a klik ma dojść i nic nie zrobić.
-  // EN: force skips only the "is enabled" check: aria-disabled="true" would stop the click, and the click must reach the tile and do nothing.
-  await add.click({ force: true });
   await expect(page.getByRole('heading', { name: 'Jaki to wpis?' })).toBeVisible();
-  expect(fileChooser).toBe(false);
-  expect(requests).toEqual([]);
+  await expect(page.getByRole('button', { name: 'Dodaj zdjęcie albo wideo' })).toHaveCount(0);
+  await expect(page.getByText('Zdjęcia i wideo')).toHaveCount(0);
 });
 
 // PL: Cała ścieżka: trzy kroki, formatowanie, podgląd i publikacja. Sprawdzamy to, co idzie na serwer.
@@ -511,7 +496,7 @@ test('bez internetu wpis zostaje w edytorze i da się go wysłać później / wi
   await fillEntry(page, 'Tekst napisany bez sieci.');
   await openPreview(page);
   await page.getByRole('button', { name: 'Opublikuj' }).click();
-  await expect(page.getByRole('alert')).toHaveText('Brak internetu. Wpis został w edytorze, wyślesz go, gdy internet wróci.');
+  await expect(page.getByRole('alert')).toHaveText('Brak internetu. Wpis został w edytorze. Wyślesz go, gdy internet wróci.');
   await expect(page.locator('.news-content')).toContainText('Tekst napisany bez sieci.');
 
   // PL: Sieć wraca: ten sam wpis wysyłamy ponownie.
@@ -530,7 +515,7 @@ test('przy wyłączonej sieci wysyłka daje komunikat, a po jej powrocie działa
   await context.setOffline(true);
   await expect(page.getByRole('status').getByText('Brak internetu')).toBeVisible();
   await page.getByRole('button', { name: 'Zapisz szkic i dokończ później' }).click();
-  await expect(page.getByRole('alert')).toHaveText('Brak internetu. Wpis został w edytorze, wyślesz go, gdy internet wróci.');
+  await expect(page.getByRole('alert')).toHaveText('Brak internetu. Wpis został w edytorze. Wyślesz go, gdy internet wróci.');
   await context.setOffline(false);
   await page.route(ENTRIES, (route) => route.fulfill({ status: 201, json: { id: 'abc' } }));
   await page.getByRole('button', { name: 'Zapisz szkic i dokończ później' }).click();

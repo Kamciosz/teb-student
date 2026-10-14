@@ -1,11 +1,15 @@
 /**
- * PL: Wszystkie teksty ekranu „Wpisy” w panelu po polsku. W grupie „SCREEN” są teksty z docs/projekt/EKRANY.md (nazwa części „Wpisy” z ekranu 6.1b, typy wpisu z ekranu 5.1, „Opublikuj” z ekranu 5.3, „Anuluj” z ekranu 6.3c). EKRANY.md nie ma ekranu listy wpisów w panelu, więc reszta jest w grupie „TO_AGREE”: powstała z szablonów przepływu 6 („Nie udało się …. Spróbuj ponownie za chwilę.”, „… wymaga internetu.”) i czeka na decyzję zespołu (lista w opisie pull requesta).
- * EN: All texts of the "Wpisy" (entries) panel screen in Polish. The "SCREEN" group has the texts from docs/projekt/EKRANY.md (the section name "Wpisy" from screen 6.1b, the entry types from screen 5.1, "Opublikuj" from screen 5.3, "Anuluj" from screen 6.3c). EKRANY.md has no screen for the panel entry list, so the rest is in the "TO_AGREE" group: built from the flow 6 templates ("Nie udało się …. Spróbuj ponownie za chwilę.", "… wymaga internetu.") and waiting for a team decision (the list is in the pull request description).
+ * PL: Wszystkie teksty ekranu „Wpisy” w panelu po polsku. W grupie „SCREEN” są teksty z docs/projekt/EKRANY.md (nazwa części „Wpisy” z ekranu 6.1b, typy wpisu z ekranu 5.1, „Opublikuj” z ekranu 5.3, „Anuluj” z ekranu 6.3c). EKRANY.md nie ma ekranu listy wpisów w panelu, więc reszta jest w grupie „TEXTS”: powstała z szablonów przepływu 6 („Nie udało się …. Spróbuj ponownie za chwilę.”, „… wymaga internetu.”).
+ * EN: All texts of the "Wpisy" (entries) panel screen in Polish. The "SCREEN" group has the texts from docs/projekt/EKRANY.md (the section name "Wpisy" from screen 6.1b, the entry types from screen 5.1, "Opublikuj" from screen 5.3, "Anuluj" from screen 6.3c). EKRANY.md has no screen for the panel entry list, so the rest is in the "TEXTS" group: built from the flow 6 templates ("Nie udało się …. Spróbuj ponownie za chwilę.", "… wymaga internetu.").
  *
  * @author Szymon
  * @since 2026-10-12
  * @used_by src/features/news/admin/PanelTop.tsx::SCREEN
- * @used_by src/features/news/admin/NewsAdminScreen.tsx::TO_AGREE
+ * @used_by src/features/news/admin/NewsAdminScreen.tsx::TEXTS
+ * @used_by src/features/news/admin/PanelTop.tsx::TEXTS
+ * @used_by src/features/news/admin/schedule.ts::TEXTS
+ * @used_by src/features/news/admin/EntryTile.tsx::TEXTS
+ * @used_by src/features/news/admin/DeleteSheet.tsx::TEXTS
  * @used_by src/features/news/admin/EntryTile.tsx::SCREEN
  * @used_by src/features/news/admin/DeleteSheet.tsx::SCREEN
  */
@@ -22,10 +26,10 @@ export const SCREEN = {
 } as const;
 
 /**
- * PL: Teksty spoza EKRANY.md: do ustalenia przez zespół.
- * EN: The texts outside EKRANY.md: to be agreed by the team.
+ * PL: Teksty spoza EKRANY.md.
+ * EN: The texts outside EKRANY.md.
  */
-export const TO_AGREE = {
+export const TEXTS = {
   back: 'Wróć',
   newEntry: 'Nowy wpis',
   listLabel: 'Wpisy',

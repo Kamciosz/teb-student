@@ -1,6 +1,6 @@
 /**
- * PL: Testy przełącznika „Lekcje skrócone dziś”: stan włączony i wyłączony, blokada podczas zapisu, komunikat przy odmowie 403 i przy innym błędzie. Rysowanie bez sieci (renderToString).
- * EN: Tests of the "Lekcje skrócone dziś" switch: on and off state, locking while saving, a message for a 403 refusal and for another error. Drawn without the network (renderToString).
+ * PL: Testy przełącznika „Dziś lekcje skrócone”: stan włączony i wyłączony, blokada podczas zapisu, komunikat przy odmowie 403 i przy innym błędzie. Rysowanie bez sieci (renderToString).
+ * EN: Tests of the "Dziś lekcje skrócone" switch: on and off state, locking while saving, a message for a 403 refusal and for another error. Drawn without the network (renderToString).
  *
  * @author Szymon Sosnowski
  * @since 2026-10-13
@@ -28,7 +28,7 @@ describe('ShortenedDayToggle', () => {
     const html = renderToString(<ShortenedDayToggle checked busy={false} error={null} onToggle={noop} />);
     expect(html).toContain('role="switch"');
     expect(html).toContain('checked');
-    expect(html).toContain('Lekcje skrócone dziś');
+    expect(html).toContain('Dziś lekcje skrócone');
     expect(html).not.toContain('role="alert"');
   });
 

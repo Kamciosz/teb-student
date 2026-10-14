@@ -1,6 +1,6 @@
 /**
- * PL: Testy ekranu /bell w przeglądarce. Licznik do dzwonka: plan w main jest pusty, więc się nie pokazuje; testy z podstawionym planem PRZYKŁADOWYM (page.route na moduł planu) i ustawionym zegarem sprawdzają minuty w czasie lekcji i przerwy oraz skrócony plan. Przełącznik „Lekcje skrócone dziś”: Samorząd go włącza, uczeń go nie widzi. Sieć jest zastąpiona atrapami API.
- * EN: Tests of the /bell screen in the browser. The bell countdown: the plan in main is empty, so it does not show; tests with a stubbed EXAMPLE plan (page.route on the plan module) and a fixed clock check the minutes during a lesson and a break, and the shortened plan. The "Lekcje skrócone dziś" switch: the Council turns it on, a student does not see it. The network is replaced by API stubs.
+ * PL: Testy ekranu /bell w przeglądarce. Licznik do dzwonka: plan w main jest pusty, więc się nie pokazuje; testy z podstawionym planem PRZYKŁADOWYM (page.route na moduł planu) i ustawionym zegarem sprawdzają minuty w czasie lekcji i przerwy oraz skrócony plan. Przełącznik „Dziś lekcje skrócone”: Samorząd go włącza, uczeń go nie widzi. Sieć jest zastąpiona atrapami API.
+ * EN: Tests of the /bell screen in the browser. The bell countdown: the plan in main is empty, so it does not show; tests with a stubbed EXAMPLE plan (page.route on the plan module) and a fixed clock check the minutes during a lesson and a break, and the shortened plan. The "Dziś lekcje skrócone" switch: the Council turns it on, a student does not see it. The network is replaced by API stubs.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-13
@@ -166,15 +166,15 @@ test('w dniu skróconym licznik liczy według skróconego planu', async ({ page 
   await expect(countdown).toContainText('Następna: lekcja 2 o 8:40');
 });
 
-// PL: Samorząd włącza „Lekcje skrócone dziś”: wysyłany jest zapis dnia i przełącznik zostaje włączony.
-// EN: The Council turns on "Lekcje skrócone dziś": the day is saved and the switch stays on.
-test('Samorząd włącza lekcje skrócone dziś', async ({ page }) => {
+// PL: Samorząd włącza „Dziś lekcje skrócone”: wysyłany jest zapis dnia i przełącznik zostaje włączony.
+// EN: The Council turns on "Dziś lekcje skrócone": the day is saved and the switch stays on.
+test('Samorząd włącza dziś lekcje skrócone', async ({ page }) => {
   await stubRole(page, 'council');
   // PL: Poniedziałek 19.10.2026 09:10 w Warszawie (czas letni: 07:10 UTC), dzień bieżący dla przełącznika.
   // EN: Monday 19.10.2026 09:10 in Warsaw (summer time: 07:10 UTC), the current day for the switch.
   await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
   await page.goto('/bell');
-  const toggle = page.getByRole('switch', { name: 'Lekcje skrócone dziś' });
+  const toggle = page.getByRole('switch', { name: 'Dziś lekcje skrócone' });
   await expect(toggle).not.toBeChecked();
   const saved = page.waitForRequest(
     (request) => request.method() === 'POST' && request.url().endsWith('/api/bell/shortened/2026-10-19'),
@@ -184,8 +184,8 @@ test('Samorząd włącza lekcje skrócone dziś', async ({ page }) => {
   await expect(toggle).toBeChecked();
 });
 
-// PL: Uczeń nie widzi przełącznika „Lekcje skrócone dziś”, choć licznik się pokazuje.
-// EN: A student does not see the "Lekcje skrócone dziś" switch, although the countdown shows.
+// PL: Uczeń nie widzi przełącznika „Dziś lekcje skrócone”, choć licznik się pokazuje.
+// EN: A student does not see the "Dziś lekcje skrócone" switch, although the countdown shows.
 test('uczeń nie widzi przełącznika lekcji skróconych', async ({ page }) => {
   await useExamplePlan(page);
   // PL: Czekamy na odpowiedź o rolę, zanim sprawdzimy brak przełącznika.

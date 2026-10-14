@@ -1,6 +1,6 @@
 /**
- * PL: Podpis autora pod treścią wpisu (gdy wpis ma autora) i stopka „Redakcja gazetki”. Sam serwer podaje tylko imię i nazwisko autora, bez adresu e-mail. Tekst stopki i forma podpisu czekają na akceptację zespołu (TO_AGREE).
- * EN: The author's signature under the entry content (when the entry has an author) and the "Redakcja gazetki" footer. The server gives only the author's name and surname, without the e-mail address. The footer text and the form of the signature wait for the team's approval (TO_AGREE).
+ * PL: Podpis autora pod treścią wpisu (gdy wpis ma autora) i stopka „Redakcja gazetki”. Sam serwer podaje tylko imię i nazwisko autora, bez adresu e-mail.
+ * EN: The author's signature under the entry content (when the entry has an author) and the "Redakcja gazetki" footer. The server gives only the author's name and surname, without the e-mail address.
  *
  * @author Szymon
  * @since 2026-10-13
