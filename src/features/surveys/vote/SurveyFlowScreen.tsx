@@ -4,6 +4,7 @@
  *
  * @author Jakub
  * @since 2026-10-09
+ * @uses src/features/surveys/vote/shortText.ts::isShortTextReady
  * @uses src/features/surveys/vote/surveyQueries.ts::useSurvey
  * @uses src/features/surveys/vote/useVoteSubmit.ts::useVoteSubmit
  * @used_by src/features/surveys/vote/SurveysVoteScreen.tsx::SurveysVoteScreen
@@ -17,15 +18,16 @@ import { useState } from 'react';
 import { useParams } from 'react-router';
 import { FlowNotice, FlowTop } from './FlowParts';
 import { QuestionStep } from './QuestionStep';
+import { isShortTextReady } from './shortText';
 import { useSurvey } from './surveyQueries';
-import type { AnswerMap, SurveyDetail } from './types';
+import type { AnswerMap, SurveyDetail, TextMap } from './types';
 import { useVoteSubmit } from './useVoteSubmit';
 
 // PL: Komunikaty o problemie z wysłaniem, które zastępują ekran pytań.
 // EN: The messages about a sending problem that replace the question screen.
 const BLOCKING_MESSAGES = {
   already_voted: { title: 'Już wypełniona', text: 'Ta ankieta jest już wypełniona. Nie można jej wypełnić drugi raz.' },
-  ended: { title: 'Ankieta zakończona', text: 'Ta ankieta już się skończyła, więc nie przyjmujemy odpowiedzi.' },
+  ended: { title: 'Ankieta zamknięta', text: 'Ta ankieta jest już zamknięta, więc nie przyjmujemy odpowiedzi.' },
 } as const;
 
 /**
@@ -38,22 +40,36 @@ const BLOCKING_MESSAGES = {
 function SurveyQuestions({ survey }: { survey: SurveyDetail }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<AnswerMap>({});
-  const { submit, sending, problem } = useVoteSubmit(survey.id, answers);
+  // PL: Krótkie odpowiedzi trzymamy osobno, bo wysyłają się inaczej niż wybory.
+  // EN: Short answers are kept apart, because they are sent differently from the choices.
+  const [texts, setTexts] = useState<TextMap>({});
+  const { submit, sending, problem } = useVoteSubmit(survey.id, answers, texts);
 
   const question = survey.questions[step];
   if (problem === 'already_voted' || problem === 'ended') return <FlowNotice {...BLOCKING_MESSAGES[problem]} />;
   if (question === undefined) return <FlowNotice title="Brak pytań" text="Ta ankieta nie ma jeszcze pytań." />;
 
   const isLast = step === survey.questions.length - 1;
-  const selectedId = answers[question.id];
+  const selectedIds = answers[question.id] ?? [];
+  const text = texts[question.id] ?? '';
+  // PL: Dalej działa, gdy pytanie ma odpowiedź: wybór, albo krótki tekst od 1 do 200 znaków po przycięciu.
+  // EN: "Dalej" works when the question has an answer: a choice, or a short text of 1 to 200 characters after trimming.
+  const isReady = question.type === 'short_text' ? isShortTextReady(text) : selectedIds.length > 0;
 
   return (
     <main className="vote vote--flow" data-subtrack="5a">
       <FlowTop title={survey.title} step={step + 1} total={survey.questions.length} onBack={step === 0 ? null : () => setStep(step - 1)} />
-      <QuestionStep question={question} number={step + 1} selectedId={selectedId} onSelect={(optionId) => setAnswers({ ...answers, [question.id]: optionId })} />
+      <QuestionStep
+        question={question}
+        number={step + 1}
+        selectedIds={selectedIds}
+        onChange={(optionIds) => setAnswers({ ...answers, [question.id]: optionIds })}
+        text={text}
+        onTextChange={(value) => setTexts({ ...texts, [question.id]: value })}
+      />
       <div className="vote-footer">
         {problem === 'failed' ? <p className="vote-error" role="alert">Nie udało się wysłać odpowiedzi. Sprawdź połączenie z internetem i spróbuj jeszcze raz.</p> : null}
-        <button type="button" className="vote-button vote-button--primary" disabled={selectedId === undefined || sending} onClick={isLast ? submit : () => setStep(step + 1)}>
+        <button type="button" className="vote-button vote-button--primary" disabled={!isReady || sending} onClick={isLast ? submit : () => setStep(step + 1)}>
           {sending ? 'Wysyłam…' : isLast ? 'Wyślij odpowiedzi' : 'Dalej'}
         </button>
       </div>

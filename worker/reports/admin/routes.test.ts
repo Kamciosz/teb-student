@@ -68,6 +68,19 @@ function patchStage(id: string, body: unknown): Promise<Response> {
   return send(`/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) });
 }
 
+/**
+ * PL: Czyta dziennik zmian prosto z bazy testowej, od najstarszego wpisu: nazwa akcji, wykonawca i cel.
+ * EN: Reads the change diary straight from the test database, from the oldest entry: the action name, the actor and the target.
+ *
+ * @returns PL: wiersze dziennika. EN: the diary rows.
+ */
+async function diaryRows(): Promise<unknown[]> {
+  // PL: Wybierz wszystkie wpisy po numerze.
+  // EN: Select all entries by id.
+  const { results } = await db.prepare('SELECT action, actor_id, target_id FROM diary_entries ORDER BY id').all();
+  return results;
+}
+
 // PL: Przed każdym testem zaloguj ucznia z rolą Samorządu i wróć do czystych danych.
 // EN: Before every test sign in a student with the Council role and go back to clean data.
 beforeEach(async () => {
@@ -161,12 +174,25 @@ describe('odczyt / reading', () => {
     const response = await send('/seed-okno');
     const body = (await response.json()) as { report: { id: string }; history: Record<string, unknown>[] };
 
-    // PL: Historia od najnowszego etapu, a wiersz ma tylko etap i chwilę.
-    // EN: The history from the newest stage, and a row has only the stage and the moment.
+    // PL: Historia od najnowszego etapu, a wiersz ma etap, chwilę i odpowiedź dla autora. Lista kluczy jest dokładna, więc `changedBy` (numer osoby z Samorządu) nie może się tu pojawić.
+    // EN: The history from the newest stage, and a row has the stage, the moment and the answer for the author. The key list is exact, so `changedBy` (the Council member's id) cannot appear here.
     expect(response.status).toBe(200);
     expect(body.report.id).toBe('seed-okno');
     expect(body.history.map((row) => row.stage)).toEqual(['resolved', 'in_progress', 'received']);
-    expect(Object.keys(body.history[0] ?? {}).sort()).toEqual(['changedAt', 'stage']);
+    expect(Object.keys(body.history[0] ?? {}).sort()).toEqual(['changedAt', 'note', 'stage']);
+  });
+
+  // PL: Wiersz historii z odpowiedzią dla autora niesie jej tekst, a wiersz bez odpowiedzi ma `note` równe null.
+  // EN: A history row with an answer for the author carries its text, and a row without an answer has `note` equal to null.
+  it('GET /:id niesie odpowiedź dla autora w wierszu historii / GET /:id carries the answer for the author in the history row', async () => {
+    // PL: Odczytaj zgłoszenie z historią, w której jedna zmiana ma odpowiedź, a dwie nie mają.
+    // EN: Read the report whose history has one change with an answer and two without.
+    const body = (await (await send('/seed-okno')).json()) as { history: { stage: string; note: string | null }[] };
+
+    // PL: Najnowsza zmiana (załatwione) ma odpowiedź z seedu, a zgłoszenie wpłynęło bez odpowiedzi.
+    // EN: The newest change (resolved) has the seed answer, and the report's arrival (received) has none.
+    expect(body.history.find((row) => row.stage === 'resolved')?.note).toBe('Okno wymienione, domyka się bez problemu.');
+    expect(body.history.find((row) => row.stage === 'received')?.note).toBeNull();
   });
 
   // PL: Nieznane zgłoszenie to 404.
@@ -295,6 +321,24 @@ describe('imię i klasa autora / the author name and class', () => {
     expect(text).not.toContain('Jan Testowy');
     expect(text).not.toContain(studentId);
   });
+
+  // PL: Odpowiedź dla autora przy anonimowym zgłoszeniu wraca, ale razem z nią nie wraca ani numer ucznia, ani numer osoby z Samorządu, która zmieniła etap.
+  // EN: The answer for the author on an anonymous report comes back, but neither the student id nor the id of the Council member who changed the stage comes back with it.
+  it('odpowiedź w historii anonimowego zgłoszenia nie ujawnia autora / the answer in an anonymous report history reveals no author', async () => {
+    // PL: Zapisz profil ucznia z sesji (autora anonimowego zgłoszenia) i odczytaj zgłoszenie z odpowiedzią w historii.
+    // EN: Save the profile of the signed-in student (the author of the anonymous report) and read the report with the answer in its history.
+    await saveProfile(studentId, 'Jan Testowy', '2A');
+    const response = await send('/seed-projektor');
+    const text = await response.text();
+
+    // PL: Tekst odpowiedzi jest w odpowiedzi HTTP, a imienia, numeru ucznia i numeru osoby z Samorządu (`changedBy` z seedu) nie ma.
+    // EN: The answer text is in the HTTP response, and the name, the student id and the Council member's id (`changedBy` from the seed) are not.
+    expect(response.status).toBe(200);
+    expect(text).toContain('Sprawdzimy projektor na przerwie obiadowej.');
+    expect(text).not.toContain('Jan Testowy');
+    expect(text).not.toContain(studentId);
+    expect(text).not.toContain('samorzad-testowy');
+  });
 });
 
 // PL: Zmiana etapu zapisuje etap, czas i wiersz historii z numerem osoby z sesji.
@@ -318,6 +362,25 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     expect(row?.stage).toBe('resolved');
     expect(row?.updated_at).toBeGreaterThan(Date.UTC(2026, 9, 7, 8, 0));
     expect(last).toEqual({ changed_by: studentId });
+    // PL: Dokładnie jeden wpis w dzienniku: zmiana etapu, wykonawca z sesji i id zgłoszenia, bez treści.
+    // EN: Exactly one diary entry: the stage change, the actor from the session and the report id, without the content.
+    expect(await diaryRows()).toEqual([{ action: 'report_stage_changed', actor_id: studentId, target_id: 'seed-projektor' }]);
+  });
+
+  // PL: Odpowiedź wysłana razem ze zmianą etapu trafia do wiersza historii i wraca w tej samej odpowiedzi.
+  // EN: An answer sent together with the stage change goes into the history row and comes back in the same response.
+  it('zapisuje odpowiedź dla autora przy zmianie etapu / saves the answer for the author with the stage change', async () => {
+    // PL: Zmień etap z odpowiedzią i sprawdź historię w odpowiedzi i w bazie.
+    // EN: Change the stage with an answer and check the history in the response and in the database.
+    const response = await patchStage('seed-projektor', { stage: 'resolved', note: 'Projektor naprawiony.' });
+    const body = (await response.json()) as { history: { stage: string; note: string | null }[] };
+    const saved = await db.prepare("SELECT note FROM report_stage_changes WHERE report_id = ? AND stage = 'resolved'").bind('seed-projektor').first();
+
+    // PL: Odpowiedź i zapis mają ten sam tekst, a najnowszy wiersz historii go niesie.
+    // EN: The response and the saved row have the same text, and the newest history row carries it.
+    expect(response.status).toBe(200);
+    expect(saved).toEqual({ note: 'Projektor naprawiony.' });
+    expect(body.history[0]?.note).toBe('Projektor naprawiony.');
   });
 
   // PL: Ten sam etap nie dopisuje historii.
@@ -332,6 +395,9 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     // EN: The answer is successful and the history still has two rows.
     expect(response.status).toBe(200);
     expect(count?.n).toBe(2);
+    // PL: Brak zmiany to brak wpisu w dzienniku.
+    // EN: No change means no diary entry.
+    expect(await diaryRows()).toEqual([]);
   });
 
   // PL: Zły etap, brak etapu i zepsuty JSON to 400, a baza zostaje bez zmian.
@@ -348,6 +414,7 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     // EN: All three are 400, and the stage in the database did not change.
     expect([bad.status, missing.status, broken.status]).toEqual([400, 400, 400]);
     expect(row).toEqual({ stage: 'in_progress' });
+    expect(await diaryRows()).toEqual([]);
   });
 
   // PL: Nieznane zgłoszenie to 404 i nic nie trafia do historii.
@@ -362,14 +429,77 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     // EN: 404, and the history still has the six seed rows.
     expect(response.status).toBe(404);
     expect(count?.n).toBe(6);
+    expect(await diaryRows()).toEqual([]);
   });
 
   // PL: Zbyt duża treść to 413.
   // EN: An oversized body is 413.
   it('zbyt duża treść daje 413 / an oversized body gives 413', async () => {
-    // PL: Treść większa niż 1 KB jest odrzucona, zanim ją odczytamy.
-    // EN: A body larger than 1 KB is rejected before we read it.
-    const response = await patchStage('seed-projektor', { stage: 'resolved', padding: 'x'.repeat(2048) });
+    // PL: Treść większa niż 4 KB jest odrzucona, zanim ją odczytamy.
+    // EN: A body larger than 4 KB is rejected before we read it.
+    const response = await patchStage('seed-projektor', { stage: 'resolved', padding: 'x'.repeat(5000) });
     expect(response.status).toBe(413);
+    expect(await diaryRows()).toEqual([]);
+  });
+
+  // PL: Odpowiedź dla autora zapisuje się w wierszu historii nowego etapu, bez dodatkowego wiersza. Przycięte spacje nie trafiają do bazy.
+  // EN: The answer for the author is saved in the history row of the new stage, with no extra row. Trimmed spaces do not reach the database.
+  it('zapisuje odpowiedź w wierszu historii / saves the answer in the history row', async () => {
+    // PL: Zmień etap i dołącz odpowiedź ze spacjami na początku i na końcu.
+    // EN: Change the stage and attach an answer with spaces at the start and the end.
+    const response = await patchStage('seed-projektor', { stage: 'resolved', note: '  Projektor naprawiony, dziękujemy.  ' });
+    const rows = await db.prepare('SELECT stage, note FROM report_stage_changes WHERE report_id = ? ORDER BY changed_at').bind('seed-projektor').all<{ stage: string; note: string | null }>();
+
+    // PL: Odpowiedź przeszła, a w historii jest jeden nowy wiersz z przyciętą odpowiedzią.
+    // EN: The answer went through, and the history has one new row with the trimmed answer.
+    expect(response.status).toBe(200);
+    expect(rows.results.length).toBe(3);
+    expect(rows.results.at(-1)).toEqual({ stage: 'resolved', note: 'Projektor naprawiony, dziękujemy.' });
+  });
+
+  // PL: Odpowiedź z 500 znakami, w tym polskimi literami (po dwa bajty), mieści się w limicie i przechodzi.
+  // EN: An answer of 500 characters, including Polish letters (two bytes each), fits the limit and goes through.
+  it('500 znaków przechodzi / 500 characters pass', async () => {
+    // PL: Wyślij odpowiedź dokładnie na granicy limitu.
+    // EN: Send an answer exactly at the limit.
+    const response = await patchStage('seed-projektor', { stage: 'resolved', note: 'ą'.repeat(500) });
+    const row = await db.prepare("SELECT length(note) AS n FROM report_stage_changes WHERE report_id = ? AND stage = 'resolved'").bind('seed-projektor').first<{ n: number }>();
+
+    // PL: Odpowiedź przeszła, a baza liczy 500 znaków.
+    // EN: The answer went through, and the database counts 500 characters.
+    expect(response.status).toBe(200);
+    expect(row?.n).toBe(500);
+  });
+
+  // PL: Odpowiedź dłuższa niż 500 znaków albo nie-tekst to 400, a etap i historia zostają bez zmian.
+  // EN: An answer longer than 500 characters, or one that is not text, is 400, and the stage and the history stay unchanged.
+  it('za długa odpowiedź daje 400 i nic nie zmienia / a too long answer gives 400 and changes nothing', async () => {
+    // PL: Wyślij 501 znaków i liczbę zamiast tekstu.
+    // EN: Send 501 characters and a number instead of text.
+    const tooLong = await patchStage('seed-projektor', { stage: 'resolved', note: 'ą'.repeat(501) });
+    const notText = await patchStage('seed-projektor', { stage: 'resolved', note: 12 });
+    const row = await db.prepare('SELECT stage FROM reports WHERE id = ?').bind('seed-projektor').first();
+    const count = await db.prepare('SELECT COUNT(*) AS n FROM report_stage_changes WHERE report_id = ?').bind('seed-projektor').first<{ n: number }>();
+
+    // PL: Oba zapytania to 400, etap w zgłoszeniu to dalej „w trakcie”, a historia ma dwa wiersze.
+    // EN: Both requests are 400, the report stage is still "in progress", and the history has two rows.
+    expect([tooLong.status, notText.status]).toEqual([400, 400]);
+    expect(row).toEqual({ stage: 'in_progress' });
+    expect(count?.n).toBe(2);
+    expect(await diaryRows()).toEqual([]);
+  });
+
+  // PL: Pusta odpowiedź (same spacje) to brak odpowiedzi: zmiana etapu idzie, a `note` w bazie jest pusty.
+  // EN: An empty answer (only spaces) means no answer: the stage change goes through, and `note` in the database is empty.
+  it('pusta odpowiedź zapisuje brak odpowiedzi / an empty answer saves no answer', async () => {
+    // PL: Wyślij etap z odpowiedzią złożoną z samych spacji.
+    // EN: Send a stage with an answer made of spaces only.
+    const response = await patchStage('seed-projektor', { stage: 'resolved', note: '   ' });
+    const row = await db.prepare("SELECT note FROM report_stage_changes WHERE report_id = ? AND stage = 'resolved'").bind('seed-projektor').first<{ note: string | null }>();
+
+    // PL: Zmiana przeszła, a odpowiedź w wierszu historii to `null`.
+    // EN: The change went through, and the answer in the history row is `null`.
+    expect(response.status).toBe(200);
+    expect(row).toEqual({ note: null });
   });
 });

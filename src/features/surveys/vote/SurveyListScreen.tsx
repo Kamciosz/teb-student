@@ -16,7 +16,7 @@ import { Link } from 'react-router';
 // EN: The bottom navigation bar. Per EKRANY.md only the survey list has it.
 import { Dock } from '../../../shared';
 import { CircleCheckIcon } from './icons';
-import { daysWord, describeSurvey, formatShortDate } from './format';
+import { daysWord, describeSurvey, formatClosesAt, formatShortDate } from './format';
 import { useSurveyList } from './surveyQueries';
 import type { ActiveSurvey, EndedSurvey } from './types';
 
@@ -34,6 +34,7 @@ function OpenSurveyTile({ survey }: { survey: ActiveSurvey }) {
         {survey.label === null ? null : <p className="vote-label">{survey.label}</p>}
         <h3 className="vote-tile__title">{survey.title}</h3>
         <p className="vote-small">{describeSurvey(survey.questionCount)}</p>
+        {survey.closesAt === null ? null : <p className="vote-small">{formatClosesAt(survey.closesAt)}</p>}
         <Link className="vote-button vote-button--outline" to={`/surveys/vote/${survey.id}`}>
           Wypełnij
         </Link>
@@ -67,8 +68,8 @@ function FilledSurveyTile({ survey }: { survey: ActiveSurvey }) {
 }
 
 /**
- * PL: Kafel ankiety zakończonej: tytuł i data zakończenia.
- * EN: The tile of an ended survey: the title and the end date.
+ * PL: Kafel ankiety zamkniętej: tytuł i stan „Ankieta zamknięta” z dniem zamknięcia.
+ * EN: The tile of a closed survey: the title and the state "Ankieta zamknięta" with the closing day.
  *
  * @param props - PL: ankieta. EN: the survey.
  * @returns PL: kafel. EN: the tile.
@@ -77,7 +78,7 @@ function EndedSurveyTile({ survey }: { survey: EndedSurvey }) {
   return (
     <li className="vote-tile">
       <h3 className="vote-tile__title">{survey.title}</h3>
-      <p className="vote-small">Zakończona {formatShortDate(survey.endsOn)}</p>
+      <p className="vote-small">Ankieta zamknięta · {formatShortDate(survey.endedOn)}</p>
     </li>
   );
 }

@@ -1,47 +1,44 @@
 # Stan prac
 
-Stan na 12.10.2026. `main` po scaleniu #61. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
+Stan na 14.10.2026. `main` po scaleniu #152. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
 
 ## Co jest w `main`
 
-| Podtor | Co | Pull request |
+Do #61 (stan z 12.10): szkielet, PWA i baza D1, logowanie kodem (1a), aktualności (3a), zgłoszenia (4a), głosowanie w ankiecie (5a), pulpit (9). Od #62 do #156 weszło:
+
+| Podtor | Co | Pull requesty |
 |---|---|---|
-| etap A | szkielet, rejestracja wszystkich podtorów, adresy (ADR 0003), lista kasowania danych ucznia | #34 |
-| 0 | PWA, baza D1 (`DB`, `db:reset`, `db:seed`), wspólny `QueryClient` z zapisem w telefonie, pasek „Brak internetu”, drzwi modułu auth | #33, #53, #54, #55 |
-| 1a | logowanie kodem ze szkolnej poczty, `requireStudent` | #50 |
-| 3a | aktualności: lista i wpis | #49 |
-| 4a | zgłoszenie: formularz i „moje zgłoszenia” | #47 |
-| 5a | ankieta: głosowanie | #48 |
-| 0 | bramka logowania: odpowiedź 401 i wylogowanie przenoszą na `/auth/email` | #60 |
-| 1b | kody zaproszeń, login i hasło | #62 |
-| 7 | profil i ustawienia, usunięcie konta | #63 |
-| 9 | pulpit: kafelki aktualności, zgłoszeń, ankiety i dzwonka | #61 |
-| CI | Babel 8 razem, reguły Dependabota, uprawnienia workflow tylko do czytania | #56, #57 |
+| 0 | wspólne elementy ekranów i dolny pasek, paczka edytora poza zapisem w telefonie | #95, #99 |
+| 1a, 1b | kody zaproszeń, login i hasło, lista urządzeń i wylogowanie z innych | #62, #67, #84, #86, #108 |
+| 2 | zdjęcia i filmy dla redaktora, zasobnik R2 `MEDIA` | #93, #98 |
+| 3a | wyszukiwanie, film z YouTube, przypięte wpisy na górze, ukrywanie zaplanowanych, podpis autora, stan „in_review” | #90, #105, #117, #118, #126, #138 |
+| 3b | edytor w trzech krokach (Tiptap), rola redakcji, edycja szkicu, zaplanowana publikacja, zapis autora, wysyłka do korekty i zatwierdzenie | #65, #79, #85, #91, #97, #114, #123, #128, #141 |
+| 3c | lista wpisów w panelu, publikacja, usuwanie, „Edytuj”, przypinanie (najwyżej 3), znacznik zaplanowanych, wpisy w korekcie | #82, #96, #101, #115, #122, #140, #144, #147, #152 |
+| 4a | „Mnie też to dotyczy”, odpowiedź Samorządu przy zmianie etapu | #109, #113, #137 |
+| 4b | zgłoszenia w panelu, zmiana etapu z odpowiedzią dla autora, imię i klasa autora, liczba „Mnie też”, sortowanie | #71, #83, #87, #92, #120, #132, #151, #154 |
+| 5a | data zamknięcia, wielokrotny wybór, skala 1–5, krótka odpowiedź z podpowiedzią o anonimowości | #107, #125, #135, #146, #155 |
+| 5b | ankiety w panelu, wyniki od 5 odpowiedzi, CSV, termin, typ pytania, skala, krótka odpowiedź | #78, #88, #106, #121, #131, #143, #150, #156 |
+| 6 | licznik do dzwonka, następna lekcja, dni skrócone (serwer i przełącznik), pusty plan, stan dnia | #94, #103, #129, #133, #139, #145 |
+| 7 | profil i ustawienia, usunięcie konta, wiersz panelu, pobieranie moich danych ze wszystkich modułów, „Moje urządzenia” | #63, #89, #104, #110, #119, #124 |
+| 8 | panel Samorządu, role, kody zaproszeń, pilotaż, dziennik zmian (publikacja, usunięcie, zmiana etapu) | #68, #69, #100, #111, #134, #148 |
+| 9 | kafelek dzwonka, kolejność kafelków, minuty do dzwonka, stan dnia w nagłówku | #102, #116, #136, #142, #149, #153 |
 
-Testy na `main`: lint, Vitest, build i e2e w CI przechodzą. Alerty CodeQL: 0 otwartych. Otwartych pull requestów: 0.
+Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (sprawdzone na #152). Usuwanie danych ucznia w modułach aktualności, mediów i panelu nie jest już atrapą.
 
-## Co dalej
+## Otwarte pull requesty
 
-Zależności każdego podtoru są w `docs/PODZIAL_PRACY.md`, część 3. Zgłoszenia podtorów mają etykietę `tor:<podtor>`.
+- #130 (podtor 2): blokada zdjęć HEIC. Gotowy do scalenia, czeka na decyzję Szymona.
+- #127 (podtor 4a): zdjęcie w zgłoszeniu. Wymaga zmiany drzwi modułu media, czeka na decyzję Szymona.
 
-**Można zaczynać od razu** (zależności są w `main`):
+## Przed pierwszym wdrożeniem
 
-- 8, panel Samorządu: rama, role, wydawanie kodów (#26). Najpierw `worker/auth/index.ts` musi wystawić `issueInviteCode` (podtor 1b).
-- 3b, edytor wpisów (#18). Najpierw osobny pull request dodaje pakiety Tiptap (ADR 0002, opcja A przyjęta 9.10), bo agent podtoru nie dodaje pakietów.
-- 4b, zgłoszenia w panelu (#21), i 5b, ankiety w panelu (#23). W `docs/projekt/EKRANY.md` nie ma ich ekranów, więc najpierw projekt z Szymonem.
-
-**Czekają:**
-
-- 3c (#19) czeka na 3b.
-- 2, wysyłka zdjęć (#16, #45), czeka na konto Cloudflare.
-- 6, dzwonek (#24), czeka na plan dzwonków od Kacpra (17.10).
-- #51: zostało tylko prawdziwe wysyłanie maili (`send_email`), po założeniu konta Cloudflare i teście 20.10.
+Baza nie ma migracji. Lokalnie schemat zakłada `db:reset`. Na produkcji trzeba ręcznie dodać nowe tabele (m.in. `diary_entries`, `bell_shortened_days`, `media_files`) i kolumny (m.in. `author_user_id`, `pinned_at`, `publish_at` w aktualnościach). Pełną listę daje porównanie `worker/db/schema/` z bazą produkcyjną. Zapis wpisu w dzienniku nie jest w jednej transakcji z publikacją. Poprawić przy wdrożeniu.
 
 ## Jak uruchomić agenta podtoru
 
 1. Polecenie dla agenta jest w `docs/PODZIAL_PRACY.md`, część 9. Wstaw podtor, port i numer zgłoszenia.
 2. Każdy agent ma swoją kopię: `git worktree add ../teb-<podtor> -b feat/<podtor>-<krótko> origin/main`.
-3. Najwyżej 4 pull requesty naraz gotowe do przeglądu. Reszta jako szkic.
+3. Jeden agent robi jedną funkcję albo jeden ekran i oddaje jeden pull request. Duże zadanie dziel na małe.
 4. Agent nie scala. Scala Szymon (albo osoba prowadząca rój), dopiero gdy wszystkie sprawdzenia na ostatnim commicie są zielone.
 
 ## Jak scalać
@@ -53,6 +50,8 @@ gh pr update-branch <numer>
 gh pr checks <numer> --watch
 gh pr merge <numer> --merge --admin
 ```
+
+Pull request zbudowany na innym (piętrowy) ma czerwone „Granice torów”, dopóki jego baza nie wejdzie do `main`. Potem zmień bazę na `main` i odśwież gałąź.
 
 Po scaleniu usuń kopię roboczą (`git worktree remove ../teb-<podtor>`) i gałąź.
 
@@ -67,10 +66,17 @@ Po scaleniu usuń kopię roboczą (`git worktree remove ../teb-<podtor>`) i gał
 
 - Plik `.dev.vars` psuje lokalnie testy Workera z sesją (401, bo `BETTER_AUTH_URL` nie pasuje do adresu testu). CI go nie ma. Lokalnie uruchamiaj Vitest bez `.dev.vars`.
 - Podtor 1b wymaga `BETTER_AUTH_SECRET` także lokalnie (bez niego 503). Seed nie ma kodu zaproszenia.
-- Usuwanie danych z modułów aktualności, mediów i panelu to na razie puste atrapy (`deleteNewsStudentData`, `deleteMediaStudentData`, `deleteAdminStudentData`). Podtory 2, 3b, 3c i 8 muszą je wypełnić.
 - `index.ts` modułów 3a, 4a i 5a nie wystawiają typów ani funkcji pobierania, więc pulpit czyta ich odpowiedzi HTTP. Moduł logowania nie wystawia imienia ucznia.
 
 ## Decyzje do podjęcia
+
+- **Szymon:** #130 (HEIC) i #127 (zdjęcie w zgłoszeniu).
+- **Szymon:** Face ID przez `@better-auth/passkey`, czas świeżej sesji 24 h (#108).
+- **Kacper:** plan dzwonków, zwykły i skrócony.
+- **Zespół:** czy `AGENTS.md` i `CLAUDE.md` mają trafić do `.gitignore`.
+- **Zespół:** wpisy dziennika ucznia znikają razem z kontem. Czy tak ma zostać?
+- **Zespół:** krótka odpowiedź w ankiecie może zdradzić autora w małej grupie. Pod polem jest podpowiedź, ale wyniki pokazujemy dopiero od 5 odpowiedzi.
+- **Zespół:** teksty oznaczone `TO_AGREE` w nowych ekranach.
 
 - **Bohdan:** ADR 0003 (adresy podtorów), 0004 (przeglądarki), 0005 (krój pisma).
 - **Adam:** czy wyłączyć wymóg aktualnej gałęzi przed scaleniem. Przez niego każde scalenie czeka na CI dwa razy.

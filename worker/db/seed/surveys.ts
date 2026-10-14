@@ -19,18 +19,19 @@ import { surveyOptions, surveyQuestions, surveys } from '../schema/surveys';
 import type { SeedSet } from '../../shared/seed';
 
 /**
- * PL: Ankiety testowe: aktywna (do końca roku), aktywna druga i zakończona.
- * EN: Test surveys: an active one (until the end of the year), a second active one and an ended one.
+ * PL: Ankiety testowe: aktywna (do końca roku), aktywna druga, zakończona i aktywna z pytaniem wielokrotnego wyboru.
+ * EN: Test surveys: an active one (until the end of the year), a second active one, an ended one and an active one with a multiple-choice question.
  */
 export const SURVEYS_SEED: (typeof surveys.$inferInsert)[] = [
   { id: 'dodatkowe', label: 'Zajęcia dodatkowe', title: 'Zajęcia dodatkowe w II semestrze', endsOn: '2026-12-31' },
   { id: 'stolowka', label: null, title: 'Obiad w stołówce', endsOn: '2026-12-31' },
   { id: 'dzwonki', label: null, title: 'Plan dzwonków', endsOn: '2026-09-30' },
+  { id: 'wybor', label: null, title: 'Dni po lekcjach (kilka odpowiedzi)', endsOn: '2026-12-31' },
 ];
 
 /**
- * PL: Pytania testowe. Ankieta „dodatkowe” ma trzy pytania, jak na ekranie 4.1, a pozostałe po jednym.
- * EN: Test questions. The "dodatkowe" survey has three questions, as on screen 4.1, and the others have one each.
+ * PL: Pytania testowe. Ankieta „dodatkowe” ma trzy pytania, jak na ekranie 4.1, a pozostałe po jednym. Pytanie ankiety „wybor” jest wielokrotnego wyboru.
+ * EN: Test questions. The "dodatkowe" survey has three questions, as on screen 4.1, and the others have one each. The question of the "wybor" survey is multiple choice.
  */
 export const SURVEY_QUESTIONS_SEED: (typeof surveyQuestions.$inferInsert)[] = [
   { id: 'dodatkowe-1', surveyId: 'dodatkowe', position: 1, prompt: 'Jakie zajęcia dodatkowe chcesz w drugim semestrze?' },
@@ -38,6 +39,7 @@ export const SURVEY_QUESTIONS_SEED: (typeof surveyQuestions.$inferInsert)[] = [
   { id: 'dodatkowe-3', surveyId: 'dodatkowe', position: 3, prompt: 'Który dzień tygodnia pasuje Ci najlepiej?' },
   { id: 'stolowka-1', surveyId: 'stolowka', position: 1, prompt: 'Jak oceniasz obiady w stołówce?' },
   { id: 'dzwonki-1', surveyId: 'dzwonki', position: 1, prompt: 'Czy przerwy są wystarczająco długie?' },
+  { id: 'wybor-1', surveyId: 'wybor', position: 1, prompt: 'Które dni tygodnia pasują Ci do zostania po lekcjach?', type: 'multiple_choice' },
 ];
 
 /**
@@ -62,6 +64,11 @@ export const SURVEY_OPTIONS_SEED: (typeof surveyOptions.$inferInsert)[] = [
   { id: 'stolowka-1-c', questionId: 'stolowka-1', position: 3, label: 'Źle' },
   { id: 'dzwonki-1-a', questionId: 'dzwonki-1', position: 1, label: 'Tak' },
   { id: 'dzwonki-1-b', questionId: 'dzwonki-1', position: 2, label: 'Nie' },
+  { id: 'wybor-1-a', questionId: 'wybor-1', position: 1, label: 'Poniedziałek' },
+  { id: 'wybor-1-b', questionId: 'wybor-1', position: 2, label: 'Wtorek' },
+  { id: 'wybor-1-c', questionId: 'wybor-1', position: 3, label: 'Środa' },
+  { id: 'wybor-1-d', questionId: 'wybor-1', position: 4, label: 'Czwartek' },
+  { id: 'wybor-1-e', questionId: 'wybor-1', position: 5, label: 'Piątek' },
 ];
 
 /**

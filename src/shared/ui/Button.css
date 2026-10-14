@@ -1,0 +1,68 @@
+/*
+ * PL: Przycisk aplikacji. Wysokość co najmniej 48 px, kolory tylko przez var(--...) z tokens.css.
+ *     Fokus z klawiatury rysuje base.css, więc tutaj obwódki nie wyłączamy.
+ * EN: The app button. At least 48 px high, colors only through var(--...) from tokens.css.
+ *     The keyboard focus is drawn by base.css, so the outline is not turned off here.
+ */
+
+/* PL: Wspólne dla każdego przycisku: rozmiar dotyku, środek, zawijanie długiego napisu w wąskim ekranie.
+   EN: Shared by every button: touch size, centering, wrapping of a long label on a narrow screen. */
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  min-width: 44px;
+  max-width: 100%;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--r);
+  font-size: var(--t-md);
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+/* PL: Główny przycisk w kolorze akcentu szkoły, z tekstem z palety.
+   EN: The primary button in the school accent color, with the text from the palette. */
+.ui-button--accent {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* PL: Najechanie myszą zmienia kolor tylko wtedy, gdy przycisk działa.
+   EN: Hovering with a mouse changes the color only when the button works. */
+.ui-button--accent:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+
+/* PL: Miękki przycisk na kaflu, dla działań drugorzędnych.
+   EN: A soft button on the tile, for secondary actions. */
+.ui-button--soft {
+  background: var(--tile-2);
+  color: var(--ink);
+}
+
+/* PL: Przycisk z obwódką zamiast wypełnienia.
+   EN: A button with an outline instead of a fill. */
+.ui-button--outline {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+
+/* PL: Wciśnięty przycisk lekko się kurczy, jak w makiecie.
+   EN: A pressed button shrinks a little, as in the mockup. */
+.ui-button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* PL: Wyłączony przycisk jest przygaszony i nie pokazuje dłoni myszy.
+   EN: A disabled button is faded and shows no hand cursor. */
+.ui-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

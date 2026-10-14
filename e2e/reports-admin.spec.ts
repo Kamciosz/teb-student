@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżki Samorządu w podtorze 4b: lista zgłoszeń z filtrem po etapie, stany puste, szczegół (anonimowe i z autorem), zmiana etapu z historią, błąd zapisu, błąd pobrania, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga zalogowania i roli Samorządu), także rola ucznia z bramki PanelGate; serwer sprawdzają testy Vitest (worker/reports/admin/routes.test.ts), także to, że odpowiedź nie zawiera autora.
- * EN: Test of the Student Council path in subtrack 4b: the report list with the stage filter, the empty states, the detail (anonymous and with an author), the stage change with history, the save error, the fetch error, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/reports/admin/routes.test.ts), including that the response contains no author.
+ * PL: Test ścieżki Samorządu w podtorze 4b: lista zgłoszeń z filtrem po etapie, stany puste, szczegół (anonimowe i z autorem), zmiana etapu z odpowiedzią dla autora (licznik i limit 500 znaków) i historią, błąd zapisu, błąd pobrania, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga zalogowania i roli Samorządu), także rola ucznia z bramki PanelGate; serwer sprawdzają testy Vitest (worker/reports/admin/routes.test.ts), także to, że odpowiedź nie zawiera autora.
+ * EN: Test of the Student Council path in subtrack 4b: the report list with the stage filter, the empty states, the detail (anonymous and with an author), the stage change with the answer for the author (counter and 500-character limit) and history, the save error, the fetch error, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/reports/admin/routes.test.ts), including that the response contains no author.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -13,7 +13,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /** PL: Zgłoszenie podstawionego API. EN: A report of the stubbed API. */
-type StubReport = { id: string; isAnonymous: boolean; category: string; place: string; placeDetail: string | null; description: string; stage: string; createdAt: number; updatedAt: number };
+type StubReport = { id: string; isAnonymous: boolean; category: string; place: string; placeDetail: string | null; description: string; stage: string; createdAt: number; updatedAt: number; joinCount: number };
+// PL: Wiersz historii w podstawionym API: etap, chwila i odpowiedź dla autora (albo `null`).
+// EN: A history row in the stubbed API: the stage, the moment and the answer for the author (or `null`).
+type StubChange = { stage: string; changedAt: number; note: string | null };
 
 /**
  * PL: Kafle listy zgłoszeń. Menu panelu też jest listą, więc szukamy po nazwie listy.
@@ -33,9 +36,9 @@ function sampleReports(): StubReport[] {
   // PL: Pierwsze zgłoszenie ma autora, dwa pozostałe są anonimowe.
   // EN: The first report has an author, the other two are anonymous.
   return [
-    { id: 'r1', isAnonymous: false, category: 'safety', place: 'corridor', placeDetail: null, description: 'Na schodach przy szatni jest mokro i ślisko.', stage: 'received', createdAt: Date.UTC(2026, 9, 11, 8), updatedAt: Date.UTC(2026, 9, 11, 8) },
-    { id: 'r2', isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Można by postawić kosz do koszykówki przy boisku.', stage: 'received', createdAt: Date.UTC(2026, 9, 9, 8), updatedAt: Date.UTC(2026, 9, 9, 8) },
-    { id: 'r3', isAnonymous: true, category: 'room_equipment', place: 'classroom', placeDetail: 'Sala 204', description: 'Nie działa projektor w sali 204.', stage: 'in_progress', createdAt: Date.UTC(2026, 9, 6, 8), updatedAt: Date.UTC(2026, 9, 7, 8) },
+    { id: 'r1', isAnonymous: false, category: 'safety', place: 'corridor', placeDetail: null, description: 'Na schodach przy szatni jest mokro i ślisko.', stage: 'received', createdAt: Date.UTC(2026, 9, 11, 8), updatedAt: Date.UTC(2026, 9, 11, 8), joinCount: 3 },
+    { id: 'r2', isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Można by postawić kosz do koszykówki przy boisku.', stage: 'received', createdAt: Date.UTC(2026, 9, 9, 8), updatedAt: Date.UTC(2026, 9, 9, 8), joinCount: 0 },
+    { id: 'r3', isAnonymous: true, category: 'room_equipment', place: 'classroom', placeDetail: 'Sala 204', description: 'Nie działa projektor w sali 204.', stage: 'in_progress', createdAt: Date.UTC(2026, 9, 6, 8), updatedAt: Date.UTC(2026, 9, 7, 8), joinCount: 1 },
   ];
 }
 
@@ -65,7 +68,7 @@ async function stubAdminApi(page: Page, reports: StubReport[] = sampleReports())
   await stubPanelLevel(page, 'council');
   // PL: Historia każdego zgłoszenia, najnowszy etap pierwszy.
   // EN: The history of every report, newest stage first.
-  const history = new Map(reports.map((item) => [item.id, [{ stage: item.stage, changedAt: item.updatedAt }]]));
+  const history = new Map<string, StubChange[]>(reports.map((item) => [item.id, [{ stage: item.stage, changedAt: item.updatedAt, note: null }]]));
   await page.route(/\/api\/reports\/admin(\/.*)?$/, async (route) => {
     const request = route.request();
     const id = new URL(request.url()).pathname.split('/')[4];
@@ -76,10 +79,13 @@ async function stubAdminApi(page: Page, reports: StubReport[] = sampleReports())
     if (!found) return route.fulfill({ status: 404, json: { error: 'not_found' } });
     // PL: Zmiana etapu dopisuje wiersz historii.
     // EN: A stage change appends a history row.
+    // PL: Odpowiedź z treści zapytania trafia do nowego wiersza, tak jak na serwerze.
+    // EN: The answer from the request body goes into the new row, as on the server.
     if (request.method() === 'PATCH') {
-      found.stage = (request.postDataJSON() as { stage: string }).stage;
+      const body = request.postDataJSON() as { stage: string; note: string | null };
+      found.stage = body.stage;
       found.updatedAt = Date.UTC(2026, 9, 12, 8);
-      history.get(id)?.unshift({ stage: found.stage, changedAt: found.updatedAt });
+      history.get(id)?.unshift({ stage: found.stage, changedAt: found.updatedAt, note: body.note });
     }
     // PL: Imię i klasa autora tylko przy zgłoszeniu nieanonimowym, jak na serwerze.
     // EN: The author's name and class only for a signed report, as on the server.
@@ -87,6 +93,24 @@ async function stubAdminApi(page: Page, reports: StubReport[] = sampleReports())
     return route.fulfill({ json: { report: found, history: history.get(id), student } });
   });
 }
+
+// PL: Liczba osób „Mnie też” jest na kaflu i w szczególe, a zero nie pokazuje plusa (tekst do uzgodnienia).
+// EN: The number of people "Me too" is on the tile and in the detail, and zero shows no plus (text to be agreed).
+test('liczba osób „Mnie też” na kaflu i w szczególe / the "Me too" count on the tile and in the detail', async ({ page }) => {
+  // PL: Zgłoszenie r1 ma trzy osoby, r2 żadnej.
+  // EN: Report r1 has three people, r2 has none.
+  await stubAdminApi(page);
+  await page.goto('/reports/admin');
+  await expect(page.getByRole('link', { name: /Na schodach/ })).toContainText('+3 osoby');
+  await expect(page.getByRole('link', { name: /kosz do koszykówki/ })).not.toContainText(/\+\d/);
+
+  // PL: Szczegół pokazuje tę samą liczbę; przy zerze nie ma żadnego napisu z plusem.
+  // EN: The detail shows the same number; with zero there is no label with a plus.
+  await page.goto('/reports/admin/r1');
+  await expect(page.getByText('+3 osoby')).toBeVisible();
+  await page.goto('/reports/admin/r2');
+  await expect(page.getByText(/^\+\d/)).toHaveCount(0);
+});
 
 // PL: Filtr po etapie, oba stany puste i oznaczenie anonimowych zgłoszeń na liście.
 // EN: The stage filter, both empty states and the marking of anonymous reports in the list.
@@ -109,6 +133,26 @@ test('lista pokazuje zgłoszenia i filtruje po etapie / the list shows reports a
   await page.getByRole('button', { name: 'Załatwione' }).click();
   await expect(page.getByRole('heading', { name: 'Brak zgłoszeń w tym etapie' })).toBeVisible();
   await expect(page.getByText('Gdy zgłoszenie zmieni etap, pojawi się tutaj.')).toBeVisible();
+});
+
+// PL: Przełącznik kolejności: domyślnie „Najnowsze”, a „Najwięcej osób” zamienia drugi i trzeci kafel.
+// EN: The order switch: "Najnowsze" by default, and "Najwięcej osób" swaps the second and the third tile.
+test('przełącznik kolejności zmienia układ listy / the order switch changes the list layout', async ({ page }) => {
+  // PL: Podstaw API i otwórz listę; domyślnie wybrane „Najnowsze”.
+  // EN: Stub the API and open the list; "Najnowsze" is chosen by default.
+  await stubAdminApi(page);
+  await page.goto('/reports/admin');
+  await expect(page.getByRole('radio', { name: 'Najnowsze' })).toHaveAttribute('aria-checked', 'true');
+  await expect(items(page).nth(1)).toContainText('kosz do koszykówki');
+  await expect(items(page).nth(2)).toContainText('Nie działa projektor');
+
+  // PL: „Najwięcej osób” stawia zgłoszenie z jedną osobą przed tym bez nikogo; pierwsze (3 osoby) zostaje na górze.
+  // EN: "Najwięcej osób" puts the report with one person before the one with nobody; the first one (3 people) stays on top.
+  await page.getByRole('radio', { name: 'Najwięcej osób' }).click();
+  await expect(page.getByRole('radio', { name: 'Najwięcej osób' })).toHaveAttribute('aria-checked', 'true');
+  await expect(items(page).nth(0)).toContainText('Na schodach');
+  await expect(items(page).nth(1)).toContainText('Nie działa projektor');
+  await expect(items(page).nth(2)).toContainText('kosz do koszykówki');
 });
 
 // PL: Bez żadnych zgłoszeń tekst jest inny niż przy pustym etapie.
@@ -165,6 +209,66 @@ test('Samorząd zmienia etap i widzi historię / the Student Council changes the
   // EN: After going back the list shows the new stage.
   await page.getByRole('link', { name: 'Wróć' }).click();
   await expect(page.getByRole('link', { name: /Nie działa projektor/ })).toContainText('Załatwione');
+});
+
+// PL: Odpowiedź dla autora ma licznik i limit 500 znaków; pole nie przyjmie więcej.
+// EN: The answer for the author has a counter and a 500-character limit; the field takes no more.
+test('odpowiedź dla autora: licznik i limit 500 znaków / answer for the author: counter and the 500-character limit', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.goto('/reports/admin/r3');
+  const note = page.getByRole('textbox', { name: 'Odpowiedź dla autora' });
+  await expect(page.getByText('0/500')).toBeVisible();
+
+  // PL: Wpisz 500 znaków i jeszcze jeden; pole ma `maxLength`, więc dodatkowy znak nie wchodzi.
+  // EN: Type 500 characters and one more; the field has `maxLength`, so the extra character does not go in.
+  await note.fill('ą'.repeat(500));
+  await note.pressSequentially('x');
+  await expect(note).toHaveValue('ą'.repeat(500));
+  await expect(page.getByText('500/500')).toBeVisible();
+});
+
+// PL: Odpowiedź wysyła się razem z etapem, a po zapisie pole się czyści.
+// EN: The answer is sent together with the stage, and the field clears after saving.
+test('odpowiedź dla autora trafia do zapisu i znika po zapisie / the answer for the author goes to the save and clears after it', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.goto('/reports/admin/r3');
+  const note = page.getByRole('textbox', { name: 'Odpowiedź dla autora' });
+  const text = 'Projektor naprawiony, dziękujemy.';
+
+  // PL: Wybierz etap i wpisz odpowiedź; licznik pokazuje długość tekstu.
+  // EN: Choose the stage and type the answer; the counter shows the length of the text.
+  await page.getByRole('radio', { name: 'Załatwione' }).click();
+  await note.fill(text);
+  await expect(page.getByText(`${text.length}/500`)).toBeVisible();
+
+  // PL: Zapis wysyła etap i tekst; po udanym zapisie pole jest puste.
+  // EN: Saving sends the stage and the text; after a successful save the field is empty.
+  const patch = page.waitForRequest((request) => request.method() === 'PATCH' && request.url().endsWith('/r3'));
+  await page.getByRole('button', { name: 'Zapisz etap' }).click();
+  expect((await patch).postDataJSON()).toEqual({ stage: 'resolved', note: text });
+  await expect(note).toHaveValue('');
+  await expect(page.getByText('0/500')).toBeVisible();
+});
+
+// PL: Odpowiedź zapisana przy zmianie etapu widać w historii pod tym wpisem, a starszy wpis bez odpowiedzi nie pokazuje nic.
+// EN: The answer saved with a stage change shows in the history under that entry, and an older entry without an answer shows nothing.
+test('odpowiedź dla autora jest w historii pod wpisem zmiany / the answer for the author is in the history under the change entry', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.goto('/reports/admin/r3');
+  const text = 'Projektor naprawiony, dziękujemy.';
+
+  // PL: Wybierz etap, wpisz odpowiedź i zapisz.
+  // EN: Choose the stage, type the answer and save.
+  await page.getByRole('radio', { name: 'Załatwione' }).click();
+  await page.getByRole('textbox', { name: 'Odpowiedź dla autora' }).fill(text);
+  await page.getByRole('button', { name: 'Zapisz etap' }).click();
+
+  // PL: Najnowszy wpis historii niesie odpowiedź, a starszy (wpływ zgłoszenia) nie ma żadnej.
+  // EN: The newest history entry carries the answer, and the older one (the arrival of the report) has none.
+  const history = page.getByRole('list', { name: 'Historia' }).getByRole('listitem');
+  await expect(history).toHaveCount(2);
+  await expect(history.first()).toContainText(text);
+  await expect(history.nth(1)).not.toContainText('Odpowiedź dla autora');
 });
 
 // PL: Błąd zapisu pokazuje komunikat, a przycisk zostaje aktywny, żeby ponowić.
