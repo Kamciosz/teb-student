@@ -135,6 +135,26 @@ test('lista pokazuje zgłoszenia i filtruje po etapie / the list shows reports a
   await expect(page.getByText('Gdy zgłoszenie zmieni etap, pojawi się tutaj.')).toBeVisible();
 });
 
+// PL: Przełącznik kolejności: domyślnie „Najnowsze”, a „Najwięcej osób” zamienia drugi i trzeci kafel.
+// EN: The order switch: "Najnowsze" by default, and "Najwięcej osób" swaps the second and the third tile.
+test('przełącznik kolejności zmienia układ listy / the order switch changes the list layout', async ({ page }) => {
+  // PL: Podstaw API i otwórz listę; domyślnie wybrane „Najnowsze”.
+  // EN: Stub the API and open the list; "Najnowsze" is chosen by default.
+  await stubAdminApi(page);
+  await page.goto('/reports/admin');
+  await expect(page.getByRole('radio', { name: 'Najnowsze' })).toHaveAttribute('aria-checked', 'true');
+  await expect(items(page).nth(1)).toContainText('kosz do koszykówki');
+  await expect(items(page).nth(2)).toContainText('Nie działa projektor');
+
+  // PL: „Najwięcej osób” stawia zgłoszenie z jedną osobą przed tym bez nikogo; pierwsze (3 osoby) zostaje na górze.
+  // EN: "Najwięcej osób" puts the report with one person before the one with nobody; the first one (3 people) stays on top.
+  await page.getByRole('radio', { name: 'Najwięcej osób' }).click();
+  await expect(page.getByRole('radio', { name: 'Najwięcej osób' })).toHaveAttribute('aria-checked', 'true');
+  await expect(items(page).nth(0)).toContainText('Na schodach');
+  await expect(items(page).nth(1)).toContainText('Nie działa projektor');
+  await expect(items(page).nth(2)).toContainText('kosz do koszykówki');
+});
+
 // PL: Bez żadnych zgłoszeń tekst jest inny niż przy pustym etapie.
 // EN: With no reports at all the text differs from the empty stage.
 test('pusta lista mówi, że nikt nic nie zgłosił / the empty list says nobody reported anything', async ({ page }) => {
