@@ -25,6 +25,8 @@ export type Draft = {
   placeDetail: string;
   description: string;
   isAnonymous: boolean;
+  /** PL: Numer zdjęcia z modułu media, gdy uczeń dołączył zdjęcie. EN: The media photo id, when the student attached a photo. */
+  photoId?: string;
 };
 
 /** PL: Dane kroku: szkic i funkcja zmiany. EN: The step data: the draft and the change function. */

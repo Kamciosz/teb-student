@@ -24,9 +24,17 @@ describe('parseReportInput', () => {
   // PL: Poprawne dane przechodzą bez zmian.
   // EN: Valid data passes unchanged.
   it('przyjmuje poprawne dane / accepts valid data', () => {
-    // PL: Sprawdź poprawne dane.
-    // EN: Validate valid data.
-    expect(parseReportInput(VALID)).toEqual({ ok: true, value: VALID });
+    // PL: Sprawdź poprawne dane; brak zdjęcia to `photoId: null`.
+    // EN: Validate valid data; no photo is `photoId: null`.
+    expect(parseReportInput(VALID)).toEqual({ ok: true, value: { ...VALID, photoId: null } });
+  });
+
+  // PL: Numer zdjęcia w dozwolonym formacie przechodzi bez zmian, a `null` oznacza brak zdjęcia.
+  // EN: A photo id in the allowed format passes unchanged, and `null` means no photo.
+  it.each([['abc_DEF-123'], ['a'], ['x'.repeat(64)], [null]])('przyjmuje numer zdjęcia %s / accepts the photo id %s', (photoId) => {
+    // PL: Sprawdź, że numer trafia do wyniku.
+    // EN: Check that the id reaches the result.
+    expect(parseReportInput({ ...VALID, photoId })).toMatchObject({ ok: true, value: { photoId } });
   });
 
   // PL: Brak anonimowości w treści oznacza anonimowe zgłoszenie.
@@ -70,6 +78,10 @@ describe('parseReportInput błędy / errors', () => {
     ['miejsce za długie / place detail too long', { placeDetail: 'a'.repeat(MAX_PLACE_DETAIL_LENGTH + 1) }, 'placeDetail'],
     ['miejsce nie jest tekstem / place detail is not a string', { placeDetail: 7 }, 'placeDetail'],
     ['anonimowość nie jest logiczna / anonymity is not boolean', { isAnonymous: 'tak' }, 'isAnonymous'],
+    ['numer zdjęcia nie jest tekstem / photo id is not a string', { photoId: 7 }, 'photoId'],
+    ['pusty numer zdjęcia / empty photo id', { photoId: '' }, 'photoId'],
+    ['numer zdjęcia z ukośnikiem / photo id with a slash', { photoId: 'a/b' }, 'photoId'],
+    ['numer zdjęcia za długi / photo id too long', { photoId: 'a'.repeat(65) }, 'photoId'],
   ])('odrzuca: %s', (_name, patch, field) => {
     // PL: Złe dane muszą wskazać dokładnie to pole.
     // EN: Bad data must name exactly this field.
@@ -106,6 +118,6 @@ describe('parseReportInput brzegi / edges', () => {
 
     // PL: Wynik ma tylko znane pola.
     // EN: The result has only the known fields.
-    expect(result.ok && Object.keys(result.value).sort()).toEqual(['category', 'description', 'isAnonymous', 'place', 'placeDetail']);
+    expect(result.ok && Object.keys(result.value).sort()).toEqual(['category', 'description', 'isAnonymous', 'photoId', 'place', 'placeDetail']);
   });
 });

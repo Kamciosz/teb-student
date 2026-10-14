@@ -21,6 +21,9 @@ export const MAX_DESCRIPTION_LENGTH = 500;
 /** PL: Najwyżej tyle znaków ma dokładne miejsce, na przykład „Sala 112”. EN: The exact place has at most this many characters, for example "Sala 112". */
 export const MAX_PLACE_DETAIL_LENGTH = 60;
 
+/** PL: Format numeru zdjęcia z modułu media: litery, cyfry, `_` i `-`, od 1 do 64 znaków. EN: The format of a media photo id: letters, digits, `_` and `-`, from 1 to 64 characters. */
+export const PHOTO_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
 /**
  * PL: Poprawne dane nowego zgłoszenia, już po oczyszczeniu.
  * EN: Valid data of a new report, after cleaning.
@@ -36,6 +39,8 @@ export type ReportInput = {
   description: string;
   /** PL: Czy zgłoszenie jest anonimowe. Domyślnie tak. EN: Whether the report is anonymous. True by default. */
   isAnonymous: boolean;
+  /** PL: Numer zdjęcia z modułu media albo `null`, gdy zgłoszenie nie ma zdjęcia. EN: The media photo id, or `null` when the report has no photo. */
+  photoId: string | null;
 };
 
 /**
@@ -95,17 +100,46 @@ function invalidCodeFields(raw: Record<string, unknown>): string[] {
 }
 
 /**
+ * PL: Sprawdza numer zdjęcia. Brak albo `null` znaczy „bez zdjęcia”; inaczej musi pasować do formatu.
+ * EN: Checks the photo id. Missing or `null` means "no photo"; otherwise it must match the format.
+ *
+ * @param value - PL: wartość `photoId` z telefonu. EN: the `photoId` value from the phone.
+ * @returns PL: numer, `null` bez zdjęcia albo `undefined`, gdy format jest zły. EN: the id, `null` for no photo, or `undefined` when the format is wrong.
+ */
+function parsePhotoId(value: unknown): string | null | undefined {
+  // PL: Brak zdjęcia jest poprawny.
+  // EN: No photo is valid.
+  if (value == null) return null;
+  // PL: Numer musi być tekstem w dozwolonym formacie.
+  // EN: The id must be a string in the allowed format.
+  return typeof value === 'string' && PHOTO_ID_PATTERN.test(value) ? value : undefined;
+}
+
+/**
+ * PL: Zwraca nazwę pola `photoId`, gdy jego wartość jest błędna.
+ * EN: Returns the name of the `photoId` field when its value is wrong.
+ *
+ * @param raw - PL: treść zapytania jako obiekt. EN: the request body as an object.
+ * @returns PL: `['photoId']` albo pusta lista. EN: `['photoId']` or an empty list.
+ */
+function invalidPhotoFields(raw: Record<string, unknown>): string[] {
+  // PL: Błędny numer zdjęcia zgłaszamy jako błąd pola.
+  // EN: A wrong photo id is reported as a field error.
+  return parsePhotoId(raw.photoId) === undefined ? ['photoId'] : [];
+}
+
+/**
  * PL: Sprawdza treść zapytania z formularza zgłoszenia.
  * EN: Validates the body of the report form request.
  *
  * @param body - PL: treść zapytania po odczytaniu JSON, jeszcze niesprawdzona. EN: the request body after JSON parsing, not yet checked.
- * @returns PL: oczyszczone dane albo nazwy pól z błędem (`category`, `place`, `placeDetail`, `description`, `isAnonymous`). EN: the cleaned data or the names of the invalid fields.
+ * @returns PL: oczyszczone dane albo nazwy pól z błędem (`category`, `place`, `placeDetail`, `description`, `isAnonymous`, `photoId`). EN: the cleaned data or the names of the invalid fields.
  */
 export function parseReportInput(body: unknown): ParseResult {
   // PL: Treść musi być obiektem, inaczej każde pole jest błędne.
   // EN: The body must be an object, otherwise every field is invalid.
   const raw = (typeof body === 'object' && body !== null ? body : {}) as Record<string, unknown>;
-  const fields = invalidCodeFields(raw);
+  const fields = [...invalidCodeFields(raw), ...invalidPhotoFields(raw)];
 
   // PL: Dokładne miejsce jest opcjonalne: brak albo `null` znaczy „nie podano”.
   // EN: The exact place is optional: a missing value or `null` means "not given".
@@ -125,5 +159,5 @@ export function parseReportInput(body: unknown): ParseResult {
   // PL: Przy jakimkolwiek błędzie oddaj tylko listę pól; inaczej zbuduj oczyszczone dane (typy sprawdzone wyżej).
   // EN: With any error, return only the list of fields; otherwise build the cleaned data (types checked above).
   if (fields.length > 0) return { ok: false, fields };
-  return { ok: true, value: { category: raw.category as ReportCategory, place: raw.place as ReportPlace, placeDetail: placeDetail || null, description: description as string, isAnonymous: isAnonymous as boolean } };
+  return { ok: true, value: { category: raw.category as ReportCategory, place: raw.place as ReportPlace, placeDetail: placeDetail || null, description: description as string, isAnonymous: isAnonymous as boolean, photoId: parsePhotoId(raw.photoId) as string | null } };
 }
