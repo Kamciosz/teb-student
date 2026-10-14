@@ -8,6 +8,7 @@
  * @uses worker/reports/admin/index.ts::reportsAdminApp
  * @uses worker/reports/student/index.ts::deleteReportsStudentData
  * @uses worker/reports/student/index.ts::countReports
+ * @uses worker/reports/student/index.ts::isReportPhoto
  * @uses worker/reports/student/index.ts::listReportsByAuthor
  * @uses worker/reports/student/index.ts::MyReport
  * @used_by worker/mounts.ts::API_MOUNTS
@@ -23,6 +24,10 @@ export { reportsStudentApp, deleteReportsStudentData, countReports } from './stu
 // PL: Zgłoszenia jednego ucznia (id, kategoria, miejsce, opis, etap, daty) dla eksportu danych RODO „Pobierz moje dane” (podtor 7). Zwraca tylko zgłoszenia podanego numeru autora, bez numeru autora w wyniku.
 // EN: One student's reports (id, category, place, description, stage, dates) for the GDPR data export "Download my data" (subtrack 7). It returns only the reports of the given author id, without the author id in the result.
 export { listReportsByAuthor, type MyReport } from './student';
+
+// PL: Sprawdzenie, czy plik jest zdjęciem zgłoszenia, dla modułu media (zdjęcie widzi tylko autor i administracja).
+// EN: The check whether a file is a report photo, for the media module (only the author and the administration see it).
+export { isReportPhoto } from './student';
 
 // PL: Router podtoru 4b (zgłoszenia w panelu: zmiana etapu).
 // EN: The router of subtrack 4b (reports in the panel: stage change).
