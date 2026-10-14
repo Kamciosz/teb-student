@@ -1,20 +1,25 @@
 /**
- * PL: Pasek narzędzi edytora (styl ekranu 5.2: przyciski 44 × 44 px, zawijane do kolejnego wiersza, więc przy 320 px nic nie wychodzi poza ekran). Ma formatowanie tekstu, listy, cytat, link, film z YouTube, kartę linku, źródła, zdjęcie oraz cofnij i ponów. Przyciski adresów otwierają okienko AddressPanel.
- * EN: The editor toolbar (the style of screen 5.2: 44 × 44 px buttons, wrapped to the next row, so at 320 px nothing goes off the screen). It has text formatting, lists, a quote, a link, a YouTube video, a link card, sources, a photo, and undo and redo. The address buttons open the AddressPanel.
+ * PL: Pasek narzędzi edytora (styl ekranu 5.2: przyciski 44 × 44 px, zawijane do kolejnego wiersza, więc przy 320 px nic nie wychodzi poza ekran). Ma formatowanie tekstu, listy, cytat, link, film z YouTube, kartę linku, źródła, zdjęcie, opis i podpis zdjęcia oraz cofnij i ponów. Przyciski adresów otwierają okienko AddressPanel, a przycisk opisu okienko PhotoCaptionPanel.
+ * EN: The editor toolbar (the style of screen 5.2: 44 × 44 px buttons, wrapped to the next row, so at 320 px nothing goes off the screen). It has text formatting, lists, a quote, a link, a YouTube video, a link card, sources, a photo, the photo description and caption, and undo and redo. The address buttons open the AddressPanel, and the description button opens the PhotoCaptionPanel.
  *
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/news/editor/AddressPanel.tsx::AddressPanel
  * @uses src/features/news/editor/PhotoButton.tsx::PhotoButton
+ * @uses src/features/news/editor/PhotoCaptionPanel.tsx::PhotoCaptionPanel
+ * @uses src/features/news/editor/photoCaption.ts::selectedPhotoOf
+ * @uses src/features/news/editor/photoCaption.ts::findPhotoPos
  * @uses src/features/news/editor/texts.ts::TO_AGREE
  * @used_by src/features/news/editor/RichEditor.tsx::EditorToolbar
  */
 
 import type { Editor } from '@tiptap/core';
 import { useEditorState } from '@tiptap/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AddressPanel, type AddressKind } from './AddressPanel';
 import { PhotoButton } from './PhotoButton';
+import { PhotoCaptionPanel } from './PhotoCaptionPanel';
+import { findPhotoPos, selectedPhotoOf } from './photoCaption';
 import { TO_AGREE } from './texts';
 
 /**
@@ -80,7 +85,10 @@ export type EditorToolbarProps = {
 export function EditorToolbar({ editor }: EditorToolbarProps) {
   // PL: Które okienko jest otwarte (null: żadne).
   // EN: Which panel is open (null: none).
-  const [open, setOpen] = useState<AddressKind | null>(null);
+  const [open, setOpen] = useState<AddressKind | 'photo' | null>(null);
+  // PL: Adres zdjęcia, które przed chwilą wstawiono. Przycisk „Opis i podpis” pokazuje się dla niego, dopóki kursor się nie ruszy.
+  // EN: The address of the photo just inserted. The "Opis i podpis" button shows for it until the cursor moves.
+  const [insertedSrc, setInsertedSrc] = useState<string | null>(null);
   // PL: Stan przycisków czytamy z edytora przy każdej zmianie zaznaczenia.
   // EN: We read the button state from the editor on every selection change.
   const state = useEditorState({
@@ -90,8 +98,38 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       linkHref: (current.getAttributes('link').href as string | undefined) ?? '',
       canUndo: current.can().undo(),
       canRedo: current.can().redo(),
+      photo: selectedPhotoOf(current.state),
     }),
   });
+
+  useEffect(() => {
+    // PL: Każda zmiana zaznaczenia kończy pokazywanie świeżo wstawionego zdjęcia. Okienko zdjęcia zamyka się, gdy zaznaczenie przestaje być zdjęciem.
+    // EN: Every selection change ends showing the freshly inserted photo. The photo panel closes when the selection stops being a photo.
+    const onSelection = () => {
+      setInsertedSrc(null);
+      if (selectedPhotoOf(editor.state) === null) setOpen((current) => (current === 'photo' ? null : current));
+    };
+    editor.on('selectionUpdate', onSelection);
+    return () => {
+      editor.off('selectionUpdate', onSelection);
+    };
+  }, [editor]);
+
+  // PL: Zaznacza zdjęcie w dokumencie i otwiera okienko opisu. EN: Selects the photo in the document and opens the description panel.
+  function openPhotoPanel(src: string): void {
+    const pos = findPhotoPos(editor.state.doc, src);
+    if (pos === null) return;
+    editor.chain().focus().setNodeSelection(pos).run();
+    setOpen('photo');
+  }
+
+  // PL: Zamknięcie okienka oddaje fokus edytorowi, zaznaczenie zdjęcia zostaje. EN: Closing the panel gives the focus back to the editor, the photo selection stays.
+  function closePhotoPanel(): void {
+    setOpen(null);
+    editor.commands.focus();
+  }
+
+  const photoSrc = state.photo?.src ?? insertedSrc;
 
   return (
     <>
@@ -109,13 +147,15 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           </button>
         ))}
         {/* PL: Zdjęcie: wysyłka i wstawienie do treści. EN: Photo: upload and insertion into the content. */}
-        <PhotoButton editor={editor} />
+        <PhotoButton editor={editor} onInserted={setInsertedSrc} />
+        {/* PL: Opis i podpis zdjęcia, gdy zdjęcie jest zaznaczone albo właśnie wstawione. EN: The photo description and caption, when a photo is selected or has just been inserted. */}
+        {photoSrc !== null ? <button type="button" className="editor-tool" aria-label={TO_AGREE.buttons.caption} aria-pressed={open === 'photo'} onClick={() => openPhotoPanel(photoSrc)}>Opis</button> : null}
         {/* PL: Cofnij i ponów. EN: Undo and redo. */}
         <button type="button" className="editor-tool" aria-label={TO_AGREE.buttons.undo} disabled={!state.canUndo} onClick={() => editor.chain().focus().undo().run()}>↶</button>
         <button type="button" className="editor-tool" aria-label={TO_AGREE.buttons.redo} disabled={!state.canRedo} onClick={() => editor.chain().focus().redo().run()}>↷</button>
       </div>
       {/* PL: Okienko adresu pod paskiem. Klucz zmienia się z rodzajem, więc pole zaczyna puste. EN: The address panel under the toolbar. The key changes with the kind, so the field starts empty. */}
-      {open ? (
+      {open && open !== 'photo' ? (
         <AddressPanel
           key={open}
           kind={open}
@@ -123,6 +163,16 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           onCancel={() => setOpen(null)}
           onRemove={open === 'link' && state.linkHref !== '' ? () => { editor.chain().focus().extendMarkRange('link').unsetLink().run(); setOpen(null); } : undefined}
           onSubmit={(value) => { insertAddress(editor, open, value); setOpen(null); }}
+        />
+      ) : null}
+      {/* PL: Okienko opisu zdjęcia: klucz to adres, więc inne zdjęcie zaczyna z własnymi wartościami. EN: The photo description panel: the key is the address, so another photo starts with its own values. */}
+      {open === 'photo' && state.photo ? (
+        <PhotoCaptionPanel
+          key={state.photo.src}
+          alt={state.photo.alt}
+          caption={state.photo.caption}
+          onCancel={closePhotoPanel}
+          onSubmit={(attrs) => { editor.chain().focus().updateAttributes('image', attrs).run(); setOpen(null); }}
         />
       ) : null}
     </>

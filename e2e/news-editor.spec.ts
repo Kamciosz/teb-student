@@ -1,6 +1,6 @@
 /**
- * PL: Test kreatora „Nowy wpis” (podtor 3b) w przeglądarce: trzy kroki z ekranów 5.1–5.3, formatowanie, link, film z YouTube, wklejanie z Worda, zapis szkicu, zdjęcie z przycisku „Zdjęcie” (wysyłka ze stubem /api/media/upload, stan wysyłania i błędy), wysyłka do korekty, zatwierdzenie wpisu w korekcie przez redaktora, który nie jest autorem, publikacja i zaplanowana publikacja o wybranej godzinie (w Warszawie, także w dniu zmiany czasu, i bez dnia), błędy serwera, brak internetu (wpis zostaje w edytorze), szerokość 320 px i zamknięty zapis bez sesji na prawdziwym serwerze. Odpowiedzi serwera są podstawione (page.route), bo logowanie na porcie podtoru nie działa lokalnie (403). Test oblewa na gałęzi bez zmiany, bo tam adres /news/editor pokazuje tylko „W budowie”.
- * EN: Test of the "Nowy wpis" wizard (subtrack 3b) in the browser: three steps from screens 5.1–5.3, formatting, a link, a YouTube video, pasting from Word, saving a draft, a photo from the "Zdjęcie" button (upload stubbed at /api/media/upload, the sending state and errors), and a publication, server errors, no internet (the entry stays in the editor), the 320 px width and writing closed without a session on the real server. The server answers are stubbed (page.route), because sign-in on the subtrack port does not work locally (403). The test fails on a branch without the change, because there the /news/editor address shows only "W budowie".
+ * PL: Test kreatora „Nowy wpis” (podtor 3b) w przeglądarce: trzy kroki z ekranów 5.1–5.3, formatowanie, link, film z YouTube, wklejanie z Worda, zapis szkicu, zdjęcie z przycisku „Zdjęcie” (wysyłka ze stubem /api/media/upload, stan wysyłania i błędy), opis zdjęcia dla osób niewidomych i podpis (okienko, Escape, podgląd i JSON), wysyłka do korekty, zatwierdzenie wpisu w korekcie przez redaktora, który nie jest autorem, publikacja i zaplanowana publikacja o wybranej godzinie (w Warszawie, także w dniu zmiany czasu, i bez dnia), błędy serwera, brak internetu (wpis zostaje w edytorze), szerokość 320 px i zamknięty zapis bez sesji na prawdziwym serwerze. Odpowiedzi serwera są podstawione (page.route), bo logowanie na porcie podtoru nie działa lokalnie (403). Test oblewa na gałęzi bez zmiany, bo tam adres /news/editor pokazuje tylko „W budowie”.
+ * EN: Test of the "Nowy wpis" wizard (subtrack 3b) in the browser: three steps from screens 5.1–5.3, formatting, a link, a YouTube video, pasting from Word, saving a draft, a photo from the "Zdjęcie" button (upload stubbed at /api/media/upload, the sending state and errors), the photo description and caption (the panel, Escape, the preview and the JSON), and a publication, server errors, no internet (the entry stays in the editor), the 320 px width and writing closed without a session on the real server. The server answers are stubbed (page.route), because sign-in on the subtrack port does not work locally (403). The test fails on a branch without the change, because there the /news/editor address shows only "W budowie".
  *
  * @author Szymon
  * @since 2026-10-12
@@ -8,7 +8,7 @@
  * @used_by playwright.config.ts::testDir
  */
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
 
 // PL: Adres zapisu wpisu na serwerze edytora.
@@ -358,6 +358,104 @@ test('zdjęcie z przycisku wchodzi do treści wpisu / a photo from the button go
   await page.getByRole('button', { name: 'Opublikuj' }).click();
   await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
   expect(sent.body?.content.find((node) => node.type === 'image')?.attrs).toEqual({ src: '/api/media/abc123', width: 1600, height: 800, alt: '', caption: '' });
+});
+
+/**
+ * PL: Wstawia zdjęcie z przycisku „Zdjęcie” i czeka, aż wysyłka się skończy (pojawi się przycisk „Opis i podpis”).
+ * EN: Inserts a photo from the "Zdjęcie" button and waits until the upload ends (the "Opis i podpis" button appears).
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ * @param testInfo - PL: informacje o teście (katalog na plik). EN: the test information (the folder for the file).
+ */
+async function insertPhoto(page: Page, testInfo: TestInfo): Promise<void> {
+  const path = testInfo.outputPath('zdjecie.jpg');
+  writeFileSync(path, await makePhoto(page, 2000, 1000));
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Zdjęcie', exact: true }).click();
+  (await chooser).setFiles(path);
+  await expect(page.getByRole('button', { name: 'Opis i podpis', exact: true })).toBeVisible();
+}
+
+// PL: Opis i podpis zdjęcia: pisanie po wstawieniu nie zamienia zdjęcia w tekst, okienko zapisuje przycięte wartości do węzła, podpis widać w podglądzie, a po ponownym otwarciu pola mają zapisane wartości.
+// EN: The photo description and caption: typing after the insertion does not turn the photo into text, the panel saves the cut values to the node, the caption shows in the preview, and after reopening the fields hold the saved values.
+test('opis i podpis zdjęcia trafiają do węzła i do podglądu / the photo description and caption go to the node and into the preview', async ({ page }, testInfo) => {
+  let sent: Record<string, unknown> | null = null;
+  await page.route(ENTRIES, (route) => {
+    sent = route.request().postDataJSON();
+    return route.fulfill({ status: 201, json: { id: 'abc' } });
+  });
+  await page.route(UPLOAD, (route) => route.fulfill({ status: 201, json: { id: 'abc123' } }));
+  await fillEntry(page, 'Zobacz zdjęcie.');
+  await insertPhoto(page, testInfo);
+
+  await page.keyboard.type(' Koniec.');
+  await expect(page.getByRole('button', { name: 'Opis i podpis', exact: true })).toHaveCount(0);
+
+  const alt = page.getByLabel('Opis zdjęcia (dla osób niewidomych)', { exact: true });
+  const caption = page.getByLabel('Podpis', { exact: true });
+  await page.locator('.editor-surface img').first().click();
+  await page.getByRole('button', { name: 'Opis i podpis', exact: true }).click();
+  await expect(alt).toHaveValue('');
+  await alt.fill('  Dzieci przy tablicy  ');
+  await caption.fill('  Zapisy trwają.  ');
+  await page.getByRole('button', { name: 'Zapisz', exact: true }).click();
+  await expect(alt).toHaveCount(0);
+
+  // PL: Po ponownym otwarciu pola mają wartości bez spacji na końcach.
+  // EN: After reopening the fields hold the values without the spaces at the ends.
+  await page.locator('.editor-surface img').first().click();
+  await page.getByRole('button', { name: 'Opis i podpis', exact: true }).click();
+  await expect(alt).toHaveValue('Dzieci przy tablicy');
+  await expect(caption).toHaveValue('Zapisy trwają.');
+  await page.getByRole('button', { name: 'Zapisz', exact: true }).click();
+
+  await openPreview(page);
+  await expect(page.locator('.news-content figcaption')).toHaveText('Zapisy trwają.');
+  await expect(page.locator('.news-content img')).toHaveAttribute('alt', 'Dzieci przy tablicy');
+  await page.getByRole('button', { name: 'Opublikuj' }).click();
+  await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
+  expect(sent).toMatchObject({ body: { content: expect.arrayContaining([expect.objectContaining({ type: 'image', attrs: expect.objectContaining({ src: '/api/media/abc123', alt: 'Dzieci przy tablicy', caption: 'Zapisy trwają.' }) })]) } });
+});
+
+// PL: Escape zamyka okienko opisu bez zapisu: wpisany tekst nie trafia do węzła, a zdjęcie zostaje zaznaczone.
+// EN: Escape closes the description panel without saving: the typed text does not reach the node, and the photo stays selected.
+test('Escape zamyka okienko opisu bez zapisu / Escape closes the description panel without saving', async ({ page }, testInfo) => {
+  let sent: { body?: { content: { type: string; attrs?: object }[] } } = {};
+  await page.route(ENTRIES, (route) => {
+    sent = route.request().postDataJSON();
+    return route.fulfill({ status: 201, json: { id: 'abc' } });
+  });
+  await page.route(UPLOAD, (route) => route.fulfill({ status: 201, json: { id: 'abc123' } }));
+  await fillEntry(page, 'Zobacz zdjęcie.');
+  await insertPhoto(page, testInfo);
+
+  const alt = page.getByLabel('Opis zdjęcia (dla osób niewidomych)', { exact: true });
+  await page.getByRole('button', { name: 'Opis i podpis', exact: true }).click();
+  await alt.fill('Nie zapisuję');
+  await page.keyboard.press('Escape');
+  await expect(alt).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Opis i podpis', exact: true })).toHaveAttribute('aria-pressed', 'false');
+
+  await openPreview(page);
+  await page.getByRole('button', { name: 'Opublikuj' }).click();
+  await expect(page.getByText('Wpis opublikowany.')).toBeVisible();
+  expect(sent.body?.content.find((node) => node.type === 'image')?.attrs).toEqual({ src: '/api/media/abc123', width: 1600, height: 800, alt: '', caption: '' });
+});
+
+// PL: Okienko opisu przy 320 px mieści się na ekranie razem z przyciskami „Zapisz” i „Anuluj”.
+// EN: The description panel at 320 px fits the screen together with the "Zapisz" and "Anuluj" buttons.
+test('okienko opisu przy 320 px nie wychodzi poza ekran / the description panel at 320 px does not go off the screen', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.route(UPLOAD, (route) => route.fulfill({ status: 201, json: { id: 'abc123' } }));
+  await fillEntry(page, 'Zobacz zdjęcie.');
+  await insertPhoto(page, testInfo);
+  await page.getByRole('button', { name: 'Opis i podpis', exact: true }).click();
+  await expect(page.getByLabel('Podpis', { exact: true })).toBeVisible();
+  const hasOverflow = () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(await hasOverflow()).toBe(false);
+  await expect(page.getByRole('button', { name: 'Zapisz', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Anuluj', exact: true }).click();
+  expect(await hasOverflow()).toBe(false);
 });
 
 // PL: Odmowa serwera pokazuje komunikat po polsku pod paskiem, nic nie wstawia i przycisk znów działa.

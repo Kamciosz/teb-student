@@ -24,6 +24,8 @@ import { TO_AGREE } from './texts';
 export type PhotoButtonProps = {
   /** PL: Edytor, do którego wstawiamy zdjęcie. EN: The editor the photo is inserted into. */
   editor: Editor;
+  /** PL: Wywoływane z adresem wstawionego zdjęcia. EN: Called with the address of the inserted photo. */
+  onInserted: (src: string) => void;
 };
 
 /**
@@ -33,7 +35,7 @@ export type PhotoButtonProps = {
  * @param props - PL: edytor. EN: the editor.
  * @returns PL: drzewo elementów. EN: the element tree.
  */
-export function PhotoButton({ editor }: PhotoButtonProps) {
+export function PhotoButton({ editor, onInserted }: PhotoButtonProps) {
   // PL: Ukryte pole wyboru pliku, otwierane przyciskiem.
   // EN: The hidden file input, opened by the button.
   const input = useRef<HTMLInputElement>(null);
@@ -52,7 +54,11 @@ export function PhotoButton({ editor }: PhotoButtonProps) {
     setError(null);
     try {
       const photo = await uploadEditorPhoto(file);
-      if (!editor.isDestroyed) editor.chain().focus().insertContent(photoImageNode(photo)).run();
+      if (editor.isDestroyed) return;
+      // PL: Kursor zostaje za zdjęciem, a nie na nim, bo zaznaczone zdjęcie zamieniłoby się w tekst przy pierwszym znaku.
+      // EN: The cursor stays after the photo, not on it, because a selected photo would be replaced by the first typed character.
+      editor.chain().focus().insertContent(photoImageNode(photo), { updateSelection: false }).run();
+      onInserted(photo.src);
     } catch (failure) {
       setError(photoErrorMessage(failure));
     } finally {
