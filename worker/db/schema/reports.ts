@@ -72,6 +72,8 @@ export const reports = sqliteTable(
     placeDetail: text('place_detail'),
     /** PL: Opis problemu: jedno lub dwa zdania. EN: The problem description: one or two sentences. */
     description: text('description').notNull(),
+    /** PL: Numer pliku zdjęcia z modułu media, jeśli uczeń dołączył zdjęcie. Pusty, gdy zdjęcia nie ma. Bez klucza obcego, bo pliki należą do modułu media. EN: The id of the photo file from the media module, when the student attached a photo. Null when there is no photo. No foreign key, because the files belong to the media module. */
+    photoId: text('photo_id'),
     /** PL: Bieżący etap. EN: The current stage. */
     stage: text('stage', { enum: REPORT_STAGES }).notNull().default('received'),
     /** PL: Chwila wysłania, milisekundy od 1970. EN: When the report was sent, milliseconds since 1970. */
