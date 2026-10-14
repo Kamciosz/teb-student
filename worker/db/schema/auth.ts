@@ -140,3 +140,38 @@ export const verification = sqliteTable(
   },
   (table) => [index('verification_identifier_idx').on(table.identifier)],
 );
+
+/**
+ * PL: Klucz dostępu ucznia (Face ID, Touch ID, Windows Hello). Trzyma klucz publiczny i licznik użyć; klucz prywatny zostaje w urządzeniu ucznia. Usunięcie konta usuwa jego klucze.
+ * EN: A student's passkey (Face ID, Touch ID, Windows Hello). It keeps the public key and the use counter; the private key stays on the student's device. Deleting the account deletes its passkeys.
+ */
+export const passkey = sqliteTable(
+  'passkey',
+  {
+    /** PL: Numer klucza nadany przez wtyczkę. EN: The key id assigned by the plugin. */
+    id: text('id').primaryKey(),
+    /** PL: Nazwa nadana przez ucznia, np. „iPhone”. Może być pusta. EN: The name given by the student, for example "iPhone". It may be empty. */
+    name: text('name'),
+    /** PL: Klucz publiczny w formie tekstowej. Nie jest tajny. EN: The public key as text. It is not secret. */
+    publicKey: text('public_key').notNull(),
+    /** PL: Konto ucznia. Usunięcie konta usuwa klucze. EN: The student's account. Deleting the account deletes the keys. */
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    /** PL: Identyfikator klucza u urządzenia, unikalny w praktyce. EN: The key identifier from the device, unique in practice. */
+    credentialID: text('credential_id').notNull(),
+    /** PL: Licznik użyć klucza (wykrywa klonowanie). EN: The key's use counter (detects cloning). */
+    counter: integer('counter').notNull(),
+    /** PL: Typ urządzenia: pojedyncze (device-bound) albo wielokrotne (multi-device). EN: The device type: single device (device-bound) or multi-device. */
+    deviceType: text('device_type').notNull(),
+    /** PL: Prawda, gdy klucz jest zsynchronizowany w chmurze producenta. EN: True when the key is synced to the manufacturer's cloud. */
+    backedUp: integer('backed_up', { mode: 'boolean' }).notNull(),
+    /** PL: Sposoby połączenia z urządzeniem, np. „internal”, oddzielone przecinkami. EN: The ways to connect to the device, for example "internal", separated by commas. */
+    transports: text('transports'),
+    /** PL: Kiedy klucz powstał. EN: When the key was created. */
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }),
+    /** PL: Identyfikator modelu uwierzytelniacza (AAGUID), tylko do podpisu. EN: The authenticator model identifier (AAGUID), only for labeling. */
+    aaguid: text('aaguid'),
+  },
+  (table) => [index('passkey_userId_idx').on(table.userId), index('passkey_credentialID_idx').on(table.credentialID)],
+);

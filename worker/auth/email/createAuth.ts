@@ -13,6 +13,9 @@
 // PL: betterAuth tworzy obiekt logowania, a emailOTP dodaje logowanie kodem z maila.
 // EN: betterAuth creates the sign-in object and emailOTP adds sign-in with an e-mail code.
 import { betterAuth, type BetterAuthOptions } from 'better-auth';
+// PL: Logowanie kluczem dostępu (Face ID, Touch ID, Windows Hello).
+// EN: Passkey sign-in (Face ID, Touch ID, Windows Hello).
+import { passkey } from '@better-auth/passkey';
 import { emailOTP } from 'better-auth/plugins';
 // PL: Typ nadawcy kodu i ustawienia kodu.
 // EN: The code sender type and the code settings.
@@ -30,7 +33,24 @@ export type CreateAuthOptions = {
   secret: string;
   /** PL: Nadawca kodu. Better Auth wywoła go po utworzeniu kodu w bazie. EN: The code sender. Better Auth calls it after creating the code in the database. */
   sendCode: CodeSender;
+  /** PL: Adres aplikacji z BETTER_AUTH_URL, np. https://teb.example. Z niego liczą się domena kluczy dostępu i źródło żądań. Bez niego kluczy nie da się używać. EN: The app address from BETTER_AUTH_URL, for example https://teb.example. The passkey domain and the request origin come from it. Without it passkeys cannot be used. */
+  appUrl?: string;
 };
+
+/**
+ * PL: Ustawienia domeny kluczy dostępu z adresu aplikacji. Klucz działa tylko w domenie, w której powstał, więc domena musi być ta sama co w przeglądarce.
+ * EN: The passkey domain settings from the app address. A passkey works only on the domain where it was created, so the domain must match the browser's.
+ *
+ * @param appUrl - PL: adres aplikacji albo brak. EN: the app address or nothing.
+ * @returns PL: rpID (domena) i origin (adres z protokołem); pusty obiekt bez adresu. EN: rpID (the domain) and origin (the address with the protocol); an empty object without an address.
+ */
+function passkeyAddress(appUrl: string | undefined): { rpID?: string; origin?: string } {
+  // PL: Bez adresu zostają domyślne ustawienia wtyczki.
+  // EN: Without an address the plugin's defaults stay.
+  if (!appUrl) return {};
+  const url = new URL(appUrl);
+  return { rpID: url.hostname, origin: url.origin };
+}
 
 /**
  * PL: Buduje obiekt Better Auth z logowaniem kodem. Konto powstaje przy pierwszym poprawnym kodzie. Hasła i inne sposoby logowania są wyłączone: dodaje je podtor 1b we własnym adresie.
@@ -58,6 +78,8 @@ export function createAuth(options: CreateAuthOptions) {
     advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] } },
     // PL: Wtyczka kodu z maila: 6 cyfr, 10 minut, 3 próby. Konto zakłada się samo przy pierwszym logowaniu (disableSignUp zostaje wyłączone), dzięki czemu wysyłka kodu nie zdradza, czy adres ma konto.
     // EN: The e-mail code plugin: 6 digits, 10 minutes, 3 attempts. The account is created by itself at the first sign-in (disableSignUp stays off), so sending a code does not reveal whether an address has an account.
+    // PL: Klucz dostępu jest opcjonalny: uczeń loguje się nim zamiast kodu. Domena i adres pochodzą z BETTER_AUTH_URL.
+    // EN: The passkey is optional: the student signs in with it instead of a code. The domain and the origin come from BETTER_AUTH_URL.
     plugins: [
       emailOTP({
         otpLength: CODE_LENGTH,
@@ -65,6 +87,7 @@ export function createAuth(options: CreateAuthOptions) {
         allowedAttempts: CODE_MAX_ATTEMPTS,
         sendVerificationOTP: async ({ email, otp }) => options.sendCode({ email, code: otp }),
       }),
+      passkey({ rpName: 'TEB Student', ...passkeyAddress(options.appUrl) }),
     ],
   });
 }

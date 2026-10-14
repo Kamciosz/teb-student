@@ -37,3 +37,7 @@ export { countStudents, findStudentByEmail, listStudentsByIds, type StudentSumma
 // PL: Data założenia konta ucznia dla eksportu danych RODO „Pobierz moje dane” (podtor 7): getAccountCreatedAt(env.DB, numer) → milisekundy od 1970 | null, gdy konta nie ma. Zbiera ją worker/auth/index.ts.
 // EN: The date the student's account was created for the GDPR data export "Download my data" (subtrack 7): getAccountCreatedAt(env.DB, id) → milliseconds since 1970 | null when there is no account. worker/auth/index.ts collects it.
 export { getAccountCreatedAt } from './accountCreatedAt';
+
+// PL: Klucze dostępu ucznia dla eksportu danych RODO (podtor 7): listPasskeysForExport(env.DB, numer) → { count, names }. Zwraca liczbę i nazwy kluczy, bez kluczy kryptograficznych. Zbiera je worker/auth/index.ts.
+// EN: The student's passkeys for the GDPR data export (subtrack 7): listPasskeysForExport(env.DB, id) → { count, names }. It returns the count and the names of the keys, without cryptographic keys. worker/auth/index.ts collects it.
+export { listPasskeysForExport } from './passkeys';
