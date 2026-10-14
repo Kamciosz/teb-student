@@ -54,10 +54,10 @@ export type PanelEntry = {
 };
 
 /**
- * PL: Wynik publikacji szkicu: opublikowany, już opublikowany wcześniej albo brak takiego wpisu.
- * EN: The result of publishing a draft: published, already published before, or no such entry.
+ * PL: Wynik publikacji szkicu: opublikowany, już opublikowany wcześniej, w korekcie (publikuje go zatwierdzenie z podtoru 3b) albo brak takiego wpisu.
+ * EN: The result of publishing a draft: published, already published before, in review (the approval of subtrack 3b publishes it), or no such entry.
  */
-export type PublishResult = 'published' | 'already_published' | 'not_found';
+export type PublishResult = 'published' | 'already_published' | 'in_review' | 'not_found';
 
 /**
  * PL: Wynik przypięcia: przypięty (także wcześniej przypięty), brak wpisu, szkic albo komplet przypiętych.
@@ -125,10 +125,11 @@ export async function publishDraft(db: D1Database, id: string): Promise<PublishR
     .where(and(eq(newsEntries.id, id), eq(newsEntries.status, 'draft')))
     .returning({ id: newsEntries.id });
   if (changed.length > 0) return 'published';
-  // PL: Nic się nie zmieniło: wpis jest już opublikowany albo nie istnieje.
-  // EN: Nothing changed: the entry is already published or does not exist.
-  const found = await orm.select({ id: newsEntries.id }).from(newsEntries).where(eq(newsEntries.id, id)).limit(1);
-  return found.length > 0 ? 'already_published' : 'not_found';
+  // PL: Nic się nie zmieniło: wpis jest w korekcie, już opublikowany albo nie istnieje. Panel nie publikuje wpisu w korekcie.
+  // EN: Nothing changed: the entry is in review, already published, or does not exist. The panel does not publish an entry in review.
+  const found = await orm.select({ status: newsEntries.status }).from(newsEntries).where(eq(newsEntries.id, id)).limit(1);
+  if (found.length === 0) return 'not_found';
+  return found[0].status === 'in_review' ? 'in_review' : 'already_published';
 }
 
 /**

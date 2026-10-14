@@ -61,13 +61,14 @@ export function createNewsAdminApp(guard: MiddlewareHandler<StudentEnv>) {
   // EN: The list of all entries with drafts, without the content.
   app.get('/', (context) => withDatabase(context, async () => context.json({ entries: await listPanelEntries(context.env.DB) })));
 
-  // PL: Publikacja szkicu: 200 po publikacji, 409 gdy wpis już jest opublikowany, 404 gdy go nie ma. Po udanej publikacji jeden wpis w dzienniku (bez treści, tylko id wpisu).
-  // EN: Publishing a draft: 200 after publishing, 409 when the entry is already published, 404 when it does not exist. After a successful publish, one diary entry (no content, only the entry id).
+  // PL: Publikacja szkicu: 200 po publikacji, 409 „already_published” gdy wpis już jest opublikowany, 409 „in_review” gdy czeka w korekcie, 404 gdy go nie ma. Po udanej publikacji jeden wpis w dzienniku (bez treści, tylko id wpisu).
+  // EN: Publishing a draft: 200 after publishing, 409 "already_published" when the entry is already published, 409 "in_review" when it waits in review, 404 when it does not exist. After a successful publish, one diary entry (no content, only the entry id).
   app.post('/:id/publish', (context) =>
     withDatabase(context, async () => {
       const id = context.req.param('id');
       const result = await publishDraft(context.env.DB, id);
       if (result === 'not_found') return context.json({ error: 'not_found' }, 404);
+      if (result === 'in_review') return context.json({ error: 'in_review' }, 409);
       if (result === 'already_published') return context.json({ error: 'already_published' }, 409);
       await recordDiaryEntry(context.env.DB, { actorId: context.get('student').id, action: 'news_published', targetId: id });
       return context.json({ id });

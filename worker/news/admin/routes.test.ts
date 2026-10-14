@@ -163,15 +163,17 @@ describe('GET /', () => {
 // PL: Wpis w korekcie widać na liście panelu, a publikacja go nie rusza.
 // EN: An entry in review is visible on the panel list, and publishing does not touch it.
 describe('wpis w korekcie / entry in review', () => {
-  // PL: Wpis „in_review” wstawiony w teście. Lista panelu go zwraca, a publikacja nie zmienia jego stanu.
-  // EN: An "in_review" entry inserted in the test. The panel list returns it, and publishing does not change its state.
-  it('lista pokazuje wpis w korekcie, a publikacja go nie zmienia / the list shows an entry in review, and publishing does not change it', async () => {
+  // PL: Wpis „in_review” wstawiony w teście. Lista panelu go zwraca, a publikacja daje 409 in_review i nie zmienia jego stanu.
+  // EN: An "in_review" entry inserted in the test. The panel list returns it, and publishing gives 409 in_review and does not change its state.
+  it('lista pokazuje wpis w korekcie, a publikacja daje 409 in_review i go nie zmienia / the list shows an entry in review, and publishing gives 409 in_review and does not change it', async () => {
     await db.insert(newsEntries).values({ id: 'w-korekcie', type: 'news', status: 'in_review', title: 'W korekcie', body: BODY, source: 'Samorząd', publishedAt: null });
 
     const { entries } = (await (await send('/')).json()) as { entries: { id: string; status: string }[] };
     expect(entries.find((entry) => entry.id === 'w-korekcie')?.status).toBe('in_review');
 
-    expect((await send('/w-korekcie/publish', 'POST')).status).not.toBe(200);
+    const response = await send('/w-korekcie/publish', 'POST');
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: 'in_review' });
     expect((await rows()).find(([id]) => id === 'w-korekcie')).toEqual(['w-korekcie', 'in_review']);
   });
 });
@@ -185,6 +187,7 @@ describe('POST /:id/publish', () => {
     const response = await send('/szkic/publish', 'POST');
 
     expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ id: 'szkic' });
     expect(await studentList()).toContain('szkic');
     expect((await newsFeedApp.request('/szkic', {}, env)).status).toBe(200);
     expect((await db.select().from(newsEntries)).find((row) => row.id === 'szkic')?.publishedAt).toBeInstanceOf(Date);
@@ -199,6 +202,7 @@ describe('POST /:id/publish', () => {
     const response = await send('/opublikowany/publish', 'POST');
 
     expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: 'already_published' });
     expect((await db.select().from(newsEntries)).find((row) => row.id === 'opublikowany')?.publishedAt).toEqual(PUBLISHED_AT);
     // PL: Odpowiedź 409 nic nie dopisuje do dziennika.
     // EN: The 409 answer writes nothing to the diary.
