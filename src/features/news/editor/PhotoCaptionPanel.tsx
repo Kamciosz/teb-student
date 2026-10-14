@@ -6,14 +6,14 @@
  * @since 2026-10-14
  * @uses src/features/news/editor/document/limits.ts::MAX_CAPTION_CHARS
  * @uses src/features/news/editor/photoCaption.ts::captionAttrs
- * @uses src/features/news/editor/texts.ts::TO_AGREE
+ * @uses src/features/news/editor/texts.ts::TEXTS
  * @used_by src/features/news/editor/EditorToolbar.tsx::PhotoCaptionPanel
  */
 
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { MAX_CAPTION_CHARS } from './document/limits';
 import { captionAttrs, type CaptionAttrs } from './photoCaption';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 
 /**
  * PL: Dane okienka.
@@ -61,16 +61,16 @@ export function PhotoCaptionPanel({ alt, caption, onSubmit, onCancel }: PhotoCap
   return (
     <form className="editor-panel" onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
       <label className="editor-label">
-        {TO_AGREE.captionPanel.alt}
+        {TEXTS.captionPanel.alt}
         <input className="editor-input" type="text" value={altText} maxLength={MAX_CAPTION_CHARS} onChange={(event) => setAltText(event.target.value)} autoFocus />
       </label>
       <label className="editor-label">
-        {TO_AGREE.captionPanel.caption}
+        {TEXTS.captionPanel.caption}
         <input className="editor-input" type="text" value={captionText} maxLength={MAX_CAPTION_CHARS} onChange={(event) => setCaptionText(event.target.value)} />
       </label>
       <div className="editor-row">
-        <button type="submit" className="editor-button">{TO_AGREE.captionPanel.save}</button>
-        <button type="button" className="editor-button editor-button--outline" onClick={onCancel}>{TO_AGREE.prompt.cancel}</button>
+        <button type="submit" className="editor-button">{TEXTS.captionPanel.save}</button>
+        <button type="button" className="editor-button editor-button--outline" onClick={onCancel}>{TEXTS.prompt.cancel}</button>
       </div>
     </form>
   );

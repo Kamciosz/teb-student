@@ -5,7 +5,7 @@
  * @author Szymon
  * @since 2026-10-14
  * @uses src/features/media/index.ts::EditorPhoto
- * @uses src/features/news/editor/texts.ts::TO_AGREE
+ * @uses src/features/news/editor/texts.ts::TEXTS
  * @used_by src/features/news/editor/PhotoButton.tsx::photoImageNode
  * @used_by src/features/news/editor/PhotoButton.tsx::photoErrorMessage
  * @used_by src/features/news/editor/photoNode.test.ts::photoImageNode
@@ -14,7 +14,7 @@
 // PL: Typ zdjęcia z modułu media (tylko typ, bez kodu).
 // EN: The photo type from the media module (only the type, no code).
 import type { EditorPhoto } from '../../media';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 
 /** PL: Węzeł zdjęcia do wstawienia przez insertContent. EN: The photo node to insert with insertContent. */
 export type PhotoNode = {
@@ -41,5 +41,5 @@ export function photoImageNode(photo: EditorPhoto): PhotoNode {
  * @returns PL: komunikat po polsku. EN: the message in Polish.
  */
 export function photoErrorMessage(failure: unknown): string {
-  return failure instanceof Error && failure.constructor === Error ? failure.message : TO_AGREE.photo.failed;
+  return failure instanceof Error && failure.constructor === Error ? failure.message : TEXTS.photo.failed;
 }

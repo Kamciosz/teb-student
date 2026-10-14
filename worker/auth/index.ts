@@ -38,6 +38,10 @@ export { countStudents, findStudentByEmail, listStudentsByIds, type StudentSumma
 // EN: The date the student's account was created for the GDPR data export "Download my data" (subtrack 7): getAccountCreatedAt(env.DB, id) → milliseconds since 1970 | null when there is no account. It returns only the moment the account was created.
 export { getAccountCreatedAt } from './email';
 
+// PL: Klucze dostępu ucznia dla eksportu danych RODO (podtor 7): listPasskeysForExport(env.DB, numer) → { count, names }, czyli liczba kluczy i ich nazwy, bez kluczy kryptograficznych.
+// EN: The student's passkeys for the GDPR data export (subtrack 7): listPasskeysForExport(env.DB, id) → { count, names }, that is the number of keys and their names, without cryptographic keys.
+export { listPasskeysForExport } from './email';
+
 // PL: Router podtoru 1b (kody zaproszeń, login i hasło), funkcja tworząca kod zaproszenia dla panelu Samorządu (issueInviteCode(env.DB) → { code, expiresAt }) i lista kodów, które jeszcze działają (listInviteCodes(env.DB) → { code, expiresAt }[], od najkrócej ważnego). Panel Samorządu (podtor 8) pokazuje listę na ekranie „Kody zaproszeń”.
 // EN: The router of subtrack 1b (invitation codes, login and password), the function that creates an invitation code for the Student Council panel (issueInviteCode(env.DB) → { code, expiresAt }) and the list of codes that still work (listInviteCodes(env.DB) → { code, expiresAt }[], from the one valid for the shortest time). The Student Council panel (subtrack 8) shows the list on the "Invitation codes" screen.
 export { authInviteApp, issueInviteCode, listInviteCodes } from './invite';

@@ -1,18 +1,18 @@
 /**
- * PL: Teksty wyboru typu pytania i wyników wielokrotnego wyboru w panelu ankiet (podtor 5b). EKRANY.md (ekran 6.5b i 6.5d) nie podaje tych tekstów, więc są w grupie „TO_AGREE” i czekają na decyzję zespołu (lista w opisie pull requesta).
- * EN: The texts of the question type choice and of the multiple choice results in the survey panel (subtrack 5b). EKRANY.md (screens 6.5b and 6.5d) does not give these texts, so they are in the "TO_AGREE" group and wait for a team decision (the list is in the pull request description).
+ * PL: Teksty wyboru typu pytania i wyników wielokrotnego wyboru w panelu ankiet (podtor 5b). EKRANY.md (ekran 6.5b i 6.5d) nie podaje tych tekstów, więc są w grupie „TEXTS”.
+ * EN: The texts of the question type choice and of the multiple choice results in the survey panel (subtrack 5b). EKRANY.md (screens 6.5b and 6.5d) does not give these texts, so they are in the "TEXTS" group.
  *
  * @author Szymon
  * @since 2026-10-13
- * @used_by src/features/surveys/admin/QuestionEditor.tsx::TO_AGREE
- * @used_by src/features/surveys/admin/ResultsScreen.tsx::TO_AGREE
+ * @used_by src/features/surveys/admin/QuestionEditor.tsx::TEXTS
+ * @used_by src/features/surveys/admin/ResultsScreen.tsx::TEXTS
  */
 
 /**
- * PL: Teksty spoza EKRANY.md: do ustalenia przez zespół.
- * EN: The texts outside EKRANY.md: to be agreed by the team.
+ * PL: Teksty spoza EKRANY.md.
+ * EN: The texts outside EKRANY.md.
  */
-export const TO_AGREE = {
+export const TEXTS = {
   questionType: {
     legend: 'Rodzaj pytania',
     single: 'Jeden wybór',

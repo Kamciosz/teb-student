@@ -10,7 +10,7 @@
 
 import { Link } from 'react-router';
 import { Icon } from './icons';
-import { SCREEN, TO_AGREE } from './texts';
+import { SCREEN, TEXTS } from './texts';
 
 /**
  * PL: Rysuje górny pasek. Przycisk wstecz prowadzi do ramy panelu.
@@ -23,7 +23,7 @@ export function PanelTop() {
   // EN: The back button is a link with a name for a screen reader, because it has only an icon.
   return (
     <div className="na-top">
-      <Link className="na-icon-btn" to="/admin" aria-label={TO_AGREE.back}>
+      <Link className="na-icon-btn" to="/admin" aria-label={TEXTS.back}>
         <Icon name="arrow-left" />
       </Link>
       <h1>{SCREEN.title}</h1>

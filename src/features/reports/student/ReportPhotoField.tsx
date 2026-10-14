@@ -12,12 +12,12 @@
 // EN: The type of the photo state and actions.
 import type { ReportPhotoController } from './useReportPhoto';
 
-// PL: Nowe napisy czekają na decyzję zespołu (TO_AGREE). Komunikaty błędów przychodzą z drzwi media.
-// EN: The new texts wait for a team decision (TO_AGREE). The error messages come from the media door.
-const TO_AGREE = {
+// PL: Komunikaty błędów przychodzą z drzwi media.
+// EN: The error messages come from the media door.
+const TEXTS = {
   add: 'Dodaj zdjęcie',
   remove: 'Usuń zdjęcie',
-  uploading: 'Wysyłanie zdjęcia…',
+  uploading: 'Wysyłam zdjęcie…',
   retry: 'Spróbuj ponownie',
   hint: 'Zdjęcie jest nieobowiązkowe.',
   attached: 'Zdjęcie dołączone:',
@@ -51,18 +51,18 @@ export function ReportPhotoField({ state, choose, retry, remove }: ReportPhotoCo
               if (file) choose(file);
             }}
           />
-          <span>{TO_AGREE.add}</span>
+          <span>{TEXTS.add}</span>
         </label>
       ) : null}
-      {state.status === 'idle' ? <small className="rs-hint">{TO_AGREE.hint}</small> : null}
-      {state.status === 'uploading' ? <p className="rs-photo-status" role="status">{TO_AGREE.uploading}</p> : null}
-      {state.status === 'ready' ? <p className="rs-photo-status">{TO_AGREE.attached} <b>{state.fileName}</b></p> : null}
+      {state.status === 'idle' ? <small className="rs-hint">{TEXTS.hint}</small> : null}
+      {state.status === 'uploading' ? <p className="rs-photo-status" role="status">{TEXTS.uploading}</p> : null}
+      {state.status === 'ready' ? <p className="rs-photo-status">{TEXTS.attached} <b>{state.fileName}</b></p> : null}
       {state.status === 'error' ? <p className="rs-error" role="alert">{state.message}</p> : null}
       {state.status === 'error' && state.canRetry ? (
-        <button type="button" className="rs-photo-btn" onClick={retry}>{TO_AGREE.retry}</button>
+        <button type="button" className="rs-photo-btn" onClick={retry}>{TEXTS.retry}</button>
       ) : null}
       {state.status === 'ready' || state.status === 'error' ? (
-        <button type="button" className="rs-photo-btn" onClick={remove}>{TO_AGREE.remove}</button>
+        <button type="button" className="rs-photo-btn" onClick={remove}>{TEXTS.remove}</button>
       ) : null}
     </section>
   );

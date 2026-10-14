@@ -5,7 +5,7 @@
  * @author Szymon
  * @since 2026-10-13
  * @uses src/features/surveys/vote/QuestionStep.tsx::QuestionStep
- * @uses src/features/surveys/vote/texts.ts::TO_AGREE
+ * @uses src/features/surveys/vote/texts.ts::TEXTS
  * @used_by vitest.config.ts::include
  */
 
@@ -18,7 +18,7 @@ import { renderToString } from 'react-dom/server';
 // PL: Komponent pod testem i jego tekst.
 // EN: The component under test and its text.
 import { QuestionStep } from './QuestionStep';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 import type { SurveyQuestion } from './types';
 
 // PL: Pytanie krótkiej odpowiedzi bez wyborów.
@@ -37,11 +37,11 @@ describe('podpowiedź o anonimowości pod krótką odpowiedzią / the anonymity 
     const textareaEnd = html.indexOf('</textarea>');
 
     expect(textareaEnd).toBeGreaterThan(-1);
-    expect(html.indexOf(TO_AGREE.shortTextHint)).toBeGreaterThan(textareaEnd);
+    expect(html.indexOf(TEXTS.shortTextHint)).toBeGreaterThan(textareaEnd);
   });
 
   it('jest widoczna od razu, także przy pustym polu / is shown at once, also for an empty field', () => {
-    expect(render('')).toContain(TO_AGREE.shortTextHint);
+    expect(render('')).toContain(TEXTS.shortTextHint);
   });
 
   it('pole ma opis z podpowiedzią i z licznikiem / the field has a description with the hint and the counter', () => {

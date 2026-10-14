@@ -1,6 +1,6 @@
 /**
- * PL: Ekran podtoru 6 (licznik do dzwonka). Pokazuje licznik; bez planu dzwonków pokazuje krótki napis „Brak planu dzwonków”, bo pusty ekran wygląda na błąd (pulpit prowadzi tu z tego napisu). Osobie z rolą Samorządu pokazuje też przełącznik „Lekcje skrócone dziś”; uczeń go nie widzi.
- * EN: The screen of subtrack 6 (bell countdown). Shows the countdown; without a bell plan it shows the short text "Brak planu dzwonków", because an empty screen looks like a fault (the dashboard links here from that text). The person with the Student Council role also sees the "Lekcje skrócone dziś" switch; a student does not see it.
+ * PL: Ekran podtoru 6 (licznik do dzwonka). Pokazuje licznik; bez planu dzwonków pokazuje krótki napis „Brak planu dzwonków”, bo pusty ekran wygląda na błąd (pulpit prowadzi tu z tego napisu). Osobie z rolą Samorządu pokazuje też przełącznik „Dziś lekcje skrócone”; uczeń go nie widzi.
+ * EN: The screen of subtrack 6 (bell countdown). Shows the countdown; without a bell plan it shows the short text "Brak planu dzwonków", because an empty screen looks like a fault (the dashboard links here from that text). The person with the Student Council role also sees the "Dziś lekcje skrócone" switch; a student does not see it.
  *
  * @author Bohdan
  * @since 2026-10-09
@@ -25,8 +25,8 @@ import { useShortenedDays } from './shortenedQueries';
 // PL: Etykieta panelu Samorządu z admin/queries.ts (panelEntryFor). Po niej poznajemy Samorząd.
 // EN: The label of the Student Council panel from admin/queries.ts (panelEntryFor). We know the Council by it.
 const COUNCIL_LABEL = 'Panel Samorządu';
-// PL: Napis, gdy planu dzwonków nie ma. Ten sam co na pulpicie. TO_AGREE: tekstu nie ma w EKRANY.md, uzgodnić z zespołem.
-// EN: The text shown when there is no bell plan. The same as on the dashboard. TO_AGREE: the text is not in EKRANY.md, to be agreed with the team.
+// PL: Napis, gdy planu dzwonków nie ma. Ten sam co na pulpicie.
+// EN: The text shown when there is no bell plan. The same as on the dashboard.
 const NO_PLAN_TEXT = 'Brak planu dzwonków';
 
 /**
