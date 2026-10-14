@@ -68,7 +68,6 @@ Kolejność w module: od góry, najważniejsze najpierw.
 | | data zamknięcia ankiety | Google Forms |
 | | pobranie wyników jako CSV, także od 5 odpowiedzi | Google Forms, Microsoft Forms |
 | Licznik do dzwonka | następna lekcja i przerwa, nie tylko koniec bieżącej | aplikacje szkolne z planem lekcji |
-| | lekcje skrócone: Samorząd włącza plan skrócony na wybrany dzień | |
 | Logowanie | logowanie Face ID albo odciskiem palca (klucz dostępu, wtyczka passkey w Better Auth) | Google, GitHub |
 | | lista urządzeń i wylogowanie z innych urządzeń | Google, GitHub |
 | Profil | pobranie moich danych jako plik (prawo z RODO) | Google Takeout |

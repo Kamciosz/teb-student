@@ -19,8 +19,8 @@ export { BellScreen } from './BellScreen';
 // PL: Licznik do dzwonka i jego logika stanu (typy BellState i NextLesson do użycia przez pulpit).
 // EN: The bell countdown and its state logic (the BellState and NextLesson types for the dashboard).
 export { BellCountdown } from './BellCountdown';
-// PL: Stan licznika dla danej chwili z planu dnia (zwykłego albo skróconego). Przeniesiona do bellState.ts, żeby licznik nie importował drzwi (cykl).
-// EN: The countdown state for a given moment from the plan of the day (regular or shortened). Moved to bellState.ts so that the countdown does not import the door (a cycle).
+// PL: Stan licznika dla danej chwili z planu szkoły. Przeniesiona do bellState.ts, żeby licznik nie importował drzwi (cykl).
+// EN: The countdown state for a given moment from the school plan. Moved to bellState.ts so that the countdown does not import the door (a cycle).
 export { currentBellState, getBellState, type BellState, type NextLesson } from './bellState';
 // PL: Czy plan dnia ma choć jedną lekcję (pulpit: odróżnia „brak planu” od „po lekcjach”).
 // EN: Whether the day's plan has at least one lesson (the dashboard tells "no plan" from "after lessons").

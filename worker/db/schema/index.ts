@@ -9,7 +9,6 @@
  * @uses worker/db/schema/news.ts::*
  * @uses worker/db/schema/reports.ts::*
  * @uses worker/db/schema/surveys.ts::*
- * @uses worker/db/schema/bell.ts::*
  * @uses worker/db/schema/profile.ts::*
  * @uses worker/db/schema/admin.ts::*
  */
@@ -33,10 +32,6 @@ export * from './reports';
 // PL: Moduł surveys.
 // EN: The surveys module.
 export * from './surveys';
-
-// PL: Moduł bell.
-// EN: The bell module.
-export * from './bell';
 
 // PL: Moduł profile.
 // EN: The profile module.

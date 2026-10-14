@@ -20,10 +20,12 @@ Do #61 (stan z 12.10): szkielet, PWA i baza D1, logowanie kodem (1a), aktualnoś
 | 4b | zgłoszenia w panelu, zmiana etapu z odpowiedzią dla autora, imię i klasa autora, liczba „Mnie też”, sortowanie | #71, #83, #87, #92, #120, #132, #151, #154 |
 | 5a | data zamknięcia, wielokrotny wybór, skala 1–5, krótka odpowiedź z podpowiedzią o anonimowości | #107, #125, #135, #146, #155 |
 | 5b | ankiety w panelu, wyniki od 5 odpowiedzi, CSV, termin, typ pytania, skala, krótka odpowiedź | #78, #88, #106, #121, #131, #143, #150, #156 |
-| 6 | licznik do dzwonka, następna lekcja, dni skrócone (serwer i przełącznik), pusty plan, stan dnia | #94, #103, #129, #133, #139, #145 |
+| 6 | licznik do dzwonka, następna lekcja, pusty plan, stan dnia | #94, #103, #129, #133, #139, #145 |
 | 7 | profil i ustawienia, usunięcie konta, wiersz panelu, pobieranie moich danych ze wszystkich modułów, „Moje urządzenia” | #63, #89, #104, #110, #119, #124 |
 | 8 | panel Samorządu, role, kody zaproszeń, pilotaż, dziennik zmian (publikacja, usunięcie, zmiana etapu) | #68, #69, #100, #111, #134, #148 |
 | 9 | kafelek dzwonka, kolejność kafelków, minuty do dzwonka, stan dnia w nagłówku | #102, #116, #136, #142, #149, #153 |
+
+Dni skróconych nie ma (decyzja Szymona 14.10). Funkcja usunięta.
 
 Od #157 do #170 weszły zdjęcia w zgłoszeniach i we wpisach:
 
@@ -44,7 +46,7 @@ Brak. Dalsze zadania czekają na decyzje z ostatniej części tego pliku.
 
 ## Przed pierwszym wdrożeniem
 
-Baza nie ma migracji. Lokalnie schemat zakłada `db:reset`. Na produkcji trzeba ręcznie dodać nowe tabele (m.in. `diary_entries`, `bell_shortened_days`, `media_files`) i kolumny (m.in. `author_user_id`, `pinned_at`, `publish_at` w aktualnościach). Pełną listę daje `node scripts/dbDiff.ts`: porównuje `scripts/schemaSql.ts` z bazą i wypisuje brakujące `CREATE` i `ALTER` (#163). Zapis wpisu w dzienniku nie jest w jednej transakcji z publikacją. Poprawić przy wdrożeniu.
+Baza nie ma migracji. Lokalnie schemat zakłada `db:reset`. Na produkcji trzeba ręcznie dodać nowe tabele (m.in. `diary_entries`, `media_files`) i kolumny (m.in. `author_user_id`, `pinned_at`, `publish_at` w aktualnościach). Pełną listę daje `node scripts/dbDiff.ts`: porównuje `scripts/schemaSql.ts` z bazą i wypisuje brakujące `CREATE` i `ALTER` (#163). Zapis wpisu w dzienniku nie jest w jednej transakcji z publikacją. Poprawić przy wdrożeniu.
 
 ## Jak uruchomić agenta podtoru
 
@@ -87,7 +89,7 @@ Po scaleniu usuń kopię roboczą (`git worktree remove ../teb-<podtor>`) i gał
 - **Zespół:** karta linku z adresem spoza listy serwisów społecznościowych znika z wpisu bez komunikatu w czytniku.
 - **Zespół:** zdjęcie w edytorze bez sieci nie czeka w kolejce, tylko pokazuje błąd.
 - **Szymon:** Face ID przez `@better-auth/passkey`, czas świeżej sesji 24 h (#108).
-- **Kacper:** plan dzwonków, zwykły i skrócony.
+- **Kacper:** plan dzwonków (wpisany wg planu szkoły z 14.10).
 - **Zespół:** czy `AGENTS.md` i `CLAUDE.md` mają trafić do `.gitignore`.
 - **Zespół:** wpisy dziennika ucznia znikają razem z kontem. Czy tak ma zostać?
 - **Zespół:** krótka odpowiedź w ankiecie może zdradzić autora w małej grupie. Pod polem jest podpowiedź, ale wyniki pokazujemy dopiero od 5 odpowiedzi.

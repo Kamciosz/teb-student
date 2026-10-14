@@ -11,8 +11,8 @@
 // PL: Hook React do stanu i efektu odświeżania.
 // EN: React hooks for state and the refresh effect.
 import { useEffect, useState } from 'react';
-// PL: Logika licznika z wyborem planu dnia (zwykły albo skrócony).
-// EN: The countdown logic with the choice of the day's plan (regular or shortened).
+// PL: Logika licznika z planu szkoły.
+// EN: The countdown logic from the school plan.
 import { currentBellState } from './bellState';
 // PL: Style licznika (tylko tokeny z tokens.css).
 // EN: The countdown styles (only tokens from tokens.css).
@@ -53,17 +53,16 @@ function displayTime(start: string): string {
 }
 
 /**
- * PL: Rysuje licznik do dzwonka. Bez planu (pusta lista) albo poza lekcjami i przerwami zwraca null. W czasie lekcji pokazuje też następną lekcję, a w przerwie, do której lekcji zostało. Dzień ze zbioru dni skróconych idzie skróconym planem.
- * EN: Draws the bell countdown. With no plan (empty list) or outside lessons and breaks it returns null. During a lesson it also shows the next lesson, and during a break which lesson is coming. A day from the set of shortened days uses the shortened plan.
+ * PL: Rysuje licznik do dzwonka. Bez planu (pusta lista) albo poza lekcjami i przerwami zwraca null. W czasie lekcji pokazuje też następną lekcję, a w przerwie, do której lekcji zostało.
+ * EN: Draws the bell countdown. With no plan (empty list) or outside lessons and breaks it returns null. During a lesson it also shows the next lesson, and during a break which lesson is coming.
  *
- * @param props - PL: opcjonalny zbiór dni skróconych (RRRR-MM-DD). EN: optional set of shortened days (YYYY-MM-DD).
  * @returns PL: element licznika albo null. EN: the countdown element or null.
  */
-export function BellCountdown({ shortenedDays }: { shortenedDays?: ReadonlySet<string> }) {
-  // PL: Bieżący stan licznika z bieżącej chwili i dni skróconych.
-  // EN: The current countdown state from the current moment and the shortened days.
+export function BellCountdown() {
+  // PL: Bieżący stan licznika z bieżącej chwili.
+  // EN: The current countdown state from the current moment.
   const now = useNow();
-  const state = currentBellState(now, shortenedDays);
+  const state = currentBellState(now);
   if (state === null) return null;
   // PL: Napisy w przerwie i przy następnej lekcji są spoza makiety EKRANY, do potwierdzenia w PR.
   // EN: The texts for the break and for the next lesson are not in the EKRANY mockup, to be confirmed in the PR.
