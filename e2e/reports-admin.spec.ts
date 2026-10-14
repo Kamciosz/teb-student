@@ -13,7 +13,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /** PL: Zgłoszenie podstawionego API. EN: A report of the stubbed API. */
-type StubReport = { id: string; isAnonymous: boolean; category: string; place: string; placeDetail: string | null; description: string; stage: string; createdAt: number; updatedAt: number };
+type StubReport = { id: string; isAnonymous: boolean; category: string; place: string; placeDetail: string | null; description: string; stage: string; createdAt: number; updatedAt: number; joinCount: number };
 // PL: Wiersz historii w podstawionym API: etap, chwila i odpowiedź dla autora (albo `null`).
 // EN: A history row in the stubbed API: the stage, the moment and the answer for the author (or `null`).
 type StubChange = { stage: string; changedAt: number; note: string | null };
@@ -36,9 +36,9 @@ function sampleReports(): StubReport[] {
   // PL: Pierwsze zgłoszenie ma autora, dwa pozostałe są anonimowe.
   // EN: The first report has an author, the other two are anonymous.
   return [
-    { id: 'r1', isAnonymous: false, category: 'safety', place: 'corridor', placeDetail: null, description: 'Na schodach przy szatni jest mokro i ślisko.', stage: 'received', createdAt: Date.UTC(2026, 9, 11, 8), updatedAt: Date.UTC(2026, 9, 11, 8) },
-    { id: 'r2', isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Można by postawić kosz do koszykówki przy boisku.', stage: 'received', createdAt: Date.UTC(2026, 9, 9, 8), updatedAt: Date.UTC(2026, 9, 9, 8) },
-    { id: 'r3', isAnonymous: true, category: 'room_equipment', place: 'classroom', placeDetail: 'Sala 204', description: 'Nie działa projektor w sali 204.', stage: 'in_progress', createdAt: Date.UTC(2026, 9, 6, 8), updatedAt: Date.UTC(2026, 9, 7, 8) },
+    { id: 'r1', isAnonymous: false, category: 'safety', place: 'corridor', placeDetail: null, description: 'Na schodach przy szatni jest mokro i ślisko.', stage: 'received', createdAt: Date.UTC(2026, 9, 11, 8), updatedAt: Date.UTC(2026, 9, 11, 8), joinCount: 3 },
+    { id: 'r2', isAnonymous: true, category: 'idea', place: 'field', placeDetail: null, description: 'Można by postawić kosz do koszykówki przy boisku.', stage: 'received', createdAt: Date.UTC(2026, 9, 9, 8), updatedAt: Date.UTC(2026, 9, 9, 8), joinCount: 0 },
+    { id: 'r3', isAnonymous: true, category: 'room_equipment', place: 'classroom', placeDetail: 'Sala 204', description: 'Nie działa projektor w sali 204.', stage: 'in_progress', createdAt: Date.UTC(2026, 9, 6, 8), updatedAt: Date.UTC(2026, 9, 7, 8), joinCount: 1 },
   ];
 }
 
@@ -94,6 +94,24 @@ async function stubAdminApi(page: Page, reports: StubReport[] = sampleReports())
   });
 }
 
+// PL: Liczba osób „Mnie też” jest na kaflu i w szczególe, a zero nie pokazuje plusa (tekst do uzgodnienia).
+// EN: The number of people "Me too" is on the tile and in the detail, and zero shows no plus (text to be agreed).
+test('liczba osób „Mnie też” na kaflu i w szczególe / the "Me too" count on the tile and in the detail', async ({ page }) => {
+  // PL: Zgłoszenie r1 ma trzy osoby, r2 żadnej.
+  // EN: Report r1 has three people, r2 has none.
+  await stubAdminApi(page);
+  await page.goto('/reports/admin');
+  await expect(page.getByRole('link', { name: /Na schodach/ })).toContainText('+3 osoby');
+  await expect(page.getByRole('link', { name: /kosz do koszykówki/ })).not.toContainText(/\+\d/);
+
+  // PL: Szczegół pokazuje tę samą liczbę; przy zerze nie ma żadnego napisu z plusem.
+  // EN: The detail shows the same number; with zero there is no label with a plus.
+  await page.goto('/reports/admin/r1');
+  await expect(page.getByText('+3 osoby')).toBeVisible();
+  await page.goto('/reports/admin/r2');
+  await expect(page.getByText(/^\+\d/)).toHaveCount(0);
+});
+
 // PL: Filtr po etapie, oba stany puste i oznaczenie anonimowych zgłoszeń na liście.
 // EN: The stage filter, both empty states and the marking of anonymous reports in the list.
 test('lista pokazuje zgłoszenia i filtruje po etapie / the list shows reports and filters by stage', async ({ page }) => {
@@ -115,6 +133,26 @@ test('lista pokazuje zgłoszenia i filtruje po etapie / the list shows reports a
   await page.getByRole('button', { name: 'Załatwione' }).click();
   await expect(page.getByRole('heading', { name: 'Brak zgłoszeń w tym etapie' })).toBeVisible();
   await expect(page.getByText('Gdy zgłoszenie zmieni etap, pojawi się tutaj.')).toBeVisible();
+});
+
+// PL: Przełącznik kolejności: domyślnie „Najnowsze”, a „Najwięcej osób” zamienia drugi i trzeci kafel.
+// EN: The order switch: "Najnowsze" by default, and "Najwięcej osób" swaps the second and the third tile.
+test('przełącznik kolejności zmienia układ listy / the order switch changes the list layout', async ({ page }) => {
+  // PL: Podstaw API i otwórz listę; domyślnie wybrane „Najnowsze”.
+  // EN: Stub the API and open the list; "Najnowsze" is chosen by default.
+  await stubAdminApi(page);
+  await page.goto('/reports/admin');
+  await expect(page.getByRole('radio', { name: 'Najnowsze' })).toHaveAttribute('aria-checked', 'true');
+  await expect(items(page).nth(1)).toContainText('kosz do koszykówki');
+  await expect(items(page).nth(2)).toContainText('Nie działa projektor');
+
+  // PL: „Najwięcej osób” stawia zgłoszenie z jedną osobą przed tym bez nikogo; pierwsze (3 osoby) zostaje na górze.
+  // EN: "Najwięcej osób" puts the report with one person before the one with nobody; the first one (3 people) stays on top.
+  await page.getByRole('radio', { name: 'Najwięcej osób' }).click();
+  await expect(page.getByRole('radio', { name: 'Najwięcej osób' })).toHaveAttribute('aria-checked', 'true');
+  await expect(items(page).nth(0)).toContainText('Na schodach');
+  await expect(items(page).nth(1)).toContainText('Nie działa projektor');
+  await expect(items(page).nth(2)).toContainText('kosz do koszykówki');
 });
 
 // PL: Bez żadnych zgłoszeń tekst jest inny niż przy pustym etapie.

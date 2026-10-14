@@ -13,7 +13,7 @@
 /** PL: Adres routera serwera. EN: The server router address. */
 const API_URL = '/api/reports/admin';
 
-/** PL: Zgłoszenie w panelu (bez autora). EN: A report in the panel (without the author). */
+/** PL: Zgłoszenie w panelu (bez autora). Liczba osób („Mnie też”) jest tylko liczbą. EN: A report in the panel (without the author). The number of people ("Me too") is only a number. */
 export type AdminReport = {
   id: string;
   isAnonymous: boolean;
@@ -24,6 +24,8 @@ export type AdminReport = {
   stage: string;
   createdAt: number;
   updatedAt: number;
+  /** PL: Ile osób dołączyło do zgłoszenia. EN: How many people joined the report. */
+  joinCount: number;
 };
 
 /** PL: Jeden wiersz historii etapów, z odpowiedzią dla autora, jeśli była. EN: One row of the stage history, with the answer for the author if there was one. */
