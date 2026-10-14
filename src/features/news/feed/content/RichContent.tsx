@@ -7,6 +7,7 @@
  * @uses src/features/news/feed/content/sanitize.ts::sanitizeDocument
  * @uses src/features/news/feed/content/YouTubePlayer.tsx::YouTubePlayer
  * @uses src/features/news/feed/content/LinkCard.tsx::LinkCard
+ * @uses src/features/news/feed/content/NewsImage.tsx::NewsImage
  * @uses src/features/news/feed/content/SourceList.tsx::SourceList
  * @used_by src/features/news/feed/EntryScreen.tsx::RichContent
  * @used_by src/features/news/feed/content/sanitize.test.tsx::RichContent
@@ -24,6 +25,9 @@ import { LinkCard } from './LinkCard';
 // PL: Odtwarzacz filmu.
 // EN: The video player.
 import { YouTubePlayer } from './YouTubePlayer';
+// PL: Zdjęcie z podpisem.
+// EN: A photo with a caption.
+import { NewsImage } from './NewsImage';
 // PL: Sekcja „Źródła” na końcu wpisu.
 // EN: The "Źródła" (sources) section at the end of an entry.
 import { SourceList } from './SourceList';
@@ -87,6 +91,17 @@ function renderBlock(block: SafeBlock, key: number): ReactNode {
       return <YouTubePlayer key={key} videoId={block.videoId} />;
     case 'linkCard':
       return <LinkCard key={key} href={block.href} network={block.network} />;
+    case 'image':
+      return (
+        <NewsImage
+          key={key}
+          src={block.src}
+          alt={block.alt}
+          caption={block.caption}
+          width={block.width}
+          height={block.height}
+        />
+      );
     case 'sources':
       return <SourceList key={key} links={block.links} />;
   }
