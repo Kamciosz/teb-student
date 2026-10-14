@@ -43,6 +43,8 @@ export type CouncilReport = {
   placeDetail: string | null;
   /** PL: Opis problemu. EN: The problem description. */
   description: string;
+  /** PL: Numer zdjęcia z modułu mediów albo `null`, gdy zdjęcia nie ma. EN: The photo id from the media module, or `null` when there is no photo. */
+  photoId: string | null;
   /** PL: Bieżący etap. EN: The current stage. */
   stage: ReportStage;
   /** PL: Chwila wysłania, milisekundy od 1970. EN: When the report was sent, milliseconds since 1970. */
@@ -92,6 +94,7 @@ const COUNCIL_FIELDS = {
   place: reports.place,
   placeDetail: reports.placeDetail,
   description: reports.description,
+  photoId: reports.photoId,
   stage: reports.stage,
   createdAt: reports.createdAt,
   updatedAt: reports.updatedAt,

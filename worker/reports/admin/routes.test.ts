@@ -195,6 +195,30 @@ describe('odczyt / reading', () => {
     expect(body.history.find((row) => row.stage === 'received')?.note).toBeNull();
   });
 
+  // PL: Zdjęcie z modułu mediów wraca jako `photoId` w liście i w szczególe, także przy zgłoszeniu z autorem, a bez zdjęcia jest `null`.
+  // EN: The photo from the media module comes back as `photoId` in the list and in the detail, also for a report with an author, and without a photo it is `null`.
+  it('GET / i GET /:id niosą photoId, bez numeru autora / GET / and GET /:id carry photoId, without the author id', async () => {
+    // PL: Dołącz zdjęcie do zgłoszenia z autorem i do anonimowego; trzecie zostaje bez zdjęcia.
+    // EN: Attach a photo to the report with an author and to the anonymous one; the third stays without a photo.
+    await db.prepare('UPDATE reports SET photo_id = ? WHERE id = ?').bind('photo-cudze', 'seed-cudze').run();
+    await db.prepare('UPDATE reports SET photo_id = ? WHERE id = ?').bind('photo-projektor', 'seed-projektor').run();
+    const listText = await (await send('/')).text();
+    const { reports } = JSON.parse(listText) as { reports: { id: string; photoId: string | null }[] };
+    expect(reports.map((report) => [report.id, report.photoId])).toEqual([['seed-cudze', 'photo-cudze'], ['seed-projektor', 'photo-projektor'], ['seed-okno', null]]);
+
+    // PL: Szczegół zgłoszenia z autorem niesie zdjęcie, a w odpowiedzi nie ma numeru autora.
+    // EN: The detail of the report with an author carries the photo, and the response has no author id.
+    const detailText = await (await send('/seed-cudze')).text();
+    expect((JSON.parse(detailText) as { report: { photoId: string | null } }).report.photoId).toBe('photo-cudze');
+    expect(listText + detailText).not.toContain(OTHER_STUDENT_ID);
+
+    // PL: Anonimowe zgłoszenie też pokazuje zdjęcie, ale nie ma autora.
+    // EN: An anonymous report shows the photo too, but has no author.
+    const anonymous = (await (await send('/seed-projektor')).json()) as { report: { photoId: string | null }; student: unknown };
+    expect(anonymous.report.photoId).toBe('photo-projektor');
+    expect(anonymous.student).toBeNull();
+  });
+
   // PL: Nieznane zgłoszenie to 404.
   // EN: An unknown report is 404.
   it('GET /:id nieznanego daje 404 / GET /:id of an unknown report gives 404', async () => {
