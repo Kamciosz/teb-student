@@ -4,9 +4,14 @@
  *
  * @author Szymon
  * @since 2026-10-09
+ * @uses src/features/news/feed/content/socialNetwork.ts::socialNetworkName
  * @used_by src/features/news/feed/content/RichContent.tsx::sanitizeDocument
  * @used_by src/features/news/feed/content/sanitize.test.tsx::sanitizeDocument
  */
+
+// PL: Nazwa serwisu z domeny adresu karty linku.
+// EN: The network name from the address domain of a link card.
+import { socialNetworkName } from './socialNetwork';
 
 /**
  * PL: Fragment tekstu w linii: tekst z pogrubieniem, kursywą, podkreśleniem i adresem linku (https) albo łamanie wiersza.
@@ -25,7 +30,8 @@ export type SafeBlock =
   | { kind: 'heading'; level: 2 | 3; children: SafeInline[] }
   | { kind: 'list'; ordered: boolean; items: SafeBlock[][] }
   | { kind: 'quote'; children: SafeBlock[] }
-  | { kind: 'youtube'; videoId: string };
+  | { kind: 'youtube'; videoId: string }
+  | { kind: 'linkCard'; href: string; network: string };
 
 // PL: Największa głębokość zagnieżdżenia bloków. Głębsza treść jest obcinana, żeby złośliwy dokument nie zawiesił telefonu.
 // EN: The largest block nesting depth. Deeper content is cut off, so a malicious document cannot hang the phone.
@@ -168,6 +174,22 @@ function sanitizeList(node: Record<string, unknown>, ordered: boolean, depth: nu
 }
 
 /**
+ * PL: Czyści kartę linku. Karta zostaje tylko dla adresu https z jednego z serwisów społecznościowych. Adres z innej domeny znika razem z kartą.
+ * EN: Cleans a link card. The card stays only for an https address from one of the social networks. An address on another domain disappears together with the card.
+ *
+ * @param node - PL: węzeł karty linku. EN: the link card node.
+ * @returns PL: bezpieczna karta albo null. EN: a safe card or null.
+ */
+function sanitizeLinkCard(node: Record<string, unknown>): SafeBlock | null {
+  // PL: Adres musi być zwykłym https. Po tej kontroli można bezpiecznie rozłożyć adres na nazwę hosta.
+  // EN: The address must be plain https. After this check it is safe to take the address apart for the host name.
+  const href = safeHttpsUrl(isRecord(node.attrs) ? node.attrs.href : undefined);
+  if (href === null) return null;
+  const network = socialNetworkName(new URL(href).hostname);
+  return network === null ? null : { kind: 'linkCard', href, network };
+}
+
+/**
  * PL: Czyści jeden blok. Nieznany typ albo przekroczona głębokość daje null.
  * EN: Cleans one block. An unknown type or an exceeded depth gives null.
  *
@@ -194,6 +216,8 @@ function sanitizeBlock(node: unknown, depth: number): SafeBlock | null {
       const videoId = safeVideoId(isRecord(node.attrs) ? node.attrs.videoId : undefined);
       return videoId === null ? null : { kind: 'youtube', videoId };
     }
+    case 'linkCard':
+      return sanitizeLinkCard(node);
     default:
       // PL: Zdjęcia czekają na podtor 2 (media), a pozostałe typy nie są na liście dozwolonych.
       // EN: Photos wait for subtrack 2 (media), and the other types are not on the allowed list.
