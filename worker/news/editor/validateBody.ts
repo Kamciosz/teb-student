@@ -1,6 +1,6 @@
 /**
- * PL: Sprawdzanie treści wpisu na serwerze. Serwer nie ufa dokumentowi od telefonu: buduje schemat z listy dozwolonych elementów (ta sama lista co w edytorze), wykonuje na dokumencie Node.fromJSON(...).check() i do tego sprawdza to, czego schemat nie sprawdza: adresy https w linkach, zdjęciach i źródłach, identyfikator filmu, serwis karty linku oraz limity rozmiaru. Zwraca dokument odczytany przez schemat (toJSON), więc pola spoza schematu nie trafiają do bazy.
- * EN: Entry content check on the server. The server does not trust the document from the phone: it builds a schema from the allowed element list (the same list as in the editor), runs Node.fromJSON(...).check() on the document and also checks what the schema does not: https addresses in links, photos and sources, the video id, the link card network and the size limits. It returns the document as read by the schema (toJSON), so fields outside the schema never reach the database.
+ * PL: Sprawdzanie treści wpisu na serwerze. Serwer nie ufa dokumentowi od telefonu: buduje schemat z listy dozwolonych elementów (ta sama lista co w edytorze), wykonuje na dokumencie Node.fromJSON(...).check() i do tego sprawdza to, czego schemat nie sprawdza: adresy https w linkach i źródłach, adresy zdjęć z modułu media (/api/media/<id>), identyfikator filmu, serwis karty linku oraz limity rozmiaru. Zwraca dokument odczytany przez schemat (toJSON), więc pola spoza schematu nie trafiają do bazy.
+ * EN: Entry content check on the server. The server does not trust the document from the phone: it builds a schema from the allowed element list (the same list as in the editor), runs Node.fromJSON(...).check() on the document and also checks what the schema does not: https addresses in links and sources, photo addresses from the media module (/api/media/<id>), the video id, the link card network and the size limits. It returns the document as read by the schema (toJSON), so fields outside the schema never reach the database.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -51,17 +51,24 @@ function isTooDeep(value: unknown, depth: number): boolean {
   return Array.isArray(content) && content.some((child) => isTooDeep(child, depth + 1));
 }
 
+// PL: Adres zdjęcia to względny adres naszego modułu media: /api/media/<id>, bez domeny i bez innych znaków.
+// EN: A photo address is a relative address of our media module: /api/media/<id>, with no domain and no other characters.
+const MEDIA_SRC_PATTERN = /^\/api\/media\/[A-Za-z0-9_-]{1,64}$/;
+
 /**
- * PL: Sprawdza pola zdjęcia: adres https, podpis i opis jako krótki tekst, wymiary jako liczby całkowite albo puste.
- * EN: Checks the photo fields: an https address, the caption and the description as short text, the dimensions as integers or empty.
+ * PL: Sprawdza pola zdjęcia: adres z modułu media, podpis i opis jako krótki tekst, wymiary jako liczby całkowite albo puste.
+ * EN: Checks the photo fields: an address from the media module, the caption and the description as short text, the dimensions as integers or empty.
  *
  * @param attrs - PL: pola węzła zdjęcia. EN: the photo node fields.
  * @returns PL: prawda, gdy wszystkie pola są poprawne. EN: true when all the fields are valid.
  */
 function isImageValid(attrs: Record<string, unknown>): boolean {
+  // PL: Sprawdzamy typ przed wzorcem, bo wzorzec zamieniłby tablicę albo null na tekst i przepuściłby go.
+  // EN: We check the type before the pattern, because the pattern would turn an array or null into text and let it pass.
+  const isMediaSrc = (value: unknown) => typeof value === 'string' && MEDIA_SRC_PATTERN.test(value);
   const isShortText = (value: unknown) => typeof value === 'string' && value.length <= MAX_CAPTION_CHARS;
   const isSize = (value: unknown) => value === null || (Number.isInteger(value) && (value as number) > 0 && (value as number) <= MAX_IMAGE_SIDE);
-  return normalizeHttpsUrl(attrs.src) !== null && isShortText(attrs.caption) && isShortText(attrs.alt) && isSize(attrs.width) && isSize(attrs.height);
+  return isMediaSrc(attrs.src) && isShortText(attrs.caption) && isShortText(attrs.alt) && isSize(attrs.width) && isSize(attrs.height);
 }
 
 /**
