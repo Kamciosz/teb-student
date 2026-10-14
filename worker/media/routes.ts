@@ -74,6 +74,34 @@ mediaApp.post('/upload', requirePanelRole('editor'), async (context) => {
   return context.json({ id: result.id }, 201);
 });
 
+// PL: Typy zdjęć, które uczeń może dołączyć do zgłoszenia. HEIC i inne typy odpadają.
+// EN: The photo types a student may attach to a report. HEIC and other types are rejected.
+const REPORT_PHOTO_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+// PL: POST /report-photo przyjmuje zdjęcie do zgłoszenia od zalogowanego ucznia (bez roli w panelu). Zapisuje je jak każde zdjęcie, z numerem ucznia jako autorem, i zwraca numer pliku.
+// EN: POST /report-photo takes a photo for a report from a signed-in student (no role in the panel needed). It saves it like any photo, with the student's id as the author, and returns the file id.
+mediaApp.post('/report-photo', requireStudent, async (context) => {
+  const mime = (context.req.header('content-type') ?? '').split(';')[0].trim().toLowerCase();
+  if (!REPORT_PHOTO_MIMES.has(mime)) return context.json({ error: 'unsupported_type' }, 415);
+
+  const body = await context.req.arrayBuffer();
+  if (body.byteLength === 0) return context.json({ error: 'empty_file' }, 400);
+
+  const result = await storeMedia({
+    bucket: context.env.MEDIA,
+    db: context.env.DB,
+    body,
+    mime,
+    kind: 'photo',
+    width: null,
+    height: null,
+    uploadedBy: context.get('student').id,
+    maxBytes: maxBytesOf('photo'),
+  });
+  if (!result.ok) return context.json({ error: 'too_large' }, 413);
+  return context.json({ id: result.id });
+});
+
 // PL: GET /:id oddaje plik z zasobnika R2 z jego typem zawartości. Wymaga zalogowanego ucznia.
 // EN: GET /:id returns the file from the R2 bucket with its content type. Requires a signed-in student.
 mediaApp.get('/:id', requireStudent, async (context) => {

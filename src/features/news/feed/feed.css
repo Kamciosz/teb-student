@@ -282,6 +282,44 @@
   color: var(--ink-2);
 }
 
+/* PL: Sekcja „Źródła” na końcu wpisu: nagłówek i lista linków z domeną i adresem.
+   EN: The "Źródła" (sources) section at the end of an entry: a heading and a list of links with the domain and the address. */
+.news-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.news-sources h2 {
+  font-size: var(--t-md);
+}
+
+.news-sources ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.news-sources a {
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+
+.news-sources__domain {
+  font-weight: 600;
+}
+
+.news-sources__address {
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
 /* PL: Film: miniatura 16:9 z przyciskiem odtwarzania, a po kliknięciu ramka tej samej wielkości.
    EN: The video: a 16:9 thumbnail with a play button, and after a click a frame of the same size. */
 .news-video {

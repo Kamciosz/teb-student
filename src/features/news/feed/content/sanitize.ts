@@ -1,6 +1,6 @@
 /**
- * PL: Czyszczenie treści wpisu po stronie telefonu. Zamienia dokument JSON w stylu Tiptap na drzewo bezpiecznych bloków, w którym są tylko elementy z listy dozwolonych (ADR 0002). Nieznany element znika, link inny niż https znika (tekst zostaje), a identyfikator filmu musi mieć 11 znaków. Telefon nie ufa serwerowi: czyści treść także wtedy, gdy serwer już ją sprawdził.
- * EN: Cleaning of the entry content on the phone side. Turns a Tiptap-style JSON document into a tree of safe blocks that holds only elements from the allowed list (ADR 0002). An unknown element disappears, a link other than https disappears (the text stays), and a video id must have 11 characters. The phone does not trust the server: it cleans the content even when the server already checked it.
+ * PL: Czyszczenie treści wpisu po stronie telefonu. Zamienia dokument JSON w stylu Tiptap na drzewo bezpiecznych bloków, w którym są tylko elementy z listy dozwolonych (ADR 0002). Nieznany element znika, link inny niż https znika (tekst zostaje), identyfikator filmu musi mieć 11 znaków, a sekcja „Źródła” zostaje tylko z adresami https. Telefon nie ufa serwerowi: czyści treść także wtedy, gdy serwer już ją sprawdził.
+ * EN: Cleaning of the entry content on the phone side. Turns a Tiptap-style JSON document into a tree of safe blocks that holds only elements from the allowed list (ADR 0002). An unknown element disappears, a link other than https disappears (the text stays), a video id must have 11 characters, and the "Źródła" (sources) section keeps only https addresses. The phone does not trust the server: it cleans the content even when the server already checked it.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -22,6 +22,12 @@ export type SafeInline =
   | { kind: 'break' };
 
 /**
+ * PL: Adres z sekcji „Źródła” gotowy do rysowania: adres https, domena bez „www.” i adres bez „https://”.
+ * EN: A source address ready to draw: the https address, the domain without "www." and the address without "https://".
+ */
+export type SafeSource = { href: string; domain: string; address: string };
+
+/**
  * PL: Blok treści. Lista ma pozycje, a każda pozycja jest listą bloków (może zawierać listę zagnieżdżoną).
  * EN: A content block. A list has items, and every item is a list of blocks (it may contain a nested list).
  */
@@ -31,7 +37,8 @@ export type SafeBlock =
   | { kind: 'list'; ordered: boolean; items: SafeBlock[][] }
   | { kind: 'quote'; children: SafeBlock[] }
   | { kind: 'youtube'; videoId: string }
-  | { kind: 'linkCard'; href: string; network: string };
+  | { kind: 'linkCard'; href: string; network: string }
+  | { kind: 'sources'; links: SafeSource[] };
 
 // PL: Największa głębokość zagnieżdżenia bloków. Głębsza treść jest obcinana, żeby złośliwy dokument nie zawiesił telefonu.
 // EN: The largest block nesting depth. Deeper content is cut off, so a malicious document cannot hang the phone.
@@ -96,6 +103,36 @@ export function safeHttpsUrl(raw: unknown): string | null {
  */
 export function safeVideoId(raw: unknown): string | null {
   return typeof raw === 'string' && VIDEO_ID_PATTERN.test(raw) ? raw : null;
+}
+
+/**
+ * PL: Zamienia sprawdzony adres https na domenę i adres do pokazania. Domena bez „www.”, bo „www.gov.pl” czytamy jako „gov.pl”.
+ * EN: Turns a checked https address into the domain and the address to show. The domain has no "www.", because we read "www.gov.pl" as "gov.pl".
+ *
+ * @param href - PL: adres https po sprawdzeniu. EN: the https address after the check.
+ * @returns PL: domena i adres. EN: the domain and the address.
+ */
+function describeSource(href: string): SafeSource {
+  // PL: Adres już przeszedł parser URL, więc odczyt hosta się nie wywali.
+  // EN: The address has already passed the URL parser, so reading the host does not throw.
+  const domain = new URL(href).hostname.replace(/^www\./, '');
+  return { href, domain, address: href.replace(/^https:\/\//, '') };
+}
+
+/**
+ * PL: Czyści sekcję „Źródła”: zostawia tylko adresy https i z nich robi listę. Gdy nic nie zostaje, sekcja znika razem z nagłówkiem.
+ * EN: Cleans the "Źródła" (sources) section: keeps only https addresses and makes a list of them. When nothing is left, the section disappears together with its heading.
+ *
+ * @param node - PL: węzeł sekcji. EN: the section node.
+ * @returns PL: bezpieczna sekcja albo null. EN: a safe section or null.
+ */
+function sanitizeSources(node: Record<string, unknown>): SafeBlock | null {
+  const urls = isRecord(node.attrs) ? node.attrs.urls : undefined;
+  if (!Array.isArray(urls)) return null;
+  // PL: Adres, który nie jest https, odpada z listy (safeHttpsUrl daje null).
+  // EN: An address that is not https drops out of the list (safeHttpsUrl gives null).
+  const hrefs = urls.map(safeHttpsUrl).filter((href): href is string => href !== null);
+  return hrefs.length === 0 ? null : { kind: 'sources', links: hrefs.map(describeSource) };
 }
 
 /**
@@ -210,6 +247,10 @@ function sanitizeBlock(node: unknown, depth: number): SafeBlock | null {
       return sanitizeList(node, true, depth);
     case 'blockquote':
       return { kind: 'quote', children: sanitizeBlocks(childrenOf(node), depth + 1) };
+    case 'sources':
+      // PL: Sekcja „Źródła” bez poprawnego adresu znika.
+      // EN: The "Źródła" section without a valid address disappears.
+      return sanitizeSources(node);
     case 'youtube': {
       // PL: Film bez poprawnego identyfikatora znika.
       // EN: A video without a valid id disappears.
