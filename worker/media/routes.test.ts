@@ -28,6 +28,7 @@ import { createTestRuntime, signIn } from '../auth/email/testRuntime';
 import { mediaApp } from './routes';
 import { panelRoles } from '../db/schema/admin';
 import { mediaFiles } from '../db/schema/media';
+import { MAX_PHOTO_BYTES } from './rules';
 
 /** PL: Sekret podpisu sesji z testRuntime.ts. EN: The session signing secret from testRuntime.ts. */
 const TEST_SECRET = 'test-secret-test-secret-test-secret-00';
@@ -142,5 +143,59 @@ describe('odczyt dla ucznia / reading as a student', () => {
   it('bez sesji odczyt daje 401 / without a session reading gives 401', async () => {
     const response = await send('/test-plik/meta', {}, false);
     expect(response.status).toBe(401);
+  });
+});
+
+// PL: Grupa testów zdjęcia do zgłoszenia od ucznia bez roli.
+// EN: A group of tests for a photo for a report from a student without a role.
+describe('POST /report-photo', () => {
+  /**
+   * PL: Wysyła zdjęcie do zgłoszenia z podanym typem i treścią.
+   * EN: Sends a photo for a report with the given type and body.
+   *
+   * @param mime - PL: typ zawartości. EN: the content type.
+   * @param body - PL: treść pliku. EN: the file body.
+   * @returns PL: odpowiedź routera. EN: the router response.
+   */
+  function report(mime: string, body: Uint8Array = new Uint8Array([1, 2, 3])): Response | Promise<Response> {
+    return send('/report-photo', { method: 'POST', headers: { 'content-type': mime }, body });
+  }
+
+  // PL: Uczeń bez roli wysyła JPEG: 200, a w bazie zdjęcie z jego numerem jako autorem.
+  // EN: A student without a role sends a JPEG: 200, and the database has the photo with their id as the author.
+  it('uczeń bez roli wysyła JPEG: 200 i autor z sesji / a student without a role sends a JPEG: 200 and the author from the session', async () => {
+    const response = await report('image/jpeg');
+    const rows = await drizzle(env.DB).select().from(mediaFiles);
+    expect(response.status).toBe(200);
+    const { id } = (await response.json()) as { id: string };
+    expect(id).toEqual(expect.any(String));
+    expect(rows).toEqual([expect.objectContaining({ id, kind: 'photo', mime: 'image/jpeg', uploadedBy: studentId })]);
+  });
+
+  // PL: HEIC odpada: 415 i nic nie zapisuje.
+  // EN: HEIC is rejected: 415 and nothing is saved.
+  it('HEIC odpada z 415 i nic nie zapisuje / HEIC is rejected with 415 and saves nothing', async () => {
+    const response = await report('image/heic');
+    const rows = await drizzle(env.DB).select().from(mediaFiles);
+    expect(response.status).toBe(415);
+    expect(rows).toHaveLength(0);
+  });
+
+  // PL: Plik większy od limitu zdjęcia odpada: 413 i nic nie zostaje w bazie.
+  // EN: A file bigger than the photo limit is rejected: 413 and nothing stays in the database.
+  it('za duży plik odpada z 413 i nic nie zostaje / a file that is too big is rejected with 413 and nothing stays', async () => {
+    const response = await report('image/jpeg', new Uint8Array(MAX_PHOTO_BYTES + 1));
+    const rows = await drizzle(env.DB).select().from(mediaFiles);
+    expect(response.status).toBe(413);
+    expect(rows).toHaveLength(0);
+  });
+
+  // PL: Bez sesji 401 i nic nie zapisane.
+  // EN: Without a session 401 and nothing saved.
+  it('bez sesji daje 401 i nic nie zapisuje / without a session gives 401 and saves nothing', async () => {
+    const response = await send('/report-photo', { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: new Uint8Array([1]) }, false);
+    const rows = await drizzle(env.DB).select().from(mediaFiles);
+    expect(response.status).toBe(401);
+    expect(rows).toHaveLength(0);
   });
 });
