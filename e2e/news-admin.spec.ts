@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżki Samorządu w podtorze 3c: lista wpisów ze szkicami w ramie panelu, znacznik zaplanowanego wpisu, publikacja szkicu, przypinanie i odpinanie (najwyżej trzy), usuwanie z potwierdzeniem i anulowaniem, pusty stan, odmowa serwera, błąd publikacji, przejście do kreatora „Nowy wpis”, przycisk „Edytuj” i świeża lista po powrocie z kreatora, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga roli z podtoru 8 i zalogowania); serwer sprawdzają testy Vitest (worker/news/admin/routes.test.ts), także to, że uczeń nie widzi szkiców.
- * EN: Test of the Student Council path in subtrack 3c: the entry list with drafts in the panel frame, the scheduled tag of an entry, publishing a draft, pinning and unpinning (at most three), deleting with a confirmation and a cancel, the empty state, a server refusal, a publish error, the way to the "Nowy wpis" wizard, the "Edytuj" button and a fresh list after returning from the wizard, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/news/admin/routes.test.ts), including that a student does not see drafts.
+ * PL: Test ścieżki Samorządu w podtorze 3c: lista wpisów ze szkicami w ramie panelu, znacznik zaplanowanego wpisu, publikacja szkicu, przypinanie i odpinanie (najwyżej trzy), usuwanie z potwierdzeniem i anulowaniem, pusty stan, odmowa serwera, błąd publikacji, publikacja wpisu w korekcie, przejście do kreatora „Nowy wpis”, przycisk „Edytuj” i świeża lista po powrocie z kreatora, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga roli z podtoru 8 i zalogowania); serwer sprawdzają testy Vitest (worker/news/admin/routes.test.ts), także to, że uczeń nie widzi szkiców.
+ * EN: Test of the Student Council path in subtrack 3c: the entry list with drafts in the panel frame, the scheduled tag of an entry, publishing a draft, pinning and unpinning (at most three), deleting with a confirmation and a cancel, the empty state, a server refusal, a publish error, publishing an entry in review, the way to the "Nowy wpis" wizard, the "Edytuj" button and a fresh list after returning from the wizard, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/news/admin/routes.test.ts), including that a student does not see drafts.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -242,6 +242,26 @@ test('błąd publikacji zostawia przycisk aktywny / a publish error leaves the b
 
   await expect(page.getByRole('alert')).toContainText('Nie udało się opublikować wpisu. Spróbuj ponownie za chwilę.');
   await expect(page.getByRole('button', { name: /^Opublikuj/ })).toBeEnabled();
+});
+
+// PL: Szkic, który w tym czasie poszedł do korekty, nie da się opublikować: serwer zwraca 409 „in_review”, pokazuje się komunikat o korekcie, a lista odświeża się i pokazuje „Do korekty” bez „Opublikuj”.
+// EN: A draft that went to review in the meantime cannot be published: the server returns 409 "in_review", the review message shows, and the list refreshes and shows "Do korekty" without "Opublikuj".
+test('publikacja wpisu w korekcie pokazuje komunikat i odświeża listę / publishing an entry in review shows a message and refreshes the list', async ({ page }) => {
+  const entries = sampleEntries();
+  await stubAdminApi(page, entries);
+  // PL: Serwer ma wpis już w korekcie, więc odpowiada 409 z kodem „in_review”.
+  // EN: The server already has the entry in review, so it answers 409 with the code "in_review".
+  await page.route(/\/api\/news\/admin\/e-szkic\/publish$/, (route) => {
+    Object.assign(entries[0] as StubEntry, { status: 'in_review' });
+    return route.fulfill({ status: 409, json: { error: 'in_review' } });
+  });
+  await page.goto('/news/admin');
+
+  await page.getByRole('button', { name: /^Opublikuj/ }).click();
+
+  await expect(page.getByRole('alert')).toContainText('Ten wpis czeka na korektę. Opublikuje go redaktor, który go sprawdzi.');
+  await expect(tiles(page).first()).toContainText('Do korekty');
+  await expect(page.getByRole('button', { name: /^Opublikuj/ })).toHaveCount(0);
 });
 
 // PL: Przycisk „Edytuj” jest tylko przy szkicu i prowadzi do kreatora z jego numerem, a kreator wczytuje szkic z serwera.

@@ -13,7 +13,7 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { type PanelEntry, PinLimitError } from './api';
+import { EntryInReviewError, type PanelEntry, PinLimitError } from './api';
 import { DeleteSheet } from './DeleteSheet';
 import { EntryTile } from './EntryTile';
 import { Icon } from './icons';
@@ -77,6 +77,17 @@ function EntriesBody({ query, isLocked, onPublish, onTogglePin, onDelete }: Entr
 }
 
 /**
+ * PL: Dobiera komunikat o nieudanej publikacji. Wpis w korekcie ma osobny tekst, reszta błędów dostaje ogólny.
+ * EN: Picks the message for a failed publish. An entry in review has its own text, other errors get the general one.
+ *
+ * @param error - PL: błąd z publikacji. EN: the publish error.
+ * @returns PL: tekst komunikatu. EN: the message text.
+ */
+function publishErrorText(error: unknown): string {
+  return error instanceof EntryInReviewError ? TO_AGREE.inReview : TO_AGREE.publishFailed;
+}
+
+/**
  * PL: Rysuje ekran „Wpisy”.
  * EN: Draws the "Wpisy" screen.
  *
@@ -105,7 +116,7 @@ export function NewsAdminScreen() {
   return (
     <section className="na-screen" data-subtrack="3c">
       <PanelTop />
-      {publish.isError ? <Notice text={TO_AGREE.publishFailed} /> : null}
+      {publish.isError ? <Notice text={publishErrorText(publish.error)} /> : null}
       {pinLimited ? <Notice text={TO_AGREE.pinLimit} /> : null}
       {pinFailed ? <Notice text={TO_AGREE.pinFailed} /> : null}
       {remove.isError ? <Notice text={TO_AGREE.deleteFailed} /> : null}

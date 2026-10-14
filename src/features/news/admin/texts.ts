@@ -42,6 +42,7 @@ export const TO_AGREE = {
   offlineNote: 'Publikacja, przypinanie i usuwanie wymagają internetu.',
   loadFailed: 'Nie udało się pobrać wpisów. Spróbuj ponownie za chwilę.',
   publishFailed: 'Nie udało się opublikować wpisu. Spróbuj ponownie za chwilę.',
+  inReview: 'Ten wpis czeka na korektę. Opublikuje go redaktor, który go sprawdzi.',
   deleteFailed: 'Nie udało się usunąć wpisu. Spróbuj ponownie za chwilę.',
   pin: 'Przypnij',
   unpin: 'Odepnij',

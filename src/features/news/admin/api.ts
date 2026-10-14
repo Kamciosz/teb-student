@@ -1,6 +1,6 @@
 /**
- * PL: Rozmowa ekranu „Wpisy” z serwerem: lista wpisów ze szkicami, publikacja szkicu i usunięcie wpisu. Adres to /api/news/admin (worker/mounts.ts). Kod odpowiedzi 409 przy publikacji (wpis już opublikowany albo w korekcie) i 404 przy usuwaniu (wpisu już nie ma) kończą się stanem, który widać na liście po odświeżeniu, więc nie są błędem.
- * EN: The talk of the "Wpisy" screen with the server: the list of entries with drafts, publishing a draft and deleting an entry. The address is /api/news/admin (worker/mounts.ts). Response code 409 when publishing (the entry is already published or in review) and 404 when deleting (the entry is already gone) end in a state the list shows after the refresh, so they are not errors.
+ * PL: Rozmowa ekranu „Wpisy” z serwerem: lista wpisów ze szkicami, publikacja szkicu i usunięcie wpisu. Adres to /api/news/admin (worker/mounts.ts). Kod odpowiedzi 409 przy publikacji wpisu już opublikowanego i 404 przy usuwaniu (wpisu już nie ma) kończą się stanem, który widać na liście po odświeżeniu, więc nie są błędem. Wpis w korekcie (409 z `in_review`) daje osobny błąd `EntryInReviewError`, który panel pokazuje własnym komunikatem.
+ * EN: The talk of the "Wpisy" screen with the server: the list of entries with drafts, publishing a draft and deleting an entry. The address is /api/news/admin (worker/mounts.ts). Response code 409 when publishing an entry already published and 404 when deleting (the entry is already gone) end in a state the list shows after the refresh, so they are not errors. An entry in review (409 with `in_review`) gives a separate `EntryInReviewError`, which the panel shows with its own message.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -58,17 +58,42 @@ export async function fetchPanelEntries(): Promise<PanelEntry[]> {
 }
 
 /**
- * PL: Publikuje szkic. 409 (już opublikowany albo w korekcie) nie jest błędem: lista odświeżona po zapisie pokaże stan z serwera. Panel nie publikuje wpisu w korekcie.
- * EN: Publishes a draft. 409 (already published or in review) is not an error: the list refreshed after the save shows the server state. The panel does not publish an entry in review.
+ * PL: Błąd publikacji wpisu, który jest w korekcie. Serwer zwraca 409 z `error: 'in_review'`, a panel pokazuje wtedy osobny komunikat.
+ * EN: A publishing error for an entry in review. The server returns 409 with `error: 'in_review'`, and the panel then shows a separate message.
+ */
+export class EntryInReviewError extends Error {
+  constructor() {
+    super('in_review');
+    this.name = 'EntryInReviewError';
+  }
+}
+
+/**
+ * PL: Czyta kod błędu z ciała odpowiedzi 409. Brak ciała albo zły JSON oznacza brak kodu.
+ * EN: Reads the error code from a 409 response body. No body or bad JSON means no code.
+ *
+ * @param response - PL: odpowiedź serwera. EN: the server response.
+ * @returns PL: kod błędu albo null. EN: the error code, or null.
+ */
+async function readErrorCode(response: Response): Promise<string | null> {
+  const body = (await response.json().catch(() => null)) as { error?: unknown } | null;
+  return typeof body?.error === 'string' ? body.error : null;
+}
+
+/**
+ * PL: Publikuje szkic. 409 dla wpisu już opublikowanego nie jest błędem: lista odświeżona po zapisie pokaże stan z serwera. 409 z `in_review` to wpis w korekcie i rzuca `EntryInReviewError`. Panel nie publikuje wpisu w korekcie.
+ * EN: Publishes a draft. 409 for an entry already published is not an error: the list refreshed after the save shows the server state. 409 with `in_review` is an entry in review and throws `EntryInReviewError`. The panel does not publish an entry in review.
  *
  * @param id - PL: numer wpisu. EN: the entry id.
- * @throws PL: błąd sieci albo błąd z kodem odpowiedzi. EN: a network error, or an error with the response code.
+ * @throws PL: `EntryInReviewError` dla wpisu w korekcie, błąd sieci albo błąd z kodem odpowiedzi. EN: `EntryInReviewError` for an entry in review, a network error, or an error with the response code.
  */
 export async function publishEntry(id: string): Promise<void> {
-  // PL: Sukces i „już opublikowany” albo „w korekcie” nie są błędem; stan wpisu pokaże lista po odświeżeniu.
-  // EN: Success, "already published" and "in review" are not an error; the list after the refresh shows the entry state.
+  // PL: Sukces i „już opublikowany” nie są błędem; wpis w korekcie to osobny błąd z własnym komunikatem.
+  // EN: Success and "already published" are not an error; an entry in review is a separate error with its own message.
   const response = await fetch(`${entryUrl(id)}/publish`, { method: 'POST' });
-  if (!response.ok && response.status !== 409) throw new Error(`HTTP ${response.status}`);
+  if (response.ok) return;
+  if (response.status !== 409) throw new Error(`HTTP ${response.status}`);
+  if ((await readErrorCode(response)) === 'in_review') throw new EntryInReviewError();
 }
 
 /**
