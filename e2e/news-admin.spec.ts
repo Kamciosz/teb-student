@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżki Samorządu w podtorze 3c: lista wpisów ze szkicami w ramie panelu, publikacja szkicu, usuwanie z potwierdzeniem i anulowaniem, pusty stan, odmowa serwera, błąd publikacji, przejście do kreatora „Nowy wpis”, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga roli z podtoru 8 i zalogowania); serwer sprawdzają testy Vitest (worker/news/admin/routes.test.ts), także to, że uczeń nie widzi szkiców.
- * EN: Test of the Student Council path in subtrack 3c: the entry list with drafts in the panel frame, publishing a draft, deleting with a confirmation and a cancel, the empty state, a server refusal, a publish error, the way to the "Nowy wpis" wizard, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/news/admin/routes.test.ts), including that a student does not see drafts.
+ * PL: Test ścieżki Samorządu w podtorze 3c: lista wpisów ze szkicami w ramie panelu, znacznik zaplanowanego wpisu, publikacja szkicu, przypinanie i odpinanie (najwyżej trzy), usuwanie z potwierdzeniem i anulowaniem, pusty stan, odmowa serwera, błąd publikacji, publikacja wpisu w korekcie, przejście do kreatora „Nowy wpis”, przycisk „Edytuj” i świeża lista po powrocie z kreatora, szerokość 320 px i brak internetu. API jest podstawione (prawdziwe wymaga roli z podtoru 8 i zalogowania); serwer sprawdzają testy Vitest (worker/news/admin/routes.test.ts), także to, że uczeń nie widzi szkiców.
+ * EN: Test of the Student Council path in subtrack 3c: the entry list with drafts in the panel frame, the scheduled tag of an entry, publishing a draft, pinning and unpinning (at most three), deleting with a confirmation and a cancel, the empty state, a server refusal, a publish error, publishing an entry in review, the way to the "Nowy wpis" wizard, the "Edytuj" button and a fresh list after returning from the wizard, 320 px width and no internet. The API is stubbed (the real one requires a role from subtrack 8 and a sign-in); the server is covered by the Vitest tests (worker/news/admin/routes.test.ts), including that a student does not see drafts.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -13,7 +13,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /** PL: Wpis podstawionego API. EN: An entry of the stubbed API. */
-type StubEntry = { id: string; type: string; status: 'draft' | 'published'; title: string; source: string; publishedAt: string | null };
+type StubEntry = { id: string; type: string; status: 'draft' | 'in_review' | 'published'; title: string; source: string; publishedAt: string | null; pinnedAt: string | null; publishAt: string | null };
 
 /**
  * PL: Kafle listy wpisów. Menu panelu też jest listą, więc szukamy po nazwie listy.
@@ -31,8 +31,8 @@ function tiles(page: Page) {
 /** PL: Dwa wpisy: szkic i opublikowany, szkic pierwszy jak na serwerze. EN: Two entries: a draft and a published one, the draft first like on the server. */
 function sampleEntries(): StubEntry[] {
   return [
-    { id: 'e-szkic', type: 'news', status: 'draft', title: 'Turniej e-sportowy klas', source: 'Samorząd', publishedAt: null },
-    { id: 'e-pub', type: 'event', status: 'published', title: 'Dzień sportu', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z' },
+    { id: 'e-szkic', type: 'news', status: 'draft', title: 'Turniej e-sportowy klas', source: 'Samorząd', publishedAt: null, pinnedAt: null, publishAt: null },
+    { id: 'e-pub', type: 'event', status: 'published', title: 'Dzień sportu', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null, publishAt: null },
   ];
 }
 
@@ -73,9 +73,17 @@ async function stubAdminApi(page: Page, entries: StubEntry[] = sampleEntries()):
     if (!id) return route.fulfill({ json: { entries } });
     const index = entries.findIndex((item) => item.id === id);
     if (index < 0) return route.fulfill({ status: 404, json: { error: 'not_found' } });
-    // PL: Publikacja zmienia stan, usunięcie wyrzuca wpis z pamięci.
-    // EN: Publishing changes the status, deleting removes the entry from memory.
-    if (action === 'publish') Object.assign(entries[index] as StubEntry, { status: 'published', publishedAt: '2026-10-12T08:00:00.000Z' });
+    const entry = entries[index] as StubEntry;
+    // PL: Publikacja zmienia stan, przypięcie ustawia czas, odpięcie go czyści, usunięcie wyrzuca wpis z pamięci.
+    // EN: Publishing changes the status, pinning sets the time, unpinning clears it, deleting removes the entry from memory.
+    if (action === 'publish') Object.assign(entry, { status: 'published', publishedAt: '2026-10-12T08:00:00.000Z' });
+    // PL: Trzeci przypięty blokuje czwarte, jak na serwerze.
+    // EN: A third pinned entry blocks a fourth, as on the server.
+    if (action === 'pin' && entry.pinnedAt === null) {
+      if (entries.filter((item) => item.pinnedAt !== null).length >= 3) return route.fulfill({ status: 409, json: { error: 'pin_limit' } });
+      Object.assign(entry, { pinnedAt: '2026-10-12T08:00:00.000Z' });
+    }
+    if (action === 'unpin') Object.assign(entry, { pinnedAt: null });
     if (request.method() === 'DELETE') entries.splice(index, 1);
     return route.fulfill({ json: { id } });
   });
@@ -94,6 +102,27 @@ test('lista pokazuje szkic i wpis opublikowany w ramie panelu / the list shows a
   await expect(tiles(page).last()).toContainText('Opublikowany');
   await expect(tiles(page).last()).toContainText('Samorząd · 9.10');
   await expect(page.getByRole('button', { name: /^Opublikuj/ })).toHaveCount(1);
+  // PL: Przypinanie jest tylko przy opublikowanym wpisie, szkic go nie ma.
+  // EN: Pinning is only on a published entry, a draft does not have it.
+  await expect(page.getByRole('button', { name: /^(Przypnij|Odepnij)/ })).toHaveCount(1);
+  await expect(tiles(page).first().getByRole('button', { name: /^(Przypnij|Odepnij)/ })).toHaveCount(0);
+});
+
+// PL: Wpis w korekcie ma znacznik „Do korekty” i link „Otwórz korektę” do kreatora, bez „Opublikuj” i bez znacznika „Opublikowany”. Kolejność jak na serwerze: szkic, w korekcie, opublikowany.
+// EN: An entry in review has the "Do korekty" tag and an "Otwórz korektę" link to the wizard, without "Opublikuj" and without the "Opublikowany" tag. The order as on the server: draft, in review, published.
+test('wpis w korekcie ma znacznik i link do korekty / an entry in review has a tag and a link to the review', async ({ page }) => {
+  await stubAdminApi(page, [
+    { id: 'e-szkic', type: 'news', status: 'draft', title: 'Turniej e-sportowy klas', source: 'Samorząd', publishedAt: null, pinnedAt: null, publishAt: null },
+    { id: 'e-korekta', type: 'sport', status: 'in_review', title: 'Mecz w korekcie', source: 'Samorząd', publishedAt: null, pinnedAt: null, publishAt: null },
+    { id: 'e-pub', type: 'event', status: 'published', title: 'Dzień sportu', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null, publishAt: null },
+  ]);
+  await page.goto('/news/admin');
+
+  await expect(tiles(page)).toHaveCount(3);
+  await expect(tiles(page).nth(1)).toContainText('Do korekty');
+  await expect(tiles(page).nth(1)).not.toContainText('Opublikowany');
+  await expect(page.getByRole('link', { name: 'Otwórz korektę: Mecz w korekcie' })).toHaveAttribute('href', '/news/editor/e-korekta');
+  await expect(page.getByRole('button', { name: /^Opublikuj/ })).toHaveCount(1);
 });
 
 // PL: Publikacja szkicu zmienia go w wpis opublikowany, a przycisk „Opublikuj” znika.
@@ -106,6 +135,52 @@ test('Samorząd publikuje szkic / the Student Council publishes a draft', async 
 
   await expect(tiles(page).first()).toContainText('Opublikowany');
   await expect(page.getByRole('button', { name: /^Opublikuj/ })).toHaveCount(0);
+});
+
+// PL: Przypięcie zmienia przycisk na „Odepnij”, a odpięcie wraca do „Przypnij”, bez komunikatu błędu.
+// EN: Pinning changes the button to "Odepnij", and unpinning changes it back to "Przypnij", with no error message.
+test('Samorząd przypina i odpina wpis opublikowany / the Student Council pins and unpins a published entry', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.goto('/news/admin');
+
+  await page.getByRole('button', { name: 'Przypnij: Dzień sportu' }).click();
+  await expect(page.getByRole('button', { name: 'Odepnij: Dzień sportu' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Odepnij: Dzień sportu' }).click();
+  await expect(page.getByRole('button', { name: 'Przypnij: Dzień sportu' })).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
+// PL: Czwarte przypięcie pokazuje czytelny komunikat o limicie, a wpis zostaje nieprzypięty.
+// EN: A fourth pin shows a readable limit message, and the entry stays unpinned.
+test('czwarte przypięcie pokazuje limit / a fourth pin shows the limit', async ({ page }) => {
+  const pinnedAt = '2026-10-09T10:00:00.000Z';
+  await stubAdminApi(page, [
+    { id: 'p-1', type: 'news', status: 'published', title: 'Pierwszy', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt, publishAt: null },
+    { id: 'p-2', type: 'news', status: 'published', title: 'Drugi', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt, publishAt: null },
+    { id: 'p-3', type: 'news', status: 'published', title: 'Trzeci', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt, publishAt: null },
+    { id: 'p-4', type: 'news', status: 'published', title: 'Czwarty', source: 'Samorząd', publishedAt: pinnedAt, pinnedAt: null, publishAt: null },
+  ]);
+  await page.goto('/news/admin');
+
+  await page.getByRole('button', { name: 'Przypnij: Czwarty' }).click();
+
+  await expect(page.getByRole('alert')).toContainText('Najwyżej 3 wpisy mogą być przypięte naraz. Odepnij jeden, żeby przypiąć ten.');
+  await expect(page.getByRole('button', { name: 'Przypnij: Czwarty' })).toBeEnabled();
+});
+
+// PL: Inny błąd przypięcia pokazuje ogólny komunikat, a nie komunikat o limicie, i zostawia przycisk aktywny.
+// EN: Another pin error shows the general message, not the limit message, and leaves the button active.
+test('błąd przypięcia pokazuje ogólny komunikat / a pin error shows the general message', async ({ page }) => {
+  await stubAdminApi(page);
+  await page.route(/\/api\/news\/admin\/e-pub\/pin$/, (route) => route.fulfill({ status: 503, json: { error: 'database_error' } }));
+  await page.goto('/news/admin');
+
+  await page.getByRole('button', { name: 'Przypnij: Dzień sportu' }).click();
+
+  await expect(page.getByRole('alert')).toContainText('Nie udało się zmienić przypięcia. Spróbuj ponownie za chwilę.');
+  await expect(page.getByRole('alert')).not.toContainText('Najwyżej 3');
+  await expect(page.getByRole('button', { name: 'Przypnij: Dzień sportu' })).toBeEnabled();
 });
 
 // PL: Usunięcie pyta o potwierdzenie: „Anuluj” nic nie usuwa, „Usuń wpis” usuwa.
@@ -169,6 +244,26 @@ test('błąd publikacji zostawia przycisk aktywny / a publish error leaves the b
   await expect(page.getByRole('button', { name: /^Opublikuj/ })).toBeEnabled();
 });
 
+// PL: Szkic, który w tym czasie poszedł do korekty, nie da się opublikować: serwer zwraca 409 „in_review”, pokazuje się komunikat o korekcie, a lista odświeża się i pokazuje „Do korekty” bez „Opublikuj”.
+// EN: A draft that went to review in the meantime cannot be published: the server returns 409 "in_review", the review message shows, and the list refreshes and shows "Do korekty" without "Opublikuj".
+test('publikacja wpisu w korekcie pokazuje komunikat i odświeża listę / publishing an entry in review shows a message and refreshes the list', async ({ page }) => {
+  const entries = sampleEntries();
+  await stubAdminApi(page, entries);
+  // PL: Serwer ma wpis już w korekcie, więc odpowiada 409 z kodem „in_review”.
+  // EN: The server already has the entry in review, so it answers 409 with the code "in_review".
+  await page.route(/\/api\/news\/admin\/e-szkic\/publish$/, (route) => {
+    Object.assign(entries[0] as StubEntry, { status: 'in_review' });
+    return route.fulfill({ status: 409, json: { error: 'in_review' } });
+  });
+  await page.goto('/news/admin');
+
+  await page.getByRole('button', { name: /^Opublikuj/ }).click();
+
+  await expect(page.getByRole('alert')).toContainText('Ten wpis czeka na korektę. Opublikuje go redaktor, który go sprawdzi.');
+  await expect(tiles(page).first()).toContainText('Do korekty');
+  await expect(page.getByRole('button', { name: /^Opublikuj/ })).toHaveCount(0);
+});
+
 // PL: Przycisk „Edytuj” jest tylko przy szkicu i prowadzi do kreatora z jego numerem, a kreator wczytuje szkic z serwera.
 // EN: The "Edytuj" button is only on a draft and leads to the wizard with its id, and the wizard loads the draft from the server.
 test('szkic ma przycisk „Edytuj” prowadzący do kreatora / a draft has an "Edytuj" button leading to the wizard', async ({ page }) => {
@@ -191,6 +286,47 @@ test('szkic ma przycisk „Edytuj” prowadzący do kreatora / a draft has an "E
   await expect(page.getByLabel('Tytuł')).toHaveValue('Turniej e-sportowy klas');
 });
 
+// PL: Opublikowany wpis z chwilą startu w przyszłości ma znacznik z godziną w Warszawie; wpis, którego chwila minęła, znacznika nie ma.
+// EN: A published entry with a start moment in the future has the tag with the Warsaw hour; an entry whose moment has passed has no tag.
+test('zaplanowany wpis pokazuje znacznik z godziną w Warszawie / a scheduled entry shows the tag with the Warsaw hour', async ({ page }) => {
+  await stubAdminApi(page, [
+    { id: 'z-1', type: 'news', status: 'published', title: 'Zapisy na obóz', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null, publishAt: '2030-03-05T07:30:00.000Z' },
+    { id: 'z-2', type: 'news', status: 'published', title: 'Dzień otwarty', source: 'Samorząd', publishedAt: '2026-10-09T10:00:00.000Z', pinnedAt: null, publishAt: '2026-10-09T10:00:00.000Z' },
+  ]);
+  await page.goto('/news/admin');
+
+  await expect(tiles(page).first()).toContainText('Zaplanowany na 5.03, 08:30');
+  await expect(tiles(page).last()).not.toContainText('Zaplanowany');
+});
+
+// PL: Po powrocie z kreatora lista pokazuje nowy tytuł szkicu, a nie tytuł z pamięci podręcznej (lista jest świeża 30 s).
+// EN: After returning from the wizard the list shows the new draft title, not the one from the cache (the list is fresh for 30 s).
+test('po powrocie z edycji lista pokazuje nowy tytuł / after returning from editing the list shows the new title', async ({ page }) => {
+  const entries = sampleEntries();
+  await stubAdminApi(page, entries);
+  await page.route('**/api/news/editor/entries/e-szkic', (route) =>
+    route.fulfill({ status: 200, json: { id: 'e-szkic', type: 'news', title: 'Turniej e-sportowy klas', status: 'draft', body: { type: 'doc', content: [] } } }),
+  );
+  await page.goto('/news/admin');
+  await expect(tiles(page).first()).toContainText('Turniej e-sportowy klas');
+
+  await page.getByRole('link', { name: 'Edytuj: Turniej e-sportowy klas' }).click();
+  await expect(page).toHaveURL(/\/news\/editor\/e-szkic$/);
+
+  // PL: Atrapa serwera zmienia tytuł szkicu, a przeglądarka jeszcze o tym nie wie.
+  // EN: The server stub changes the draft title, and the browser does not know about it yet.
+  const draft = entries[0] as StubEntry;
+  draft.title = 'Turniej szkolny klas';
+
+  // PL: Powrót strzałką w kreatorze to nawigacja w aplikacji, bez przeładowania strony.
+  // EN: Going back with the wizard arrow is in-app navigation, without reloading the page.
+  await page.getByRole('link', { name: 'Wróć' }).click();
+
+  await expect(page).toHaveURL(/\/news\/admin$/);
+  await expect(tiles(page).first()).toContainText('Turniej szkolny klas');
+  await expect(tiles(page).first()).not.toContainText('Turniej e-sportowy klas');
+});
+
 // PL: Przy 320 px lista i arkusz nie przewijają się w poziomie, a przyciski mieszczą się w oknie i mają co najmniej 44 px.
 // EN: At 320 px the list and the sheet do not scroll horizontally, and the buttons fit in the window and are at least 44 px tall.
 test('przy szerokości 320 px nic się nie przewija w poziomie / nothing scrolls horizontally at 320 px', async ({ page }) => {
@@ -203,6 +339,7 @@ test('przy szerokości 320 px nic się nie przewija w poziomie / nothing scrolls
   await expect(tiles(page)).toHaveCount(2);
   expect(await overflow()).toBeLessThanOrEqual(0);
   expect(fits(await page.getByRole('link', { name: 'Nowy wpis' }).boundingBox())).toBe(true);
+  expect(fits(await page.getByRole('button', { name: 'Przypnij: Dzień sportu' }).boundingBox())).toBe(true);
 
   // PL: Arkusz usuwania: oba przyciski mieszczą się w oknie.
   // EN: The delete sheet: both buttons fit in the window.
@@ -213,8 +350,8 @@ test('przy szerokości 320 px nic się nie przewija w poziomie / nothing scrolls
   expect(fits(await page.getByRole('button', { name: 'Anuluj' }).boundingBox())).toBe(true);
 });
 
-// PL: Bez internetu lista zostaje z ostatnich danych, a publikacja i usuwanie są wyłączone z objaśnieniem.
-// EN: Offline the list stays with the last data, and publishing and deleting are off with an explanation.
+// PL: Bez internetu lista zostaje z ostatnich danych, a publikacja, przypinanie i usuwanie są wyłączone z objaśnieniem.
+// EN: Offline the list stays with the last data, and publishing, pinning and deleting are off with an explanation.
 test('bez internetu: lista zostaje, a zapis jest zablokowany / offline: the list stays and writing is blocked', async ({ page, context }) => {
   await stubAdminApi(page);
   await page.goto('/news/admin');
@@ -222,8 +359,9 @@ test('bez internetu: lista zostaje, a zapis jest zablokowany / offline: the list
 
   await context.setOffline(true);
 
-  await expect(page.getByText('Publikacja i usuwanie wymagają internetu.')).toBeVisible();
+  await expect(page.getByText('Publikacja, przypinanie i usuwanie wymagają internetu.')).toBeVisible();
   await expect(tiles(page)).toHaveCount(2);
   await expect(page.getByRole('button', { name: /^Opublikuj/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Przypnij: Dzień sportu' })).toBeDisabled();
   await expect(page.getByRole('button', { name: /^Usuń: Dzień sportu/ })).toBeDisabled();
 });

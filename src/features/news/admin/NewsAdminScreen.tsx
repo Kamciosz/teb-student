@@ -1,10 +1,11 @@
 /**
- * PL: Ekran „Wpisy” w panelu Samorządu (podtor 3c): lista wszystkich wpisów ze szkicami, publikacja szkicu, usuwanie z potwierdzeniem i przejście do kreatora „Nowy wpis” (podtor 3b, `/news/editor`). Stoi w ramie panelu z menu. Uprawnienia sprawdza serwer, ten ekran tylko pokazuje błąd, gdy serwer odmówi. Bez internetu lista zostaje z ostatnich danych, a publikacja i usuwanie są wyłączone z objaśnieniem.
- * EN: The "Wpisy" screen in the Student Council panel (subtrack 3c): the list of all entries with drafts, publishing a draft, deleting with a confirmation and the way to the "Nowy wpis" wizard (subtrack 3b, `/news/editor`). It stands in the panel frame with the menu. The server checks permissions, this screen only shows an error when the server refuses. Without internet the list stays with the last data, and publishing and deleting are off with an explanation.
+ * PL: Ekran „Wpisy” w panelu Samorządu (podtor 3c): lista wszystkich wpisów ze szkicami, publikacja szkicu, przypinanie i odpinanie opublikowanych (najwyżej 3), usuwanie z potwierdzeniem i przejście do kreatora „Nowy wpis” (podtor 3b, `/news/editor`). Stoi w ramie panelu z menu. Uprawnienia sprawdza serwer, ten ekran tylko pokazuje błąd, gdy serwer odmówi. Bez internetu lista zostaje z ostatnich danych, a publikacja, przypinanie i usuwanie są wyłączone z objaśnieniem.
+ * EN: The "Wpisy" screen in the Student Council panel (subtrack 3c): the list of all entries with drafts, publishing a draft, pinning and unpinning published entries (at most 3), deleting with a confirmation and the way to the "Nowy wpis" wizard (subtrack 3b, `/news/editor`). It stands in the panel frame with the menu. The server checks permissions, this screen only shows an error when the server refuses. Without internet the list stays with the last data, and publishing, pinning and deleting are off with an explanation.
  *
  * @author Bohdan
  * @since 2026-10-09
  * @uses src/features/news/admin/queries.ts::usePanelEntries
+ * @uses src/features/news/admin/api.ts::PinLimitError
  * @uses src/features/news/admin/EntryTile.tsx::EntryTile
  * @uses src/features/news/admin/DeleteSheet.tsx::DeleteSheet
  * @used_by src/features/news/admin/index.ts::NewsAdminScreen
@@ -12,14 +13,14 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router';
-import type { PanelEntry } from './api';
+import { EntryInReviewError, type PanelEntry, PinLimitError } from './api';
 import { DeleteSheet } from './DeleteSheet';
 import { EntryTile } from './EntryTile';
 import { Icon } from './icons';
 import './newsAdmin.css';
 import { Notice } from './Notice';
 import { PanelTop } from './PanelTop';
-import { useDeleteEntry, useIsOnline, usePanelEntries, usePublishEntry } from './queries';
+import { useDeleteEntry, useIsOnline, usePanelEntries, usePinEntry, usePublishEntry, useUnpinEntry } from './queries';
 import { TO_AGREE } from './texts';
 
 /**
@@ -46,6 +47,7 @@ type EntriesBodyProps = {
   query: ReturnType<typeof usePanelEntries>;
   isLocked: boolean;
   onPublish: (id: string) => void;
+  onTogglePin: (entry: PanelEntry) => void;
   onDelete: (entry: PanelEntry) => void;
 };
 
@@ -56,7 +58,7 @@ type EntriesBodyProps = {
  * @param props - PL: wynik zapytania i funkcje przycisków. EN: the query result and the button functions.
  * @returns PL: drzewo elementów treści. EN: the tree of body elements.
  */
-function EntriesBody({ query, isLocked, onPublish, onDelete }: EntriesBodyProps) {
+function EntriesBody({ query, isLocked, onPublish, onTogglePin, onDelete }: EntriesBodyProps) {
   // PL: Dane (z serwera albo z zapisu w telefonie) mają pierwszeństwo nad stanem zapytania.
   // EN: The data (from the server or from the saved copy) takes priority over the query state.
   if (query.data) {
@@ -64,7 +66,7 @@ function EntriesBody({ query, isLocked, onPublish, onDelete }: EntriesBodyProps)
     return (
       <ul className="na-list" aria-label={TO_AGREE.listLabel}>
         {query.data.map((entry) => (
-          <EntryTile key={entry.id} entry={entry} isLocked={isLocked} onPublish={() => onPublish(entry.id)} onDelete={() => onDelete(entry)} />
+          <EntryTile key={entry.id} entry={entry} isLocked={isLocked} onPublish={() => onPublish(entry.id)} onTogglePin={() => onTogglePin(entry)} onDelete={() => onDelete(entry)} />
         ))}
       </ul>
     );
@@ -72,6 +74,17 @@ function EntriesBody({ query, isLocked, onPublish, onDelete }: EntriesBodyProps)
   // PL: Bez danych i z błędem pokaż komunikat (także przy odmowie 403), bez danych i bez błędu zapytanie trwa.
   // EN: Without data and with an error, show the message (also for a 403 refusal), without data and without an error the query is running.
   return query.isError ? <Notice text={TO_AGREE.loadFailed} /> : <div role="status" aria-busy="true" />;
+}
+
+/**
+ * PL: Dobiera komunikat o nieudanej publikacji. Wpis w korekcie ma osobny tekst, reszta błędów dostaje ogólny.
+ * EN: Picks the message for a failed publish. An entry in review has its own text, other errors get the general one.
+ *
+ * @param error - PL: błąd z publikacji. EN: the publish error.
+ * @returns PL: tekst komunikatu. EN: the message text.
+ */
+function publishErrorText(error: unknown): string {
+  return error instanceof EntryInReviewError ? TO_AGREE.inReview : TO_AGREE.publishFailed;
 }
 
 /**
@@ -86,20 +99,34 @@ export function NewsAdminScreen() {
   const query = usePanelEntries();
   const publish = usePublishEntry();
   const remove = useDeleteEntry();
+  const pin = usePinEntry();
+  const unpin = useUnpinEntry();
   const isOnline = useIsOnline();
   const [asked, setAsked] = useState<PanelEntry | null>(null);
   // PL: Przyciski zapisu są wyłączone bez internetu i gdy trwa zapis.
   // EN: The write buttons are off without internet and while a save is in progress.
-  const isLocked = !isOnline || publish.isPending || remove.isPending;
+  const isLocked = !isOnline || publish.isPending || remove.isPending || pin.isPending || unpin.isPending;
+  // PL: Limit trzech przypiętych pokazujemy osobno; każdy inny błąd przypięcia to zwykły komunikat.
+  // EN: The three-pinned limit is shown separately; any other pin error is a plain message.
+  const pinLimited = pin.error instanceof PinLimitError;
+  const pinFailed = (pin.isError && !pinLimited) || unpin.isError;
 
   // PL: Pasek, komunikaty błędów zapisu, lista, przycisk „Nowy wpis” z objaśnieniem nad nim i arkusz usuwania.
   // EN: The bar, the save error messages, the list, the "Nowy wpis" button with the explanation above it and the delete sheet.
   return (
     <section className="na-screen" data-subtrack="3c">
       <PanelTop />
-      {publish.isError ? <Notice text={TO_AGREE.publishFailed} /> : null}
+      {publish.isError ? <Notice text={publishErrorText(publish.error)} /> : null}
+      {pinLimited ? <Notice text={TO_AGREE.pinLimit} /> : null}
+      {pinFailed ? <Notice text={TO_AGREE.pinFailed} /> : null}
       {remove.isError ? <Notice text={TO_AGREE.deleteFailed} /> : null}
-      <EntriesBody query={query} isLocked={isLocked} onPublish={(id) => publish.mutate(id)} onDelete={setAsked} />
+      <EntriesBody
+        query={query}
+        isLocked={isLocked}
+        onPublish={(id) => publish.mutate(id)}
+        onTogglePin={(entry) => (entry.pinnedAt === null ? pin.mutate(entry.id) : unpin.mutate(entry.id))}
+        onDelete={setAsked}
+      />
       <div className="na-cta">
         {isOnline ? null : <p className="na-small">{TO_AGREE.offlineNote}</p>}
         <Link className="na-btn" to="/news/editor"><Icon name="plus" />{TO_AGREE.newEntry}</Link>

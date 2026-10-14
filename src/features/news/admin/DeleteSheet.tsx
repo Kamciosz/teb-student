@@ -28,6 +28,20 @@ export type DeleteSheetProps = {
 };
 
 /**
+ * PL: Dobiera podpis pod pytaniem: szkic, wpis w korekcie (uczeń go nie widział) albo opublikowany (uczniowie go widzą).
+ * EN: Picks the hint under the question: a draft, an entry in review (students never saw it) or a published entry (students see it).
+ *
+ * @param entry - PL: wpis do usunięcia. EN: the entry to delete.
+ * @returns PL: tekst podpisu. EN: the hint text.
+ */
+function hintFor(entry: PanelEntry): string {
+  // PL: Każdy stan ma swój podpis, bo różnie wygląda skutek usunięcia.
+  // EN: Each state has its own hint, because the effect of deleting differs.
+  if (entry.status === 'draft') return TO_AGREE.sheet.draftHint(entry.title);
+  return entry.status === 'in_review' ? TO_AGREE.sheet.reviewHint(entry.title) : TO_AGREE.sheet.publishedHint(entry.title);
+}
+
+/**
  * PL: Rysuje arkusz. Fokus trafia na „Anuluj”, żeby przypadkowy Enter niczego nie usunął.
  * EN: Draws the sheet. The focus goes to "Anuluj", so an accidental Enter deletes nothing.
  *
@@ -52,7 +66,7 @@ export function DeleteSheet({ entry, isDeleting, onConfirm, onCancel }: DeleteSh
     <div className="na-backdrop" onClick={onCancel}>
       <div className="na-sheet" role="dialog" aria-modal="true" aria-labelledby="na-sheet-title" onClick={(event) => event.stopPropagation()}>
         <h2 id="na-sheet-title">{TO_AGREE.sheet.title}</h2>
-        <p>{entry.status === 'draft' ? TO_AGREE.sheet.draftHint(entry.title) : TO_AGREE.sheet.publishedHint(entry.title)}</p>
+        <p>{hintFor(entry)}</p>
         <button type="button" className="na-btn" disabled={isDeleting} onClick={onConfirm}>{TO_AGREE.sheet.confirm}</button>
         <button ref={cancelRef} type="button" className="na-btn na-btn-outline" disabled={isDeleting} onClick={onCancel}>{SCREEN.cancel}</button>
       </div>

@@ -258,3 +258,57 @@
   font-size: var(--t-sm);
   color: var(--ink-2);
 }
+
+/* PL: Przycisk „Zmień układ” w nagłówku: sam ma szerokość napisu, a nie całego rzędu.
+   EN: The "Zmień układ" button in the header: it is as wide as its label, not the whole row. */
+.dash-edit-toggle {
+  width: fit-content;
+  margin-top: 8px;
+}
+
+/* PL: Miejsce na kafelek. W trybie edycji kafelek ma pod sobą pasek przycisków kolejności.
+   EN: A place for a tile. In edit mode the tile has a row of order buttons under it. */
+.dash-slot {
+  min-width: 0;
+}
+
+.dash-slot--editing {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--r);
+}
+
+/* PL: Pasek „Wyżej” i „Niżej” pod kafelkiem. Każdy przycisk ma co najmniej 44×44 px.
+   EN: The "Wyżej" and "Niżej" bar under the tile. Each button is at least 44×44 px. */
+.dash-move {
+  display: flex;
+  gap: 8px;
+}
+
+.dash-move__btn {
+  flex: 1 1 0;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--tile);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dash-move__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dash-move__btn:focus-visible,
+.dash-edit-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

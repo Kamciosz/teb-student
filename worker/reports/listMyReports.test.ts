@@ -45,14 +45,14 @@ describe('listReportsByAuthor', () => {
     expect(items.map((item) => item.id)).not.toContain('seed-cudze');
   });
 
-  // PL: Każde zgłoszenie ma dokładnie pola dla telefonu ucznia, bez numeru autora i z datami w milisekundach.
-  // EN: Each report has exactly the fields for the student's phone, without the author id, and with dates in milliseconds.
+  // PL: Każde zgłoszenie ma dokładnie pola dla telefonu ucznia, bez numeru autora, z datami w milisekundach i z historią etapów bez numeru członka Samorządu (#113).
+  // EN: Each report has exactly the fields for the student's phone, without the author id, with dates in milliseconds and with the stage history without the Student Council member's id (#113).
   it('zwraca dokładnie pola dla ucznia, bez numeru autora / returns exactly the student fields, without the author id', async () => {
     const [first] = await listReportsByAuthor(db, SEED_STUDENT_ID);
     const seed = REPORTS_SEED.find((row) => row.id === 'seed-projektor');
 
     expect(Object.keys(first ?? {}).sort()).toEqual(
-      ['category', 'createdAt', 'description', 'id', 'place', 'placeDetail', 'stage', 'updatedAt'],
+      ['category', 'createdAt', 'description', 'history', 'id', 'place', 'placeDetail', 'stage', 'updatedAt'],
     );
     expect(first).toEqual({
       id: 'seed-projektor',
@@ -63,6 +63,10 @@ describe('listReportsByAuthor', () => {
       stage: 'in_progress',
       createdAt: Date.UTC(2026, 9, 6, 8, 0),
       updatedAt: Date.UTC(2026, 9, 7, 8, 0),
+      history: [
+        { stage: 'received', note: null, changedAt: Date.UTC(2026, 9, 6, 8, 0) },
+        { stage: 'in_progress', note: 'Sprawdzimy projektor na przerwie obiadowej.', changedAt: Date.UTC(2026, 9, 7, 8, 0) },
+      ],
     });
   });
 

@@ -7,12 +7,15 @@
  * @author Jakub
  * @since 2026-10-12
  * @uses src/features/surveys/admin/types.ts::NewSurveyBody
+ * @uses src/features/surveys/admin/format.ts::lastDayIso
+ * @uses src/features/surveys/admin/format.ts::warsawWallClock
  * @used_by src/features/surveys/admin/NewSurveyScreen.tsx::NewSurveyScreen
  * @used_by src/features/surveys/admin/QuestionEditor.tsx::QuestionEditor
  * @used_by src/features/surveys/admin/draft.test.ts::validateDraft
  */
 
-import type { NewSurveyBody } from './types';
+import { lastDayIso, warsawWallClock } from './format';
+import type { NewSurveyBody, QuestionType } from './types';
 
 // PL: Czasy trwania z paska wyboru, w dniach. Domyślnie 7 dni (ekran 6.5b).
 // EN: The durations of the choice bar, in days. 7 days by default (screen 6.5b).
@@ -28,12 +31,18 @@ export const MAX_TITLE_LENGTH = 120;
 export const MAX_PROMPT_LENGTH = 200;
 export const MAX_OPTION_LENGTH = 100;
 
+// PL: Odpowiedzi skali 1–5. Panel ich nie pokazuje ani nie edytuje, tylko wysyła; serwer tworzy te same (worker/surveys/admin/validation.ts).
+// EN: The options of the 1–5 scale. The panel does not show or edit them, it only sends them; the server makes the same ones (worker/surveys/admin/validation.ts).
+export const SCALE_LABELS = ['1', '2', '3', '4', '5'];
+
 /** PL: Pytanie w szkicu. EN: A question in the draft. */
 export type DraftQuestion = {
   /** PL: Stały numer pytania w szkicu (klucz listy w Reakcie), nie zmienia się przy usuwaniu innych pytań. EN: The question's stable number in the draft (the React list key), it does not change when other questions are removed. */
   key: number;
   /** PL: Treść pytania. EN: The question text. */
   prompt: string;
+  /** PL: Rodzaj pytania. Nowe pytanie to „Jeden wybór”. EN: The question type. A new question is "Jeden wybór" (single choice). */
+  type: QuestionType;
   /** PL: Treści odpowiedzi w kolejności A, B, C, D, E, także puste. EN: The option texts in the order A, B, C, D, E, also blank ones. */
   options: string[];
 };
@@ -48,22 +57,24 @@ export type Draft = {
   durationDays: number;
   /** PL: Numer, który dostanie następne dodane pytanie. EN: The number the next added question gets. */
   nextKey: number;
+  /** PL: Termin zamknięcia RRRR-MM-DDTHH:mm (czas polski) albo pusty tekst, gdy go nie ma. EN: The closing time YYYY-MM-DDTHH:mm (Polish time), or an empty text when there is none. */
+  closesAt: string;
 };
 
 /** PL: Błędy pól jednego pytania: tekst błędu albo null, gdy pole jest dobre. EN: The field errors of one question: the error text, or null when the field is fine. */
 export type QuestionErrors = { prompt: string | null; options: string | null };
 
 /** PL: Błędy całego szkicu. EN: The errors of the whole draft. */
-export type DraftErrors = { title: string | null; questions: Map<number, QuestionErrors> };
+export type DraftErrors = { title: string | null; questions: Map<number, QuestionErrors>; closesAt: string | null };
 
 /**
- * PL: Tworzy pusty szkic: bez tytułu, z jednym pytaniem o dwóch pustych odpowiedziach i z 7 dniami.
- * EN: Creates an empty draft: no title, one question with two blank options and 7 days.
+ * PL: Tworzy pusty szkic: bez tytułu, z jednym pytaniem o dwóch pustych odpowiedziach, z 7 dniami i bez terminu zamknięcia.
+ * EN: Creates an empty draft: no title, one question with two blank options, 7 days and no closing time.
  *
  * @returns PL: nowy szkic. EN: a new draft.
  */
 export function newDraft(): Draft {
-  return { title: '', questions: [{ key: 1, prompt: '', options: ['', ''] }], durationDays: DEFAULT_DURATION_DAYS, nextKey: 2 };
+  return { title: '', questions: [{ key: 1, prompt: '', type: 'single_choice', options: ['', ''] }], durationDays: DEFAULT_DURATION_DAYS, nextKey: 2, closesAt: '' };
 }
 
 /**
@@ -90,7 +101,7 @@ export function addQuestion(draft: Draft): Draft {
   // PL: Przy limicie pytań przycisk „Dodaj pytanie” jest nieaktywny, ale funkcja też go pilnuje.
   // EN: At the question limit the "Dodaj pytanie" button is inactive, but the function guards it too.
   if (draft.questions.length >= MAX_QUESTIONS) return draft;
-  const question = { key: draft.nextKey, prompt: '', options: ['', ''] };
+  const question: DraftQuestion = { key: draft.nextKey, prompt: '', type: 'single_choice', options: ['', ''] };
   return { ...draft, questions: [...draft.questions, question], nextKey: draft.nextKey + 1 };
 }
 
@@ -139,6 +150,9 @@ export function removeOption(question: DraftQuestion, index: number): DraftQuest
  * @returns PL: błędy pól. EN: the field errors.
  */
 function checkQuestion(question: DraftQuestion): QuestionErrors {
+  // PL: Przy skali 1–5 odpowiedzi wpisuje sama skala, a przy krótkiej odpowiedzi ich nie ma, więc ich nie sprawdzamy.
+  // EN: With the 1–5 scale the options are set by the scale itself, and a short answer has no options, so we do not check them.
+  if (question.type === 'scale_1_5' || question.type === 'short_text') return { prompt: question.prompt.trim() === '' ? 'Wpisz pytanie.' : null, options: null };
   const filled = question.options.filter((option) => option.trim() !== '').length;
   return {
     prompt: question.prompt.trim() === '' ? 'Wpisz pytanie.' : null,
@@ -147,15 +161,31 @@ function checkQuestion(question: DraftQuestion): QuestionErrors {
 }
 
 /**
+ * PL: Sprawdza termin zamknięcia: musi być w przyszłości i nie może wypaść po ostatnim dniu ankiety. Oba teksty to czas polski RRRR-MM-DDTHH:mm, więc wystarczy zwykłe porównanie napisów.
+ * EN: Checks the closing time: it must be in the future and not fall after the last day of the survey. Both texts are Polish time YYYY-MM-DDTHH:mm, so a plain string comparison is enough.
+ *
+ * @param draft - PL: szkic. EN: the draft.
+ * @param now - PL: chwila sprawdzania. EN: the moment of the check.
+ * @returns PL: tekst błędu albo null. EN: the error text, or null.
+ */
+function checkClosesAt(draft: Draft, now: Date): string | null {
+  if (draft.closesAt === '') return null;
+  if (draft.closesAt <= warsawWallClock(now)) return 'Termin musi być w przyszłości.';
+  if (draft.closesAt.slice(0, 10) > lastDayIso(now, draft.durationDays)) return 'Termin nie może być później niż ostatni dzień ankiety.';
+  return null;
+}
+
+/**
  * PL: Sprawdza cały szkic i podaje teksty błędów pod polami (EKRANY.md, ekran 6.5b).
  * EN: Checks the whole draft and gives the error texts under the fields (EKRANY.md, screen 6.5b).
  *
  * @param draft - PL: szkic. EN: the draft.
- * @returns PL: błędy tytułu i pytań. EN: the title and question errors.
+ * @param now - PL: chwila sprawdzania, do oceny terminu zamknięcia. EN: the moment of the check, for judging the closing time.
+ * @returns PL: błędy tytułu, pytań i terminu. EN: the title, question and closing time errors.
  */
-export function validateDraft(draft: Draft): DraftErrors {
+export function validateDraft(draft: Draft, now: Date): DraftErrors {
   const questions = new Map(draft.questions.map((question) => [question.key, checkQuestion(question)]));
-  return { title: draft.title.trim() === '' ? 'Wpisz tytuł ankiety.' : null, questions };
+  return { title: draft.title.trim() === '' ? 'Wpisz tytuł ankiety.' : null, questions, closesAt: checkClosesAt(draft, now) };
 }
 
 /**
@@ -166,12 +196,12 @@ export function validateDraft(draft: Draft): DraftErrors {
  * @returns PL: prawda, gdy jest błąd. EN: true when there is an error.
  */
 export function hasErrors(errors: DraftErrors): boolean {
-  return errors.title !== null || [...errors.questions.values()].some((item) => item.prompt !== null || item.options !== null);
+  return errors.title !== null || errors.closesAt !== null || [...errors.questions.values()].some((item) => item.prompt !== null || item.options !== null);
 }
 
 /**
- * PL: Zamienia poprawny szkic na treść zapytania: tekst bez spacji na brzegach, bez pustych odpowiedzi.
- * EN: Turns a valid draft into the request body: text without edge spaces, without blank options.
+ * PL: Zamienia poprawny szkic na treść zapytania: tekst bez spacji na brzegach, bez pustych odpowiedzi, a pusty termin zamknięcia jako null.
+ * EN: Turns a valid draft into the request body: text without edge spaces, without blank options, and an empty closing time as null.
  *
  * @param draft - PL: poprawny szkic. EN: a valid draft.
  * @returns PL: treść zapytania. EN: the request body.
@@ -180,9 +210,13 @@ export function toRequestBody(draft: Draft): NewSurveyBody {
   return {
     title: draft.title.trim(),
     durationDays: draft.durationDays,
+    closesAt: draft.closesAt === '' ? null : draft.closesAt,
     questions: draft.questions.map((question) => ({
       prompt: question.prompt.trim(),
-      options: question.options.map((option) => option.trim()).filter((option) => option !== ''),
+      type: question.type,
+      // PL: Skala 1–5 wysyła stałe odpowiedzi „1”…„5”, krótka odpowiedź nie wysyła żadnych, a pozostałe typy wysyłają to, co jest w szkicu.
+      // EN: The 1–5 scale sends the fixed options "1"…"5", a short answer sends none, and the other types send what is in the draft.
+      options: question.type === 'scale_1_5' ? [...SCALE_LABELS] : question.type === 'short_text' ? [] : question.options.map((option) => option.trim()).filter((option) => option !== ''),
     })),
   };
 }
