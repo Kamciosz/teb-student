@@ -24,8 +24,11 @@ describe('kindOfMime', () => {
   // EN: Known types get a kind, unknown ones get nothing.
   it('rozpoznaje zdjęcia i filmy, a resztę odrzuca / recognises photos and videos, and rejects the rest', () => {
     expect(kindOfMime('image/jpeg')).toBe('photo');
-    expect(kindOfMime('IMAGE/HEIC')).toBe('photo');
     expect(kindOfMime('video/quicktime')).toBe('video');
+    // PL: HEIC i HEIF nie są przyjmowane, bo telefon ich nie zmniejsza, a oryginał niesie EXIF z lokalizacją.
+    // EN: HEIC and HEIF are not accepted, because the phone does not shrink them, and the original carries EXIF with the location.
+    expect(kindOfMime('IMAGE/HEIC')).toBeNull();
+    expect(kindOfMime('image/heif')).toBeNull();
     expect(kindOfMime('application/pdf')).toBeNull();
   });
 });

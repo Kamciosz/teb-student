@@ -7,6 +7,7 @@
  * @uses src/features/news/feed/content/sanitize.ts::sanitizeDocument
  * @uses src/features/news/feed/content/YouTubePlayer.tsx::YouTubePlayer
  * @uses src/features/news/feed/content/NewsImage.tsx::NewsImage
+ * @uses src/features/news/feed/content/SourceList.tsx::SourceList
  * @used_by src/features/news/feed/EntryScreen.tsx::RichContent
  * @used_by src/features/news/feed/content/sanitize.test.tsx::RichContent
  */
@@ -23,6 +24,9 @@ import { YouTubePlayer } from './YouTubePlayer';
 // PL: Zdjęcie z podpisem.
 // EN: A photo with a caption.
 import { NewsImage } from './NewsImage';
+// PL: Sekcja „Źródła” na końcu wpisu.
+// EN: The "Źródła" (sources) section at the end of an entry.
+import { SourceList } from './SourceList';
 
 /**
  * PL: Rysuje jeden fragment linii: tekst ze stylem i linkiem albo łamanie wiersza.
@@ -92,6 +96,8 @@ function renderBlock(block: SafeBlock, key: number): ReactNode {
           height={block.height}
         />
       );
+    case 'sources':
+      return <SourceList key={key} links={block.links} />;
   }
 }
 
