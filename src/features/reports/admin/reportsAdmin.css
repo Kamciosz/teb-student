@@ -37,6 +37,8 @@
 .ra-notice { display: flex; align-items: flex-start; gap: 8px; background: var(--tile-2); border-radius: var(--r); padding: 12px; font-size: var(--t-sm); }
 .ra-notice span { flex: 1; overflow-wrap: anywhere; }
 
+/* PL: Zdjęcie w szczegółach: nie szersze niż ekran. EN: The photo in the detail: not wider than the screen. */
+.ra-photo { display: block; max-width: 100%; height: auto; border-radius: var(--r); margin-bottom: 24px; }
 /* PL: Szczegół: kafel autora, etykiety, pasek wyboru i historia. EN: The detail: the author tile, labels, the segmented control and the history. */
 .ra-author { display: flex; align-items: center; gap: 12px; background: var(--tile); border-radius: var(--r); padding: 16px; margin-bottom: 24px; }
 .ra-author .ra-icon { color: var(--ink-2); }

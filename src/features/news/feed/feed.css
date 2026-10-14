@@ -256,6 +256,51 @@
   color: var(--accent);
 }
 
+/* PL: Karta linku do mediów społecznościowych: nazwa serwisu i adres. Cała karta jest linkiem, a długi adres się zawija.
+   EN: The social media link card: the network name and the address. The whole card is a link, and a long address wraps. */
+.news-link-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 44px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--tile);
+  color: var(--ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.news-link-card__network {
+  font-size: var(--t-sm);
+  color: var(--accent);
+}
+
+.news-link-card__address {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+/* PL: Zdjęcie: na całą szerokość treści, bez większego niż ekran, z mniejszym podpisem.
+   EN: The photo: the full width of the content, never wider than the screen, with a smaller caption. */
+.news-image {
+  margin: 0;
+}
+
+.news-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--r);
+}
+
+.news-image figcaption {
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
 /* PL: Sekcja „Źródła” na końcu wpisu: nagłówek i lista linków z domeną i adresem.
    EN: The "Źródła" (sources) section at the end of an entry: a heading and a list of links with the domain and the address. */
 .news-sources {
