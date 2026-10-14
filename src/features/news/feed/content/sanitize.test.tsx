@@ -1,6 +1,6 @@
 /**
- * PL: Testy czyszczenia i rysowania treści wpisu. Sprawdzają, że link „javascript:” i inne niż https są odrzucane, nieznane elementy znikają, identyfikator filmu jest sprawdzany, a linki mają rel i target. Test oblewa, gdy ktoś usunie sprawdzanie https albo listę dozwolonych elementów.
- * EN: Tests of cleaning and drawing the entry content. They check that "javascript:" and non-https links are rejected, unknown elements disappear, the video id is validated, and links have rel and target. The test fails when someone removes the https check or the allowed element list.
+ * PL: Testy czyszczenia i rysowania treści wpisu. Sprawdzają, że link „javascript:” i inne niż https są odrzucane, nieznane elementy znikają, identyfikator filmu jest sprawdzany, zdjęcie przechodzi tylko z adresem /api/media/, a linki mają rel i target. Test oblewa, gdy ktoś usunie sprawdzanie https, sprawdzanie adresu zdjęcia albo listę dozwolonych elementów.
+ * EN: Tests of cleaning and drawing the entry content. They check that "javascript:" and non-https links are rejected, unknown elements disappear, the video id is validated, a photo passes only with a /api/media/ address, and links have rel and target. The test fails when someone removes the https check, the photo address check or the allowed element list.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -18,7 +18,18 @@ import { describe, expect, it } from 'vitest';
 // PL: Rysowanie i czyszczenie, które sprawdzamy.
 // EN: The drawing and cleaning under test.
 import { RichContent } from './RichContent';
-import { safeHttpsUrl, safeVideoId, sanitizeDocument } from './sanitize';
+import { safeHttpsUrl, safeMediaSrc, safeVideoId, sanitizeDocument } from './sanitize';
+
+/**
+ * PL: Składa dokument z jednego zdjęcia o podanych atrybutach.
+ * EN: Builds a document of one photo with the given attributes.
+ *
+ * @param attrs - PL: atrybuty zdjęcia. EN: the photo attributes.
+ * @returns PL: dokument JSON. EN: a JSON document.
+ */
+function imageDoc(attrs: Record<string, unknown>) {
+  return { type: 'doc', content: [{ type: 'image', attrs }] };
+}
 
 /**
  * PL: Składa dokument z jednego akapitu, w którym jest tekst „klik” z linkiem o podanym adresie.
@@ -88,6 +99,88 @@ describe('safeVideoId', () => {
     expect(safeVideoId('za-krotki')).toBeNull();
     expect(safeVideoId('dQw4w9WgXcQ" onload="x')).toBeNull();
     expect(safeVideoId(12345678901)).toBeNull();
+  });
+});
+
+// PL: Grupa testów adresów zdjęć.
+// EN: A group of photo address tests.
+describe('safeMediaSrc', () => {
+  // PL: Adresy spoza serwera, ucieczki z katalogu /api/media/ i zwykłe śmieci muszą zostać odrzucone.
+  // EN: Addresses outside our server, escapes from the /api/media/ directory and plain garbage must be rejected.
+  it.each([
+    'https://evil.example/a.png',
+    'http://evil.example/api/media/a',
+    '//evil.example/api/media/a',
+    '/api/media/../auth',
+    '/api/media/%2e%2e/auth',
+    '/api/media/..\\auth',
+    '/api/mediaX/a',
+    '/api/auth',
+    'javascript:alert(1)',
+    'api/media/abc',
+    '',
+  ])('odrzuca %j / rejects it', (raw) => {
+    expect(safeMediaSrc(raw)).toBeNull();
+  });
+
+  // PL: Wartość, która nie jest tekstem, jest odrzucana.
+  // EN: A value that is not a string is rejected.
+  it('odrzuca wartość inną niż tekst / rejects a non-string value', () => {
+    expect([safeMediaSrc(null), safeMediaSrc(5), safeMediaSrc({})]).toEqual([null, null, null]);
+  });
+
+  // PL: Adres zdjęcia z własnego serwera przechodzi bez zmian.
+  // EN: A photo address from our own server passes unchanged.
+  it('przepuszcza adres z własnego serwera / lets an address from our own server through', () => {
+    expect(safeMediaSrc('/api/media/abc123')).toBe('/api/media/abc123');
+  });
+});
+
+// PL: Grupa testów zdjęć w treści.
+// EN: A group of photo tests in the content.
+describe('zdjęcie w treści / photo in the content', () => {
+  // PL: Zdjęcie z własnego serwera przechodzi z podpisem i wymiarami.
+  // EN: A photo from our own server passes with its caption and size.
+  it('przepuszcza zdjęcie z podpisem i wymiarami / lets a photo with a caption and size through', () => {
+    const attrs = { src: '/api/media/abc123', alt: 'Boisko', caption: 'Podpis', width: 800, height: 600 };
+
+    expect(sanitizeDocument(imageDoc(attrs))).toEqual([
+      { kind: 'image', src: '/api/media/abc123', alt: 'Boisko', caption: 'Podpis', width: 800, height: 600 },
+    ]);
+  });
+
+  // PL: Zdjęcie z obcym adresem znika, bo telefon nie ładuje obcych obrazków.
+  // EN: A photo with an external address disappears, because the phone does not load foreign images.
+  it('odrzuca zdjęcie z obcym adresem / rejects a photo with an external address', () => {
+    expect(sanitizeDocument(imageDoc({ src: 'https://evil.example/a.png' }))).toEqual([]);
+  });
+
+  // PL: Zły wymiar znika, ale zdjęcie zostaje i rysuje się bez tego atrybutu.
+  // EN: A bad size disappears, but the photo stays and is drawn without that attribute.
+  it.each([0, -5, 1.5, '800', null])('zły wymiar %j znika, zdjęcie zostaje / a bad size %j disappears, the photo stays', (size) => {
+    expect(sanitizeDocument(imageDoc({ src: '/api/media/abc123', width: size, height: size }))).toEqual([
+      { kind: 'image', src: '/api/media/abc123', alt: '', caption: '', width: null, height: null },
+    ]);
+  });
+
+  // PL: Zdjęcie z własnego serwera jest rysowane jako „figure” z obrazkiem i podpisem.
+  // EN: A photo from our own server is drawn as a "figure" with the image and the caption.
+  it('rysuje figure z obrazkiem i podpisem / draws a figure with the image and the caption', () => {
+    const output = html(imageDoc({ src: '/api/media/abc123', alt: 'Boisko', caption: 'Podpis', width: 800, height: 600 }));
+
+    expect(output).toContain('<figure class="news-image">');
+    expect(output).toContain('src="/api/media/abc123"');
+    expect(output).toContain('loading="lazy"');
+    expect(output).toContain('<figcaption>Podpis</figcaption>');
+  });
+
+  // PL: Zdjęcie z obcym adresem nie daje żadnego obrazka w HTML.
+  // EN: A photo with an external address gives no image in the HTML.
+  it('nie rysuje obcego obrazka / does not draw a foreign image', () => {
+    const output = html(imageDoc({ src: 'https://evil.example/a.png' }));
+
+    expect(output).not.toContain('<img');
+    expect(output).not.toContain('evil.example');
   });
 });
 
