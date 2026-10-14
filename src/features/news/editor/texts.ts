@@ -10,6 +10,7 @@
  * @used_by src/features/news/editor/TypeStep.tsx::TO_AGREE
  * @used_by src/features/news/editor/EditorToolbar.tsx::TO_AGREE
  * @used_by src/features/news/editor/AddressPanel.tsx::TO_AGREE
+ * @used_by src/features/news/editor/PhotoButton.tsx::TO_AGREE
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::TO_AGREE
  * @used_by src/features/news/editor/api.ts::TO_AGREE
  */
@@ -59,8 +60,13 @@ export const TO_AGREE = {
     video: 'Film',
     card: 'Karta linku',
     sources: 'Źródła',
+    photo: 'Zdjęcie',
     undo: 'Cofnij',
     redo: 'Ponów',
+  },
+  photo: {
+    sending: 'Wysyłam zdjęcie…',
+    failed: 'Nie udało się wysłać zdjęcia. Spróbuj ponownie.',
   },
   prompt: {
     link: { label: 'Adres linku (https://)', submit: 'Zapisz link', remove: 'Usuń link' },

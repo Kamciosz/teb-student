@@ -360,6 +360,15 @@
   margin-top: 12px;
 }
 
+/* PL: Komunikat pod paskiem narzędzi (wysyłka zdjęcia). Zajmuje całą szerokość, więc zawija się do kolejnego wiersza.
+   EN: A message under the toolbar (a photo upload). It takes the full width, so it wraps to the next row. */
+.editor-toolbar__message {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 0 4px;
+  font-size: var(--t-sm);
+}
+
 .editor-done {
   font-size: var(--t-lg);
   font-weight: 700;
