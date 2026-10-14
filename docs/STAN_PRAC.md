@@ -1,6 +1,6 @@
 # Stan prac
 
-Stan na 14.10.2026. `main` po scaleniu #168. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
+Stan na 14.10.2026. `main` po scaleniu #170. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
 
 ## Co jest w `main`
 
@@ -23,22 +23,22 @@ Do #61 (stan z 12.10): szkielet, PWA i baza D1, logowanie kodem (1a), aktualnoś
 | 8 | panel Samorządu, role, kody zaproszeń, pilotaż, dziennik zmian (publikacja, usunięcie, zmiana etapu) | #68, #69, #100, #111, #134, #148 |
 | 9 | kafelek dzwonka, kolejność kafelków, minuty do dzwonka, stan dnia w nagłówku | #102, #116, #136, #142, #149, #153 |
 
-Od #157 do #168 weszły zdjęcia w zgłoszeniach i we wpisach:
+Od #157 do #170 weszły zdjęcia w zgłoszeniach i we wpisach:
 
 | Podtor | Co | Pull requesty |
 |---|---|---|
 | 2 | blokada zdjęć HEIC bez wysyłania oryginału, wysyłka zdjęcia do zgłoszenia i do treści wpisu | #130, #158, #159, #165 |
 | 3a | zdjęcia w treści wpisu (tylko adresy `/api/media/`), sekcja „Źródła”, karty linków do mediów społecznościowych | #160, #161, #162 |
-| 3b | zdjęcie w dokumencie wpisu (serwer), przycisk „Zdjęcie” w pasku edytora | #164, #168 |
+| 3b | zdjęcie w dokumencie wpisu (serwer), przycisk „Zdjęcie” w pasku edytora, opis i podpis zdjęcia | #164, #168, #170 |
 | 4a | kolumna `photo_id`, pole „Dodaj zdjęcie” w formularzu, serwer sprawdza, czy plik należy do ucznia | #127, #167 |
 | 4b | zdjęcie w szczegółach zgłoszenia w panelu | #166 |
-| — | skrypt różnic schematu bazy, ten plik | #163, #157 |
+| — | skrypt różnic schematu bazy, ten plik | #157, #163, #169 |
 
 Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (sprawdzone na #168). Usuwanie danych ucznia w modułach aktualności, mediów i panelu nie jest już atrapą.
 
 ## Otwarte pull requesty
 
-- W pracy (podtor 3b): pola „Opis zdjęcia” i „Podpis” dla zdjęcia w treści wpisu.
+Brak. Dalsze zadania czekają na decyzje z ostatniej części tego pliku.
 
 ## Przed pierwszym wdrożeniem
 
