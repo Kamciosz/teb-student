@@ -23,6 +23,24 @@ import { STAGE_NOTE_MAX_LENGTH } from './reportLabels';
 import { categoryLabel, formatShortDate, joinText, placeText, stageLabel } from './reportView';
 
 /**
+ * PL: Rysuje zdjęcie dołączone do zgłoszenia. Podgląd ładuje się leniwie i nie wychodzi poza szerokość ekranu; kliknięcie otwiera pełny plik w nowej karcie. Napis alternatywny do uzgodnienia z zespołem (TO_AGREE).
+ * EN: Draws the photo attached to the report. The preview loads lazily and stays within the screen width; a click opens the full file in a new tab. The alternative text is to be agreed with the team (TO_AGREE).
+ *
+ * @param props - PL: numer zdjęcia z modułu mediów. EN: the photo id from the media module.
+ * @returns PL: link z podglądem zdjęcia. EN: the link with the photo preview.
+ */
+function ReportPhoto({ photoId }: { photoId: string }) {
+  // PL: Ten sam adres co w module mediów: numer zakodowany w ścieżce, serwer sprawdza sesję.
+  // EN: The same address as in the media module: the id encoded in the path, the server checks the session.
+  const src = `/api/media/${encodeURIComponent(photoId)}`;
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer">
+      <img src={src} alt="Zdjęcie dołączone do zgłoszenia" loading="lazy" className="ra-photo" />
+    </a>
+  );
+}
+
+/**
  * PL: Rysuje kafel autora (ekran 6.4c). Zgłoszenie anonimowe pokazuje napis o anonimowości i nie ma danych autora. Zgłoszenie z autorem pokazuje imię i klasę, gdy serwer je poda; bez nich zostaje sam napis „Autor zgłosił bez anonimowości.”.
  * EN: Draws the author tile (screen 6.4c). An anonymous report shows the anonymity label and has no author data. A report with an author shows the name and class when the server gives them; without them only the label "Autor zgłosił bez anonimowości." stays.
  *
@@ -142,11 +160,12 @@ function DetailBody({ report, history, student }: { report: AdminReport; history
   // EN: Saving is possible only with a changed stage, with internet and when the previous save is not running.
   const stage = picked ?? report.stage;
   const canSave = stage !== report.stage && isOnline && !save.isPending;
-  // PL: Nagłówek, autor, pasek wyboru, odpowiedź, historia i dolny przycisk z uwagami nad nim.
-  // EN: The header, the author, the segmented control, the answer, the history and the bottom button with the notes above it.
+  // PL: Nagłówek, zdjęcie (jeśli jest), autor, pasek wyboru, odpowiedź, historia i dolny przycisk z uwagami nad nim.
+  // EN: The header, the photo (if there is one), the author, the segmented control, the answer, the history and the bottom button with the notes above it.
   return (
     <>
       <ReportHead report={report} />
+      {report.photoId ? <ReportPhoto photoId={report.photoId} /> : null}
       <AuthorTile isAnonymous={report.isAnonymous} student={student} />
       <h3 className="ra-label">Etap</h3>
       <StagePicker value={stage} onChange={setPicked} />
