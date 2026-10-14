@@ -40,14 +40,14 @@ const clockFormat = new Intl.DateTimeFormat('en-US', {
 });
 
 /**
- * PL: Następna lekcja: numer (od 1) i godzina początku z planu (HH:MM).
- * EN: The next lesson: number (from 1) and its start time from the plan (HH:MM).
+ * PL: Następna lekcja: numer (od 0) i godzina początku z planu (HH:MM).
+ * EN: The next lesson: number (from 0) and its start time from the plan (HH:MM).
  */
 export type NextLesson = { lessonNo: number; start: string };
 
 /**
- * PL: Stan licznika: trwa lekcja (z numerem od 1) albo przerwa. Oba stany znają następną lekcję; w czasie ostatniej lekcji dnia następnej nie ma (null). Brak stanu (null) znaczy, że licznika nie pokazujemy.
- * EN: Countdown state: a lesson (numbered from 1) or a break. Both states know the next lesson; during the last lesson of the day there is no next one (null). No state (null) means the countdown is not shown.
+ * PL: Stan licznika: trwa lekcja (z numerem od 0) albo przerwa. Oba stany znają następną lekcję; w czasie ostatniej lekcji dnia następnej nie ma (null). Brak stanu (null) znaczy, że licznika nie pokazujemy.
+ * EN: Countdown state: a lesson (numbered from 0) or a break. Both states know the next lesson; during the last lesson of the day there is no next one (null). No state (null) means the countdown is not shown.
  */
 export type BellState =
   | { kind: 'lesson'; lessonNo: number; minutesLeft: number; next: NextLesson | null }
@@ -146,10 +146,10 @@ function minutesCeil(seconds: number): number {
  * @returns PL: następna lekcja albo null. EN: the next lesson or null.
  */
 function nextLessonAfter(lessons: readonly Lesson[], index: number): NextLesson | null {
-  // PL: Numer lekcji to indeks + 1, więc następna ma indeks + 2.
-  // EN: The lesson number is the index + 1, so the next one is index + 2.
+  // PL: Numer lekcji to indeks (od 0), więc następna ma indeks + 1.
+  // EN: The lesson number is the index (from 0), so the next one is index + 1.
   const next = lessons.at(index + 1);
-  return next ? { lessonNo: index + 2, start: next.start } : null;
+  return next ? { lessonNo: index + 1, start: next.start } : null;
 }
 
 /**
@@ -171,7 +171,7 @@ export function bellStateAt(lessons: readonly Lesson[], clock: WarsawClock): Bel
     const end = parseTime(lesson.end);
     const next = nextLessonAfter(lessons, index);
     if (clock.secondsOfDay >= start && clock.secondsOfDay < end) {
-      return { kind: 'lesson', lessonNo: index + 1, minutesLeft: minutesCeil(end - clock.secondsOfDay), next };
+      return { kind: 'lesson', lessonNo: index, minutesLeft: minutesCeil(end - clock.secondsOfDay), next };
     }
     // PL: Przerwa to czas po końcu tej lekcji, przed początkiem następnej. Po ostatniej lekcji nie ma następnej, więc nic się nie pokazuje.
     // EN: A break is the time after the end of this lesson and before the start of the next one. After the last lesson there is no next one, so nothing shows.

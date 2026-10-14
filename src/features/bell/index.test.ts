@@ -41,23 +41,23 @@ afterEach(() => {
 
 describe('currentBellState', () => {
   it('w czasie lekcji daje lekcję z minutami i następną lekcją', () => {
-    // PL: 23.10.2026 08:10 w Warszawie (czas letni, 06:10 UTC): pierwsza lekcja, następna lekcja 2 o 08:55.
-    // EN: 23.10.2026 08:10 in Warsaw (summer time, 06:10 UTC): the first lesson, the next lesson 2 at 08:55.
+    // PL: 23.10.2026 08:10 w Warszawie (czas letni, 06:10 UTC): pierwsza lekcja, następna lekcja 1 o 08:55.
+    // EN: 23.10.2026 08:10 in Warsaw (summer time, 06:10 UTC): the first lesson, the next lesson 1 at 08:55.
     expect(currentBellState(new Date('2026-10-23T06:10:00Z'))).toEqual({
       kind: 'lesson',
-      lessonNo: 1,
+      lessonNo: 0,
       minutesLeft: 35,
-      next: { lessonNo: 2, start: '08:55' },
+      next: { lessonNo: 1, start: '08:55' },
     });
   });
 
   it('w przerwie daje przerwę z lekcją, do której zostało', () => {
-    // PL: 08:50 w Warszawie: przerwa, do lekcji 2 zostało 5 minut.
-    // EN: 08:50 in Warsaw: a break, 5 minutes to lesson 2.
+    // PL: 08:50 w Warszawie: przerwa, do lekcji 1 zostało 5 minut.
+    // EN: 08:50 in Warsaw: a break, 5 minutes to lesson 1.
     expect(currentBellState(new Date('2026-10-23T06:50:00Z'))).toEqual({
       kind: 'break',
       minutesLeft: 5,
-      next: { lessonNo: 2, start: '08:55' },
+      next: { lessonNo: 1, start: '08:55' },
     });
   });
 
@@ -80,7 +80,7 @@ describe('currentBellState', () => {
     // EN: 23.10.2026 08:10 in Warsaw, and 23.10 is on the shortened list: the shortened plan ends at 08:30, so 20 minutes are left and there is no next lesson.
     expect(currentBellState(new Date('2026-10-23T06:10:00Z'), new Set(['2026-10-23']))).toEqual({
       kind: 'lesson',
-      lessonNo: 1,
+      lessonNo: 0,
       minutesLeft: 20,
       next: null,
     });
@@ -91,9 +91,9 @@ describe('currentBellState', () => {
     // EN: 23.10.2026 08:10 in Warsaw, and only 24.10 is on the shortened list: the regular plan, 35 minutes and the next lesson.
     expect(currentBellState(new Date('2026-10-23T06:10:00Z'), new Set(['2026-10-24']))).toEqual({
       kind: 'lesson',
-      lessonNo: 1,
+      lessonNo: 0,
       minutesLeft: 35,
-      next: { lessonNo: 2, start: '08:55' },
+      next: { lessonNo: 1, start: '08:55' },
     });
   });
 
@@ -105,7 +105,7 @@ describe('currentBellState', () => {
     expect(currentBellState(moment, new Set(['2026-10-25']))).toBeNull();
     expect(currentBellState(moment, new Set(['2026-10-26']))).toEqual({
       kind: 'lesson',
-      lessonNo: 1,
+      lessonNo: 0,
       minutesLeft: 30,
       next: null,
     });

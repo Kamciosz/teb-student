@@ -1,6 +1,6 @@
 /**
- * PL: Router Hono podtoru 1a (logowanie kodem z maila). Przepuszcza do Better Auth tylko cztery adresy: wyślij kod, zaloguj kodem, pokaż sesję, wyloguj. Pilnuje domeny szkolnej, zanim kod w ogóle powstanie. Dodatkowo wystawia trzy adresy urządzeń (lista, wylogowanie jednego, wylogowanie innych), które wołają wbudowane funkcje Better Auth. Router jest podpięty pod /api/auth/email w worker/mounts.ts.
- * EN: The Hono router of subtrack 1a (sign-in with an e-mail code). It lets only four routes through to Better Auth: send a code, sign in with a code, show the session, sign out. It checks the school domain before a code is even created. It also exposes three device routes (list, sign out one, sign out the others), which call the built-in Better Auth functions. The router is mounted under /api/auth/email in worker/mounts.ts.
+ * PL: Router Hono podtoru 1a (logowanie kodem z maila). Przepuszcza do Better Auth tylko wybrane adresy: wyślij kod, zaloguj kodem, pokaż sesję, wyloguj, urządzenia (lista, wylogowanie jednego, wylogowanie innych) oraz klucze dostępu (rejestracja, logowanie, lista, usunięcie). Pilnuje domeny szkolnej, zanim kod w ogóle powstanie. Reszta adresów Better Auth dostaje 404. Router jest podpięty pod /api/auth/email w worker/mounts.ts.
+ * EN: The Hono router of subtrack 1a (sign-in with an e-mail code). It lets only the chosen routes through to Better Auth: send a code, sign in with a code, show the session, sign out, the devices (list, sign out one, sign out the others) and the passkeys (register, sign in, list, delete). It checks the school domain before a code is even created. Every other Better Auth route gets 404. The router is mounted under /api/auth/email in worker/mounts.ts.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -9,6 +9,7 @@
  * @uses worker/auth/email/devices.ts::listDevices
  * @uses worker/auth/email/devices.ts::revokeDevice
  * @uses worker/auth/email/devices.ts::revokeOtherDevices
+ * @uses worker/auth/email/passkeys.ts::toPasskeyView
  * @used_by worker/auth/email/index.ts::authEmailApp
  * @used_by worker/auth/email/routes.test.ts::createAuthEmailApp
  */
@@ -31,6 +32,9 @@ import { listDevices, revokeDevice, revokeOtherDevices, type DeviceOutcome } fro
 // PL: Sprawdzanie adresu szkolnego.
 // EN: The school address check.
 import { isSchoolEmail, normalizeSchoolEmail } from './schoolEmail';
+// PL: Klucze dostępu: zamiana wiersza na bezpieczny kształt.
+// EN: Passkeys: turning a row into a safe shape.
+import { toPasskeyView, type PasskeyRow } from './passkeys';
 
 /**
  * PL: Skąd router bierze obiekt logowania. W Workerze to getRuntimeAuth, w testach obiekt z nadawcą, który zapisuje kody.
@@ -73,6 +77,19 @@ async function readTextFields(request: Request, fields: readonly string[]): Prom
 }
 
 /**
+ * PL: Czyta ciało JSON jako obiekt (np. odpowiedź przeglądarki przy kluczu dostępu). Zły JSON albo tablica daje null.
+ * EN: Reads the JSON body as an object (for example the browser's answer for a passkey). Bad JSON or an array gives null.
+ *
+ * @param request - PL: zapytanie od telefonu. EN: the request from the phone.
+ * @returns PL: obiekt albo null. EN: an object or null.
+ */
+async function readJsonObject(request: Request): Promise<Record<string, unknown> | null> {
+  const body: unknown = await request.json().catch(() => null);
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) return null;
+  return body as Record<string, unknown>;
+}
+
+/**
  * PL: Zamienia wynik urządzeń na odpowiedź dla telefonu: sukces z treścią albo kod HTTP i kod błędu.
  * EN: Turns a device result into a response for the phone: success with a body, or an HTTP status and an error code.
  *
@@ -95,7 +112,7 @@ function deviceResponse<T>(context: AuthContext, outcome: DeviceOutcome<T>, toBo
  * @param body - PL: nowe ciało zapytania. EN: the new request body.
  * @returns PL: odpowiedź Better Auth. EN: the Better Auth response.
  */
-function forwardWithBody(context: AuthContext, runtime: RuntimeAuth, body: Record<string, string>): Promise<Response> {
+function forwardWithBody(context: AuthContext, runtime: RuntimeAuth, body: Record<string, unknown>): Promise<Response> {
   // PL: Długość ciała się zmienia, więc stary nagłówek musi zniknąć.
   // EN: The body length changes, so the old header must go.
   const headers = new Headers(context.req.raw.headers);
@@ -187,6 +204,40 @@ export function createAuthEmailApp(options: AuthEmailAppOptions): Hono<{ Binding
   app.post('/devices/revoke-others', async (context) => {
     const outcome = await revokeOtherDevices(options.getRuntime(context.env), context.req.raw);
     return deviceResponse(context, outcome, () => ({ ok: true }));
+  });
+
+  // PL: Klucze dostępu (Face ID, Touch ID, Windows Hello). Rejestracja wymaga zalogowania, bo Better Auth sprawdza sesję. Logowanie kluczem jest publiczne i tworzy zwykłą sesję. Zmiany nazwy klucza nie wystawiamy (poza zakresem).
+  // EN: Passkeys (Face ID, Touch ID, Windows Hello). Registration needs a signed-in session, because Better Auth checks it. Passkey sign-in is public and creates an ordinary session. We do not expose renaming a key (out of scope).
+  app.get('/passkey/generate-register-options', (context) => Promise.resolve(options.getRuntime(context.env).auth.handler(context.req.raw)));
+  app.post('/passkey/verify-registration', async (context) => {
+    const body = await readJsonObject(context.req.raw);
+    if (!body || typeof body.response !== 'object' || body.response === null) return context.json({ error: 'invalid_request' }, 400);
+    // PL: Przekazujemy tylko odpowiedź przeglądarki i nazwę. Pole createSession odpada, bo sesja już istnieje.
+    // EN: We pass only the browser answer and the name. The createSession field is dropped, because the session already exists.
+    const name = typeof body.name === 'string' ? body.name : undefined;
+    return forwardWithBody(context, options.getRuntime(context.env), { response: body.response, name });
+  });
+  app.get('/passkey/generate-authenticate-options', (context) => Promise.resolve(options.getRuntime(context.env).auth.handler(context.req.raw)));
+  app.post('/passkey/verify-authentication', async (context) => {
+    const body = await readJsonObject(context.req.raw);
+    if (!body || typeof body.response !== 'object' || body.response === null) return context.json({ error: 'invalid_request' }, 400);
+    // PL: Przekazujemy tylko odpowiedź przeglądarki. Better Auth sam zakłada sesję i ustawia ciasteczko.
+    // EN: We pass only the browser answer. Better Auth creates the session and sets the cookie itself.
+    return forwardWithBody(context, options.getRuntime(context.env), { response: body.response });
+  });
+  app.get('/passkey/list-user-passkeys', async (context) => {
+    const runtime = options.getRuntime(context.env);
+    const response = await Promise.resolve(runtime.auth.handler(context.req.raw));
+    if (!response.ok) return response;
+    // PL: Better Auth zwraca pełne wiersze z kluczem publicznym. Do telefonu idzie tylko bezpieczny kształt.
+    // EN: Better Auth returns full rows with the public key. Only the safe shape goes to the phone.
+    const rows = (await response.json()) as PasskeyRow[];
+    return context.json(rows.map(toPasskeyView));
+  });
+  app.post('/passkey/delete-passkey', async (context) => {
+    const fields = await readTextFields(context.req.raw, ['id']);
+    if (!fields) return context.json({ error: 'invalid_request' }, 400);
+    return forwardWithBody(context, options.getRuntime(context.env), { id: fields.id });
   });
   return app;
 }
