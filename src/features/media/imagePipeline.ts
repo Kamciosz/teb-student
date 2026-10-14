@@ -6,6 +6,7 @@
  * @since 2026-10-13
  * @uses src/features/media/dimensions.ts::fitWithin
  * @used_by src/features/media/sendMediaFile.ts::sendMediaFile
+ * @used_by src/features/media/reportPhoto.ts::uploadReportPhoto
  */
 
 // PL: Zmniejszanie wymiarów do zadanego dłuższego boku.
@@ -61,7 +62,7 @@ export async function preparePhoto(file: File): Promise<PhotoResult> {
  * @param file - PL: plik zdjęcia. EN: the photo file.
  * @returns PL: zdjęcie po przerobieniu albo null. EN: the processed photo, or null.
  */
-async function resizeOnCanvas(file: File): Promise<PreparedPhoto | null> {
+export async function resizeOnCanvas(file: File): Promise<PreparedPhoto | null> {
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
