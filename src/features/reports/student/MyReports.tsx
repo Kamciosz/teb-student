@@ -1,6 +1,6 @@
 /**
- * PL: Ekran „Moje zgłoszenia” (ekran 3.5): lista zgłoszeń ucznia z paskiem etapu (przyjęte, w trakcie, załatwione) i osią historii z odpowiedziami Samorządu, wzorem FixMyStreet. Bez internetu pokazuje ostatnio zapisaną listę (pasek „Brak internetu” jest wspólny dla aplikacji). Teksty nowej osi („Historia zgłoszenia”, „Odpowiedź Samorządu”) są do uzgodnienia z zespołem.
- * EN: The "Moje zgłoszenia" screen (screen 3.5): the student's report list with the stage bar (received, in progress, resolved) and the history axis with the Student Council answers, after FixMyStreet. Without internet it shows the last saved list (the "Brak internetu" banner is shared by the app). The texts of the new axis ("Historia zgłoszenia", "Odpowiedź Samorządu") are to be agreed with the team.
+ * PL: Ekran „Moje zgłoszenia” (ekran 3.5): lista zgłoszeń ucznia z paskiem etapu (przyjęte, w trakcie, załatwione) i osią historii z odpowiedziami Samorządu, wzorem FixMyStreet. Bez internetu pokazuje ostatnio zapisaną listę (pasek „Brak internetu” jest wspólny dla aplikacji). Teksty nowej osi („Historia zgłoszenia”, „Odpowiedź Samorządu”) są zatwierdzone przez właściciela.
+ * EN: The "Moje zgłoszenia" screen (screen 3.5): the student's report list with the stage bar (received, in progress, resolved) and the history axis with the Student Council answers, after FixMyStreet. Without internet it shows the last saved list (the "Brak internetu" banner is shared by the app). The texts of the new axis ("Historia zgłoszenia", "Odpowiedź Samorządu") are approved by the owner.
  *
  * @author Szymon
  * @since 2026-10-09

@@ -1,6 +1,6 @@
 /**
- * PL: Krok „Ktoś już to zgłosił?” między miejscem a opisem. Pokazuje otwarte zgłoszenia tej samej kategorii i miejsca z licznikiem „Mnie też”; uczeń może dołączyć albo wysłać nowe. Gdy nie ma czego pokazać (pusta lista, brak sieci, błąd), od razu przechodzi do opisu. Teksty na ekranie są do uzgodnienia z zespołem.
- * EN: The step "Ktoś już to zgłosił?" between the place and the description. It shows open reports of the same category and place with the "Mnie też" counter; the student can join or send a new one. When there is nothing to show (empty list, no network, an error), it moves on to the description at once. The texts on the screen are to be agreed with the team.
+ * PL: Krok „Ktoś już to zgłosił?” między miejscem a opisem. Pokazuje otwarte zgłoszenia tej samej kategorii i miejsca z licznikiem „Mnie też”; uczeń może dołączyć albo wysłać nowe. Gdy nie ma czego pokazać (pusta lista, brak sieci, błąd), od razu przechodzi do opisu. Teksty na ekranie są zatwierdzone przez właściciela.
+ * EN: The step "Ktoś już to zgłosił?" between the place and the description. It shows open reports of the same category and place with the "Mnie też" counter; the student can join or send a new one. When there is nothing to show (empty list, no network, an error), it moves on to the description at once. The texts on the screen are approved by the owner.
  *
  * @author Szymon
  * @since 2026-10-13

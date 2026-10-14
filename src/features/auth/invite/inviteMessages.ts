@@ -1,6 +1,6 @@
 /**
- * PL: Teksty ekranów kodu zaproszenia (1.3 i logowania loginem) i dobór komunikatu błędu. Teksty ekranu 1.3 pochodzą z docs/projekt/EKRANY.md. Pozostałe (błędy i logowanie loginem) nie mają tam wpisu, więc są oznaczone „DO USTALENIA” i czekają na zespół. Zwykłe funkcje, więc da się je sprawdzić testem.
- * EN: The texts of the invitation code screens (1.3 and login sign-in) and how an error message is picked. The texts of screen 1.3 come from docs/projekt/EKRANY.md. The others (errors and login sign-in) have no entry there, so they are marked "DO USTALENIA" (to be agreed) and wait for the team. Plain functions, so a test can check them.
+ * PL: Teksty ekranów kodu zaproszenia (1.3 i logowania loginem) i dobór komunikatu błędu. Teksty ekranu 1.3 pochodzą z docs/projekt/EKRANY.md. Pozostałe (błędy i logowanie loginem) nie mają tam wpisu, a właściciel je zatwierdził (14.10.2026). Zwykłe funkcje, więc da się je sprawdzić testem.
+ * EN: The texts of the invitation code screens (1.3 and login sign-in) and how an error message is picked. The texts of screen 1.3 come from docs/projekt/EKRANY.md. The others (errors and login sign-in) have no entry there, but the owner approved them (14.10.2026). Plain functions, so a test can check them.
  *
  * @author Szymon
  * @since 2026-10-11
@@ -39,7 +39,7 @@ export const SCREEN_TEXT = {
   submit: 'Załóż konto',
 } as const;
 
-/** PL: DO USTALENIA z zespołem: teksty logowania loginem i błędów, których nie ma w docs/projekt/EKRANY.md. EN: DO USTALENIA (to agree) with the team: the login sign-in texts and errors that docs/projekt/EKRANY.md does not have. */
+/** PL: Teksty logowania loginem i błędów, których nie ma w docs/projekt/EKRANY.md, zatwierdzone przez właściciela (14.10.2026). EN: The login sign-in texts and the errors that docs/projekt/EKRANY.md does not have, approved by the owner (14.10.2026). */
 export const MESSAGES = {
   signInTopBarTitle: 'Logowanie',
   signInHeading: 'Zaloguj się',

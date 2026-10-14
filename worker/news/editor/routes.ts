@@ -25,8 +25,8 @@ import { MAX_BODY_BYTES } from '../../../src/features/news/editor/document/limit
 import { requireNewsAuthor } from './author';
 import { validateEntry, type CheckedEntry } from './validateEntry';
 
-// PL: Kto wydaje wpis. Napis, nie konto. Rola redakcji gazetki dostanie własny napis, gdy role będą istnieć. Do ustalenia z Samorządem.
-// EN: Who issues the entry. A label, not an account. The newspaper team role gets its own label once roles exist. To be agreed with the Student Council.
+// PL: Kto wydaje wpis. Napis, nie konto. Rola redakcji gazetki dostanie własny napis, gdy role będą istnieć.
+// EN: Who issues the entry. A label, not an account. The newspaper team role gets its own label once roles exist.
 const ENTRY_SOURCE = 'Samorząd';
 
 // PL: Zapas na tytuł, typ i stan ponad treść: ciało zapytania może być o tyle większe niż sama treść.

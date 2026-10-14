@@ -37,8 +37,8 @@ export type ReportTileProps = {
  * @returns PL: kafel z linkiem do „Moich zgłoszeń” albo kafel z napisem o braku zgłoszeń. EN: a tile with a link to "Moje zgłoszenia", or a tile with a label about no reports.
  */
 export function ReportTile({ report }: ReportTileProps) {
-  // PL: Bez zgłoszeń kafel mówi to wprost. Napis jest z modułu zgłoszeń (do ustalenia z zespołem).
-  // EN: Without reports the tile says so plainly. The label is from the reports module (to be agreed with the team).
+  // PL: Bez zgłoszeń kafel mówi to wprost. Napis jest z modułu zgłoszeń.
+  // EN: Without reports the tile says so plainly. The label is from the reports module.
   if (report === null) {
     return (
       <section className="dash-tile" aria-label="Zgłoszenia">
