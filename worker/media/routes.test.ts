@@ -118,6 +118,16 @@ describe('POST /upload dostęp / access', () => {
     const response = await upload('application/pdf');
     expect(response.status).toBe(415);
   });
+
+  // PL: HEIC i HEIF dostają 415 i nic nie zapisują. Telefon ich nie zmniejsza, a oryginał niósłby EXIF z lokalizacją.
+  // EN: HEIC and HEIF get 415 and save nothing. The phone does not shrink them, and the original would carry EXIF with the location.
+  it.each(['image/heic', 'image/heif'])('%s daje 415 i nic nie zapisuje / gives 415 and saves nothing', async (mime) => {
+    await drizzle(env.DB).insert(panelRoles).values({ userId: studentId, role: 'editor', grantedAt: Date.now() });
+    const response = await upload(mime);
+    const rows = await drizzle(env.DB).select().from(mediaFiles);
+    expect(response.status).toBe(415);
+    expect(rows).toHaveLength(0);
+  });
 });
 
 // PL: Grupa testów odczytu dla ucznia.
