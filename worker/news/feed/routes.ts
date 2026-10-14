@@ -64,6 +64,8 @@ export type NewsEntryDetail = NewsEntrySummary & {
   linkLabel: string | null;
   /** PL: Imię i nazwisko autora z konta albo null, gdy wpis nie ma autora, konto usunięto lub imię jest puste. E-mail autora nie wychodzi. EN: The author's name from the account, or null when the entry has no author, the account was deleted or the name is empty. The author's e-mail does not leave the server. */
   authorName: string | null;
+  /** PL: Czy autor ma rolę redakcji („editor” w panelu). Tylko wtedy ekran pokazuje stopkę „Redakcja gazetki”. Brak autora albo inna rola daje false. EN: Whether the author has the editorial role ("editor" in the panel). Only then the screen shows the "Redakcja gazetki" footer. No author or another role gives false. */
+  byEditorialTeam: boolean;
 };
 
 /**
@@ -91,11 +93,11 @@ function toSummary(row: NewsEntryRow): NewsEntrySummary {
  * PL: Zamienia wpis z autorem na pojedynczy wpis do odpowiedzi.
  * EN: Turns an entry with its author into a single entry for the response.
  *
- * @param published - PL: wpis widoczny dla ucznia z imieniem autora. EN: an entry visible to a student with the author's name.
- * @returns PL: wpis z treścią, linkiem i autorem. EN: the entry with the content, the link and the author.
+ * @param published - PL: wpis widoczny dla ucznia z imieniem autora i flagą redakcji. EN: an entry visible to a student with the author's name and the editorial flag.
+ * @returns PL: wpis z treścią, linkiem, autorem i flagą redakcji. EN: the entry with the content, the link, the author and the editorial flag.
  */
-function toDetail({ entry, authorName }: PublishedEntry): NewsEntryDetail {
-  return { ...toSummary(entry), body: entry.body, linkUrl: entry.linkUrl, linkLabel: entry.linkLabel, authorName };
+function toDetail({ entry, authorName, byEditorialTeam }: PublishedEntry): NewsEntryDetail {
+  return { ...toSummary(entry), body: entry.body, linkUrl: entry.linkUrl, linkLabel: entry.linkLabel, authorName, byEditorialTeam };
 }
 
 /**

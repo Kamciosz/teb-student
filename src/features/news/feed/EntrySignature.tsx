@@ -1,6 +1,6 @@
 /**
- * PL: Podpis autora pod treścią wpisu (gdy wpis ma autora) i stopka „Redakcja gazetki”. Sam serwer podaje tylko imię i nazwisko autora, bez adresu e-mail. Tekst stopki i forma podpisu czekają na akceptację zespołu (TO_AGREE).
- * EN: The author's signature under the entry content (when the entry has an author) and the "Redakcja gazetki" footer. The server gives only the author's name and surname, without the e-mail address. The footer text and the form of the signature wait for the team's approval (TO_AGREE).
+ * PL: Podpis autora pod treścią wpisu (gdy wpis ma autora) i stopka „Redakcja gazetki” (tylko gdy autor ma rolę redakcji). Sam serwer podaje tylko imię i nazwisko autora, bez adresu e-mail, oraz flagę, czy autor jest w redakcji. Tekst stopki i forma podpisu czekają na akceptację zespołu (TO_AGREE).
+ * EN: The author's signature under the entry content (when the entry has an author) and the "Redakcja gazetki" footer (only when the author has the editorial role). The server gives only the author's name and surname, without the e-mail address, and the flag whether the author is in the editorial team. The footer text and the form of the signature wait for the team's approval (TO_AGREE).
  *
  * @author Szymon
  * @since 2026-10-13
@@ -9,17 +9,21 @@
  */
 
 /**
- * PL: Rysuje podpis autora i stopkę redakcji.
- * EN: Draws the author's signature and the redaction footer.
+ * PL: Rysuje podpis autora i, gdy autor jest z redakcji, stopkę redakcji. Bez autora i bez redakcji nic nie rysuje.
+ * EN: Draws the author's signature and, when the author is from the editorial team, the editorial footer. Without an author and without the editorial team it draws nothing.
  *
- * @param props - PL: imię i nazwisko autora albo null. EN: the author's name and surname, or null.
- * @returns PL: stopka wpisu. EN: the entry footer.
+ * @param props - PL: imię i nazwisko autora albo null oraz flaga redakcji. EN: the author's name and surname or null, and the editorial flag.
+ * @returns PL: stopka wpisu albo null. EN: the entry footer, or null.
  */
-export function EntrySignature({ authorName }: { authorName: string | null }) {
+export function EntrySignature({ authorName, byEditorialTeam }: { authorName: string | null; byEditorialTeam: boolean }) {
+  // PL: Bez autora i bez stopki nie ma czego rysować, więc nie tworzymy pustego elementu.
+  // EN: Without an author and without the footer there is nothing to draw, so no empty element is made.
+  if (!authorName && !byEditorialTeam) return null;
+
   return (
     <footer className="news-entry__footer">
       {authorName ? <p className="news-entry__author">Autor: {authorName}</p> : null}
-      <p className="news-entry__redaction">Redakcja gazetki</p>
+      {byEditorialTeam ? <p className="news-entry__redaction">Redakcja gazetki</p> : null}
     </footer>
   );
 }

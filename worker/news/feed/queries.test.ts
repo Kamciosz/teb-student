@@ -27,6 +27,9 @@ import { newsEntries, type NewNewsEntryRow, type NewsEntryRow } from '../../db/s
 // PL: Tabela kont, z której bierzemy imię autora.
 // EN: The accounts table, from which we take the author's name.
 import { user } from '../../db/schema/auth';
+// PL: Tabela ról w panelu, z której bierzemy flagę redakcji.
+// EN: The panel roles table, from which we take the editorial flag.
+import { panelRoles } from '../../db/schema/admin';
 // PL: Zapytania, które sprawdzamy, i limit listy.
 // EN: The queries under test and the list limit.
 import { LIST_LIMIT, findPublishedEntry, listPublishedEntries } from './queries';
@@ -284,5 +287,35 @@ describe('findPublishedEntry', () => {
 
     await db.delete(user).where(eq(user.id, 'autor-ada'));
     expect((await findPublishedEntry(db, 'z-autorem'))?.authorName).toBeNull();
+  });
+
+  // PL: Flaga redakcji idzie z tabeli ról: tylko rola „editor” autora daje true. Rola Samorządu, brak autora i autor z dwiema rolami (jeden wiersz wyniku) dają to, co trzeba.
+  // EN: The editorial flag comes from the roles table: only the author's "editor" role gives true. The Samorząd role, no author, and an author with two roles (one row of the result) give what is needed.
+  it('flaga redakcji tylko przy roli editor / the editorial flag only for the editor role', async () => {
+    await db.delete(panelRoles);
+    await db.insert(user).values([
+      { id: 'autor-redakcja', name: 'Ewa Redaktor', email: 'ewa.redaktor@example.com', emailVerified: true },
+      { id: 'autor-samorzad', name: 'Sara Radna', email: 'sara.radna@example.com', emailVerified: true },
+      { id: 'autor-dwie-role', name: 'Jan Dwurolowy', email: 'jan.dwurolowy@example.com', emailVerified: true },
+    ]).onConflictDoNothing();
+    await db.insert(panelRoles).values([
+      { userId: 'autor-redakcja', role: 'editor', grantedAt: NOW.getTime() },
+      { userId: 'autor-samorzad', role: 'council', grantedAt: NOW.getTime() },
+      { userId: 'autor-dwie-role', role: 'council', grantedAt: NOW.getTime() },
+      { userId: 'autor-dwie-role', role: 'editor', grantedAt: NOW.getTime() },
+    ]);
+    await db.insert(newsEntries).values([
+      row('od-redakcji', { authorUserId: 'autor-redakcja' }),
+      row('od-samorzadu', { authorUserId: 'autor-samorzad' }),
+      row('dwie-role', { authorUserId: 'autor-dwie-role' }),
+      row('bez-autora-flaga'),
+    ]);
+
+    expect((await findPublishedEntry(db, 'od-redakcji'))?.byEditorialTeam).toBe(true);
+    expect((await findPublishedEntry(db, 'od-samorzadu'))?.byEditorialTeam).toBe(false);
+    expect((await findPublishedEntry(db, 'dwie-role'))?.byEditorialTeam).toBe(true);
+    expect((await findPublishedEntry(db, 'bez-autora-flaga'))?.byEditorialTeam).toBe(false);
+
+    await db.delete(panelRoles);
   });
 });
