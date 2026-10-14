@@ -183,6 +183,111 @@ describe('POST / odrzucanie / rejecting', () => {
 
 });
 
+/**
+ * PL: Dodaje wiersz pliku zdjęcia do tabeli media_files, tak jak zapisałyby go drzwi media po wysłaniu zdjęcia.
+ * EN: Adds a photo file row to the media_files table, as the media door would save it after an upload.
+ *
+ * @param id - PL: numer pliku. EN: the file id.
+ * @param uploadedBy - PL: numer konta, które wysłało plik, albo `null`. EN: the id of the account that uploaded the file, or `null`.
+ * @returns PL: obietnica zapisu. EN: the write promise.
+ */
+async function insertPhoto(id: string, uploadedBy: string | null): Promise<void> {
+  // PL: Zamień wiersz, jeśli plik o tym numerze był już w poprzednim teście.
+  // EN: Replace the row if a file with this id was already there in an earlier test.
+  await db.prepare('INSERT OR REPLACE INTO media_files (id, kind, mime, size, uploaded_by, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(id, 'photo', 'image/jpeg', 1234, uploadedBy, Date.now()).run();
+}
+
+// PL: Grupa testów zdjęcia w zgłoszeniu: plik musi istnieć i być plikiem tego ucznia.
+// EN: A group of tests for a photo in a report: the file must exist and be a file of this student.
+describe('POST / zdjęcie / photo', () => {
+  // PL: Własne zdjęcie trafia do kolumny photo_id.
+  // EN: An own photo goes into the photo_id column.
+  it('zapisuje własne zdjęcie w photo_id / saves an own photo in photo_id', async () => {
+    // PL: Dodaj plik ucznia i wyślij zgłoszenie z jego numerem.
+    // EN: Add the student's file and send a report with its id.
+    await insertPhoto('test-photo-own', studentId);
+    const response = await post({ ...BODY, photoId: 'test-photo-own' });
+    const { id } = (await response.json()) as { id: string };
+
+    // PL: Odpowiedź to 201, a wiersz ma numer zdjęcia.
+    // EN: The answer is 201, and the row has the photo id.
+    expect(response.status).toBe(201);
+    const row = await db.prepare('SELECT photo_id FROM reports WHERE id = ?').bind(id).first();
+    expect(row).toEqual({ photo_id: 'test-photo-own' });
+  });
+
+  // PL: Zgłoszenie bez zdjęcia zapisuje photo_id jako pusty.
+  // EN: A report without a photo saves photo_id as empty.
+  it('bez zdjęcia zapisuje photo_id jako pusty / without a photo saves photo_id as empty', async () => {
+    // PL: Wyślij zgłoszenie bez numeru zdjęcia.
+    // EN: Send a report without a photo id.
+    const { id } = (await (await post(BODY)).json()) as { id: string };
+    const row = await db.prepare('SELECT photo_id FROM reports WHERE id = ?').bind(id).first();
+
+    // PL: Kolumna jest pusta.
+    // EN: The column is empty.
+    expect(row).toEqual({ photo_id: null });
+  });
+
+  // PL: Numer zdjęcia, którego nie ma, to 400 i nic nie zapisanego.
+  // EN: A photo id that does not exist is 400 and nothing is saved.
+  it('nieistniejące zdjęcie daje 400 / a missing photo gives 400', async () => {
+    // PL: Wyślij zgłoszenie z numerem, którego nie ma w bazie.
+    // EN: Send a report with an id that is not in the database.
+    const response = await post({ ...BODY, photoId: 'test-photo-missing' });
+    const count = await db.prepare('SELECT COUNT(*) AS n FROM reports').first<{ n: number }>();
+
+    // PL: Kod 400 z kodem błędu zdjęcia, a liczba zgłoszeń się nie zmienia.
+    // EN: Code 400 with the photo error code, and the report count does not change.
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'photo_not_found' });
+    expect(count?.n).toBe(3);
+  });
+
+  // PL: Cudze zdjęcie to 403 i nic nie zapisanego.
+  // EN: Someone else's photo is 403 and nothing is saved.
+  it('cudze zdjęcie daje 403 / someone else\'s photo gives 403', async () => {
+    // PL: Dodaj plik innego ucznia i spróbuj go dołączyć.
+    // EN: Add another student's file and try to attach it.
+    await insertPhoto('test-photo-other', 'seed-user-2');
+    const response = await post({ ...BODY, photoId: 'test-photo-other' });
+    const count = await db.prepare('SELECT COUNT(*) AS n FROM reports').first<{ n: number }>();
+
+    // PL: Kod 403 z kodem błędu zdjęcia, a liczba zgłoszeń się nie zmienia.
+    // EN: Code 403 with the photo error code, and the report count does not change.
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: 'photo_forbidden' });
+    expect(count?.n).toBe(3);
+  });
+
+  // PL: Plik bez autora (po usunięciu konta) nie jest niczyj, więc też to 403.
+  // EN: A file without an author (after the account was deleted) belongs to nobody, so it is 403 too.
+  it('zdjęcie bez autora daje 403 / a photo without an author gives 403', async () => {
+    // PL: Dodaj plik bez autora i wyślij zgłoszenie z jego numerem.
+    // EN: Add a file without an author and send a report with its id.
+    await insertPhoto('test-photo-orphan', null);
+    const response = await post({ ...BODY, photoId: 'test-photo-orphan' });
+
+    // PL: Kod 403.
+    // EN: Code 403.
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: 'photo_forbidden' });
+  });
+
+  // PL: Numer zdjęcia w złym formacie to błąd pola photoId (400).
+  // EN: A photo id in the wrong format is an error of the photoId field (400).
+  it('zły format numeru daje błąd pola photoId / a wrong id format gives an error of the photoId field', async () => {
+    // PL: Wyślij numer z ukośnikiem.
+    // EN: Send an id with a slash.
+    const response = await post({ ...BODY, photoId: 'a/b' });
+
+    // PL: Odpowiedź wskazuje pole photoId.
+    // EN: The answer names the photoId field.
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'invalid_report', fields: ['photoId'] });
+  });
+});
+
 // PL: Grupa testów granic zapytania.
 // EN: A group of tests for request limits.
 describe('POST / granice / limits', () => {

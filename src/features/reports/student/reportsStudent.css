@@ -119,3 +119,14 @@
    EN: Touch: a slight shrink of the button (turned off for reduced motion in base.css). */
 .rs-btn, .rs-card, .rs-chip, .rs-icon-btn { transition: transform .12s ease-out; }
 .rs-btn:not(:disabled):active, .rs-card:active, .rs-chip:active, .rs-icon-btn:active { transform: scale(.97); }
+
+/* PL: Zdjęcie do zgłoszenia (nieobowiązkowe): przycisk „Dodaj zdjęcie”, nazwa pliku i „Usuń zdjęcie”. Dotyk co najmniej 44 px.
+   EN: The photo for the report (optional): the "Dodaj zdjęcie" button, the file name and "Usuń zdjęcie". Touch targets at least 44 px. */
+.rs-photo { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.rs-photo-add { position: relative; display: inline-flex; align-items: center; align-self: flex-start; min-height: 44px; padding: 8px 16px; border-radius: var(--r-sm); background: var(--tile-2); color: var(--ink); font-weight: 600; cursor: pointer; }
+.rs-photo-add:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+.rs-photo-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.rs-photo-btn { align-self: flex-start; min-height: 44px; padding: 8px 16px; border-radius: var(--r-sm); background: var(--tile-2); color: var(--ink); font-weight: 600; }
+.rs-photo-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.rs-photo-status { font-size: var(--t-sm); color: var(--ink-2); overflow-wrap: anywhere; }
+.rs-photo .rs-error { margin-top: 0; }
