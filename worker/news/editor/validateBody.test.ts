@@ -1,6 +1,6 @@
 /**
- * PL: Testy sprawdzania treści wpisu na serwerze. Dowodzą, że schemat Tiptap działa w środowisku Workera i że serwer odrzuca to, czego schemat nie łapie (link „javascript:”, zły identyfikator filmu, zdjęcie bez https) oraz nieznane elementy, złą strukturę i za duże dokumenty. Oblewają, gdy ktoś usunie sprawdzenie adresów albo listę dozwolonych elementów.
- * EN: Tests of the entry content check on the server. They prove that the Tiptap schema works in the Worker environment and that the server rejects what the schema does not catch (a "javascript:" link, a bad video id, a photo without https) as well as unknown elements, a wrong structure and oversized documents. They fail when someone removes the address check or the allowed element list.
+ * PL: Testy sprawdzania treści wpisu na serwerze. Dowodzą, że schemat Tiptap działa w środowisku Workera i że serwer odrzuca to, czego schemat nie łapie (link „javascript:”, zły identyfikator filmu, zdjęcie spoza modułu media) oraz nieznane elementy, złą strukturę i za duże dokumenty. Oblewają, gdy ktoś usunie sprawdzenie adresów albo listę dozwolonych elementów.
+ * EN: Tests of the entry content check on the server. They prove that the Tiptap schema works in the Worker environment and that the server rejects what the schema does not catch (a "javascript:" link, a bad video id, a photo outside the media module) as well as unknown elements, a wrong structure and oversized documents. They fail when someone removes the address check or the allowed element list.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -57,7 +57,7 @@ describe('validateBody: poprawna treść / valid content', () => {
       doc(
         paragraph('Treść'),
         { type: 'youtube', attrs: { videoId: 'dQw4w9WgXcQ' } },
-        { type: 'image', attrs: { src: 'https://example.org/a.jpg', alt: 'Boisko', caption: 'Mecz klas', width: 800, height: 600 } },
+        { type: 'image', attrs: { src: '/api/media/abc', alt: 'Boisko', caption: 'Mecz klas', width: 800, height: 600 } },
         { type: 'linkCard', attrs: { href: 'https://www.instagram.com/p/abc' } },
         { type: 'sources', attrs: { urls: ['https://example.org/zrodlo'] } },
       ),
@@ -106,6 +106,14 @@ describe('validateBody: odrzucenia / rejections', () => {
     ['identyfikator filmu liczbą / a video id that is a number', doc({ type: 'youtube', attrs: { videoId: 42 } }), 'bad_video'],
     ['film bez pól / a video without fields', doc({ type: 'youtube' }), 'bad_video'],
     ['zdjęcie z adresem data: / a photo with a data: address', doc({ type: 'image', attrs: { src: 'data:image/png;base64,AAAA' } }), 'bad_image'],
+    ['zdjęcie z adresem https / a photo with an https address', doc({ type: 'image', attrs: { src: 'https://example.org/a.jpg' } }), 'bad_image'],
+    ['zdjęcie z adresem javascript: / a photo with a javascript: address', doc({ type: 'image', attrs: { src: 'javascript:alert(1)' } }), 'bad_image'],
+    ['zdjęcie z przejściem w górę ścieżki / a photo with a path traversal', doc({ type: 'image', attrs: { src: '/api/media/../x' } }), 'bad_image'],
+    ['zdjęcie spoza /api/media / a photo outside /api/media', doc({ type: 'image', attrs: { src: '/api/other/abc' } }), 'bad_image'],
+    ['zdjęcie z pustym identyfikatorem / a photo with an empty id', doc({ type: 'image', attrs: { src: '/api/media/' } }), 'bad_image'],
+    ['zdjęcie z identyfikatorem dłuższym niż 64 znaki / a photo with an id longer than 64 characters', doc({ type: 'image', attrs: { src: `/api/media/${'a'.repeat(65)}` } }), 'bad_image'],
+    ['zdjęcie bez adresu / a photo without an address', doc({ type: 'image', attrs: {} }), 'bad_image'],
+    ['zdjęcie z adresem jako tablica / a photo with an address as an array', doc({ type: 'image', attrs: { src: ['/api/media/abc'] } }), 'bad_image'],
     ['karta linku do obcej domeny / a link card to a foreign domain', doc({ type: 'linkCard', attrs: { href: 'https://fakeinstagram.com/x' } }), 'bad_card'],
     ['źródła z adresem javascript: / sources with a javascript: address', doc({ type: 'sources', attrs: { urls: ['javascript:1'] } }), 'bad_sources'],
     ['nieznany element script / an unknown script element', doc({ type: 'script', content: [] }), 'schema'],
