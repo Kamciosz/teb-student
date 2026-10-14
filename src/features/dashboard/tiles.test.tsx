@@ -161,13 +161,14 @@ describe('DashboardHeader', () => {
     vi.useRealTimers();
   });
 
-  // PL: Licznik do dzwonka pokazuje pusty stan (plan jest pusty, a pulpit go nie widzi) i prowadzi do ekranu /bell.
-  // EN: The bell countdown shows the empty state (the plan is empty and the dashboard cannot see it) and leads to the /bell screen.
-  it('ma powitanie i pusty licznik, który prowadzi do dzwonka / has the greeting and the empty countdown that leads to the bell', () => {
+  // PL: O 11:10 w Warszawie trwa lekcja 4 (10:40–11:25 w planie szkoły), więc licznik pokazuje 15 minut i prowadzi do ekranu /bell.
+  // EN: At 11:10 in Warsaw lesson 4 is on (10:40–11:25 in the school plan), so the countdown shows 15 minutes and leads to the /bell screen.
+  it('ma powitanie i licznik minut, który prowadzi do dzwonka / has the greeting and the minute countdown that leads to the bell', () => {
     const result = html(<DashboardHeader editing={false} onToggleEdit={() => {}} />);
 
     expect(result).toContain('Cześć');
-    expect(result).toContain('Brak planu dzwonków');
+    expect(result).toContain('<p class="dash-bell__num">15</p>');
+    expect(result).not.toContain('Brak planu dzwonków');
     expect(result).toContain('href="/bell"');
   });
 
