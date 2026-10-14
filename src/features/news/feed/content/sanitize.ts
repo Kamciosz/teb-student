@@ -1,6 +1,6 @@
 /**
- * PL: Czyszczenie treści wpisu po stronie telefonu. Zamienia dokument JSON w stylu Tiptap na drzewo bezpiecznych bloków, w którym są tylko elementy z listy dozwolonych (ADR 0002). Nieznany element znika, link inny niż https znika (tekst zostaje), a identyfikator filmu musi mieć 11 znaków. Telefon nie ufa serwerowi: czyści treść także wtedy, gdy serwer już ją sprawdził.
- * EN: Cleaning of the entry content on the phone side. Turns a Tiptap-style JSON document into a tree of safe blocks that holds only elements from the allowed list (ADR 0002). An unknown element disappears, a link other than https disappears (the text stays), and a video id must have 11 characters. The phone does not trust the server: it cleans the content even when the server already checked it.
+ * PL: Czyszczenie treści wpisu po stronie telefonu. Zamienia dokument JSON w stylu Tiptap na drzewo bezpiecznych bloków, w którym są tylko elementy z listy dozwolonych (ADR 0002). Nieznany element znika, link inny niż https znika (tekst zostaje), identyfikator filmu musi mieć 11 znaków, a zdjęcie przechodzi tylko z adresem z własnego serwera (/api/media/). Telefon nie ufa serwerowi: czyści treść także wtedy, gdy serwer już ją sprawdził.
+ * EN: Cleaning of the entry content on the phone side. Turns a Tiptap-style JSON document into a tree of safe blocks that holds only elements from the allowed list (ADR 0002). An unknown element disappears, a link other than https disappears (the text stays), a video id must have 11 characters, and a photo passes only with an address from our own server (/api/media/). The phone does not trust the server: it cleans the content even when the server already checked it.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -17,6 +17,19 @@ export type SafeInline =
   | { kind: 'break' };
 
 /**
+ * PL: Zdjęcie z podpisem. Adres jest względny (/api/media/...), a wymiary to dodatnie liczby całkowite albo null, gdy nie są znane.
+ * EN: A photo with a caption. The address is relative (/api/media/...), and the dimensions are positive whole numbers or null when not known.
+ */
+export type SafeImage = {
+  kind: 'image';
+  src: string;
+  alt: string;
+  caption: string;
+  width: number | null;
+  height: number | null;
+};
+
+/**
  * PL: Blok treści. Lista ma pozycje, a każda pozycja jest listą bloków (może zawierać listę zagnieżdżoną).
  * EN: A content block. A list has items, and every item is a list of blocks (it may contain a nested list).
  */
@@ -25,7 +38,8 @@ export type SafeBlock =
   | { kind: 'heading'; level: 2 | 3; children: SafeInline[] }
   | { kind: 'list'; ordered: boolean; items: SafeBlock[][] }
   | { kind: 'quote'; children: SafeBlock[] }
-  | { kind: 'youtube'; videoId: string };
+  | { kind: 'youtube'; videoId: string }
+  | SafeImage;
 
 // PL: Największa głębokość zagnieżdżenia bloków. Głębsza treść jest obcinana, żeby złośliwy dokument nie zawiesił telefonu.
 // EN: The largest block nesting depth. Deeper content is cut off, so a malicious document cannot hang the phone.
@@ -90,6 +104,59 @@ export function safeHttpsUrl(raw: unknown): string | null {
  */
 export function safeVideoId(raw: unknown): string | null {
   return typeof raw === 'string' && VIDEO_ID_PATTERN.test(raw) ? raw : null;
+}
+
+// PL: Jedyny początek adresu zdjęcia, który telefon przyjmuje: zdjęcia z własnego serwera.
+// EN: The only start of a photo address the phone accepts: photos from our own server.
+const MEDIA_PATH_PREFIX = '/api/media/';
+
+// PL: Atrapowa baza do sprawdzania adresu względnego. Sama w sobie nie trafia nigdzie.
+// EN: A dummy base for checking a relative address. It is never used to reach anything.
+const DUMMY_BASE = 'https://dummy.invalid';
+
+/**
+ * PL: Zwraca adres zdjęcia tylko wtedy, gdy zaczyna się od /api/media/ i po rozwinięciu „..” nadal leży w tym katalogu (adres „/api/media/../auth” odpada).
+ * EN: Returns the photo address only when it starts with /api/media/ and, after resolving "..", still lies in that directory ("/api/media/../auth" is rejected).
+ *
+ * @param raw - PL: adres zdjęcia z treści wpisu. EN: the photo address from the entry content.
+ * @returns PL: adres albo null. EN: the address or null.
+ */
+export function safeMediaSrc(raw: unknown): string | null {
+  // PL: Adres musi być tekstem i zaczynać się od prefiksu serwera.
+  // EN: The address must be a string and start with the server prefix.
+  if (typeof raw !== 'string' || !raw.startsWith(MEDIA_PATH_PREFIX)) return null;
+  try {
+    // PL: Rozwijamy adres, żeby zobaczyć, dokąd naprawdę prowadzi.
+    // EN: We resolve the address to see where it really leads.
+    const resolved = new URL(raw, DUMMY_BASE);
+    return resolved.pathname.startsWith(MEDIA_PATH_PREFIX) ? raw : null;
+  } catch {
+    // PL: Adres, którego nie da się rozwinąć.
+    // EN: An address that cannot be resolved.
+    return null;
+  }
+}
+
+/**
+ * PL: Zwraca wymiar tylko wtedy, gdy to dodatnia liczba całkowita. Inaczej null, więc obrazek rysuje się bez tego atrybutu.
+ * EN: Returns the dimension only when it is a positive whole number. Otherwise null, so the image is drawn without that attribute.
+ *
+ * @param raw - PL: wymiar z treści wpisu. EN: the dimension from the entry content.
+ * @returns PL: wymiar w pikselach albo null. EN: the dimension in pixels or null.
+ */
+function safeSize(raw: unknown): number | null {
+  return typeof raw === 'number' && Number.isInteger(raw) && raw > 0 ? raw : null;
+}
+
+/**
+ * PL: Zwraca tekst albo pusty tekst, gdy wartość nie jest tekstem.
+ * EN: Returns the text, or an empty text when the value is not a string.
+ *
+ * @param raw - PL: wartość z treści wpisu. EN: the value from the entry content.
+ * @returns PL: tekst. EN: the text.
+ */
+function safeText(raw: unknown): string {
+  return typeof raw === 'string' ? raw : '';
 }
 
 /**
@@ -168,6 +235,27 @@ function sanitizeList(node: Record<string, unknown>, ordered: boolean, depth: nu
 }
 
 /**
+ * PL: Czyści zdjęcie. Bez poprawnego adresu zdjęcie znika. Podpis i opis bez tekstu stają się pustym tekstem, a złe wymiary znikają.
+ * EN: Cleans a photo. Without a valid address the photo disappears. A caption and a description that are not text become empty text, and bad dimensions disappear.
+ *
+ * @param node - PL: węzeł zdjęcia. EN: the photo node.
+ * @returns PL: bezpieczne zdjęcie albo null. EN: a safe photo or null.
+ */
+function sanitizeImage(node: Record<string, unknown>): SafeBlock | null {
+  const attrs = isRecord(node.attrs) ? node.attrs : {};
+  const src = safeMediaSrc(attrs.src);
+  if (src === null) return null;
+  return {
+    kind: 'image',
+    src,
+    alt: safeText(attrs.alt),
+    caption: safeText(attrs.caption),
+    width: safeSize(attrs.width),
+    height: safeSize(attrs.height),
+  };
+}
+
+/**
  * PL: Czyści jeden blok. Nieznany typ albo przekroczona głębokość daje null.
  * EN: Cleans one block. An unknown type or an exceeded depth gives null.
  *
@@ -194,9 +282,11 @@ function sanitizeBlock(node: unknown, depth: number): SafeBlock | null {
       const videoId = safeVideoId(isRecord(node.attrs) ? node.attrs.videoId : undefined);
       return videoId === null ? null : { kind: 'youtube', videoId };
     }
+    case 'image':
+      return sanitizeImage(node);
     default:
-      // PL: Zdjęcia czekają na podtor 2 (media), a pozostałe typy nie są na liście dozwolonych.
-      // EN: Photos wait for subtrack 2 (media), and the other types are not on the allowed list.
+      // PL: Pozostałe typy nie są na liście dozwolonych, więc znikają.
+      // EN: The other types are not on the allowed list, so they disappear.
       return null;
   }
 }

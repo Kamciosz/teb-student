@@ -6,6 +6,7 @@
  * @since 2026-10-09
  * @uses src/features/news/feed/content/sanitize.ts::sanitizeDocument
  * @uses src/features/news/feed/content/YouTubePlayer.tsx::YouTubePlayer
+ * @uses src/features/news/feed/content/NewsImage.tsx::NewsImage
  * @used_by src/features/news/feed/EntryScreen.tsx::RichContent
  * @used_by src/features/news/feed/content/sanitize.test.tsx::RichContent
  */
@@ -19,6 +20,9 @@ import { sanitizeDocument, type SafeBlock, type SafeInline } from './sanitize';
 // PL: Odtwarzacz filmu.
 // EN: The video player.
 import { YouTubePlayer } from './YouTubePlayer';
+// PL: Zdjęcie z podpisem.
+// EN: A photo with a caption.
+import { NewsImage } from './NewsImage';
 
 /**
  * PL: Rysuje jeden fragment linii: tekst ze stylem i linkiem albo łamanie wiersza.
@@ -77,6 +81,17 @@ function renderBlock(block: SafeBlock, key: number): ReactNode {
       return <blockquote key={key}>{renderBlocks(block.children)}</blockquote>;
     case 'youtube':
       return <YouTubePlayer key={key} videoId={block.videoId} />;
+    case 'image':
+      return (
+        <NewsImage
+          key={key}
+          src={block.src}
+          alt={block.alt}
+          caption={block.caption}
+          width={block.width}
+          height={block.height}
+        />
+      );
   }
 }
 

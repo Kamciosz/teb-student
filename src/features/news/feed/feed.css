@@ -256,6 +256,25 @@
   color: var(--accent);
 }
 
+/* PL: Zdjęcie: na całą szerokość treści, bez większego niż ekran, z mniejszym podpisem.
+   EN: The photo: the full width of the content, never wider than the screen, with a smaller caption. */
+.news-image {
+  margin: 0;
+}
+
+.news-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--r);
+}
+
+.news-image figcaption {
+  margin-top: 4px;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
 /* PL: Film: miniatura 16:9 z przyciskiem odtwarzania, a po kliknięciu ramka tej samej wielkości.
    EN: The video: a 16:9 thumbnail with a play button, and after a click a frame of the same size. */
 .news-video {
