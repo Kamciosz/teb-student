@@ -8,7 +8,7 @@
 
 ### Otwarte
 
-- Edytor w telefonie (`src/features/news/editor/document/nodes.ts`) nadal opisuje zdjęcie jako https, a jego sprawdzenie adresu używa `normalizeHttpsUrl`. Zmiana jest we froncie, poza tym podtorem, więc zostaje do osobnego zadania.
+- Komentarz przy węźle zdjęcia w `src/features/news/editor/document/nodes.ts` nadal mówi, że adres zdjęcia musi być https. Jest nieaktualny po tej zmianie. Poprawka jest we froncie, poza tym podtorem, więc zostaje do osobnego zadania.
 
 ## Log AI
 
