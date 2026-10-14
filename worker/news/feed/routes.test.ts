@@ -24,6 +24,9 @@ import { newsEntries } from '../../db/schema/news';
 // PL: Tabela kont, z której bierzemy imię autora.
 // EN: The accounts table, from which we take the author's name.
 import { user } from '../../db/schema/auth';
+// PL: Tabela ról w panelu, z której bierzemy flagę redakcji.
+// EN: The panel roles table, from which we take the editorial flag.
+import { panelRoles } from '../../db/schema/admin';
 // PL: Router, który sprawdzamy.
 // EN: The router under test.
 import { newsFeedApp } from './routes';
@@ -43,6 +46,7 @@ const PUBLISHED_AT = new Date(Date.UTC(2026, 9, 9, 10, 0, 0));
 // PL: Przed każdym testem są dwa wpisy: opublikowany i szkic.
 // EN: Before every test there are two entries: a published one and a draft.
 beforeEach(async () => {
+  await db.delete(panelRoles);
   await db.delete(newsEntries);
   await db.insert(newsEntries).values([
     { id: 'e1', type: 'event', status: 'published', title: 'Turniej', body: BODY, source: 'Samorząd', publishedAt: PUBLISHED_AT, linkUrl: 'https://example.com/r', linkLabel: 'Regulamin' },
@@ -153,6 +157,35 @@ describe('GET /:id', () => {
     const { entry } = (await response.json()) as { entry: Record<string, unknown> };
 
     expect(entry).toHaveProperty('authorName', null);
+  });
+
+  // PL: Stopka redakcji idzie w odpowiedzi tylko przy autorze z rolą „editor”. Autor z samorządu i wpis bez autora dają false, a e-mail nadal nie wychodzi.
+  // EN: The editorial footer goes in the response only for an author with the "editor" role. An author from the Samorząd and an entry without an author give false, and the e-mail still does not leave.
+  it.each([
+    { role: 'editor', expected: true },
+    { role: 'council', expected: false },
+    { role: null, expected: false },
+  ])('autor z rolą $role daje byEditorialTeam=$expected / an author with role $role gives byEditorialTeam=$expected', async ({ role, expected }) => {
+    await db.insert(user).values({ id: 'autor-flaga', name: 'Ewa Redaktor', email: 'ewa.flaga@example.com', emailVerified: true }).onConflictDoNothing();
+    if (role) await db.insert(panelRoles).values({ userId: 'autor-flaga', role: role as 'editor' | 'council', grantedAt: PUBLISHED_AT.getTime() });
+    await db.insert(newsEntries).values({ id: 'z-flaga', type: 'news', status: 'published', title: 'Z flagą', body: BODY, source: 'Samorząd', authorUserId: role ? 'autor-flaga' : null, publishedAt: PUBLISHED_AT });
+
+    const response = await newsFeedApp.request('/z-flaga', {}, env);
+    const text = await response.text();
+    const { entry } = JSON.parse(text) as { entry: { byEditorialTeam: boolean } };
+
+    expect(response.status).toBe(200);
+    expect(entry.byEditorialTeam).toBe(expected);
+    expect(text).not.toContain('ewa.flaga@example.com');
+  });
+
+  // PL: Wpis bez autora ma byEditorialTeam równe false, a nie brak pola.
+  // EN: An entry without an author has byEditorialTeam equal to false, not a missing field.
+  it('bez autora byEditorialTeam to false / without an author byEditorialTeam is false', async () => {
+    const response = await newsFeedApp.request('/e1', {}, env);
+    const { entry } = (await response.json()) as { entry: Record<string, unknown> };
+
+    expect(entry).toHaveProperty('byEditorialTeam', false);
   });
 });
 

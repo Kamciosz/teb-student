@@ -1,5 +1,5 @@
 /**
- * PL: Ekran jednego wpisu (ekran 2.3): znacznik typu, źródło z datą, tytuł, treść, przycisk z linkiem, podpis autora i stopkę „Redakcja gazetki”. Treść rysuje RichContent, który czyści dokument JSON. Szkic i nieznany numer pokazują „Nie znaleziono wpisu”.
+ * PL: Ekran jednego wpisu (ekran 2.3): znacznik typu, źródło z datą, tytuł, treść, przycisk z linkiem, podpis autora i stopkę „Redakcja gazetki” (tylko przy autorze z redakcji). Treść rysuje RichContent, który czyści dokument JSON. Szkic i nieznany numer pokazują „Nie znaleziono wpisu”.
  * EN: The single entry screen (screen 2.3): the type tag, the source with the date, the title, the content, the link button, the author's signature and the "Redakcja gazetki" footer. RichContent draws the content and cleans the JSON document. A draft and an unknown id show "Nie znaleziono wpisu" (entry not found).
  *
  * @author Szymon
@@ -86,7 +86,7 @@ export function EntryScreen() {
           </p>
           <RichContent body={entry.body} />
           <EntryLink entry={entry} />
-          <EntrySignature authorName={entry.authorName} />
+          <EntrySignature authorName={entry.authorName} byEditorialTeam={entry.byEditorialTeam} />
         </article>
       ) : null}
     </main>
