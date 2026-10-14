@@ -63,7 +63,7 @@ async function answerNews(route: Route): Promise<void> {
   }
   if (path === '/api/news/feed/e-event') {
     const summary = ENTRIES.find((entry) => entry.id === 'e-event');
-    return route.fulfill({ json: { entry: { ...summary, body: EVENT_BODY, linkUrl: 'https://example.com/regulamin', linkLabel: 'Zobacz regulamin turnieju' } } });
+    return route.fulfill({ json: { entry: { ...summary, body: EVENT_BODY, linkUrl: 'https://example.com/regulamin', linkLabel: 'Zobacz regulamin turnieju', authorName: null, byEditorialTeam: false } } });
   }
   return route.fulfill({ status: 404, json: { error: 'not_found' } });
 }
@@ -203,6 +203,33 @@ test.describe('z podstawionym serwerem', () => {
     await expect(page.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ/);
   });
 
+  // PL: Ogłoszenie Samorządu: autor bez roli redakcji ma podpis, ale nie ma stopki „Redakcja gazetki”.
+  // EN: A Samorząd announcement: an author without the editorial role has the signature, but no "Redakcja gazetki" footer.
+  test('ogłoszenie Samorządu: podpis bez stopki redakcji / a Samorząd announcement: the signature without the editorial footer', async ({ page }) => {
+    const summary = ENTRIES.find((entry) => entry.id === 'e-event');
+    await page.route('**/api/news/feed/e-event', (route) =>
+      route.fulfill({ json: { entry: { ...summary, body: EVENT_BODY, linkUrl: null, linkLabel: null, authorName: 'Samorząd Szkolny', byEditorialTeam: false } } }),
+    );
+    await page.goto('/news/feed/e-event');
+
+    await expect(page.getByRole('heading', { name: 'Turniej e-sportowy klas', level: 1 })).toBeVisible();
+    await expect(page.getByText('Autor: Samorząd Szkolny')).toBeVisible();
+    await expect(page.getByText('Redakcja gazetki')).toHaveCount(0);
+  });
+
+  // PL: Wpis od autora z redakcji pokazuje podpis i stopkę „Redakcja gazetki”.
+  // EN: An entry from an author in the editorial team shows the signature and the "Redakcja gazetki" footer.
+  test('wpis redakcji: podpis i stopka / an editorial entry: the signature and the footer', async ({ page }) => {
+    const summary = ENTRIES.find((entry) => entry.id === 'e-event');
+    await page.route('**/api/news/feed/e-event', (route) =>
+      route.fulfill({ json: { entry: { ...summary, body: EVENT_BODY, linkUrl: null, linkLabel: null, authorName: 'Ewa Redaktor', byEditorialTeam: true } } }),
+    );
+    await page.goto('/news/feed/e-event');
+
+    await expect(page.getByText('Autor: Ewa Redaktor')).toBeVisible();
+    await expect(page.getByText('Redakcja gazetki')).toBeVisible();
+  });
+
   // PL: Nieistniejący wpis (albo szkic, który serwer ukrywa) pokazuje komunikat.
   // EN: A missing entry (or a draft the server hides) shows a message.
   test('nieistniejący wpis pokazuje komunikat / a missing entry shows a message', async ({ page }) => {
@@ -307,16 +334,17 @@ test.describe('na lokalnej bazie', () => {
     await expect(page.getByRole('heading', { name: 'Gazetka szkolna szuka autorów', level: 1 })).toBeVisible();
   });
 
-  // PL: Wpis z autorem pokazuje jego imię i stopkę „Redakcja gazetki”, a wpis bez autora ma samą stopkę. Adres e-mail autora nie pojawia się na stronie.
-  // EN: An entry with an author shows the author's name and the "Redakcja gazetki" footer, and an entry without an author has only the footer. The author's e-mail address does not appear on the page.
-  test('podpis autora i stopka na wpisie / the author signature and the footer on the entry', async ({ page }) => {
+  // PL: Wpis z autorem pokazuje jego imię, ale bez roli „editor” nie ma stopki „Redakcja gazetki” (autor testowy Ola ma rolę administratora). Wpis bez autora nie ma ani podpisu, ani stopki. Adres e-mail autora nie pojawia się na stronie.
+  // EN: An entry with an author shows the author's name, but without the "editor" role there is no "Redakcja gazetki" footer (the test author Ola has the administrator role). An entry without an author has neither the signature nor the footer. The author's e-mail address does not appear on the page.
+  test('podpis autora bez stopki i wpis bez autora / the author signature without the footer, and an entry without an author', async ({ page }) => {
     await page.goto('/news/feed/seed-wazne-3ta');
     await expect(page.getByText('Autor: Ola Testowa')).toBeVisible();
-    await expect(page.getByText('Redakcja gazetki')).toBeVisible();
+    await expect(page.getByText('Redakcja gazetki')).toHaveCount(0);
     await expect(page.locator('body')).not.toContainText('ola.testowa@teb.edu.pl');
 
     await page.goto('/news/feed/seed-koszykowka');
-    await expect(page.getByText('Redakcja gazetki')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Mecz koszykówki klas drugich', level: 1 })).toBeVisible();
     await expect(page.getByText('Autor:')).toHaveCount(0);
+    await expect(page.getByText('Redakcja gazetki')).toHaveCount(0);
   });
 });
