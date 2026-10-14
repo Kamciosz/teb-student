@@ -12,4 +12,4 @@
 
 | Data | Zadanie i pull request | Polecenie dla AI (skrót) | Co zrobiło AI i jakie pliki zmieniło | Co zmienił właściciel | Kto |
 |---|---|---|---|---|---|
-| 2026-10-14 | podtor 6, plan dzwonków | Wpisz prawdziwy plan dzwonków szkoły (13 lekcji 0–12), przejdź na numerację od 0, zaktualizuj testy. | Zmieniono `src/features/bell/bellPlan.ts` (godziny lekcji), `bellState.ts` (numery od 0), testy w `src/features/bell/` i `e2e/bell.spec.ts`. Dodano ten plik. Skrócony plan zostaje pusty (do uzgodnienia). | … | Szymon |
+| 2026-10-14 | #172, plan dzwonków | Wpisz prawdziwy plan dzwonków szkoły (13 lekcji 0–12), przejdź na numerację od 0, zaktualizuj testy. | Zmieniono `src/features/bell/bellPlan.ts` (godziny lekcji), `bellState.ts` (numery od 0), testy w `src/features/bell/` i `e2e/bell.spec.ts`. Dodano ten plik. Skrócony plan zostaje pusty (do uzgodnienia). | … | … |
