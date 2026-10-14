@@ -11,6 +11,7 @@
  * @used_by src/features/news/editor/EditorToolbar.tsx::TO_AGREE
  * @used_by src/features/news/editor/AddressPanel.tsx::TO_AGREE
  * @used_by src/features/news/editor/PhotoButton.tsx::TO_AGREE
+ * @used_by src/features/news/editor/PhotoCaptionPanel.tsx::TO_AGREE
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::TO_AGREE
  * @used_by src/features/news/editor/api.ts::TO_AGREE
  */
@@ -61,12 +62,18 @@ export const TO_AGREE = {
     card: 'Karta linku',
     sources: 'Źródła',
     photo: 'Zdjęcie',
+    caption: 'Opis i podpis',
     undo: 'Cofnij',
     redo: 'Ponów',
   },
   photo: {
     sending: 'Wysyłam zdjęcie…',
     failed: 'Nie udało się wysłać zdjęcia. Spróbuj ponownie.',
+  },
+  captionPanel: {
+    alt: 'Opis zdjęcia (dla osób niewidomych)',
+    caption: 'Podpis',
+    save: 'Zapisz',
   },
   prompt: {
     link: { label: 'Adres linku (https://)', submit: 'Zapisz link', remove: 'Usuń link' },
