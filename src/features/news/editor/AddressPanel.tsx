@@ -5,14 +5,14 @@
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/news/editor/document/urls.ts::normalizeHttpsUrl
- * @uses src/features/news/editor/texts.ts::TO_AGREE
+ * @uses src/features/news/editor/texts.ts::TEXTS
  * @used_by src/features/news/editor/EditorToolbar.tsx::AddressPanel
  */
 
 import { useState, type FormEvent } from 'react';
 import { MAX_SOURCES } from './document/limits';
 import { normalizeHttpsUrl, parseYouTubeId, socialNetworkName } from './document/urls';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 
 /**
  * PL: Rodzaj okienka: co wstawia wpisany adres.
@@ -67,14 +67,14 @@ export function AddressPanel({ kind, initial, onSubmit, onCancel, onRemove }: Ad
   // EN: The typed text and the error message.
   const [text, setText] = useState(initial);
   const [error, setError] = useState<string | null>(null);
-  const copy = TO_AGREE.prompt[kind];
+  const copy = TEXTS.prompt[kind];
 
   // PL: Po „Zapisz” sprawdź adres. Dobry wstaw, zły zgłoś.
   // EN: After "Zapisz" (save) check the address. Insert a good one, report a bad one.
   function handleSubmit(event: FormEvent): void {
     event.preventDefault();
     const value = parseValue(kind, text);
-    if (value === null) setError(TO_AGREE.prompt.errors[kind]);
+    if (value === null) setError(TEXTS.prompt.errors[kind]);
     else onSubmit(value);
   }
 
@@ -94,8 +94,8 @@ export function AddressPanel({ kind, initial, onSubmit, onCancel, onRemove }: Ad
       <div className="editor-row">
         <button type="submit" className="editor-button">{copy.submit}</button>
         {/* PL: Usuń istniejący link. EN: Remove an existing link. */}
-        {onRemove ? <button type="button" className="editor-button editor-button--outline" onClick={onRemove}>{TO_AGREE.prompt.link.remove}</button> : null}
-        <button type="button" className="editor-button editor-button--outline" onClick={onCancel}>{TO_AGREE.prompt.cancel}</button>
+        {onRemove ? <button type="button" className="editor-button editor-button--outline" onClick={onRemove}>{TEXTS.prompt.link.remove}</button> : null}
+        <button type="button" className="editor-button editor-button--outline" onClick={onCancel}>{TEXTS.prompt.cancel}</button>
       </div>
     </form>
   );

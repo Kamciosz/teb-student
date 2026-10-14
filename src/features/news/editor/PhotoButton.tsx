@@ -7,7 +7,7 @@
  * @uses src/features/media/index.ts::uploadEditorPhoto
  * @uses src/features/news/editor/photoNode.ts::photoImageNode
  * @uses src/features/news/editor/photoNode.ts::photoErrorMessage
- * @uses src/features/news/editor/texts.ts::TO_AGREE
+ * @uses src/features/news/editor/texts.ts::TEXTS
  * @used_by src/features/news/editor/EditorToolbar.tsx::PhotoButton
  */
 
@@ -15,7 +15,7 @@ import type { Editor } from '@tiptap/core';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { uploadEditorPhoto } from '../../media';
 import { photoErrorMessage, photoImageNode } from './photoNode';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 
 /**
  * PL: Dane przycisku.
@@ -68,12 +68,12 @@ export function PhotoButton({ editor, onInserted }: PhotoButtonProps) {
 
   return (
     <>
-      <button type="button" className="editor-tool" aria-label={TO_AGREE.buttons.photo} disabled={sending} onClick={() => input.current?.click()}>
-        {TO_AGREE.buttons.photo}
+      <button type="button" className="editor-tool" aria-label={TEXTS.buttons.photo} disabled={sending} onClick={() => input.current?.click()}>
+        {TEXTS.buttons.photo}
       </button>
       <input ref={input} type="file" accept="image/*" hidden onChange={handleChange} />
       {/* PL: Informacja podczas wysyłki. EN: The note while sending. */}
-      {sending ? <p className="editor-toolbar__message" role="status">{TO_AGREE.photo.sending}</p> : null}
+      {sending ? <p className="editor-toolbar__message" role="status">{TEXTS.photo.sending}</p> : null}
       {/* PL: Błąd pod paskiem, czytany przez czytnik ekranu. EN: The error under the toolbar, read by a screen reader. */}
       {error ? <p className="editor-toolbar__message editor-error" role="alert">{error}</p> : null}
     </>

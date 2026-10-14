@@ -12,7 +12,7 @@ import { Link } from 'react-router';
 import type { PanelEntry } from './api';
 import { Icon } from './icons';
 import { scheduledLabel } from './schedule';
-import { SCREEN, TO_AGREE } from './texts';
+import { SCREEN, TEXTS } from './texts';
 
 /**
  * PL: Dane kafla.
@@ -53,8 +53,8 @@ function shortDate(iso: string): string {
 function statusLabel(status: PanelEntry['status']): string {
   // PL: Trzy stany, trzy napisy. Wpis w korekcie nie może wyglądać jak opublikowany.
   // EN: Three states, three labels. An entry in review must not look published.
-  if (status === 'draft') return TO_AGREE.draft;
-  return status === 'in_review' ? TO_AGREE.review : TO_AGREE.published;
+  if (status === 'draft') return TEXTS.draft;
+  return status === 'in_review' ? TEXTS.review : TEXTS.published;
 }
 
 /**
@@ -67,31 +67,31 @@ function statusLabel(status: PanelEntry['status']): string {
 function TileActions({ entry, isLocked, onPublish, onTogglePin, onDelete }: EntryTileProps) {
   // PL: Szkic można edytować i opublikować. Wpis w korekcie tylko otworzyć, bo zmienić go może tylko kreator. Opublikowany można przypiąć albo odpiąć.
   // EN: A draft can be edited and published. An entry in review can only be opened, because only the wizard changes it. A published entry can be pinned or unpinned.
-  const pinAction = entry.pinnedAt !== null ? TO_AGREE.unpin : TO_AGREE.pin;
+  const pinAction = entry.pinnedAt !== null ? TEXTS.unpin : TEXTS.pin;
   return (
     <div className="na-actions">
       {entry.status === 'draft' ? (
         <>
-          <Link className="na-btn na-btn-outline" to={`/news/editor/${entry.id}`} aria-label={TO_AGREE.actionName(TO_AGREE.edit, entry.title)}>
-            <Icon name="pencil" />{TO_AGREE.edit}
+          <Link className="na-btn na-btn-outline" to={`/news/editor/${entry.id}`} aria-label={TEXTS.actionName(TEXTS.edit, entry.title)}>
+            <Icon name="pencil" />{TEXTS.edit}
           </Link>
-          <button type="button" className="na-btn" disabled={isLocked} aria-label={TO_AGREE.actionName(SCREEN.publish, entry.title)} onClick={onPublish}>
+          <button type="button" className="na-btn" disabled={isLocked} aria-label={TEXTS.actionName(SCREEN.publish, entry.title)} onClick={onPublish}>
             <Icon name="send" />{SCREEN.publish}
           </button>
         </>
       ) : null}
       {entry.status === 'in_review' ? (
-        <Link className="na-btn na-btn-outline" to={`/news/editor/${entry.id}`} aria-label={TO_AGREE.actionName(TO_AGREE.openReview, entry.title)}>
-          <Icon name="pencil" />{TO_AGREE.openReview}
+        <Link className="na-btn na-btn-outline" to={`/news/editor/${entry.id}`} aria-label={TEXTS.actionName(TEXTS.openReview, entry.title)}>
+          <Icon name="pencil" />{TEXTS.openReview}
         </Link>
       ) : null}
       {entry.status === 'published' ? (
-        <button type="button" className="na-btn na-btn-outline" disabled={isLocked} aria-label={TO_AGREE.actionName(pinAction, entry.title)} onClick={onTogglePin}>
+        <button type="button" className="na-btn na-btn-outline" disabled={isLocked} aria-label={TEXTS.actionName(pinAction, entry.title)} onClick={onTogglePin}>
           <Icon name="pin" />{pinAction}
         </button>
       ) : null}
-      <button type="button" className="na-btn na-btn-outline" disabled={isLocked} aria-label={TO_AGREE.actionName(TO_AGREE.delete, entry.title)} onClick={onDelete}>
-        <Icon name="trash-2" />{TO_AGREE.delete}
+      <button type="button" className="na-btn na-btn-outline" disabled={isLocked} aria-label={TEXTS.actionName(TEXTS.delete, entry.title)} onClick={onDelete}>
+        <Icon name="trash-2" />{TEXTS.delete}
       </button>
     </div>
   );

@@ -21,7 +21,7 @@ import './newsAdmin.css';
 import { Notice } from './Notice';
 import { PanelTop } from './PanelTop';
 import { useDeleteEntry, useIsOnline, usePanelEntries, usePinEntry, usePublishEntry, useUnpinEntry } from './queries';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 
 /**
  * PL: Rysuje pusty stan: jeszcze nie ma żadnego wpisu.
@@ -33,8 +33,8 @@ function EmptyState() {
   return (
     <div className="na-empty">
       <Icon name="inbox" />
-      <h2>{TO_AGREE.emptyTitle}</h2>
-      <p>{TO_AGREE.emptyHint}</p>
+      <h2>{TEXTS.emptyTitle}</h2>
+      <p>{TEXTS.emptyHint}</p>
     </div>
   );
 }
@@ -64,7 +64,7 @@ function EntriesBody({ query, isLocked, onPublish, onTogglePin, onDelete }: Entr
   if (query.data) {
     if (query.data.length === 0) return <EmptyState />;
     return (
-      <ul className="na-list" aria-label={TO_AGREE.listLabel}>
+      <ul className="na-list" aria-label={TEXTS.listLabel}>
         {query.data.map((entry) => (
           <EntryTile key={entry.id} entry={entry} isLocked={isLocked} onPublish={() => onPublish(entry.id)} onTogglePin={() => onTogglePin(entry)} onDelete={() => onDelete(entry)} />
         ))}
@@ -73,7 +73,7 @@ function EntriesBody({ query, isLocked, onPublish, onTogglePin, onDelete }: Entr
   }
   // PL: Bez danych i z błędem pokaż komunikat (także przy odmowie 403), bez danych i bez błędu zapytanie trwa.
   // EN: Without data and with an error, show the message (also for a 403 refusal), without data and without an error the query is running.
-  return query.isError ? <Notice text={TO_AGREE.loadFailed} /> : <div role="status" aria-busy="true" />;
+  return query.isError ? <Notice text={TEXTS.loadFailed} /> : <div role="status" aria-busy="true" />;
 }
 
 /**
@@ -84,7 +84,7 @@ function EntriesBody({ query, isLocked, onPublish, onTogglePin, onDelete }: Entr
  * @returns PL: tekst komunikatu. EN: the message text.
  */
 function publishErrorText(error: unknown): string {
-  return error instanceof EntryInReviewError ? TO_AGREE.inReview : TO_AGREE.publishFailed;
+  return error instanceof EntryInReviewError ? TEXTS.inReview : TEXTS.publishFailed;
 }
 
 /**
@@ -117,9 +117,9 @@ export function NewsAdminScreen() {
     <section className="na-screen" data-subtrack="3c">
       <PanelTop />
       {publish.isError ? <Notice text={publishErrorText(publish.error)} /> : null}
-      {pinLimited ? <Notice text={TO_AGREE.pinLimit} /> : null}
-      {pinFailed ? <Notice text={TO_AGREE.pinFailed} /> : null}
-      {remove.isError ? <Notice text={TO_AGREE.deleteFailed} /> : null}
+      {pinLimited ? <Notice text={TEXTS.pinLimit} /> : null}
+      {pinFailed ? <Notice text={TEXTS.pinFailed} /> : null}
+      {remove.isError ? <Notice text={TEXTS.deleteFailed} /> : null}
       <EntriesBody
         query={query}
         isLocked={isLocked}
@@ -128,8 +128,8 @@ export function NewsAdminScreen() {
         onDelete={setAsked}
       />
       <div className="na-cta">
-        {isOnline ? null : <p className="na-small">{TO_AGREE.offlineNote}</p>}
-        <Link className="na-btn" to="/news/editor"><Icon name="plus" />{TO_AGREE.newEntry}</Link>
+        {isOnline ? null : <p className="na-small">{TEXTS.offlineNote}</p>}
+        <Link className="na-btn" to="/news/editor"><Icon name="plus" />{TEXTS.newEntry}</Link>
       </div>
       {asked ? (
         <DeleteSheet entry={asked} isDeleting={remove.isPending} onCancel={() => setAsked(null)} onConfirm={() => remove.mutate(asked.id, { onSettled: () => setAsked(null) })} />

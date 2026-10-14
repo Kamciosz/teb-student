@@ -4,14 +4,14 @@
  *
  * @author Szymon
  * @since 2026-10-13
- * @uses src/features/surveys/vote/texts.ts::TO_AGREE
+ * @uses src/features/surveys/vote/texts.ts::TEXTS
  * @uses src/features/surveys/vote/types.ts::SurveyOption
  * @used_by src/features/surveys/vote/QuestionStep.tsx::QuestionStep
  */
 
-// PL: Opisy skrajnych wartości (do uzgodnienia).
-// EN: The captions of the extreme values (to be agreed).
-import { TO_AGREE } from './texts';
+// PL: Opisy skrajnych wartości.
+// EN: The captions of the extreme values.
+import { TEXTS } from './texts';
 import type { SurveyOption } from './types';
 
 /** PL: Dane skali 1–5. EN: The data of the 1–5 scale. */
@@ -46,8 +46,8 @@ export function ScaleOptions({ name, options, selectedIds, onPick }: ScaleOption
         ))}
       </div>
       <div className="vote-scale__ends">
-        <span>{TO_AGREE.scaleLowest}</span>
-        <span>{TO_AGREE.scaleHighest}</span>
+        <span>{TEXTS.scaleLowest}</span>
+        <span>{TEXTS.scaleHighest}</span>
       </div>
     </fieldset>
   );

@@ -9,7 +9,7 @@
  * @uses src/features/news/editor/PhotoCaptionPanel.tsx::PhotoCaptionPanel
  * @uses src/features/news/editor/photoCaption.ts::selectedPhotoOf
  * @uses src/features/news/editor/photoCaption.ts::findPhotoPos
- * @uses src/features/news/editor/texts.ts::TO_AGREE
+ * @uses src/features/news/editor/texts.ts::TEXTS
  * @used_by src/features/news/editor/RichEditor.tsx::EditorToolbar
  */
 
@@ -20,7 +20,7 @@ import { AddressPanel, type AddressKind } from './AddressPanel';
 import { PhotoButton } from './PhotoButton';
 import { PhotoCaptionPanel } from './PhotoCaptionPanel';
 import { findPhotoPos, selectedPhotoOf } from './photoCaption';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 
 /**
  * PL: Opis jednego przycisku formatowania: napis na przycisku, opis dla czytnika ekranu, czy jest włączony i co robi.
@@ -31,23 +31,23 @@ type FormatButton = { id: string; text: string; label: string; isOn: (editor: Ed
 // PL: Przyciski formatowania w kolejności na pasku. Każdy działa na zaznaczeniu albo w miejscu kursora.
 // EN: The formatting buttons in toolbar order. Each works on the selection or at the cursor.
 const FORMAT_BUTTONS: FormatButton[] = [
-  { id: 'bold', text: 'B', label: TO_AGREE.buttons.bold, isOn: (e) => e.isActive('bold'), run: (e) => e.chain().focus().toggleBold().run() },
-  { id: 'italic', text: 'I', label: TO_AGREE.buttons.italic, isOn: (e) => e.isActive('italic'), run: (e) => e.chain().focus().toggleItalic().run() },
-  { id: 'underline', text: 'U', label: TO_AGREE.buttons.underline, isOn: (e) => e.isActive('underline'), run: (e) => e.chain().focus().toggleUnderline().run() },
-  { id: 'h2', text: 'H2', label: TO_AGREE.buttons.heading2, isOn: (e) => e.isActive('heading', { level: 2 }), run: (e) => e.chain().focus().toggleHeading({ level: 2 }).run() },
-  { id: 'h3', text: 'H3', label: TO_AGREE.buttons.heading3, isOn: (e) => e.isActive('heading', { level: 3 }), run: (e) => e.chain().focus().toggleHeading({ level: 3 }).run() },
-  { id: 'ul', text: '•', label: TO_AGREE.buttons.bulletList, isOn: (e) => e.isActive('bulletList'), run: (e) => e.chain().focus().toggleBulletList().run() },
-  { id: 'ol', text: '1.', label: TO_AGREE.buttons.orderedList, isOn: (e) => e.isActive('orderedList'), run: (e) => e.chain().focus().toggleOrderedList().run() },
-  { id: 'quote', text: '“', label: TO_AGREE.buttons.quote, isOn: (e) => e.isActive('blockquote'), run: (e) => e.chain().focus().toggleBlockquote().run() },
+  { id: 'bold', text: 'B', label: TEXTS.buttons.bold, isOn: (e) => e.isActive('bold'), run: (e) => e.chain().focus().toggleBold().run() },
+  { id: 'italic', text: 'I', label: TEXTS.buttons.italic, isOn: (e) => e.isActive('italic'), run: (e) => e.chain().focus().toggleItalic().run() },
+  { id: 'underline', text: 'U', label: TEXTS.buttons.underline, isOn: (e) => e.isActive('underline'), run: (e) => e.chain().focus().toggleUnderline().run() },
+  { id: 'h2', text: 'H2', label: TEXTS.buttons.heading2, isOn: (e) => e.isActive('heading', { level: 2 }), run: (e) => e.chain().focus().toggleHeading({ level: 2 }).run() },
+  { id: 'h3', text: 'H3', label: TEXTS.buttons.heading3, isOn: (e) => e.isActive('heading', { level: 3 }), run: (e) => e.chain().focus().toggleHeading({ level: 3 }).run() },
+  { id: 'ul', text: '•', label: TEXTS.buttons.bulletList, isOn: (e) => e.isActive('bulletList'), run: (e) => e.chain().focus().toggleBulletList().run() },
+  { id: 'ol', text: '1.', label: TEXTS.buttons.orderedList, isOn: (e) => e.isActive('orderedList'), run: (e) => e.chain().focus().toggleOrderedList().run() },
+  { id: 'quote', text: '“', label: TEXTS.buttons.quote, isOn: (e) => e.isActive('blockquote'), run: (e) => e.chain().focus().toggleBlockquote().run() },
 ];
 
 // PL: Przyciski, które otwierają okienko z adresem, i napisy na nich.
 // EN: The buttons that open the address panel, and their labels.
 const ADDRESS_BUTTONS: { kind: AddressKind; text: string; label: string }[] = [
-  { kind: 'link', text: 'Link', label: TO_AGREE.buttons.link },
-  { kind: 'video', text: 'Film', label: TO_AGREE.buttons.video },
-  { kind: 'card', text: 'Karta', label: TO_AGREE.buttons.card },
-  { kind: 'sources', text: 'Źródła', label: TO_AGREE.buttons.sources },
+  { kind: 'link', text: 'Link', label: TEXTS.buttons.link },
+  { kind: 'video', text: 'Film', label: TEXTS.buttons.video },
+  { kind: 'card', text: 'Karta', label: TEXTS.buttons.card },
+  { kind: 'sources', text: 'Źródła', label: TEXTS.buttons.sources },
 ];
 
 /**
@@ -133,7 +133,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
   return (
     <>
-      <div className="editor-toolbar" role="toolbar" aria-label={TO_AGREE.toolbarLabel}>
+      <div className="editor-toolbar" role="toolbar" aria-label={TEXTS.toolbarLabel}>
         {/* PL: Formatowanie: wciśnięty przycisk znaczy, że w tym miejscu tekst ma ten styl. EN: Formatting: a pressed button means the text here has that style. */}
         {FORMAT_BUTTONS.map((button, index) => (
           <button key={button.id} type="button" className="editor-tool" aria-label={button.label} aria-pressed={state.on[index]} onClick={() => button.run(editor)}>
@@ -149,10 +149,10 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         {/* PL: Zdjęcie: wysyłka i wstawienie do treści. EN: Photo: upload and insertion into the content. */}
         <PhotoButton editor={editor} onInserted={setInsertedSrc} />
         {/* PL: Opis i podpis zdjęcia, gdy zdjęcie jest zaznaczone albo właśnie wstawione. EN: The photo description and caption, when a photo is selected or has just been inserted. */}
-        {photoSrc !== null ? <button type="button" className="editor-tool" aria-label={TO_AGREE.buttons.caption} aria-pressed={open === 'photo'} onClick={() => openPhotoPanel(photoSrc)}>Opis</button> : null}
+        {photoSrc !== null ? <button type="button" className="editor-tool" aria-label={TEXTS.buttons.caption} aria-pressed={open === 'photo'} onClick={() => openPhotoPanel(photoSrc)}>Opis</button> : null}
         {/* PL: Cofnij i ponów. EN: Undo and redo. */}
-        <button type="button" className="editor-tool" aria-label={TO_AGREE.buttons.undo} disabled={!state.canUndo} onClick={() => editor.chain().focus().undo().run()}>↶</button>
-        <button type="button" className="editor-tool" aria-label={TO_AGREE.buttons.redo} disabled={!state.canRedo} onClick={() => editor.chain().focus().redo().run()}>↷</button>
+        <button type="button" className="editor-tool" aria-label={TEXTS.buttons.undo} disabled={!state.canUndo} onClick={() => editor.chain().focus().undo().run()}>↶</button>
+        <button type="button" className="editor-tool" aria-label={TEXTS.buttons.redo} disabled={!state.canRedo} onClick={() => editor.chain().focus().redo().run()}>↷</button>
       </div>
       {/* PL: Okienko adresu pod paskiem. Klucz zmienia się z rodzajem, więc pole zaczyna puste. EN: The address panel under the toolbar. The key changes with the kind, so the field starts empty. */}
       {open && open !== 'photo' ? (

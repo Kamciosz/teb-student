@@ -1,19 +1,18 @@
 /**
- * PL: Wszystkie teksty ekranu edytora po polsku. Teksty z docs/projekt/EKRANY.md (ekrany 5.1, 5.2 i 5.3) są w grupie „SCREEN”. Teksty, których EKRANY.md nie zawiera (pasek narzędzi, okna na adres, komunikaty błędów), są w grupie „TO_AGREE” i czekają na decyzję zespołu (lista w opisie pull requesta).
- * EN: All the editor screen texts in Polish. The texts from docs/projekt/EKRANY.md (screens 5.1, 5.2 and 5.3) are in the "SCREEN" group. The texts EKRANY.md does not contain (the toolbar, the address panels, error messages) are in the "TO_AGREE" group and wait for a team decision (the list is in the pull request description).
+ * PL: Wszystkie teksty ekranu edytora po polsku. Teksty z docs/projekt/EKRANY.md (ekrany 5.1, 5.2 i 5.3) są w grupie „SCREEN”, a pozostałe (pasek narzędzi, okna na adres, komunikaty błędów) w grupie „TEXTS”.
+ * EN: All the editor screen texts in Polish. The texts from docs/projekt/EKRANY.md (screens 5.1, 5.2 and 5.3) are in the "SCREEN" group, and the others (the toolbar, the address panels, error messages) in the "TEXTS" group.
  *
  * @author Szymon
  * @since 2026-10-12
  * @used_by src/features/news/editor/TypeStep.tsx::SCREEN
  * @used_by src/features/news/editor/ContentStep.tsx::SCREEN
  * @used_by src/features/news/editor/PreviewStep.tsx::SCREEN
- * @used_by src/features/news/editor/TypeStep.tsx::TO_AGREE
- * @used_by src/features/news/editor/EditorToolbar.tsx::TO_AGREE
- * @used_by src/features/news/editor/AddressPanel.tsx::TO_AGREE
- * @used_by src/features/news/editor/PhotoButton.tsx::TO_AGREE
- * @used_by src/features/news/editor/PhotoCaptionPanel.tsx::TO_AGREE
- * @used_by src/features/news/editor/NewsEditorScreen.tsx::TO_AGREE
- * @used_by src/features/news/editor/api.ts::TO_AGREE
+ * @used_by src/features/news/editor/EditorToolbar.tsx::TEXTS
+ * @used_by src/features/news/editor/AddressPanel.tsx::TEXTS
+ * @used_by src/features/news/editor/PhotoButton.tsx::TEXTS
+ * @used_by src/features/news/editor/PhotoCaptionPanel.tsx::TEXTS
+ * @used_by src/features/news/editor/NewsEditorScreen.tsx::TEXTS
+ * @used_by src/features/news/editor/api.ts::TEXTS
  */
 
 /**
@@ -31,19 +30,16 @@ export const SCREEN = {
   saveDraft: 'Zapisz szkic i dokończ później',
   publish: 'Opublikuj',
   types: { important: 'Ważne', news: 'News', event: 'Wydarzenie', sport: 'Sport' },
-  mediaLabel: 'Zdjęcia i wideo',
-  mediaHint: 'Pliki są zmniejszane przed wysłaniem. Zdjęcie przytniesz klikając ikonę kadrowania.',
 } as const;
 
 /**
- * PL: Teksty spoza EKRANY.md: do ustalenia przez zespół.
- * EN: The texts outside EKRANY.md: to be agreed by the team.
+ * PL: Teksty spoza EKRANY.md: pasek narzędzi, okna na adres, komunikaty błędów.
+ * EN: The texts outside EKRANY.md: the toolbar, the address panels, the error messages.
  */
-export const TO_AGREE = {
+export const TEXTS = {
   back: 'Wróć',
   stepOf: (step: number) => `Krok ${step} z 3`,
   counter: (length: number, max: number) => `${length} / ${max} znaków`,
-  addMedia: 'Dodaj zdjęcie albo wideo',
   toolbarLabel: 'Formatowanie tekstu',
   loading: 'Wczytuję edytor…',
   loadFailed: 'Edytor się nie wczytał. Sprawdź internet.',
@@ -78,7 +74,7 @@ export const TO_AGREE = {
   prompt: {
     link: { label: 'Adres linku (https://)', submit: 'Zapisz link', remove: 'Usuń link' },
     video: { label: 'Adres filmu z YouTube', submit: 'Dodaj film' },
-    card: { label: 'Adres wpisu w Instagramie, TikToku, Facebooku albo X', submit: 'Dodaj kartę' },
+    card: { label: 'Adres posta z Instagrama, TikToka, Facebooka albo X', submit: 'Dodaj kartę' },
     sources: { label: 'Adresy źródeł, jeden w wierszu', submit: 'Dodaj źródła' },
     cancel: 'Anuluj',
     errors: {
@@ -106,7 +102,7 @@ export const TO_AGREE = {
   scheduleTime: 'Godzina publikacji',
   scheduleMissing: 'Wpisz dzień i godzinę publikacji.',
   scheduledFor: (moment: string) => `Wpis pojawi się ${moment}.`,
-  offline: 'Brak internetu. Wpis został w edytorze, wyślesz go, gdy internet wróci.',
+  offline: 'Brak internetu. Wpis został w edytorze. Wyślesz go, gdy internet wróci.',
   signedOut: 'Sesja wygasła. Zaloguj się ponownie.',
   forbidden: 'Wpisy mogą dodawać tylko Samorząd i redakcja gazetki.',
   failed: 'Nie udało się zapisać wpisu. Spróbuj ponownie.',

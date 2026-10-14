@@ -22,7 +22,7 @@ import { ContentStep } from './ContentStep';
 import './editor.css';
 import { PreviewStep } from './PreviewStep';
 import { ReviewStep } from './ReviewStep';
-import { TO_AGREE } from './texts';
+import { TEXTS } from './texts';
 import { TypeStep, type EntryType } from './TypeStep';
 import { WizardTop } from './WizardTop';
 import { formatWarsawMoment } from './warsawTime';
@@ -95,7 +95,7 @@ function DraftLoader({ draftId }: { draftId: string }) {
   if (state.status === 'loading') {
     return (
       <main className="editor-screen" data-subtrack="3b">
-        <p role="status">{TO_AGREE.draftLoading}</p>
+        <p role="status">{TEXTS.draftLoading}</p>
       </main>
     );
   }
@@ -104,7 +104,7 @@ function DraftLoader({ draftId }: { draftId: string }) {
     return (
       <main className="editor-screen" data-subtrack="3b">
         <p role="alert" className="editor-error">{state.message}</p>
-        <Link className="editor-button editor-button--wide" to="/news/admin">{TO_AGREE.goToPanel}</Link>
+        <Link className="editor-button editor-button--wide" to="/news/admin">{TEXTS.goToPanel}</Link>
       </main>
     );
   }
@@ -156,14 +156,14 @@ function EntryWizard({ draftId, start }: { draftId?: string; start?: StartData }
   // EN: After saving we show the confirmation with a link to the panel. A scheduled publication says when the entry will appear.
   if (saved) {
     const confirmation = saved.status === 'draft'
-      ? TO_AGREE.savedDraft
+      ? TEXTS.savedDraft
       : saved.status === 'in_review'
-        ? TO_AGREE.sentToReview
-        : saved.publishAt === null ? TO_AGREE.savedPublished : TO_AGREE.scheduledFor(formatWarsawMoment(saved.publishAt));
+        ? TEXTS.sentToReview
+        : saved.publishAt === null ? TEXTS.savedPublished : TEXTS.scheduledFor(formatWarsawMoment(saved.publishAt));
     return (
       <main className="editor-screen" data-subtrack="3b">
         <p role="status" className="editor-done">{confirmation}</p>
-        <Link className="editor-button editor-button--wide" to="/news/admin">{TO_AGREE.goToPanel}</Link>
+        <Link className="editor-button editor-button--wide" to="/news/admin">{TEXTS.goToPanel}</Link>
       </main>
     );
   }

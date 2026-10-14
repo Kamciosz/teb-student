@@ -17,7 +17,7 @@ import { NEWS_EXTENSIONS } from './document/extensions';
 import { MAX_TEXT_CHARS } from './document/limits';
 import { EditorToolbar } from './EditorToolbar';
 import { cleanPastedHtml } from './pasteWord';
-import { SCREEN, TO_AGREE } from './texts';
+import { SCREEN, TEXTS } from './texts';
 
 /**
  * PL: Dane edytora.
@@ -39,7 +39,7 @@ export type RichEditorProps = {
  */
 function Counter({ editor }: { editor: Editor }) {
   const length = useEditorState({ editor, selector: ({ editor: current }) => current.state.doc.textContent.length });
-  return <p className="editor-counter">{TO_AGREE.counter(length, MAX_TEXT_CHARS)}</p>;
+  return <p className="editor-counter">{TEXTS.counter(length, MAX_TEXT_CHARS)}</p>;
 }
 
 /**

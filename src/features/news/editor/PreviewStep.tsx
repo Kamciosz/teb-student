@@ -15,7 +15,7 @@ import type { JSONContent } from '@tiptap/core';
 import { useState } from 'react';
 import { EntryCard, RichContent } from '../feed';
 import { previewEntry } from './previewEntry';
-import { SCREEN, TO_AGREE } from './texts';
+import { SCREEN, TEXTS } from './texts';
 import type { EntryType } from './TypeStep';
 import { warsawToEpochMs } from './warsawTime';
 
@@ -65,7 +65,7 @@ export function PreviewStep({ type, title, body, isSaving, message, onSave }: Pr
     }
     const publishAt = warsawToEpochMs(day, time);
     if (publishAt === null) {
-      setScheduleError(TO_AGREE.scheduleMissing);
+      setScheduleError(TEXTS.scheduleMissing);
       return;
     }
     setScheduleError(null);
@@ -83,23 +83,23 @@ export function PreviewStep({ type, title, body, isSaving, message, onSave }: Pr
       {/* PL: Treść jak w szczegółach wpisu. Linki i film działają jak u ucznia. EN: The content as in the entry details. Links and the video work as for the student. */}
       <RichContent body={body} />
       <label className="editor-label">
-        <input type="checkbox" checked={scheduled} onChange={(event) => setScheduled(event.target.checked)} /> {TO_AGREE.scheduleToggle}
+        <input type="checkbox" checked={scheduled} onChange={(event) => setScheduled(event.target.checked)} /> {TEXTS.scheduleToggle}
       </label>
       {scheduled ? (
         <>
           <label className="editor-label">
-            {TO_AGREE.scheduleDate}
+            {TEXTS.scheduleDate}
             <input className="editor-input" type="date" value={day} onChange={(event) => setDay(event.target.value)} />
           </label>
           <label className="editor-label">
-            {TO_AGREE.scheduleTime}
+            {TEXTS.scheduleTime}
             <input className="editor-input" type="time" value={time} onChange={(event) => setTime(event.target.value)} />
           </label>
         </>
       ) : null}
       <button type="button" className="editor-button editor-button--outline editor-button--wide" disabled={isSaving} onClick={() => submit('draft')}>{SCREEN.saveDraft}</button>
-      <button type="button" className="editor-button editor-button--outline editor-button--wide" disabled={isSaving} onClick={() => submit('in_review')}>{TO_AGREE.sendToReview}</button>
-      <button type="button" className="editor-button editor-button--wide" disabled={isSaving} onClick={() => submit('published')}>{isSaving ? TO_AGREE.saving : SCREEN.publish}</button>
+      <button type="button" className="editor-button editor-button--outline editor-button--wide" disabled={isSaving} onClick={() => submit('in_review')}>{TEXTS.sendToReview}</button>
+      <button type="button" className="editor-button editor-button--wide" disabled={isSaving} onClick={() => submit('published')}>{isSaving ? TEXTS.saving : SCREEN.publish}</button>
       {/* PL: Błąd zapisu albo terminu. Czytnik ekranu odczytuje go od razu. EN: The save or schedule error. A screen reader reads it at once. */}
       {shownError ? <p role="alert" className="editor-error">{shownError}</p> : null}
     </section>

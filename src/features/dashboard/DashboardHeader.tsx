@@ -1,6 +1,6 @@
 /**
- * PL: Górny rząd pulpitu: data i powitanie po lewej, licznik do dzwonka po prawej (docs/projekt/EKRANY.md, ekran 2.1). Kafelek prowadzi do ekranu /bell. Licznik pokazuje minuty, gdy trwa lekcja albo przerwa z planu. Gdy stanu nie ma (null), zostaje kreska, a napis zależy od stanu dnia: bez planu „Brak planu dzwonków”, w dzień wolny „Dziś nie ma lekcji”, przed lekcjami „Lekcje jeszcze się nie zaczęły”, w trakcie „Trwa lekcja”, po lekcjach „Po lekcjach”. Nowe napisy są w grupie TO_AGREE i czekają na decyzję zespołu. Imienia ucznia też jeszcze nie ma: moduł logowania go nie wystawia, więc powitanie jest bez imienia.
- * EN: The top row of the dashboard: the date and the greeting on the left, the bell countdown on the right (docs/projekt/EKRANY.md, screen 2.1). The tile leads to the /bell screen. The countdown shows minutes when a lesson or a break from the plan is on. When there is no state (null), a dash stays and the text depends on the day's state: "Brak planu dzwonków" without a plan, "Dziś nie ma lekcji" on a day off, "Lekcje jeszcze się nie zaczęły" before the lessons, "Trwa lekcja" during them, "Po lekcjach" after them. The new texts are in the TO_AGREE group and wait for a team decision. There is no student name yet either: the sign-in module does not expose it, so the greeting has no name.
+ * PL: Górny rząd pulpitu: data i powitanie po lewej, licznik do dzwonka po prawej (docs/projekt/EKRANY.md, ekran 2.1). Kafelek prowadzi do ekranu /bell. Licznik pokazuje minuty, gdy trwa lekcja albo przerwa z planu. Gdy stanu nie ma (null), zostaje kreska, a napis zależy od stanu dnia: bez planu „Brak planu dzwonków”, w dzień wolny „Dziś nie ma lekcji”, przed lekcjami „Lekcje jeszcze się nie zaczęły”, w trakcie „Trwa lekcja”, po lekcjach „Po lekcjach”. Imienia ucznia też jeszcze nie ma: moduł logowania go nie wystawia, więc powitanie jest bez imienia.
+ * EN: The top row of the dashboard: the date and the greeting on the left, the bell countdown on the right (docs/projekt/EKRANY.md, screen 2.1). The tile leads to the /bell screen. The countdown shows minutes when a lesson or a break from the plan is on. When there is no state (null), a dash stays and the text depends on the day's state: "Brak planu dzwonków" without a plan, "Dziś nie ma lekcji" on a day off, "Lekcje jeszcze się nie zaczęły" before the lessons, "Trwa lekcja" during them, "Po lekcjach" after them. There is no student name yet either: the sign-in module does not expose it, so the greeting has no name.
  *
  * @author Kacper
  * @since 2026-10-11
@@ -24,9 +24,9 @@ import type { BellDayStatus, BellState } from '../bell';
 // EN: The countdown state and the day state, refreshed while the tab is visible.
 import { useBellState } from './useBellState';
 
-// PL: Napisy stanu dnia bez licznika. Nowe napisy czekają na decyzję zespołu (TO_AGREE).
-// EN: The texts of the day state without the countdown. The new texts wait for a team decision (TO_AGREE).
-const TO_AGREE = {
+// PL: Napisy stanu dnia bez licznika.
+// EN: The texts of the day state without the countdown.
+const TEXTS = {
   dayOff: 'Dziś nie ma lekcji',
   before: 'Lekcje jeszcze się nie zaczęły',
   during: 'Trwa lekcja',
@@ -39,10 +39,10 @@ const NO_STATE_TEXT: Record<BellDayStatus, string> = {
   // PL: Brak planu dzwonków to napis z wcześniejszego zgłoszenia, nie nowy.
   // EN: "Brak planu dzwonków" is a text from an earlier change, not a new one.
   'no-plan': 'Brak planu dzwonków',
-  'day-off': TO_AGREE.dayOff,
-  before: TO_AGREE.before,
-  during: TO_AGREE.during,
-  after: TO_AGREE.after,
+  'day-off': TEXTS.dayOff,
+  before: TEXTS.before,
+  during: TEXTS.during,
+  after: TEXTS.after,
 };
 
 /** PL: Własności górnego rzędu. EN: The properties of the top row. */
@@ -79,8 +79,8 @@ export function BellReadout({ state, day }: { state: BellState | null; day: Bell
 }
 
 /**
- * PL: Rysuje górny rząd pulpitu. Przycisk „Zmień układ” włącza tryb układania kafelków, a „Gotowe” go kończy (napisy do ustalenia z zespołem).
- * EN: Draws the top row of the dashboard. The "Zmień układ" button turns on the tile arranging mode, and "Gotowe" ends it (labels to be agreed with the team).
+ * PL: Rysuje górny rząd pulpitu. Przycisk „Zmień układ” włącza tryb układania kafelków, a „Gotowe” go kończy.
+ * EN: Draws the top row of the dashboard. The "Zmień układ" button turns on the tile arranging mode, and "Gotowe" ends it.
  *
  * @param props - PL: tryb edycji i przełącznik. EN: the edit mode and the toggle.
  * @returns PL: rząd z datą, powitaniem, przyciskiem układu i licznikiem do dzwonka. EN: a row with the date, the greeting, the layout button and the bell countdown.
