@@ -53,6 +53,18 @@ async function useExamplePlan(page: Page): Promise<void> {
 }
 
 /**
+ * PL: Podstawia pusty plan w miejsce modułu planu, żeby sprawdzić stan bez planu dzwonków.
+ * EN: Stubs an empty plan in place of the plan module, to check the state without a bell plan.
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ */
+async function useEmptyPlan(page: Page): Promise<void> {
+  await page.route(PLAN_MODULE, (route) =>
+    route.fulfill({ contentType: 'text/javascript', body: 'export const BELL_PLAN = [];\nexport const SHORTENED_BELL_PLAN = [];' }),
+  );
+}
+
+/**
  * PL: Podstawia odpowiedź serwera pulpitu pod /api/dashboard.
  * EN: Stubs the dashboard server answer under /api/dashboard.
  *
@@ -84,10 +96,11 @@ test('kafelki pokazują ważny wpis, ankietę, zgłoszenie i trzy ogłoszenia / 
   await expect(page.locator('[data-subtrack="9"]')).toBeVisible();
 });
 
-// PL: Plan dzwonków jest pusty, więc w godzinie lekcji nagłówek nie pokazuje minut, tylko kreskę i napis o braku planu. Zegar jest ustawiony na lekcję, żeby test nie zależał od pory dnia.
-// EN: The bell plan is empty, so during a lesson hour the header shows no minutes, only the dash and the no-plan text. The clock is set to a lesson, so the test does not depend on the time of day.
+// PL: Z podstawionym pustym planem w godzinie lekcji nagłówek nie pokazuje minut, tylko kreskę i napis o braku planu. Zegar jest ustawiony na lekcję, żeby test nie zależał od pory dnia.
+// EN: With a stubbed empty plan, during a lesson hour the header shows no minutes, only the dash and the no-plan text. The clock is set to a lesson, so the test does not depend on the time of day.
 test('pusty plan: nagłówek bez licznika w godzinie lekcji / empty plan: the header without a countdown during a lesson hour', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
+  await useEmptyPlan(page);
   await mockDashboard(page, FULL);
   await page.goto('/');
 

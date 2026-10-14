@@ -1,6 +1,6 @@
 /**
- * PL: Testy ekranu /bell w przeglądarce. Licznik do dzwonka: plan w main jest pusty, więc się nie pokazuje; testy z podstawionym planem PRZYKŁADOWYM (page.route na moduł planu) i ustawionym zegarem sprawdzają minuty w czasie lekcji i przerwy oraz skrócony plan. Przełącznik „Dziś lekcje skrócone”: Samorząd go włącza, uczeń go nie widzi. Sieć jest zastąpiona atrapami API.
- * EN: Tests of the /bell screen in the browser. The bell countdown: the plan in main is empty, so it does not show; tests with a stubbed EXAMPLE plan (page.route on the plan module) and a fixed clock check the minutes during a lesson and a break, and the shortened plan. The "Dziś lekcje skrócone" switch: the Council turns it on, a student does not see it. The network is replaced by API stubs.
+ * PL: Testy ekranu /bell w przeglądarce. Licznik do dzwonka: test z pustym podstawionym planem sprawdza, że licznik się nie pokazuje, a jest napis; testy z podstawionym planem PRZYKŁADOWYM (page.route na moduł planu) i ustawionym zegarem sprawdzają minuty w czasie lekcji i przerwy oraz skrócony plan; jeden test używa prawdziwego planu szkoły. Przełącznik „Dziś lekcje skrócone”: Samorząd go włącza, uczeń go nie widzi. Sieć jest zastąpiona atrapami API.
+ * EN: Tests of the /bell screen in the browser. The bell countdown: a test with an empty stubbed plan checks that the countdown is hidden and the text is shown; tests with a stubbed EXAMPLE plan (page.route on the plan module) and a fixed clock check the minutes during a lesson and a break, and the shortened plan; one test uses the school's real plan. The "Dziś lekcje skrócone" switch: the Council turns it on, a student does not see it. The network is replaced by API stubs.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-13
@@ -24,6 +24,11 @@ const EXAMPLE_PLAN_JS = `export const BELL_PLAN = [
   { start: '08:55', end: '09:40' },
   { start: '09:50', end: '10:35' },
 ];
+export const SHORTENED_BELL_PLAN = [];`;
+
+// PL: PUSTY plan podstawiony w miejscu modułu: ekran nie pokazuje licznika.
+// EN: An EMPTY plan stubbed in place of the module: the screen shows no countdown.
+const EMPTY_PLAN_JS = `export const BELL_PLAN = [];
 export const SHORTENED_BELL_PLAN = [];`;
 
 // PL: PRZYKŁADOWY skrócony plan: lekcje po 30 minut, ten sam początek co w zwykłym planie.
@@ -108,9 +113,10 @@ test.beforeEach(async ({ page }) => {
   await stubShortened(page, []);
 });
 
-// PL: Plan w main jest pusty: ekran pokazuje tylko siebie, bez licznika (nawet w godzinach lekcji).
-// EN: The plan in main is empty: the screen shows no countdown (even during lesson hours).
+// PL: Pusty plan: ekran pokazuje tylko napis, bez licznika (nawet w godzinach lekcji).
+// EN: An empty plan: the screen shows only the text, no countdown (even during lesson hours).
 test('bez planu dzwonków licznik się nie pokazuje, a jest napis', async ({ page }) => {
+  await useExamplePlan(page, EMPTY_PLAN_JS);
   // PL: Poniedziałek 19.10.2026 09:10 w Warszawie (czas letni: 07:10 UTC), pora drugiej lekcji.
   // EN: Monday 19.10.2026 09:10 in Warsaw (summer time: 07:10 UTC), the time of the second lesson.
   await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
@@ -125,8 +131,8 @@ test('bez planu dzwonków licznik się nie pokazuje, a jest napis', async ({ pag
 // EN: During a lesson the countdown shows the minutes to the bell and the label "do dzwonka".
 test('w czasie lekcji pokazuje minuty do dzwonka', async ({ page }) => {
   await useExamplePlan(page);
-  // PL: 09:10 w Warszawie: druga lekcja z przykładu, zostało 30 minut.
-  // EN: 09:10 in Warsaw: the second lesson of the example, 30 minutes left.
+  // PL: 09:10 w Warszawie: druga lekcja z przykładu (lekcja 1), zostało 30 minut.
+  // EN: 09:10 in Warsaw: the second lesson of the example (lesson 1), 30 minutes left.
   await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
   await page.goto('/bell');
   const countdown = page.getByLabel('Licznik do dzwonka');
@@ -136,20 +142,33 @@ test('w czasie lekcji pokazuje minuty do dzwonka', async ({ page }) => {
   await expect(countdown).toContainText('30');
   await expect(countdown).toContainText('min');
   await expect(countdown).toContainText('do dzwonka');
-  await expect(countdown).toContainText('Następna: lekcja 3 o 9:50');
+  await expect(countdown).toContainText('Następna: lekcja 2 o 9:50');
+});
+
+// PL: Prawdziwy plan szkoły: 07:30 w poniedziałek to lekcja 0 (07:10–07:55), zostaje 25 minut do dzwonka.
+// EN: The real school plan: 07:30 on Monday is lesson 0 (07:10–07:55), 25 minutes left to the bell.
+test('z prawdziwym planem szkoły liczy lekcję 0 od 7:10', async ({ page }) => {
+  // PL: Poniedziałek 19.10.2026 07:30 w Warszawie (czas letni: 05:30 UTC). Bez podstawienia planu.
+  // EN: Monday 19.10.2026 07:30 in Warsaw (summer time: 05:30 UTC). No plan stub.
+  await page.clock.setFixedTime(new Date('2026-10-19T05:30:00Z'));
+  await page.goto('/bell');
+  const countdown = page.getByLabel('Licznik do dzwonka');
+  await expect(countdown).toContainText('25');
+  await expect(countdown).toContainText('do dzwonka');
+  await expect(countdown).toContainText('Następna: lekcja 1 o 8:00');
 });
 
 // PL: W przerwie licznik pokazuje minuty do następnej lekcji i etykietę „do lekcji”.
 // EN: During a break the countdown shows the minutes to the next lesson and the label "do lekcji".
 test('w przerwie pokazuje minuty do lekcji', async ({ page }) => {
   await useExamplePlan(page);
-  // PL: 08:50 w Warszawie: przerwa między pierwszą a drugą lekcją, do 08:55 zostało 5 minut.
-  // EN: 08:50 in Warsaw: the break between the first and second lesson, 5 minutes to 08:55.
+  // PL: 08:50 w Warszawie: przerwa między lekcją 0 a lekcją 1, do 08:55 zostało 5 minut.
+  // EN: 08:50 in Warsaw: the break between lesson 0 and lesson 1, 5 minutes to 08:55.
   await page.clock.setFixedTime(new Date('2026-10-19T06:50:00Z'));
   await page.goto('/bell');
   const countdown = page.getByLabel('Licznik do dzwonka');
   await expect(countdown).toContainText('5');
-  await expect(countdown).toContainText('Przerwa, do lekcji 2');
+  await expect(countdown).toContainText('Przerwa, do lekcji 1');
 });
 
 // PL: Uczeń w dniu z listy Samorządu widzi licznik według skróconego planu.
@@ -157,13 +176,13 @@ test('w przerwie pokazuje minuty do lekcji', async ({ page }) => {
 test('w dniu skróconym licznik liczy według skróconego planu', async ({ page }) => {
   await stubShortened(page, ['2026-10-19']);
   await useExamplePlan(page, SHORTENED_PLAN_JS);
-  // PL: 08:10 w Warszawie: lekcja 1 w planie skróconym kończy się o 8:30, zostaje 20 minut.
-  // EN: 08:10 in Warsaw: lesson 1 in the shortened plan ends at 8:30, so 20 minutes are left.
+  // PL: 08:10 w Warszawie: lekcja 0 w planie skróconym kończy się o 8:30, zostaje 20 minut.
+  // EN: 08:10 in Warsaw: lesson 0 in the shortened plan ends at 8:30, so 20 minutes are left.
   await page.clock.setFixedTime(new Date('2026-10-19T06:10:00Z'));
   await page.goto('/bell');
   const countdown = page.getByLabel('Licznik do dzwonka');
   await expect(countdown).toContainText('20');
-  await expect(countdown).toContainText('Następna: lekcja 2 o 8:40');
+  await expect(countdown).toContainText('Następna: lekcja 1 o 8:40');
 });
 
 // PL: Samorząd włącza „Dziś lekcje skrócone”: wysyłany jest zapis dnia i przełącznik zostaje włączony.
