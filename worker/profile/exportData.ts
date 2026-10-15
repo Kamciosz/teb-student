@@ -1,11 +1,12 @@
 /**
- * PL: Eksport danych ucznia („Pobierz moje dane”, RODO): numer i adres konta, imię i chwila założenia konta, profil i ustawienia, zgłoszenia ucznia oraz ankiety, w których wziął udział (bez treści odpowiedzi). Każde dane biorą się z drzwi (index.ts) modułu, który je trzyma, i zawsze dotyczą tylko numeru ucznia z sesji. Pole missing wymienia dane, których moduł jeszcze nie wystawia; dziś jest puste.
+ * PL: Eksport danych ucznia („Pobierz moje dane”, RODO): numer i adres konta, imię i chwila założenia konta, profil i ustawienia, zgłoszenia ucznia, ankiety, w których wziął udział (bez treści odpowiedzi), oraz klucze Face ID i odcisk palca (liczba i nazwy, bez kluczy kryptograficznych). Każde dane biorą się z drzwi (index.ts) modułu, który je trzyma, i zawsze dotyczą tylko numeru ucznia z sesji. Pole missing wymienia dane, których moduł jeszcze nie wystawia; dziś jest puste.
  * EN: The export of the student's data ("Pobierz moje dane", GDPR): the account id and address, the name and the moment the account was created, the profile and settings, the student's reports and the surveys they took part in (without the content of the answers). Each piece comes through the door (index.ts) of the module that holds it, and always concerns only the student id from the session. The missing field lists the data a module does not expose yet; today it is empty.
  *
  * @author Jakub
  * @since 2026-10-13
  * @uses worker/auth/index.ts::listStudentsByIds
  * @uses worker/auth/index.ts::getAccountCreatedAt
+ * @uses worker/auth/index.ts::listPasskeysForExport
  * @uses worker/reports/index.ts::listReportsByAuthor
  * @uses worker/reports/index.ts::MyReport
  * @uses worker/surveys/index.ts::listParticipatedSurveys
@@ -17,7 +18,7 @@
 
 // PL: Konto (numer, imię, chwila założenia) z modułu auth przez jego index.ts.
 // EN: The account (id, name, moment of creation) from the auth module through its index.ts.
-import { getAccountCreatedAt, listStudentsByIds } from '../auth';
+import { getAccountCreatedAt, listPasskeysForExport, listStudentsByIds } from '../auth';
 // PL: Zgłoszenia ucznia z modułu reports przez jego index.ts.
 // EN: The student's reports from the reports module through its index.ts.
 import { listReportsByAuthor, type MyReport } from '../reports';
@@ -52,6 +53,8 @@ export type StudentExport = {
   reports: MyReport[];
   /** PL: Ankiety, w których uczeń wziął udział, bez treści odpowiedzi. EN: The surveys the student took part in, without the content of the answers. */
   surveys: ParticipatedSurvey[];
+  /** PL: Klucze Face ID i odcisk palca: liczba i nazwy (bez kluczy kryptograficznych). EN: The Face ID and fingerprint keys: the count and the names (no cryptographic keys). */
+  passkeys: { count: number; names: (string | null)[] };
   /** PL: Opisy danych, których plik nie zawiera. EN: The descriptions of the data the file does not contain. */
   missing: string[];
 };
@@ -68,12 +71,13 @@ export type StudentExport = {
 export async function exportStudentData(db: D1Database, student: { id: string; email: string }, now: Date = new Date()): Promise<StudentExport> {
   // PL: Wszystkie odczyty idą równolegle i każdy dostaje ten sam numer ucznia z sesji.
   // EN: All reads run in parallel, and each gets the same student id from the session.
-  const [students, createdAt, profile, reports, surveys] = await Promise.all([
+  const [students, createdAt, profile, reports, surveys, passkeys] = await Promise.all([
     listStudentsByIds(db, [student.id]),
     getAccountCreatedAt(db, student.id),
     getProfile(db, student.id),
     listReportsByAuthor(db, student.id),
     listParticipatedSurveys(db, student.id),
+    listPasskeysForExport(db, student.id),
   ]);
 
   return {
@@ -85,6 +89,7 @@ export async function exportStudentData(db: D1Database, student: { id: string; e
     profile,
     reports,
     surveys,
+    passkeys,
     missing: MISSING_DATA,
   };
 }

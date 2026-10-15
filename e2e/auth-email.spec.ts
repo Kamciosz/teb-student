@@ -64,6 +64,20 @@ async function requestCodeFor(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Wpisz kod' })).toBeVisible();
 }
 
+/**
+ * PL: Ustawia przed załadowaniem strony, czy przeglądarka ma WebAuthn. Podpisu nie testujemy, sprawdzamy tylko, czy przycisk się pojawia.
+ * EN: Sets before the page loads whether the browser has WebAuthn. The signature is not tested, we only check whether the button appears.
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ * @param present - PL: czy WebAuthn jest dostępny. EN: whether WebAuthn is available.
+ */
+async function setWebAuthn(page: Page, present: boolean): Promise<void> {
+  await page.addInitScript((available) => {
+    const stub = Object.assign(function PublicKeyCredential() {}, { isConditionalMediationAvailable: () => Promise.resolve(false) });
+    Object.defineProperty(window, 'PublicKeyCredential', { value: available ? stub : undefined, configurable: true, writable: true });
+  }, present);
+}
+
 // PL: Grupa testów pierwszego kroku (adres).
 // EN: A group of first step tests (the address).
 test.describe('krok adresu / address step', () => {
@@ -232,5 +246,31 @@ test.describe('moje urządzenia / my devices', () => {
     await page.goto('/auth/email/urzadzenia');
     await expect(page.getByLabel('Szkolny e-mail')).toBeVisible();
     await expect(page).toHaveURL(/\/auth\/email$/);
+  });
+});
+
+// PL: Przycisk logowania Face ID albo odciskiem palca pod formularzem kodu z maila.
+// EN: The Face ID or fingerprint sign-in button under the e-mail code form.
+test.describe('logowanie Face ID / Face ID sign-in', () => {
+  // PL: Przeglądarka z WebAuthn: przycisk jest widoczny i ma co najmniej 44 px wysokości.
+  // EN: A browser with WebAuthn: the button is visible and at least 44 px tall.
+  test('przycisk jest widoczny, gdy przeglądarka ma WebAuthn / the button is visible when the browser has WebAuthn', async ({ page }) => {
+    await setWebAuthn(page, true);
+    await stubAuthApi(page);
+    await page.goto('/auth/email');
+    const button = page.getByRole('button', { name: 'Zaloguj Face ID lub odciskiem palca' });
+    await expect(button).toBeVisible();
+    const box = await button.boundingBox();
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  });
+
+  // PL: Przeglądarka bez WebAuthn: przycisku nie ma, a formularz kodu działa bez zmian.
+  // EN: A browser without WebAuthn: there is no button, and the code form works as before.
+  test('przycisk jest ukryty bez WebAuthn / the button is hidden without WebAuthn', async ({ page }) => {
+    await setWebAuthn(page, false);
+    await stubAuthApi(page);
+    await page.goto('/auth/email');
+    await expect(page.getByLabel('Szkolny e-mail')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Zaloguj Face ID lub odciskiem palca' })).toHaveCount(0);
   });
 });

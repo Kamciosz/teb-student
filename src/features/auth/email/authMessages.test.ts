@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { describeDeviceError, describeSendError, describeVerifyError, MESSAGES } from './authMessages';
+import { describeDeviceError, describePasskeySignInError, describeSendError, describeVerifyError, MESSAGES } from './authMessages';
 
 // PL: Grupa testów błędów prośby o kod.
 // EN: A group of code request error tests.
@@ -57,5 +57,33 @@ describe('describeDeviceError', () => {
     expect(describeDeviceError({ status: 429 })).toBe(MESSAGES.tooManyRequests);
     expect(describeDeviceError({})).toBe(MESSAGES.offline);
     expect(describeDeviceError({ status: 500, error: 'forbidden' })).toBe(MESSAGES.unknown);
+  });
+});
+
+// PL: Grupa testów błędów logowania kluczem Face ID albo odciskiem palca.
+// EN: A group of tests for the errors of signing in with a Face ID or fingerprint key.
+describe('describePasskeySignInError', () => {
+  // PL: Anulowanie przez ucznia nie daje komunikatu, także gdy kod przychodzi z przeglądarki.
+  // EN: Cancelling by the student gives no message, also when the code comes from the browser.
+  it('nie pokazuje komunikatu przy anulowaniu / shows no message when cancelled', () => {
+    expect(describePasskeySignInError(null)).toBeNull();
+    expect(describePasskeySignInError({ code: 'AUTH_CANCELLED' })).toBeNull();
+    expect(describePasskeySignInError({ code: 'ERROR_CEREMONY_ABORTED' })).toBeNull();
+    expect(describePasskeySignInError({ code: 'ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY' })).toBeNull();
+  });
+
+  // PL: Nieznany klucz albo odrzucony podpis (401) dostaje własny tekst z podpowiedzią kodu z maila.
+  // EN: An unknown key or a rejected signature (401) gets its own text with the hint to use the email code.
+  it('dobiera komunikat do błędu logowania / picks the message for the sign-in error', () => {
+    expect(describePasskeySignInError({ status: 401, code: 'UNKNOWN_ERROR' })).toBe(MESSAGES.passkeySignInFailed);
+    expect(describePasskeySignInError({ status: 0 })).toBe(MESSAGES.offline);
+    expect(describePasskeySignInError({ status: 429 })).toBe(MESSAGES.tooManyRequests);
+    expect(describePasskeySignInError({ status: 503 })).toBe(MESSAGES.unavailable);
+  });
+
+  // PL: Inny błąd z działającego serwera dostaje ogólny tekst.
+  // EN: Any other error from a working server gets the general text.
+  it('daje ogólny tekst dla nieznanego błędu / gives the general text for an unknown error', () => {
+    expect(describePasskeySignInError({ status: 500 })).toBe(MESSAGES.unknown);
   });
 });

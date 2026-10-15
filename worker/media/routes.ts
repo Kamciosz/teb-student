@@ -1,12 +1,13 @@
 /**
- * PL: Router Hono podtoru 2 (wysyłka zdjęć i filmów). POST /upload zapisuje plik i wymaga roli redaktora w panelu. GET /:id oddaje plik, a GET /:id/meta jego opis; oba wymagają zalogowanego ucznia. Router jest podpięty pod /api/media w worker/mounts.ts.
- * EN: The Hono router of subtrack 2 (photo and video upload). POST /upload saves a file and requires the editor role in the panel. GET /:id returns the file, and GET /:id/meta its description; both require a signed-in student. The router is mounted under /api/media in worker/mounts.ts.
+ * PL: Router Hono podtoru 2 (wysyłka zdjęć i filmów). POST /upload zapisuje plik i wymaga roli redaktora w panelu. GET /:id oddaje plik, a GET /:id/meta jego opis; oba wymagają zalogowanego ucznia, a zdjęcie zgłoszenia oddają tylko autorowi i administracji. Router jest podpięty pod /api/media w worker/mounts.ts.
+ * EN: The Hono router of subtrack 2 (photo and video upload). POST /upload saves a file and requires the editor role in the panel. GET /:id returns the file, and GET /:id/meta its description; both require a signed-in student, and a report photo is given only to its author and the administration. The router is mounted under /api/media in worker/mounts.ts.
  *
  * @author Szymon
  * @since 2026-10-13
  * @uses worker/admin/index.ts::requirePanelRole
  * @uses worker/auth/index.ts::requireStudent
  * @uses worker/db/schema/media.ts::mediaFiles
+ * @uses worker/media/guardReportPhoto.ts::guardReportPhoto
  * @uses worker/media/rules.ts::kindOfMime
  * @uses worker/media/rules.ts::maxBytesOf
  * @uses worker/media/rules.ts::parseDimensions
@@ -33,6 +34,9 @@ import { kindOfMime, maxBytesOf, parseDimensions } from './rules';
 // PL: Zapis pliku do R2 i do bazy.
 // EN: Saving the file to R2 and the database.
 import { storeMedia } from './upload';
+// PL: Strażnik zdjęć zgłoszeń dla odczytu pliku.
+// EN: The guard of report photos for reading the file.
+import { guardReportPhoto } from './guardReportPhoto';
 
 /**
  * PL: Router podtoru 2. Bindingi (R2 i D1) są w context.env, a numer ucznia w context.get('student').
@@ -102,9 +106,9 @@ mediaApp.post('/report-photo', requireStudent, async (context) => {
   return context.json({ id: result.id });
 });
 
-// PL: GET /:id oddaje plik z zasobnika R2 z jego typem zawartości. Wymaga zalogowanego ucznia.
-// EN: GET /:id returns the file from the R2 bucket with its content type. Requires a signed-in student.
-mediaApp.get('/:id', requireStudent, async (context) => {
+// PL: GET /:id oddaje plik z zasobnika R2 z jego typem zawartości. Wymaga zalogowanego ucznia, a zdjęcie zgłoszenia tylko autora i administracji (strażnik).
+// EN: GET /:id returns the file from the R2 bucket with its content type. Requires a signed-in student, and a report photo only for its author and the administration (the guard).
+mediaApp.get('/:id', requireStudent, guardReportPhoto, async (context) => {
   const object = await context.env.MEDIA.get(context.req.param('id'));
   if (!object) return context.json({ error: 'not_found' }, 404);
   return new Response(object.body, {
@@ -112,9 +116,9 @@ mediaApp.get('/:id', requireStudent, async (context) => {
   });
 });
 
-// PL: GET /:id/meta oddaje opis pliku z bazy. Nie pokazujemy numeru autora.
-// EN: GET /:id/meta returns the file description from the database. The author id is not shown.
-mediaApp.get('/:id/meta', requireStudent, async (context) => {
+// PL: GET /:id/meta oddaje opis pliku z bazy. Nie pokazujemy numeru autora. Zdjęcie zgłoszenia tylko autorowi i administracji (strażnik).
+// EN: GET /:id/meta returns the file description from the database. The author id is not shown. A report photo only for its author and the administration (the guard).
+mediaApp.get('/:id/meta', requireStudent, guardReportPhoto, async (context) => {
   const row = await drizzle(context.env.DB).select().from(mediaFiles).where(eq(mediaFiles.id, context.req.param('id'))).get();
   if (!row) return context.json({ error: 'not_found' }, 404);
   return context.json({ id: row.id, kind: row.kind, mime: row.mime, size: row.size, width: row.width, height: row.height });
