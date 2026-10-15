@@ -63,6 +63,9 @@ async function stubServer(page: Page, signedIn = true, panelLevel: string | null
     }
     return route.fulfill({ json: state.profile });
   });
+  // PL: Klucze Face ID i odcisk palca: na starcie lista jest pusta.
+  // EN: Face ID and fingerprint keys: the list is empty at the start.
+  await page.route('**/api/auth/email/passkey/list-user-passkeys', (route) => route.fulfill({ json: [] }));
   return state;
 }
 
@@ -420,4 +423,42 @@ test('bez internetu: zachowany profil, błąd zapisu i działająca polityka / o
   await page.getByRole('link', { name: 'Wróć do profilu' }).click();
   await page.getByRole('link', { name: 'Polityka prywatności' }).click();
   await expect(page.getByRole('heading', { name: 'Co zbieramy' })).toBeVisible();
+});
+
+/**
+ * PL: Ustawia przed załadowaniem strony, czy przeglądarka ma WebAuthn. Podpisu nie testujemy, sprawdzamy tylko, czy przycisk się pojawia.
+ * EN: Sets before the page loads whether the browser has WebAuthn. The signature is not tested, we only check whether the button appears.
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ * @param present - PL: czy WebAuthn jest dostępny. EN: whether WebAuthn is available.
+ */
+async function setWebAuthn(page: Page, present: boolean): Promise<void> {
+  await page.addInitScript((available) => {
+    const stub = Object.assign(function PublicKeyCredential() {}, { isConditionalMediationAvailable: () => Promise.resolve(false) });
+    Object.defineProperty(window, 'PublicKeyCredential', { value: available ? stub : undefined, configurable: true, writable: true });
+  }, present);
+}
+
+// PL: Sekcja „Face ID i odcisk palca” w ustawieniach: z WebAuthn jest przycisk dodania, bez WebAuthn jest jedno zdanie.
+// EN: The "Face ID i odcisk palca" section in the settings: with WebAuthn there is the add button, without it there is one sentence.
+test.describe('Face ID i odcisk palca w ustawieniach / Face ID and fingerprint in the settings', () => {
+  // PL: Przeglądarka z WebAuthn: sekcja ma legendę i przycisk dodania klucza.
+  // EN: A browser with WebAuthn: the section has the legend and the add-key button.
+  test('z WebAuthn sekcja pokazuje przycisk dodania / with WebAuthn the section shows the add button', async ({ page }) => {
+    await setWebAuthn(page, true);
+    await stubServer(page);
+    await page.goto('/profile/ustawienia');
+    await expect(page.getByText('Face ID i odcisk palca', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Dodaj Face ID lub odcisk palca' })).toBeVisible();
+  });
+
+  // PL: Przeglądarka bez WebAuthn: zamiast przycisku jedno zdanie o tym, że telefon nie obsługuje logowania.
+  // EN: A browser without WebAuthn: one sentence saying the phone does not support sign-in, instead of the button.
+  test('bez WebAuthn jest jedno zdanie zamiast przycisku / without WebAuthn there is one sentence instead of the button', async ({ page }) => {
+    await setWebAuthn(page, false);
+    await stubServer(page);
+    await page.goto('/profile/ustawienia');
+    await expect(page.getByText('Ten telefon nie obsługuje logowania Face ID ani odciskiem palca.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Dodaj Face ID lub odcisk palca' })).toHaveCount(0);
+  });
 });

@@ -17,6 +17,7 @@ import './authEmail.css';
 import { CodeStep } from './CodeStep';
 import { DevicesScreen } from './DevicesScreen';
 import { EmailStep } from './EmailStep';
+import { PasskeySignIn } from './PasskeySignIn';
 import { useAuthSession } from './useAuthSession';
 
 /**
@@ -53,7 +54,10 @@ export function AuthEmailScreen() {
   return (
     <main className="auth-email" data-subtrack="1a">
       {sentTo === null ? (
-        <EmailStep onCodeSent={setSentTo} />
+        <>
+          <EmailStep onCodeSent={setSentTo} />
+          <PasskeySignIn />
+        </>
       ) : (
         <CodeStep email={sentTo} onBack={() => setSentTo(null)} />
       )}

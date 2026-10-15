@@ -25,6 +25,10 @@ export { deleteReportsStudentData } from './deleteStudentData';
 // EN: The number of all reports (anonymous ones too) for the "Pilot data" screen in the Student Council panel. worker/reports/index.ts collects it.
 export { countReports } from './countReports';
 
+// PL: Sprawdza, czy plik jest zdjęciem zgłoszenia. Zbiera go worker/reports/index.ts dla modułu media.
+// EN: Checks whether a file is a report photo. worker/reports/index.ts collects it for the media module.
+export { isReportPhoto } from './isReportPhoto';
+
 // PL: Zgłoszenia jednego ucznia, od najnowszego (id, kategoria, miejsce, opis, etap, daty), bez numeru autora. Używa ich eksport danych RODO („Pobierz moje dane”) przez worker/reports/index.ts.
 // EN: One student's reports, newest first (id, category, place, description, stage, dates), without the author id. The data export ("Download my data", GDPR) uses them through worker/reports/index.ts.
 export { listReportsByAuthor, type MyReport } from './reportsRepository';

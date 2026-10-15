@@ -20,7 +20,7 @@ import { env } from 'cloudflare:workers';
 // EN: Drizzle for D1 and the tables we check.
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import { user } from '../db/schema/auth';
+import { passkey, user } from '../db/schema/auth';
 import { profiles } from '../db/schema/profile';
 import { reports } from '../db/schema/reports';
 import { surveys, surveyParticipation } from '../db/schema/surveys';
@@ -54,6 +54,10 @@ const ANNA_REPORT = 'Anna: zepsuta klamka w sali gimnastycznej';
 /** PL: Ankiety Jana i Anny, z tytułami, których nie może być w pliku drugiego ucznia. EN: The surveys of Jan and Anna, with titles that must not be in the other student's file. */
 const JAN_SURVEY = 'Ankieta Jana o kołach';
 const ANNA_SURVEY = 'Ankieta Anny o stołówce';
+
+/** PL: Nazwy kluczy Face ID Jana i Anny. EN: The names of the Face ID keys of Jan and Anna. */
+const JAN_PASSKEY = 'iPhone Jana';
+const ANNA_PASSKEY = 'Klucz Anny';
 
 /** PL: Chwila zgłoszenia w testach (milisekundy od 1970). EN: The moment of a report in the tests (milliseconds since 1970). */
 const REPORT_TIME = Date.UTC(2026, 9, 1);
@@ -119,6 +123,17 @@ async function seedSurvey(studentId: string, id: string, title: string): Promise
   await db.insert(surveyParticipation).values({ surveyId: id, userId: studentId });
 }
 
+/**
+ * PL: Dodaje klucz Face ID do bazy. Klucz publiczny i identyfikator urządzenia mają znane przedrostki, żeby test mógł sprawdzić, że nie trafiły do pliku.
+ * EN: Adds a Face ID key to the database. The public key and the device identifier have known prefixes, so the test can check they did not get into the file.
+ *
+ * @param userId - PL: numer ucznia, do którego należy klucz. EN: the id of the student the key belongs to.
+ * @param name - PL: nazwa klucza. EN: the key name.
+ */
+async function seedPasskey(userId: string, name: string): Promise<void> {
+  await drizzle(env.DB).insert(passkey).values({ id: crypto.randomUUID(), name, publicKey: `publiczny-${name}`, userId, credentialID: `urzadzenie-${name}`, counter: 0, deviceType: 'singleDevice', backedUp: false, createdAt: new Date(REPORT_TIME) });
+}
+
 /** PL: Ciasteczka sesji Jana i Anny w bieżącym teście. EN: The session cookies of Jan and Anna in the current test. */
 let janCookie: string;
 let annaCookie: string;
@@ -131,6 +146,7 @@ beforeEach(async () => {
   await db.delete(surveys);
   await db.delete(reports);
   await db.delete(profiles);
+  await db.delete(passkey);
   const login = createTestRuntime();
   janCookie = await signIn(login, JAN);
   annaCookie = await signIn(login, ANNA);
@@ -156,6 +172,7 @@ describe('plik z danymi / the data file', () => {
     await saveProfile(janCookie, JAN_PROFILE);
     await seedReport(await accountId(JAN) as string, JAN_REPORT);
     await seedSurvey(await accountId(JAN) as string, 'ank-jan', JAN_SURVEY);
+    await seedPasskey(await accountId(JAN) as string, JAN_PASSKEY);
     const response = await requestExport(janCookie);
 
     expect(response.status).toBe(200);
@@ -169,7 +186,21 @@ describe('plik z danymi / the data file', () => {
     expect(data.profile).toEqual(JAN_PROFILE);
     expect(data.reports.map((report) => report.description)).toEqual([JAN_REPORT]);
     expect(data.surveys).toEqual([{ id: 'ank-jan', label: null, title: JAN_SURVEY, endsOn: '2026-12-01' }]);
+    expect(data.passkeys).toEqual({ count: 1, names: [JAN_PASSKEY] });
     expect(data.missing).toEqual([]);
+  });
+
+  // PL: Plik z kluczami Face ID nie zawiera klucza publicznego ani identyfikatora urządzenia, tylko liczbę i nazwy.
+  // EN: The file with the Face ID keys has no public key and no device identifier, only the count and the names.
+  it('klucze Face ID to liczba i nazwy, bez kluczy kryptograficznych / Face ID keys are the count and the names, without cryptographic keys', async () => {
+    await seedPasskey(await accountId(JAN) as string, JAN_PASSKEY);
+    const text = await (await requestExport(janCookie)).text();
+
+    expect(text).toContain(JAN_PASSKEY);
+    expect(text).not.toContain('publiczny-');
+    expect(text).not.toContain('urzadzenie-');
+    expect(text).not.toContain('publicKey');
+    expect(text).not.toContain('credentialID');
   });
 
   // PL: Uczeń, który niczego nie zapisał, dostaje w pliku profil domyślny i puste listy.
@@ -180,6 +211,7 @@ describe('plik z danymi / the data file', () => {
     expect(data.profile).toEqual({ name: '', className: '', school: 'L', palette: 'CE', textSize: 'normalny' });
     expect(data.reports).toEqual([]);
     expect(data.surveys).toEqual([]);
+    expect(data.passkeys).toEqual({ count: 0, names: [] });
   });
 
   // PL: Plik Jana nie zawiera danych Anny: ani jej imienia, adresu, numeru konta, zgłoszeń ani ankiet.
@@ -190,6 +222,7 @@ describe('plik z danymi / the data file', () => {
     await saveProfile(annaCookie, ANNA_PROFILE);
     await seedReport(annaId as string, ANNA_REPORT);
     await seedSurvey(annaId as string, 'ank-anna', ANNA_SURVEY);
+    await seedPasskey(annaId as string, ANNA_PASSKEY);
     const text = await (await requestExport(janCookie)).text();
 
     expect(text).not.toContain('Anna Obca');
@@ -197,5 +230,6 @@ describe('plik z danymi / the data file', () => {
     expect(text).not.toContain(annaId as string);
     expect(text).not.toContain(ANNA_REPORT);
     expect(text).not.toContain(ANNA_SURVEY);
+    expect(text).not.toContain(ANNA_PASSKEY);
   });
 });
