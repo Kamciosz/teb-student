@@ -38,7 +38,14 @@ export const MESSAGES = {
   deviceGone: 'Tego urządzenia nie ma już na liście. Odśwież listę.',
   deviceSignedOut: 'Urządzenie zostało wylogowane.',
   othersSignedOut: 'Wylogowano wszystkie inne urządzenia.',
+  passkeySignInFailed: 'Nie udało się zalogować Face ID ani odciskiem palca. Zaloguj się kodem z maila.',
 } as const;
+
+/**
+ * PL: Kody WebAuthn, które znaczą, że uczeń sam przerwał (zamknął okno, anulował). Wtedy nie pokazujemy błędu.
+ * EN: The WebAuthn codes that mean the student stopped it themselves (closed the window, cancelled). Then we show no error.
+ */
+const PASSKEY_CANCEL_CODES: readonly string[] = ['AUTH_CANCELLED', 'ERROR_CEREMONY_ABORTED', 'ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY'];
 
 /**
  * PL: Dobiera komunikat dla błędu, który nie zależy od tego, co uczeń robił: brak sieci, limit zapytań i niedostępny serwer.
@@ -92,4 +99,23 @@ export function describeDeviceError(error: ClientError): string {
   if (error.status === 401) return MESSAGES.sessionEnded;
   if (error.status === 404) return MESSAGES.deviceGone;
   return describeCommonError(error) ?? MESSAGES.unknown;
+}
+
+
+/**
+ * PL: Dobiera wynik logowania kluczem. Anulowanie daje null (bez komunikatu), a sukces daje brak błędu.
+ * EN: Picks the result of signing in with a key. A cancellation gives null (no message), and success gives no error.
+ *
+ * @param error - PL: błąd z klienta albo null przy sukcesie. EN: the client error, or null on success.
+ * @returns PL: komunikat po polsku, null przy anulowaniu. EN: the message in Polish, null when cancelled.
+ */
+export function describePasskeySignInError(error: ClientError | null): string | null {
+  if (error === null) return null;
+  if (error.code !== undefined && PASSKEY_CANCEL_CODES.includes(error.code)) return null;
+  if (!error.status && !error.code) return MESSAGES.offline;
+  if (error.status === 429) return MESSAGES.tooManyRequests;
+  if (error.status === 503) return MESSAGES.unavailable;
+  // PL: Nieznany klucz albo odrzucony podpis to 401; reszta to nieznany błąd.
+  // EN: An unknown key or a rejected signature is a 401; the rest is an unknown error.
+  return error.status === 401 ? MESSAGES.passkeySignInFailed : MESSAGES.unknown;
 }

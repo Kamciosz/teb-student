@@ -27,6 +27,7 @@ import { PALETTES, SCHOOLS } from './look';
 import { useProfile, useSaveProfile } from './queries';
 import type { TextSize } from './textSize';
 import { ScreenTop } from './ScreenTop';
+import { PasskeySection } from './PasskeySection';
 
 /** PL: Najwięcej znaków w imieniu i klasie, takie same jak na serwerze (worker/profile/validation.ts). EN: The most characters in the name and class, the same as on the server (worker/profile/validation.ts). */
 const MAX_NAME_LENGTH = 40;
@@ -198,6 +199,8 @@ export function SettingsScreen() {
           </Link>
         </li>
       </ul>
+      {/* PL: Klucze Face ID i odcisk palca są w ustawieniach, obok urządzeń. EN: The Face ID and fingerprint keys are in the settings, next to the devices. */}
+      <PasskeySection />
       {!query.data && query.isError ? (
         <div className="pf-empty" role="alert">
           <p>Nie udało się wczytać profilu.</p>

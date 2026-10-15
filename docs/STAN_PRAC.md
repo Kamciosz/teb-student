@@ -40,7 +40,7 @@ Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (
 
 ## Otwarte pull requesty
 
-Brak. Dalsze zadania czekają na decyzje z ostatniej części tego pliku.
+Logowanie Face ID i odciskiem palca jest opcją w profilu i na ekranie logowania (gałąź `build/passkey-front`, PR w toku). Brak innych otwartych pull requestów. Dalsze zadania czekają na decyzje z ostatniej części tego pliku.
 
 ## Przed pierwszym wdrożeniem
 
