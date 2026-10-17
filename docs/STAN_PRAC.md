@@ -48,12 +48,12 @@ Od #172 do #179 weszły plan dzwonków, logowanie kluczem dostępu jako opcja, z
 | #177 | fix(media): zdjęcie zgłoszenia widzi tylko autor i administracja | Zdjęcie zgłoszenia widzi tylko autor i administracja, inni uczniowie dostają 404. |
 | #178 | feat(profil): klucze Face ID i odcisk palca w ustawieniach | W profilu można dodać, nazwać i usunąć klucz Face ID lub odcisk palca, a na ekranie logowania jest przycisk logowania kluczem. |
 | #179 | fix(komentarze): usuń dopiski „do ustalenia” z komentarzy | Dopiski „do ustalenia” znikają z komentarzy w kodzie; teksty dla ucznia bez zmian. |
+| #180 | build: usuń dni skrócone z licznika dzwonka | Licznik zawsze liczy według zwykłego planu; przełącznik, trasy i tabela dnia skróconego zniknęły. |
 
 Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (sprawdzone na #168). Usuwanie danych ucznia w modułach aktualności, mediów i panelu nie jest już atrapą.
 
 ## Otwarte pull requesty
 
-- #180 `build: usuń dni skrócone z licznika dzwonka` (gałąź `build/bez-dni-skroconych`). Usuwa dni skrócone w całości. Czeka na scalenie.
 - #181 `build(deps-dev): bump the babel group with 2 updates` (Dependabot). Aktualizacja narzędzi budowania, bez zmian dla ucznia.
 
 Do sprawdzenia po wdrożeniu: Face ID na prawdziwym telefonie.
@@ -99,7 +99,7 @@ Po scaleniu usuń kopię roboczą (`git worktree remove ../teb-<podtor>`) i gał
 ## Decyzje Szymona z 14–15.10.2026
 
 - Plan dzwonków szkoły jest wpisany: lekcje 0–12, pon.–pt., 07:10–18:20 (#176).
-- Dni skróconych nie ma. Funkcję usuwa #180 (otwarty, jeszcze nie scalony).
+- Dni skróconych nie ma. Funkcja usunięta (#180).
 - Face ID, Touch ID i odcisk palca (klucz dostępu, passkey) to opcja w profilu i na ekranie logowania, nie wymóg (#174 serwer, #178 ekran). Produkcja potrzebuje `BETTER_AUTH_URL`.
 - Wszystkie teksty aplikacji zatwierdzone (#175, #179).
 - Stopka „Redakcja gazetki” tylko pod wpisami autorów z rolą redakcji (#173).
