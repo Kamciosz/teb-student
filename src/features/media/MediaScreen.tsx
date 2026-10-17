@@ -1,6 +1,6 @@
 /**
- * PL: Ekran podtoru 2 (wysyłka zdjęć i filmów): jedno pole wyboru pliku, komunikat o wyniku i podgląd wysłanego zdjęcia w miniaturze. Teksty są do ustalenia z właścicielem.
- * EN: The screen of subtrack 2 (photo and video upload): one file picker, a result message and a preview of the sent photo as a thumbnail. The texts are to be agreed with the owner.
+ * PL: Ekran podtoru 2 (wysyłka zdjęć i filmów): jedno pole wyboru pliku, komunikat o wyniku i podgląd wysłanego zdjęcia w miniaturze. Teksty są zatwierdzone przez właściciela.
+ * EN: The screen of subtrack 2 (photo and video upload): one file picker, a result message and a preview of the sent photo as a thumbnail. The texts are approved by the owner.
  *
  * @author Szymon
  * @since 2026-10-13
@@ -60,7 +60,7 @@ export function MediaScreen() {
   return (
     <main className="media-screen" data-subtrack="2">
       <h1>Zdjęcia i filmy</h1>
-      {/* PL: Tekst do ustalenia z właścicielem. EN: Text to be agreed with the owner. */}
+      {/* PL: Podpowiedź, jaki plik można wybrać i jakie ma limity. EN: The hint on which file can be chosen and its limits. */}
       <p>Wybierz zdjęcie albo krótki film (do 30 sekund, do 50 MB).</p>
       <label>
         Wybierz plik

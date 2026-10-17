@@ -11,12 +11,12 @@
  * @used_by worker/news/editor/validateEntry.ts::MAX_TITLE_CHARS
  */
 
-// PL: Najdłuższy tytuł. Tytuł jest nagłówkiem wpisu i kafla na liście, więc krótki. Wartość do ustalenia z redakcją.
-// EN: The longest title. The title is the heading of the entry and of the list tile, so it is short. The value is to be agreed with the editorial team.
+// PL: Najdłuższy tytuł. Tytuł jest nagłówkiem wpisu i kafla na liście, więc krótki. Przyjęta wartość.
+// EN: The longest title. The title is the heading of the entry and of the list tile, so it is short. The value is accepted.
 export const MAX_TITLE_CHARS = 120;
 
-// PL: Najwięcej znaków tekstu w treści. Edytor służy też do artykułów gazetki, więc nie 500 jak w makiecie 5.2. Wartość do ustalenia.
-// EN: The most text characters in the content. The editor also serves the newspaper articles, so not 500 as in mockup 5.2. The value is to be agreed.
+// PL: Najwięcej znaków tekstu w treści. Edytor służy też do artykułów gazetki, więc nie 500 jak w makiecie 5.2. Przyjęta wartość.
+// EN: The most text characters in the content. The editor also serves the newspaper articles, so not 500 as in mockup 5.2. The value is accepted.
 export const MAX_TEXT_CHARS = 20000;
 
 // PL: Największy rozmiar dokumentu JSON w bajtach. Chroni bazę i telefon przed ogromnym wpisem.

@@ -1,6 +1,6 @@
 /**
- * PL: Ustawienia kodów zaproszeń oraz loginu i hasła: adres Better Auth, ważność kodu, kształt kodu, reguły loginu i hasła. Wartości z docs/PLAN_APLIKACJI.md (część 7: kody ważne 14 dni) i docs/projekt/EKRANY.md (ekran 1.3: kod „TEB-7K4Q-92”). Tam, gdzie plan milczy (długość loginu i hasła), wartości są do ustalenia z zespołem.
- * EN: Settings of the invitation codes and of the login and password: the Better Auth address, the code lifetime, the code shape, the login and password rules. Values from docs/PLAN_APLIKACJI.md (part 7: codes valid for 14 days) and docs/projekt/EKRANY.md (screen 1.3: the code "TEB-7K4Q-92"). Where the plan is silent (login and password length), the values are to be agreed with the team.
+ * PL: Ustawienia kodów zaproszeń oraz loginu i hasła: adres Better Auth, ważność kodu, kształt kodu, reguły loginu i hasła. Wartości z docs/PLAN_APLIKACJI.md (część 7: kody ważne 14 dni) i docs/projekt/EKRANY.md (ekran 1.3: kod „TEB-7K4Q-92”). Tam, gdzie plan milczy (długość loginu i hasła), to przyjęte wartości.
+ * EN: Settings of the invitation codes and of the login and password: the Better Auth address, the code lifetime, the code shape, the login and password rules. Values from docs/PLAN_APLIKACJI.md (part 7: codes valid for 14 days) and docs/projekt/EKRANY.md (screen 1.3: the code "TEB-7K4Q-92"). Where the plan is silent (login and password length), these are the accepted values.
  *
  * @author Szymon
  * @since 2026-10-11
@@ -41,14 +41,14 @@ export const INVITE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const INVITE_CODE_PATTERN = /^TEB-[A-Z0-9]{4}-[A-Z0-9]{2}$/;
 
 /**
- * PL: Login: od 3 do 30 znaków, małe litery, cyfry, kropka, podkreślnik i myślnik. Plan nie mówi, jaki ma być login. To propozycja do ustalenia z zespołem.
- * EN: The login: 3 to 30 characters, lowercase letters, digits, dot, underscore and dash. The plan does not say what a login looks like. This is a proposal to agree with the team.
+ * PL: Przyjęte zasady loginu: od 3 do 30 znaków, małe litery, cyfry, kropka, podkreślnik i myślnik. Plan nie określa kształtu loginu, więc to przyjęta wartość.
+ * EN: The accepted login rules: 3 to 30 characters, lowercase letters, digits, dot, underscore and dash. The plan does not say what a login looks like, so this is the accepted value.
  */
 export const LOGIN_PATTERN = /^[a-z0-9._-]{3,30}$/;
 
 /**
- * PL: Najkrótsze hasło w znakach. To domyślna wartość Better Auth i placeholder „••••••••” z ekranu 1.3. Do ustalenia z zespołem.
- * EN: The shortest password in characters. It is the Better Auth default and the "••••••••" placeholder from screen 1.3. To agree with the team.
+ * PL: Najkrótsze hasło w znakach. Przyjęta wartość: to domyślna wartość Better Auth i placeholder „••••••••” z ekranu 1.3.
+ * EN: The shortest password in characters. An accepted value: it is the Better Auth default and the "••••••••" placeholder from screen 1.3.
  */
 export const PASSWORD_MIN_LENGTH = 8;
 

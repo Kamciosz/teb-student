@@ -42,7 +42,7 @@ export function AnnouncementsTile({ rows }: AnnouncementsTileProps) {
       <Link className="dash-label dash-label--link" to="/news/feed">
         Ogłoszenia
       </Link>
-      {/* PL: Bez wpisów kafel mówi to wprost (napis z modułu aktualności, do ustalenia z zespołem). EN: Without entries the tile says so plainly (the label from the news module, to be agreed with the team). */}
+      {/* PL: Bez wpisów kafel mówi to wprost (napis z modułu aktualności). EN: Without entries the tile says so plainly (the label from the news module). */}
       {rows.length === 0 ? <p className="dash-empty">Nie ma jeszcze wpisów.</p> : null}
       {/* PL: Wiersze: data i tytuł. Dotknięcie otwiera wpis. EN: The rows: a date and a title. A tap opens the entry. */}
       <ul className="dash-rows">
