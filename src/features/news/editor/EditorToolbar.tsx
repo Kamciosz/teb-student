@@ -115,11 +115,12 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     };
   }, [editor]);
 
-  // PL: Zaznacza zdjęcie w dokumencie i otwiera okienko opisu. EN: Selects the photo in the document and opens the description panel.
+  // PL: Zaznacza zdjęcie i otwiera okienko opisu. Bez focus(): Tiptap oddaje fokus edytorowi w następnej klatce, więc zabrałby fokus polu okienka (autoFocus) i Escape trafiałby do edytora.
+  // EN: Selects the photo and opens the description panel. No focus(): Tiptap gives the focus back to the editor on the next frame, so it would take the focus from the panel's field (autoFocus) and Escape would go to the editor.
   function openPhotoPanel(src: string): void {
     const pos = findPhotoPos(editor.state.doc, src);
     if (pos === null) return;
-    editor.chain().focus().setNodeSelection(pos).run();
+    editor.chain().setNodeSelection(pos).run();
     setOpen('photo');
   }
 
