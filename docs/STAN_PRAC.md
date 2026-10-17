@@ -1,8 +1,8 @@
 # Stan prac
 
-Stan na 14.10.2026. `main` po scaleniu #170. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
+Stan na 17.10.2026. `main` po scaleniu #179. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
 
-Teksty zatwierdził Szymon 14.10.2026.
+Wszystkie teksty aplikacji zatwierdził Szymon 14.10.2026 (#175, #179).
 
 ## Co jest w `main`
 
@@ -38,15 +38,31 @@ Od #157 do #170 weszły zdjęcia w zgłoszeniach i we wpisach:
 | 4b | zdjęcie w szczegółach zgłoszenia w panelu | #166 |
 | — | skrypt różnic schematu bazy, ten plik | #157, #163, #169 |
 
+Od #172 do #179 weszły plan dzwonków, logowanie kluczem dostępu jako opcja, zatwierdzone teksty i poprawki dostępu do zdjęć. #172 został zamknięty bez scalenia i zastąpiony przez #176.
+
+| PR | Tytuł | Co daje uczniowi lub zespołowi |
+|---|---|---|
+| #172 | feat(bell): wpisz prawdziwy plan dzwonków szkoły | Zamknięty bez scalenia, zastąpiony przez #176. |
+| #173 | fix(news): stopka redakcji tylko przy autorze z rolą redakcji | Stopka „Redakcja gazetki” pojawia się tylko pod wpisami autorów z rolą redakcji. |
+| #174 | feat(auth): logowanie kluczem dostępu (passkey) | Serwer obsługuje logowanie Face ID, odciskiem palca lub kluczem dostępu jako opcję obok kodu z maila. |
+| #175 | fix: wdraża zatwierdzone teksty i usuwa kafel bez działania | Teksty zatwierdzone przez Szymona trafiają do aplikacji, a martwy kafel „Dodaj zdjęcie albo wideo” znika z edytora. |
+| #176 | feat(bell): prawdziwy plan dzwonków szkoły | Plan dzwonków szkoły (lekcje 0–12, pon.–pt., 07:10–18:20) zamiast pustego planu. Zastępuje #172. |
+| #177 | fix(media): zdjęcie zgłoszenia widzi tylko autor i administracja | Zdjęcie zgłoszenia widzi tylko autor i administracja, inni uczniowie dostają 404. |
+| #178 | feat(profil): klucze Face ID i odcisk palca w ustawieniach | W profilu można dodać, nazwać i usunąć klucz Face ID lub odcisk palca, a na ekranie logowania jest przycisk logowania kluczem. |
+| #179 | fix(komentarze): usuń dopiski „do ustalenia” z komentarzy | Dopiski „do ustalenia” znikają z komentarzy w kodzie; teksty dla ucznia bez zmian. |
+| #180 | build: usuń dni skrócone z licznika dzwonka | Licznik zawsze liczy według zwykłego planu; przełącznik, trasy i tabela dnia skróconego zniknęły. |
+
 Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (sprawdzone na #168). Usuwanie danych ucznia w modułach aktualności, mediów i panelu nie jest już atrapą.
 
 ## Otwarte pull requesty
 
-Logowanie Face ID i odciskiem palca jest opcją w profilu i na ekranie logowania (gałąź `build/passkey-front`, PR w toku). Brak innych otwartych pull requestów. Dalsze zadania czekają na decyzje z ostatniej części tego pliku.
+- #181 `build(deps-dev): bump the babel group with 2 updates` (Dependabot). Aktualizacja narzędzi budowania, bez zmian dla ucznia.
+
+Do sprawdzenia po wdrożeniu: Face ID na prawdziwym telefonie.
 
 ## Przed pierwszym wdrożeniem
 
-Baza nie ma migracji. Lokalnie schemat zakłada `db:reset`. Na produkcji trzeba ręcznie dodać nowe tabele (m.in. `diary_entries`, `media_files`) i kolumny (m.in. `author_user_id`, `pinned_at`, `publish_at` w aktualnościach). Pełną listę daje `node scripts/dbDiff.ts`: porównuje `scripts/schemaSql.ts` z bazą i wypisuje brakujące `CREATE` i `ALTER` (#163). Zapis wpisu w dzienniku nie jest w jednej transakcji z publikacją. Poprawić przy wdrożeniu.
+Baza nie ma migracji. Lokalnie schemat zakłada `db:reset`. Na produkcji trzeba ręcznie dodać nowe tabele (m.in. `diary_entries`, `media_files`, `passkey`) i kolumny (m.in. `author_user_id`, `pinned_at`, `publish_at` w aktualnościach). Tabela `bell_shortened_days` nie jest już potrzebna. Może zostać na produkcji, bo nic jej nie czyta; usunięcie danych wymaga osobnej decyzji. Logowanie Face ID wymaga `BETTER_AUTH_URL` na produkcji, bo z niego wyliczany jest `rpID` klucza. Pełną listę daje `node scripts/dbDiff.ts`: porównuje `scripts/schemaSql.ts` z bazą i wypisuje brakujące `CREATE` i `ALTER` (#163). Zapis wpisu w dzienniku nie jest w jednej transakcji z publikacją. Poprawić przy wdrożeniu.
 
 ## Jak uruchomić agenta podtoru
 
@@ -82,22 +98,29 @@ Po scaleniu usuń kopię roboczą (`git worktree remove ../teb-<podtor>`) i gał
 - Podtor 1b wymaga `BETTER_AUTH_SECRET` także lokalnie (bez niego 503). Seed nie ma kodu zaproszenia.
 - `index.ts` modułów 3a, 4a i 5a nie wystawiają typów ani funkcji pobierania, więc pulpit czyta ich odpowiedzi HTTP. Moduł logowania nie wystawia imienia ucznia.
 
+## Decyzje Szymona z 14–15.10.2026
+
+- Plan dzwonków szkoły jest wpisany: lekcje 0–12, pon.–pt., 07:10–18:20 (#176).
+- Dni skróconych nie ma. Funkcja usunięta (#180).
+- Face ID, Touch ID i odcisk palca (klucz dostępu, passkey) to opcja w profilu i na ekranie logowania, nie wymóg (#174 serwer, #178 ekran). Produkcja potrzebuje `BETTER_AUTH_URL`.
+- Wszystkie teksty aplikacji zatwierdzone (#175, #179).
+- Stopka „Redakcja gazetki” tylko pod wpisami autorów z rolą redakcji (#173).
+- Zdjęcie zgłoszenia widzi tylko autor i administracja (#177).
+- `AGENTS.md` i `CLAUDE.md` nie trafiają do `.gitignore`.
+
 ## Decyzje do podjęcia
 
 - **Zespół:** `PLAN_APLIKACJI.md` i `TECHNOLOGIE.md` nadal mówią, że telefon wysyła oryginał HEIC, gdy go nie odczyta. Po #130 telefon tego nie robi: pokazuje błąd. Trzeba poprawić dokumenty albo wrócić do wysyłania oryginału.
-- **Zespół (decyzja):** zdjęcie zgłoszenia widzi tylko autor i administracja. Inni uczniowie dostają 404 (`GET /api/media/<id>` i `/<id>/meta`). Pozostałe pliki zostają dostępne dla zalogowanych uczniów.
 - **Zespół:** karta linku z adresem spoza listy serwisów społecznościowych znika z wpisu bez komunikatu w czytniku.
 - **Zespół:** zdjęcie w edytorze bez sieci nie czeka w kolejce, tylko pokazuje błąd.
 - **Szymon:** Face ID przez `@better-auth/passkey`, czas świeżej sesji 24 h (#108).
-- **Kacper:** plan dzwonków (wpisany wg planu szkoły z 14.10).
-- **Zespół:** czy `AGENTS.md` i `CLAUDE.md` mają trafić do `.gitignore`.
 - **Zespół:** wpisy dziennika ucznia znikają razem z kontem. Czy tak ma zostać?
 - **Zespół:** krótka odpowiedź w ankiecie może zdradzić autora w małej grupie. Pod polem jest podpowiedź, ale wyniki pokazujemy dopiero od 5 odpowiedzi.
 
 - **Bohdan:** ADR 0003 (adresy podtorów), 0004 (przeglądarki), 0005 (krój pisma).
 - **Adam:** czy wyłączyć wymóg aktualnej gałęzi przed scaleniem. Przez niego każde scalenie czeka na CI dwa razy.
-- **Zespół:** teksty, których nie ma w `docs/projekt/EKRANY.md`: ekrany logowania, aktualności, zgłoszeń i ankiet, pasek „Brak internetu”. Parametry logowania: 3 próby kodu, 3 wysyłki na minutę, sesja 7 dni.
-- **Zespół:** teksty z pull requestów #61, #62 i #63 oznaczone „do ustalenia” (logowanie loginem, ustawienia, puste stany pulpitu). Sprzeczność: `EKRANY.md` 2.4 mówi „Usuniemy zgłoszenia i odpowiedzi.”, a plan mówi, że zgłoszenia zostają bez autora.
+- **Zespół:** parametry logowania: 3 próby kodu, 3 wysyłki na minutę, sesja 7 dni.
+- **Zespół:** sprzeczność: `EKRANY.md` 2.4 mówi „Usuniemy zgłoszenia i odpowiedzi.”, a plan mówi, że zgłoszenia zostają bez autora.
 - **Bohdan:** czas hashowania hasła (scrypt) w Workerze, podtor 1b.
 - **Zespół:** PWA: pasek „Jest nowa wersja”, krótka nazwa aplikacji, ikona technikum.
 - **Wszyscy:** loginy GitHub w `docs/OWNERS.md`. Bez nich nie ma pliku CODEOWNERS.
