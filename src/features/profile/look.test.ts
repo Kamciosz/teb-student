@@ -1,6 +1,6 @@
 /**
- * PL: Test wyglądu aplikacji: ustawianie palety i szkoły, zapis i odczyt z pamięci telefonu, zepsuty zapis oraz powrót do wyglądu domyślnego. Element <html> i pamięć są podstawione zwykłymi obiektami, bo testy Vitest działają bez przeglądarki.
- * EN: Test of the app look: setting the palette and school, saving and reading from the phone storage, a broken record and going back to the default look. The <html> element and the storage are replaced by plain objects, because Vitest tests run without a browser.
+ * PL: Test wyglądu: motyw (auto, jasny, ciemny) i szkoła zapisują się w pamięci, ustawiają atrybuty na <html> i wracają po restarcie. Stary zapis z paletą wczytuje się jako motyw automatyczny, a zablokowana pamięć nie psuje zmiany wyglądu.
+ * EN: Test of the look: the theme (auto, light, dark) and the school are saved in the storage, set the attributes on <html> and come back after a restart. An old palette record loads as the automatic theme, and a blocked storage does not break the look change.
  *
  * @author Jakub
  * @since 2026-10-11
@@ -11,90 +11,158 @@
 // PL: Funkcje testowe Vitest.
 // EN: Vitest test functions.
 import { beforeEach, describe, expect, it } from 'vitest';
-// PL: Funkcje i stałe, które sprawdzamy.
-// EN: The functions and constants under test.
-import { DEFAULT_LOOK, LOOK_STORAGE_KEY, PALETTES, applyLook, applyStoredLook, readStoredLook, resetLook, type LookStorage, type LookTarget } from './look';
+// PL: Funkcje wyglądu i stałe, które testujemy.
+// EN: The look functions and constants under test.
+import {
+  DEFAULT_LOOK,
+  LOOK_STORAGE_KEY,
+  applySchool,
+  applyStoredLook,
+  applyTheme,
+  applyLook,
+  currentLook,
+  readStoredLook,
+  resetLook,
+  type LookStorage,
+  type LookTarget,
+} from './look';
 
-/** PL: Podstawiony element <html>. EN: A stand-in <html> element. */
-let target: LookTarget;
+// PL: Zwykły obiekt zamiast <html>: testy działają w Workerze bez przeglądarki.
+// EN: A plain object instead of <html>: the tests run in a Worker without a browser.
+function fakeTarget(): LookTarget & { dataset: Record<string, string> } {
+  return { dataset: {} };
+}
 
-/** PL: Podstawiona pamięć telefonu i jej zawartość. EN: A stand-in phone storage and its content. */
-let data: Map<string, string>;
-let storage: LookStorage;
+// PL: Pamięć w pamięci procesu z dostępem do surowego zapisu, żeby sprawdzić, co trafiło do klucza.
+// EN: In-memory storage with access to the raw record, so we can check what reached the key.
+function memoryStorage(): LookStorage & { data: Map<string, string> } {
+  const data = new Map<string, string>();
+  return {
+    data,
+    getItem: (key) => data.get(key) ?? null,
+    setItem: (key, value) => {
+      data.set(key, value);
+    },
+    removeItem: (key) => {
+      data.delete(key);
+    },
+  };
+}
 
-// PL: Przed każdym testem pusty element i pusta pamięć.
-// EN: Before every test an empty element and an empty storage.
-beforeEach(() => {
-  target = { dataset: {} };
-  data = new Map();
-  storage = { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => void data.set(key, value), removeItem: (key) => void data.delete(key) };
-});
+// PL: Pamięć zablokowana przez przeglądarkę: każde wywołanie rzuca błąd.
+// EN: Storage blocked by the browser: every call throws.
+function blockedStorage(): LookStorage {
+  const blocked = () => {
+    throw new Error('pamięć zablokowana');
+  };
+  return { getItem: blocked, setItem: blocked, removeItem: blocked };
+}
 
-// PL: Grupa testów palet.
-// EN: A group of tests for the palettes.
-describe('PALETTES', () => {
-  // PL: Do wyboru jest osiem palet o różnych kodach.
-  // EN: There are eight palettes with distinct codes.
-  it('ma osiem palet o różnych kodach / has eight palettes with distinct codes', () => {
-    expect(PALETTES).toHaveLength(8);
-    expect(new Set(PALETTES.map((palette) => palette.code)).size).toBe(8);
+describe('wygląd / the look', () => {
+  let target: ReturnType<typeof fakeTarget>;
+  let storage: ReturnType<typeof memoryStorage>;
+
+  beforeEach(() => {
+    target = fakeTarget();
+    storage = memoryStorage();
   });
-});
 
-// PL: Grupa testów ustawiania wyglądu.
-// EN: A group of tests for setting the look.
-describe('applyLook', () => {
-  // PL: Wybór trafia na element <html> i do pamięci, a po ponownym uruchomieniu wraca z pamięci.
-  // EN: The choice goes to the <html> element and to the storage, and after a restart it comes back from the storage.
-  it('ustawia atrybuty i zostaje po ponownym uruchomieniu / sets the attributes and survives a restart', () => {
-    applyLook({ palette: 'CH', school: 'T' }, target, storage);
-    expect(target.dataset).toEqual({ paleta: 'CH', szkola: 'T' });
+  it('jasny motyw i technikum ustawiają atrybuty i zapisują wybór / the light theme and the technical school set the attributes and save the choice', () => {
+    applyLook({ theme: 'jasny', school: 'T' }, target, storage);
 
-    // PL: „Ponowne uruchomienie”: nowy, pusty element i ta sama pamięć.
-    // EN: A "restart": a new, empty element and the same storage.
-    const restarted: LookTarget = { dataset: {} };
-    applyStoredLook(restarted, storage);
-    expect(restarted.dataset).toEqual({ paleta: 'CH', szkola: 'T' });
+    expect(target.dataset).toEqual({ motyw: 'jasny', szkola: 'T' });
+    expect(JSON.parse(storage.data.get(LOOK_STORAGE_KEY) ?? 'null')).toEqual({ theme: 'jasny', school: 'T' });
   });
 
-  // PL: Zablokowana pamięć (zapis rzuca błąd) nie psuje zmiany wyglądu.
-  // EN: A blocked storage (saving throws) does not break the look change.
-  it('działa, gdy pamięć rzuca błąd / works when the storage throws', () => {
-    const blocked: LookStorage = { getItem: () => null, setItem: () => { throw new Error('zablokowane'); }, removeItem: () => undefined };
-    applyLook({ palette: 'CA', school: 'L' }, target, blocked);
-    expect(target.dataset).toEqual({ paleta: 'CA', szkola: 'L' });
-  });
-});
+  it('motyw automatyczny usuwa atrybut motywu, żeby działał motyw telefonu / the automatic theme removes the theme attribute, so the phone theme applies', () => {
+    applyLook({ theme: 'ciemny', school: 'L' }, target, storage);
+    applyLook({ theme: 'auto', school: 'L' }, target, storage);
 
-// PL: Grupa testów odczytu zapisanego wyglądu.
-// EN: A group of tests for reading the saved look.
-describe('applyStoredLook i readStoredLook / applyStoredLook and readStoredLook', () => {
-  // PL: Bez zapisu działa wygląd domyślny: paleta CE i akcent liceum.
-  // EN: Without a record the default look applies: palette CE and the lyceum accent.
-  it('bez zapisu daje wygląd domyślny / with no record gives the default look', () => {
+    expect(target.dataset).toEqual({ szkola: 'L' });
+  });
+
+  it('zapis z zablokowaną pamięcią nie rzuca błędu i wygląd i tak działa / a save with blocked storage throws nothing, and the look still works', () => {
+    expect(() => applyLook({ theme: 'ciemny', school: 'T' }, target, blockedStorage())).not.toThrow();
+    expect(target.dataset).toEqual({ motyw: 'ciemny', szkola: 'T' });
+  });
+
+  it('przy starcie bez zapisu ustawia wygląd domyślny / at start without a record it sets the default look', () => {
     applyStoredLook(target, storage);
-    expect(target.dataset).toEqual({ paleta: DEFAULT_LOOK.palette, szkola: DEFAULT_LOOK.school });
+
+    expect(target.dataset).toEqual({ szkola: DEFAULT_LOOK.school });
+    expect(DEFAULT_LOOK).toEqual({ theme: 'auto', school: 'L' });
   });
 
-  // PL: Zepsuty JSON, nieznana paleta i nieznana szkoła to brak zapisu.
-  // EN: Broken JSON, an unknown palette and an unknown school count as no record.
-  it.each(['{nie json', JSON.stringify({ palette: 'CZ', school: 'L' }), JSON.stringify({ palette: 'CE', school: 'X' }), 'null', '5'])('zapis %s jest ignorowany / record %s is ignored', (text) => {
-    data.set(LOOK_STORAGE_KEY, text);
+  it('przy starcie wczytuje zapisany motyw i szkołę po restarcie / at start it loads the saved theme and school after a restart', () => {
+    applyLook({ theme: 'ciemny', school: 'T' }, fakeTarget(), storage);
+
+    const afterRestart = fakeTarget();
+    applyStoredLook(afterRestart, storage);
+
+    expect(afterRestart.dataset).toEqual({ motyw: 'ciemny', szkola: 'T' });
+  });
+
+  it('zepsuty zapis to brak zapisu / a broken record counts as no record', () => {
+    storage.data.set(LOOK_STORAGE_KEY, '{nie json');
+
     expect(readStoredLook(storage)).toBeUndefined();
   });
-});
 
-// PL: Grupa testów powrotu do wyglądu domyślnego.
-// EN: A group of tests for going back to the default look.
-describe('resetLook', () => {
-  // PL: Po resecie atrybuty są domyślne, a zapis znika (po usunięciu konta nic nie zostaje na telefonie).
-  // EN: After the reset the attributes are the default and the record is gone (after the account deletion nothing stays on the phone).
-  it('przywraca wygląd domyślny i kasuje zapis / restores the default look and removes the record', () => {
-    applyLook({ palette: 'CF', school: 'T' }, target, storage);
+  it('zapis bez poprawnej szkoły to brak zapisu / a record without a valid school counts as no record', () => {
+    storage.data.set(LOOK_STORAGE_KEY, JSON.stringify({ theme: 'ciemny', school: 'X' }));
 
+    expect(readStoredLook(storage)).toBeUndefined();
+  });
+
+  it('stary zapis z paletą wczytuje się jako motyw automatyczny i szkoła / an old palette record loads as the automatic theme and the school', () => {
+    storage.data.set(LOOK_STORAGE_KEY, JSON.stringify({ palette: 'CZ', school: 'T' }));
+
+    expect(readStoredLook(storage)).toEqual({ theme: 'auto', school: 'T' });
+  });
+
+  it('nieznany motyw w zapisie idzie na automatyczny / an unknown theme in the record becomes automatic', () => {
+    storage.data.set(LOOK_STORAGE_KEY, JSON.stringify({ theme: 'fioletowy', school: 'L' }));
+
+    expect(readStoredLook(storage)).toEqual({ theme: 'auto', school: 'L' });
+  });
+
+  it('zmiana szkoły z serwera zostawia motyw ustawiony na telefonie / a school change from the server keeps the theme set on the phone', () => {
+    applyTheme('ciemny', target, storage);
+    applySchool('T', target, storage);
+
+    expect(target.dataset).toEqual({ motyw: 'ciemny', szkola: 'T' });
+    expect(JSON.parse(storage.data.get(LOOK_STORAGE_KEY) ?? 'null')).toEqual({ theme: 'ciemny', school: 'T' });
+  });
+
+  it('zmiana motywu zostawia szkołę, która jest na stronie / a theme change keeps the school that is on the page', () => {
+    applySchool('T', target, storage);
+    applyTheme('jasny', target, storage);
+
+    expect(target.dataset).toEqual({ motyw: 'jasny', szkola: 'T' });
+    expect(JSON.parse(storage.data.get(LOOK_STORAGE_KEY) ?? 'null')).toEqual({ theme: 'jasny', school: 'T' });
+  });
+
+  it('currentLook czyta wygląd z atrybutów, a brak lub zły atrybut to motyw auto i liceum / currentLook reads the look from the attributes, and a missing or wrong attribute means auto and lyceum', () => {
+    expect(currentLook(target)).toEqual({ theme: 'auto', school: 'L' });
+
+    target.dataset.motyw = 'ciemny';
+    target.dataset.szkola = 'T';
+    expect(currentLook(target)).toEqual({ theme: 'ciemny', school: 'T' });
+
+    target.dataset.szkola = 'X';
+    expect(currentLook(target)).toEqual({ theme: 'ciemny', school: 'L' });
+  });
+
+  it('resetLook kasuje zapis i wraca do wyglądu domyślnego / resetLook deletes the record and goes back to the default look', () => {
+    applyLook({ theme: 'ciemny', school: 'T' }, target, storage);
     resetLook(target, storage);
 
-    expect(target.dataset).toEqual({ paleta: DEFAULT_LOOK.palette, szkola: DEFAULT_LOOK.school });
-    expect(readStoredLook(storage)).toBeUndefined();
+    expect(storage.data.has(LOOK_STORAGE_KEY)).toBe(false);
+    expect(target.dataset).toEqual({ szkola: 'L' });
+  });
+
+  it('resetLook z zablokowaną pamięcią nie rzuca błędu / resetLook with blocked storage throws nothing', () => {
+    expect(() => resetLook(target, blockedStorage())).not.toThrow();
+    expect(target.dataset).toEqual({ szkola: 'L' });
   });
 });

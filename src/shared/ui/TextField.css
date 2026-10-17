@@ -1,8 +1,8 @@
 /*
  * PL: Pole tekstowe z podpisem i błędem. Pole ma 48 px wysokości i 16 px tekstu, żeby telefon nie powiększał strony przy wpisywaniu.
- *     Kolory tylko przez var(--...) z tokens.css.
+ *     Bez ramki: pole stoi na kaflu albo w wierszu listy. Kolory tylko przez var(--...) z tokens.css.
  * EN: The text field with a label and an error. The field is 48 px high with 16 px text, so the phone does not zoom the page while typing.
- *     Colors only through var(--...) from tokens.css.
+ *     No frame: the field stands on a tile or in a list row. Colors only through var(--...) from tokens.css.
  */
 
 /* PL: Blok pola: kolumna z podpisem nad polem. min-width: 0 pozwala mu się zwęzić przy 320 px.
@@ -23,18 +23,17 @@
   overflow-wrap: anywhere;
 }
 
-/* PL: Samo pole: pełna szerokość kolumny, wysokość dotyku i obwódka z palety.
-   EN: The field itself: the full column width, touch height and an outline from the palette. */
+/* PL: Samo pole: pełna szerokość kolumny, wysokość dotyku, tło kafla i zaokrąglenie.
+   EN: The field itself: the full column width, touch height, the tile background and rounding. */
 .ui-field input {
   width: 100%;
   min-width: 0;
   min-height: 48px;
   padding: 0 14px;
   border: 0;
-  border-radius: var(--r-sm);
-  background: var(--tile-2);
+  border-radius: var(--r);
+  background: var(--tile);
   color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--line);
   font-size: var(--t-md);
 }
 
@@ -45,10 +44,11 @@
   cursor: not-allowed;
 }
 
-/* PL: Błędne pole ma grubszą obwódkę w akcencie szkoły.
-   EN: An invalid field has a thicker outline in the school accent. */
+/* PL: Błędne pole ma obrys w akcencie szkoły wewnątrz pola, bez ramki w stanie zwykłym.
+   EN: An invalid field has an outline in the school accent inside the field, with no frame in the normal state. */
 .ui-field input[aria-invalid='true'] {
-  box-shadow: inset 0 0 0 2px var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 /* PL: Komunikat o błędzie: mały tekst w akcencie, zawija się w wąskim ekranie.

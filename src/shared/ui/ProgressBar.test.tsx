@@ -1,6 +1,6 @@
 /**
  * PL: Test paska postępu: rola i wartości aria, przycinanie do zakresu (także NaN i pusty zakres) oraz szerokość wypełnienia. Pasek nie jest sterowny, więc nie ma klawiatury ani stanu wyłączenia.
- * EN: Test of the progress bar: the role and aria values, clamping to the range (also NaN and an empty range) and the fill width. The bar is not a control, so it has no keyboard or disabled state.
+ * EN: Test of the progress bar: the role and aria values, clamping to the range (also NaN and an empty range) and the fill scale. The bar is not a control, so it has no keyboard or disabled state.
  *
  * @author Kacper
  * @since 2026-10-13
@@ -30,14 +30,14 @@ describe('pasek postępu / the progress bar', () => {
     expect(html).toContain('aria-valuenow="40"');
   });
 
-  it('wypełnienie ma szerokość w procentach / the fill has its width in percent', () => {
-    expect(renderToString(<ProgressBar value={3} max={4} label="Etap" />)).toContain('width:75%');
+  it('wypełnienie ma skalę odpowiadającą procentom / the fill has a scale matching the percent', () => {
+    expect(renderToString(<ProgressBar value={3} max={4} label="Etap" />)).toContain('transform:scaleX(0.75)');
   });
 
   it('wartość powyżej maksimum przycina się do 100 % / a value above the maximum is clamped to 100 %', () => {
     const html = renderToString(<ProgressBar value={250} label="Etap" />);
 
-    expect(html).toContain('width:100%');
+    expect(html).toContain('transform:scaleX(1)');
     expect(html).toContain('aria-valuenow="100"');
   });
 

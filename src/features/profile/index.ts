@@ -1,5 +1,5 @@
 /**
- * PL: Drzwi podtoru 7 (profil i ustawienia) po stronie telefonu. Wystawia ekran dla routera. Inne moduły importują tylko stąd. Przy wczytaniu ustawia zapisany wygląd (paleta i akcent szkoły), bo router wczytuje ten plik przy starcie aplikacji, więc wygląd działa na każdym ekranie po ponownym uruchomieniu.
+ * PL: Drzwi podtoru 7 (profil i ustawienia) po stronie telefonu. Wystawia ekran dla routera. Inne moduły importują tylko stąd. Przy wczytaniu ustawia zapisany wygląd (motyw i akcent szkoły), bo router wczytuje ten plik przy starcie aplikacji, więc wygląd działa na każdym ekranie po ponownym uruchomieniu.
  * EN: The door of subtrack 7 (profile and settings) on the phone side. Exposes the screen to the router. Other modules import only from here. On load it sets the saved look (the palette and the school accent), because the router loads this file at app start, so the look works on every screen after a restart.
  *
  * @author Bohdan

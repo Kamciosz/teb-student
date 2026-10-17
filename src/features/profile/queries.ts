@@ -1,11 +1,11 @@
 /**
- * PL: Zapytania TanStack Query dla profilu: odczyt, zapis i usunięcie konta. Odczyt trafia do wspólnej pamięci podręcznej, więc bez internetu ekran pokazuje ostatnio pobrany profil. Pobrany i zapisany profil od razu ustawia wygląd aplikacji (paletę, szkołę i rozmiar tekstu).
- * EN: The TanStack Query hooks for the profile: reading, saving and deleting the account. The read goes into the shared cache, so without internet the screen shows the last fetched profile. A fetched and a saved profile immediately set the app look.
+ * PL: Zapytania TanStack Query dla profilu: odczyt, zapis i usunięcie konta. Odczyt trafia do wspólnej pamięci podręcznej, więc bez internetu ekran pokazuje ostatnio pobrany profil. Pobrany i zapisany profil od razu ustawia wygląd aplikacji (szkołę i rozmiar tekstu); motyw zostaje z telefonu.
+ * EN: The TanStack Query hooks for the profile: reading, saving and deleting the account. The read goes into the shared cache, so without internet the screen shows the last fetched profile. A fetched and a saved profile immediately set the app look (the school and the text size); the theme stays from the phone.
  *
  * @author Jakub
  * @since 2026-10-11
  * @uses src/features/profile/api.ts::fetchProfile
- * @uses src/features/profile/look.ts::applyLook
+ * @uses src/features/profile/look.ts::applySchool
  * @uses src/features/profile/textSize.ts::applyTextSize
  * @uses src/features/profile/textSize.ts::resetTextSize
  * @uses src/shared/index.ts::clearQueryData
@@ -26,7 +26,7 @@ import { clearQueryData } from '../../shared';
 // PL: Rozmowa z serwerem i wygląd.
 // EN: The talk with the server and the look.
 import { deleteAccount, fetchProfile, saveProfile, type Profile } from './api';
-import { applyLook, resetLook } from './look';
+import { applySchool, resetLook } from './look';
 import { applyTextSize, resetTextSize } from './textSize';
 
 /** PL: Klucz zapytania o profil w pamięci podręcznej. EN: The profile query key in the cache. */
@@ -48,7 +48,7 @@ export function useProfile() {
   // EN: When the data arrives, set the look from the profile. The server is the source of truth, so a new phone gets the account's look.
   useEffect(() => {
     if (data) {
-      applyLook({ palette: data.palette, school: data.school });
+      applySchool(data.school);
       applyTextSize(data.textSize);
     }
   }, [data]);

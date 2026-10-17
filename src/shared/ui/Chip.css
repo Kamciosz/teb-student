@@ -1,42 +1,42 @@
 /*
- * PL: Żeton wyboru. Wysokość i szerokość dotyku co najmniej 44 px, kolory tylko przez var(--...).
+ * PL: Żeton wyboru jako segment kontrolki. Wybrany żeton jest jasnym kaflem, reszta przezroczysta.
+ *     Wysokość i szerokość dotyku co najmniej 44 px, kolory tylko przez var(--...).
  *     Stan włączenia rysuje atrybut aria-pressed, a nie klasa, więc wygląd zgadza się z czytnikiem.
- * EN: The choice chip. Touch height and width at least 44 px, colors only through var(--...).
+ * EN: The choice chip as a segment of a control. The chosen chip is a light tile, the rest is transparent.
+ *     Touch height and width at least 44 px, colors only through var(--...).
  *     The on state is drawn by the aria-pressed attribute, not a class, so the look matches the screen reader.
  */
 
-/* PL: Żeton: zaokrąglony, z miejscem na palec i tekstem w jednej linii.
-   EN: The chip: rounded, with room for a finger and the text in one line. */
+/* PL: Żeton: zaokrąglony, z miejscem na palec. Nie kurczy się w pasku i nie zawija tekstu.
+   EN: The chip: rounded, with room for a finger. It does not shrink in the bar and does not wrap the text. */
 .ui-chip {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   min-height: 44px;
   min-width: 44px;
-  max-width: 100%;
-  padding: 0 16px;
+  padding: 0 14px;
   border: 0;
-  border-radius: 999px;
-  background: var(--tile-2);
+  border-radius: var(--r-sm);
+  background: transparent;
   color: var(--ink-2);
-  box-shadow: inset 0 0 0 1px var(--line);
   font-size: var(--t-sm);
   font-weight: 600;
   text-align: center;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-/* PL: Włączony żeton w kolorze akcentu szkoły.
-   EN: A chip that is on, in the school accent color. */
+/* PL: Włączony żeton jest jasnym kaflem z tekstem głównym.
+   EN: A chip that is on is a light tile with the primary text. */
 .ui-chip[aria-pressed='true'] {
-  background: var(--accent);
-  color: var(--on-accent);
-  box-shadow: none;
+  background: var(--tile);
+  color: var(--ink);
 }
 
-/* PL: Wciśnięty żeton lekko się kurczy.
-   EN: A pressed chip shrinks a little. */
+/* PL: Wciśnięty żeton lekko się kurczy. To transformacja, więc nie kosztuje układu.
+   EN: A pressed chip shrinks a little. It is a transform, so it costs no layout. */
 .ui-chip:not(:disabled):active {
   transform: scale(0.97);
 }

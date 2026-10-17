@@ -6,23 +6,37 @@
  */
 
 /* PL: Okno przyklejone do dołu, pełna szerokość w wąskim ekranie, zaokrąglone tylko góra. Bez marginesów przeglądarki.
-   EN: The window pinned to the bottom, full width on a narrow screen, rounded only at the top. No browser margins. */
+   Jedyny cień w aplikacji (token --shadow-sheet), wjazd animowany transformacją i przezroczystością.
+   EN: The window pinned to the bottom, full width on a narrow screen, rounded only at the top. No browser margins.
+   The only shadow in the app (the --shadow-sheet token), sliding in with a transform and opacity. */
 .ui-sheet {
   inset: auto 0 0 0;
   margin: 0 auto;
   width: min(100%, 520px);
+  max-width: 100%;
   max-height: 85vh;
   padding: 0;
   border: 0;
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   background: var(--tile);
   color: var(--ink);
+  box-shadow: var(--shadow-sheet);
   overflow: auto;
   overflow-wrap: anywhere;
+  transition: transform 200ms ease, opacity 200ms ease;
 }
 
-/* PL: Tło za oknem: kolor z palety, mocno przyciemnione, żeby treść za nim była nieczytelna.
-   EN: The backdrop behind the window: a palette color, strongly dimmed, so the content behind is unreadable. */
+/* PL: Start wjazdu: arkusz zaczyna pod dolną krawędzią i przezroczysty.
+   EN: The start of the slide-in: the sheet starts below the bottom edge and transparent. */
+@starting-style {
+  .ui-sheet[open] {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+/* PL: Tło za oknem: kolor z tokenów, mocno przyciemnione, żeby treść za nim była nieczytelna.
+   EN: The backdrop behind the window: a token color, strongly dimmed, so the content behind is unreadable. */
 .ui-sheet::backdrop {
   background: var(--bg);
   opacity: 0.7;

@@ -17,12 +17,12 @@
 // EN: Playwright test functions.
 import { expect, test } from '@playwright/test';
 
-// PL: Kolor tła --bg palety CE (src/shared/styles/tokens.css). Manifest ma go w theme_color i background_color.
-// EN: The --bg background color of the CE palette (src/shared/styles/tokens.css). The manifest has it in theme_color and background_color.
-const CE_BG = '#26282d';
+// PL: Kolor tła --bg jasnego motywu (src/shared/styles/tokens.css). Manifest ma go w theme_color i background_color.
+// EN: The --bg background color of the light theme (src/shared/styles/tokens.css). The manifest has it in theme_color and background_color.
+const LIGHT_BG = '#F2F2F7';
 
-// PL: Pola manifestu, które sprawdzamy: zawartość to zapis z docs/projekt/EKRANY.md i palety CE.
-// EN: The manifest fields we check: the content comes from docs/projekt/EKRANY.md and the CE palette.
+// PL: Pola manifestu, które sprawdzamy: zawartość to zapis z docs/projekt/EKRANY.md i jasny motyw tła.
+// EN: The manifest fields we check: the content comes from docs/projekt/EKRANY.md and the light theme background.
 test('manifest ma poprawne pola i ikony / the manifest has the right fields and icons', async ({ page, request }) => {
   // PL: Otwórz stronę główną, żeby sprawdzić wskazanie manifestu w <head>.
   // EN: Open the home page to check the manifest link in <head>.
@@ -45,10 +45,10 @@ test('manifest ma poprawne pola i ikony / the manifest has the right fields and 
   expect(manifest.lang).toBe('pl');
   expect(manifest.display).toBe('standalone');
 
-  // PL: Kolory z palety CE Grafit.
-  // EN: Colors from the CE Graphite palette.
-  expect(manifest.theme_color).toBe(CE_BG);
-  expect(manifest.background_color).toBe(CE_BG);
+  // PL: Kolory z jasnego motywu (tokens.css).
+  // EN: Colors from the light theme (tokens.css).
+  expect(manifest.theme_color).toBe(LIGHT_BG);
+  expect(manifest.background_color).toBe(LIGHT_BG);
 
   // PL: Ikony 192 i 512 oraz ikona maskable.
   // EN: The 192 and 512 icons and the maskable icon.
@@ -77,7 +77,7 @@ test('index.html ma meta tagi dla iPhone’a / index.html has the iPhone meta ta
   // EN: The app added to the home screen, the status bar and the icon.
   await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute('content', 'yes');
   await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute('content', 'black');
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', CE_BG);
+  await expect(page.locator('meta[name="theme-color"][media="(prefers-color-scheme: light)"]')).toHaveAttribute('content', LIGHT_BG);
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/apple-touch-icon.png');
 });
 

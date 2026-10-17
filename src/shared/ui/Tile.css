@@ -1,7 +1,7 @@
 /*
- * PL: Kafel: powierzchnia z palety, zaokrąglenie z tokenów, tekst zawija się w wąskim ekranie.
+ * PL: Kafel: powierzchnia z tokenów, zaokrąglenie z tokenów, tekst zawija się w wąskim ekranie.
  *     min-width: 0 pozwala kaflowi zmieścić się w siatce przy 320 px bez poziomego przewijania.
- * EN: The tile: a surface from the palette, rounding from the tokens, the text wraps on a narrow screen.
+ * EN: The tile: a surface from the tokens, rounding from the tokens, the text wraps on a narrow screen.
  *     min-width: 0 lets the tile fit the grid at 320 px without horizontal scrolling.
  */
 

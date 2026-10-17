@@ -18,8 +18,8 @@
   overflow-wrap: anywhere;
 }
 
-/* PL: Ton akcentowy: kolor szkoły z tłem i tekstem z palety.
-   EN: The accent tone: the school color with the palette text. */
+/* PL: Ton akcentowy: kolor szkoły z tłem i tekstem z tokenów.
+   EN: The accent tone: the school color with the token text. */
 .ui-badge[data-tone='accent'] {
   background: var(--accent);
   color: var(--on-accent);
