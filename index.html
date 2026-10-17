@@ -20,9 +20,12 @@
     <!-- PL: Tytuł karty przeglądarki. -->
     <!-- EN: Title of the browser tab. -->
     <title>TEB Student</title>
-    <!-- PL: Kolor paska przeglądarki. To samo tło --bg palety CE co theme_color w manifeście (vite.config.ts). -->
-    <!-- EN: The browser bar color. The same --bg background of the CE palette as theme_color in the manifest (vite.config.ts). -->
-    <meta name="theme-color" content="#26282d" />
+    <!-- PL: Kolor paska przeglądarki zależy od motywu telefonu: jasny #F2F2F7, ciemny #000000 (tło --bg z tokens.css).
+         Manifest (vite.config.ts) ma jasny kolor, bo to wartość domyślna. -->
+    <!-- EN: The browser bar color follows the phone's theme: light #F2F2F7, dark #000000 (the --bg background from tokens.css).
+         The manifest (vite.config.ts) uses the light color, as it is the default. -->
+    <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     <!-- PL: iPhone: aplikacja dodana do ekranu głównego otwiera się bez paska Safari. -->
     <!-- EN: iPhone: the app added to the home screen opens without the Safari bar. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />

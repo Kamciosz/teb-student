@@ -19,6 +19,8 @@
  * @uses src/shared/ui/ProgressBar.tsx::clampPercent
  * @uses src/shared/ui/Sheet.tsx::Sheet
  * @uses src/shared/ui/EmptyState.tsx::EmptyState
+ * @uses src/shared/ui/ListGroup.tsx::ListGroup
+ * @uses src/shared/ui/ListRow.tsx::ListRow
  * @used_by src/features/dashboard/index.ts::DashboardScreen
  * @used_by src/app/routes.test.ts::DOCK_ITEMS
  */
@@ -41,8 +43,8 @@ export { clearQueryData } from './query/clearQueryData';
 // PL: Pasek braku internetu (jeden, w korzeniu aplikacji).
 // EN: The no-internet bar (one, at the app root).
 export { OfflineBanner } from './ui/OfflineBanner';
-// PL: Przycisk w trzech wariantach (accent, soft, outline).
-// EN: The button in three variants (accent, soft, outline).
+// PL: Przycisk w trzech wariantach (filled, plain, destructive).
+// EN: The button in three variants (filled, plain, destructive).
 export { Button } from './ui/Button';
 // PL: Wybieralny znacznik (wybrany albo nie).
 // EN: The selectable chip (selected or not).
@@ -65,3 +67,9 @@ export { Sheet } from './ui/Sheet';
 // PL: Pusty stan z tytułem i treścią dodatkową.
 // EN: The empty state with a title and extra content.
 export { EmptyState } from './ui/EmptyState';
+// PL: Grupowana lista w stylu iOS (nagłówek, blok wierszy, przypis).
+// EN: The grouped list in the iOS style (header, block of rows, footnote).
+export { ListGroup } from './ui/ListGroup';
+// PL: Wiersz grupowanej listy: tytuł, wartość, strzałka albo akcja.
+// EN: The row of a grouped list: a title, a value, an arrow or an action.
+export { ListRow } from './ui/ListRow';

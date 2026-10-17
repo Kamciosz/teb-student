@@ -1,6 +1,6 @@
 /**
- * PL: Test ścieżek podtoru 7 (profil i ustawienia, wiersz panelu z rolą): zmiana imienia, klasy i szkoły z akcentem niebieskim albo czerwonym, wybór palety i większego tekstu, które zostają po ponownym uruchomieniu, pobranie moich danych jako pliku JSON, usunięcie konta, polityka prywatności bez logowania, szerokość 320 px i brak internetu. Serwer profilu jest podstawiony z pamięcią (prawdziwy wymaga logowania, a kod trafia tylko do terminala serwera), jego sprawdzają testy Vitest (worker/profile/profile.test.ts). Polityka prywatności idzie bez żadnych podstawek.
- * EN: Test of the subtrack 7 paths (profile and settings): changing the name, class and school with the blue or red accent, choosing a palette and the larger text that stay after a restart, downloading my data as a JSON file, deleting the account, the privacy policy without signing in, 320 px width and no internet. The profile server is stubbed with memory (the real one requires signing in, and the code goes only to the server terminal), the Vitest tests cover it (worker/profile/profile.test.ts). The privacy policy runs with no stubs at all.
+ * PL: Test ścieżek podtoru 7 (profil i ustawienia, wiersz panelu z rolą): zmiana imienia, klasy i szkoły z akcentem niebieskim albo czerwonym, wybór motywu (automatyczny, jasny, ciemny) i większego tekstu, które zostają po ponownym uruchomieniu, pobranie moich danych jako pliku JSON, usunięcie konta, polityka prywatności bez logowania, szerokość 320 px i brak internetu. Serwer profilu jest podstawiony z pamięcią (prawdziwy wymaga logowania, a kod trafia tylko do terminala serwera), jego sprawdzają testy Vitest (worker/profile/profile.test.ts). Polityka prywatności idzie bez żadnych podstawek.
+ * EN: Test of the subtrack 7 paths (profile and settings): changing the name, class and school with the blue or red accent, choosing a theme (automatic, light, dark) and the larger text that stay after a restart, downloading my data as a JSON file, deleting the account, the privacy policy without signing in, 320 px width and no internet. The profile server is stubbed with memory (the real one requires signing in, and the code goes only to the server terminal), the Vitest tests cover it (worker/profile/profile.test.ts). The privacy policy runs with no stubs at all.
  *
  * @author Jakub
  * @since 2026-10-11
@@ -19,6 +19,8 @@ import { readFile } from 'node:fs/promises';
 const EMAIL = 'ola.testowa@teb.edu.pl';
 
 /** PL: Profil, który ma uczeń na początku testu. EN: The profile the student has at the start of a test. */
+// PL: Serwer nadal zwraca paletę z bazy, ale strona jej nie używa. Motyw jest tylko w telefonie, więc nie ma go w profilu.
+// EN: The server still returns the palette from the database, but the page does not use it. The theme is only on the phone, so it is not in the profile.
 const START_PROFILE = { name: '', className: '', school: 'L', palette: 'CE', textSize: 'normalny' };
 
 /** PL: Stan podstawionego serwera: profil, sesja i liczba wywołań usunięcia konta. EN: The state of the stubbed server: the profile, the session and the number of account deletion calls. */
@@ -90,20 +92,41 @@ async function accentHue(page: Page): Promise<'red' | 'blue'> {
  * EN: Types the data into the settings and saves.
  *
  * @param page - PL: strona testu. EN: the test page.
- * @param values - PL: imię, klasa, nazwa szkoły i nazwa palety do wybrania. EN: the name, class, school name and palette name to choose.
+ * @param values - PL: imię, klasa i nazwa szkoły do wpisania. EN: the name, class and school name to fill in.
  */
-async function saveSettings(page: Page, values: { name: string; className: string; school: string; palette: string }): Promise<void> {
+async function saveSettings(page: Page, values: { name: string; className: string; school: string }): Promise<void> {
   // PL: Wejdź w ustawienia i wypełnij pola.
   // EN: Open the settings and fill in the fields.
   await page.goto('/profile/ustawienia');
   await page.getByLabel('Imię').fill(values.name);
   await page.getByLabel('Klasa').fill(values.className);
   await page.getByRole('radio', { name: values.school }).check();
-  await page.getByRole('radio', { name: values.palette }).check();
   // PL: Zapisz i poczekaj na potwierdzenie.
   // EN: Save and wait for the confirmation.
   await page.getByRole('button', { name: 'Zapisz' }).click();
   await expect(page.getByRole('status')).toHaveText('Zapisano.');
+}
+
+/**
+ * PL: Wybiera motyw w ustawieniach. Motyw działa od razu, bez zapisu. Strona ustawień musi być otwarta.
+ * EN: Chooses the theme in the settings. The theme works at once, without a save. The settings page must be open.
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ * @param name - PL: nazwa motywu. EN: the theme name.
+ */
+async function chooseTheme(page: Page, name: 'Automatyczny' | 'Jasny' | 'Ciemny'): Promise<void> {
+  await page.getByRole('group', { name: 'Motyw' }).getByRole('radio', { name }).check();
+}
+
+/**
+ * PL: Odczytuje kolor tła ze strony małymi literami, np. "#000000".
+ * EN: Reads the background color from the page in lowercase, e.g. "#000000".
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ * @returns PL: kolor tła. EN: the background color.
+ */
+async function bgColor(page: Page): Promise<string> {
+  return (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg'))).trim().toLowerCase();
 }
 
 // PL: Zmiana imienia, klasy i szkoły: profil pokazuje nowe dane, a akcent zmienia się z niebieskiego na czerwony i z powrotem.
@@ -119,7 +142,7 @@ test('zmiana imienia, klasy i szkoły zmienia profil i akcent / changing name, c
 
   // PL: Zapisz dane z technikum: akcent staje się czerwony od razu, na tej samej stronie.
   // EN: Save data with the technical school: the accent turns red at once, on the same page.
-  await saveSettings(page, { name: 'Ola', className: '3TA', school: 'Technikum', palette: 'CE Grafit' });
+  await saveSettings(page, { name: 'Ola', className: '3TA', school: 'Technikum' });
   expect(await accentHue(page)).toBe('red');
 
   // PL: Profil pokazuje imię i klasę z zasłoniętym adresem, a „Moje zgłoszenia” prowadzą do zgłoszeń.
@@ -131,7 +154,7 @@ test('zmiana imienia, klasy i szkoły zmienia profil i akcent / changing name, c
 
   // PL: Wróć do liceum: akcent znów niebieski.
   // EN: Go back to the lyceum: the accent is blue again.
-  await saveSettings(page, { name: 'Ola', className: '3TA', school: 'Liceum', palette: 'CE Grafit' });
+  await saveSettings(page, { name: 'Ola', className: '3TA', school: 'Liceum' });
   expect(await accentHue(page)).toBe('blue');
 });
 
@@ -185,26 +208,30 @@ test('wiersz „Moje urządzenia” prowadzi do /auth/email/urzadzenia / the row
   await Promise.all([page.waitForURL(/\/auth\/email\/urzadzenia$/, { waitUntil: 'commit' }), row.click()]);
 });
 
-// PL: Wybrana paleta zostaje po ponownym uruchomieniu: na innym ekranie, po przeładowaniu i gdy serwer profilu nie odpowiada.
-// EN: The chosen palette stays after a restart: on another screen, after a reload and when the profile server does not answer.
-test('wybrana paleta zostaje po ponownym uruchomieniu / the chosen palette stays after a restart', async ({ page }) => {
-  await stubServer(page);
+// PL: Wybrany motyw zostaje po ponownym uruchomieniu: na innym ekranie, po przeładowaniu i gdy serwer profilu nie odpowiada. Motyw nie idzie na serwer.
+// EN: The chosen theme stays after a restart: on another screen, after a reload and when the profile server does not answer. The theme does not go to the server.
+test('wybrany motyw zostaje po ponownym uruchomieniu / the chosen theme stays after a restart', async ({ page }) => {
+  const state = await stubServer(page);
+  await page.goto('/profile/ustawienia');
 
-  // PL: Wybierz paletę CG Biel i zapisz.
-  // EN: Choose the CG Biel palette and save.
-  await saveSettings(page, { name: 'Ola', className: '3TA', school: 'Liceum', palette: 'CG Biel' });
-  await expect(page.locator('html')).toHaveAttribute('data-paleta', 'CG');
+  // PL: Wybierz motyw Ciemny. Zapisu nie trzeba: motyw działa od razu i nie trafia do profilu na serwerze.
+  // EN: Choose the Ciemny theme. No save is needed: the theme works at once and does not go into the profile on the server.
+  await chooseTheme(page, 'Ciemny');
+  await expect(page.locator('html')).toHaveAttribute('data-motyw', 'ciemny');
+  expect(state.profile).not.toHaveProperty('theme');
 
-  // PL: Inny ekran (pulpit, bez zapytań o profil) po przeładowaniu ma tę samą paletę.
-  // EN: Another screen (the dashboard, with no profile queries) after a reload has the same palette.
+  // PL: Inny ekran (pulpit, bez zapytań o profil) po przeładowaniu ma ten sam motyw.
+  // EN: Another screen (the dashboard, with no profile queries) after a reload has the same theme.
   await page.goto('/');
-  await expect(page.locator('html')).toHaveAttribute('data-paleta', 'CG');
+  await expect(page.locator('html')).toHaveAttribute('data-motyw', 'ciemny');
+  expect(await bgColor(page)).toBe('#000000');
 
-  // PL: Po „ponownym uruchomieniu” z niedziałającym serwerem profilu paleta nadal jest ta sama.
-  // EN: After a "restart" with a dead profile server the palette is still the same.
+  // PL: Po „ponownym uruchomieniu” z niedziałającym serwerem profilu motyw nadal jest ten sam.
+  // EN: After a "restart" with a dead profile server the theme is still the same.
   await page.route('**/api/profile', (route) => route.fulfill({ status: 503, json: { error: 'server_error' } }));
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-paleta', 'CG');
+  await expect(page.locator('html')).toHaveAttribute('data-motyw', 'ciemny');
+  expect(await bgColor(page)).toBe('#000000');
 });
 
 // PL: Przełącznik „Większy tekst” zapisuje rozmiar, powiększa tekst w całej aplikacji i zostaje po przeładowaniu, także gdy serwer profilu nie odpowiada.
@@ -289,31 +316,75 @@ test('błąd pobierania pokazuje komunikat / a download error shows a message', 
   expect(exportCalls).toBe(1);
 });
 
-// PL: Każda z ośmiu palet daje się wybrać i ustawia swój kod na stronie.
-// EN: Each of the eight palettes can be chosen and sets its code on the page.
-test('osiem palet do wyboru / eight palettes to choose from', async ({ page }) => {
+// PL: Motyw Automatyczny idzie za telefonem, a Jasny i Ciemny go zastępują, także gdy telefon zmienia tryb.
+// EN: The Automatyczny theme follows the phone, and Jasny and Ciemny override it, also when the phone changes its mode.
+test('motyw idzie za telefonem albo wyborem / the theme follows the phone or the choice', async ({ page }) => {
+  await stubServer(page);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/profile/ustawienia');
+
+  // PL: Start: motyw Automatyczny, telefon w ciemnym trybie. Atrybutu nie ma, a tło jest czarne.
+  // EN: Start: the Automatyczny theme, the phone in dark mode. There is no attribute and the background is black.
+  await expect(page.locator('html')).not.toHaveAttribute('data-motyw');
+  expect(await bgColor(page)).toBe('#000000');
+
+  // PL: Jasny wygrywa z telefonem w ciemnym trybie: tło jest jasne.
+  // EN: Jasny wins over the phone in dark mode: the background is light.
+  await chooseTheme(page, 'Jasny');
+  await expect(page.locator('html')).toHaveAttribute('data-motyw', 'jasny');
+  expect(await bgColor(page)).toBe('#f2f2f7');
+
+  // PL: Ciemny wygrywa z telefonem w jasnym trybie: po zmianie trybu telefonu nadal jest ciemny.
+  // EN: Ciemny wins over the phone in light mode: after the phone's mode changes it is still dark.
+  await chooseTheme(page, 'Ciemny');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).toHaveAttribute('data-motyw', 'ciemny');
+  expect(await bgColor(page)).toBe('#000000');
+
+  // PL: Automatyczny znów idzie za telefonem: w jasnym trybie tło jest jasne, a atrybut znika.
+  // EN: Automatyczny follows the phone again: in light mode the background is light, and the attribute goes away.
+  await chooseTheme(page, 'Automatyczny');
+  await expect(page.locator('html')).not.toHaveAttribute('data-motyw');
+  expect(await bgColor(page)).toBe('#f2f2f7');
+});
+
+// PL: Motyw i szkoła działają razem: tło zależy od motywu, a akcent od szkoły, także po zapisie i po przeładowaniu.
+// EN: The theme and the school work together: the background depends on the theme, and the accent on the school, also after a save and a reload.
+test('motyw i szkoła razem / the theme and the school together', async ({ page }) => {
   await stubServer(page);
   await page.goto('/profile/ustawienia');
 
-  // PL: Jest dokładnie osiem przycisków palet i osiem nazw kodów (szkoły są w osobnej grupie).
-  // EN: There are exactly eight palette buttons and eight code names (the schools are in a separate group).
-  const palettes = page.getByRole('group', { name: 'Paleta kolorów' }).getByRole('radio');
-  await expect(palettes).toHaveCount(8);
+  // PL: Motyw Jasny z liceum: tło jasne, akcent niebieski.
+  // EN: The Jasny theme with the lyceum: light background, blue accent.
+  await chooseTheme(page, 'Jasny');
+  expect(await bgColor(page)).toBe('#f2f2f7');
+  expect(await accentHue(page)).toBe('blue');
 
-  // PL: Zapisz każdą po kolei i sprawdź kod na stronie.
-  // EN: Save each one in turn and check the code on the page.
-  for (const code of ['CA', 'CB', 'CC', 'CD', 'CE', 'CF', 'CG', 'CH']) {
-    await page.getByRole('radio', { name: new RegExp(`^${code} `) }).check();
-    await page.getByRole('button', { name: 'Zapisz' }).click();
-    await expect(page.locator('html')).toHaveAttribute('data-paleta', code);
-  }
+  // PL: Zapisz technikum: akcent staje się czerwony, a tło zostaje jasne, bo motyw się nie zmienił.
+  // EN: Save the technical school: the accent turns red, and the background stays light, because the theme did not change.
+  await saveSettings(page, { name: 'Ola', className: '3TA', school: 'Technikum' });
+  expect(await bgColor(page)).toBe('#f2f2f7');
+  expect(await accentHue(page)).toBe('red');
+
+  // PL: Motyw Ciemny z technikum: tło czarne, akcent nadal czerwony.
+  // EN: The Ciemny theme with the technical school: black background, the accent still red.
+  await chooseTheme(page, 'Ciemny');
+  expect(await bgColor(page)).toBe('#000000');
+  expect(await accentHue(page)).toBe('red');
+
+  // PL: Zapisz liceum w ciemnym motywie: akcent niebieski, tło czarne.
+  // EN: Save the lyceum in the dark theme: blue accent, black background.
+  await saveSettings(page, { name: 'Ola', className: '3TA', school: 'Liceum' });
+  expect(await bgColor(page)).toBe('#000000');
+  expect(await accentHue(page)).toBe('blue');
 });
 
-// PL: Usunięcie konta: potwierdzenie, jedno wywołanie serwera, ekran logowania, wygląd domyślny, a profil bez sesji odsyła na logowanie.
-// EN: Deleting the account: the confirmation, one server call, the sign-in screen, the default look, and the profile without a session sends to sign-in.
+// PL: Usunięcie konta: potwierdzenie, jedno wywołanie serwera, ekran logowania, wygląd domyślny (motyw Automatyczny, liceum), a profil bez sesji odsyła na logowanie.
+// EN: Deleting the account: the confirmation, one server call, the sign-in screen, the default look (the Automatyczny theme, the lyceum), and the profile without a session sends to sign-in.
 test('usunięcie konta kończy się ekranem logowania / deleting the account ends at the sign-in screen', async ({ page }) => {
   const state = await stubServer(page);
-  await saveSettings(page, { name: 'Ola', className: '3TA', school: 'Technikum', palette: 'CH Granat' });
+  await saveSettings(page, { name: 'Ola', className: '3TA', school: 'Technikum' });
+  await chooseTheme(page, 'Ciemny');
 
   // PL: Z profilu przejdź do potwierdzenia. Anulowanie niczego nie usuwa.
   // EN: Go from the profile to the confirmation. Cancelling deletes nothing.
@@ -329,7 +400,7 @@ test('usunięcie konta kończy się ekranem logowania / deleting the account end
   await page.getByRole('button', { name: 'Usuń konto i dane' }).click();
   await expect(page).toHaveURL(/\/auth\/email/);
   expect(state.deleteCalls).toBe(1);
-  await expect(page.locator('html')).toHaveAttribute('data-paleta', 'CE');
+  await expect(page.locator('html')).not.toHaveAttribute('data-motyw');
   await expect(page.locator('html')).toHaveAttribute('data-szkola', 'L');
 
   // PL: Po usunięciu profil odsyła na logowanie.

@@ -20,15 +20,28 @@
   padding: 0;
 }
 
-/* PL: Tło za aplikacją widać poza kolumną 430 px, na przykład na komputerze.
-   EN: The background behind the app shows outside the 430 px column, for example on a computer. */
+/* PL: Tło za aplikacją widać poza kolumną ekranu, na przykład na komputerze. Przeglądarka rysuje formularze w kolorach motywu,
+   a reguły z tokens.css (data-motyw) to nadpisują, więc ten wpis jest tylko zapasowy.
+   EN: The background behind the app shows outside the screen column, for example on a computer. The browser draws forms in the theme
+   colors, and the rules in tokens.css (data-motyw) override this, so this entry is only a fallback. */
 html {
   background: var(--bg-deep);
+  color-scheme: light dark;
 }
 
-/* PL: Tekst: krój, kolor, rozmiar 16 px i interlinia 1,45. Wygładzanie liter na iPhonie i Macu.
+/* PL: Na iPhonie i Androidzie tekst rośnie razem z ustawieniem wielkości liter w telefonie: html dostaje krój i rozmiar systemu,
+   a wszystkie rozmiary w tokens.css są w rem, więc skalują się od niego.
+   EN: On iPhone and Android the text grows with the text size setting of the phone: html gets the system typeface and size,
+   and all sizes in tokens.css are in rem, so they scale from it. */
+@supports (font: -apple-system-body) {
+  html {
+    font: -apple-system-body;
+  }
+}
+
+/* PL: Tekst: krój, kolor, rozmiar 17 px (1,0625 rem) i interlinia 1,45. Wygładzanie liter na iPhonie i Macu.
    Boczne marginesy bezpieczne chronią treść przed wycięciem ekranu, gdy telefon leży poziomo.
-   EN: Text: typeface, color, 16 px size and 1.45 line height. Font smoothing on iPhone and Mac.
+   EN: Text: typeface, color, 17 px (1.0625 rem) size and 1.45 line height. Font smoothing on iPhone and Mac.
    Safe side margins keep the content clear of the screen cutout when the phone lies sideways. */
 body {
   font-family: var(--font);
@@ -61,7 +74,7 @@ label {
 /* PL: Nagłówek H1 jest duży i pogrubiony. Podział wiersza wyrównuje długość linii.
    EN: The H1 heading is large and bold. Line breaking balances the line lengths. */
 h1 {
-  font-size: var(--t-xl);
+  font-size: var(--t-title);
   line-height: 1.12;
   font-weight: 800;
   letter-spacing: -0.01em;

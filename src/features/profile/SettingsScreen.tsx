@@ -1,12 +1,13 @@
 /**
- * PL: Ekran „Ustawienia”: zmiana imienia, klasy, szkoły, palety kolorów i większego tekstu. Szkoła wybiera akcent (liceum niebieski, technikum czerwony), a paleta zmienia kolory całej aplikacji, a większy tekst powiększa litery w całej aplikacji. Zapis idzie na serwer, a wygląd od razu zmienia się na stronie i zostaje w telefonie. Tekstów tego ekranu nie ma w docs/projekt/EKRANY.md, ale właściciel je zatwierdził.
- * EN: The "Ustawienia" screen: changing the name, class, school, color palette and larger text. The school picks the accent (lyceum blue, technical school red), the palette changes the colors of the whole app, and the larger text enlarges the letters of the whole app. The save goes to the server, and the look changes on the page at once and stays on the phone. The texts of this screen are not in docs/projekt/EKRANY.md, but the owner approved them.
+ * PL: Ekran „Ustawienia”: zmiana imienia, klasy, szkoły, motywu i większego tekstu. Szkoła wybiera akcent (liceum niebieski, technikum czerwony), a motyw (automatyczny, jasny albo ciemny) zmienia kolory całej aplikacji, a większy tekst powiększa litery w całej aplikacji. Zapis imienia, klasy i szkoły idzie na serwer, a motyw działa od razu i zostaje tylko w tym telefonie. Tekstów tego ekranu nie ma w docs/projekt/EKRANY.md, ale właściciel je zatwierdził.
+ * EN: The "Ustawienia" screen: changing the name, class, school, theme and larger text. The school picks the accent (lyceum blue, technical school red), the theme (automatic, light or dark) changes the colors of the whole app, and the larger text enlarges the letters of the whole app. The name, class and school are saved to the server; the theme works at once and stays only on this phone. The texts of this screen are not in docs/projekt/EKRANY.md, but the owner approved them.
  *
  * @author Jakub
  * @since 2026-10-11
  * @uses src/features/profile/queries.ts::useProfile
  * @uses src/features/profile/queries.ts::useSaveProfile
- * @uses src/features/profile/look.ts::PALETTES
+ * @uses src/features/profile/look.ts::THEMES
+ * @uses src/features/profile/look.ts::applyTheme
  * @uses src/features/profile/textSize.ts::TextSize
  * @uses src/features/profile/api.ts::fetchMyData
  * @uses src/features/profile/icons.tsx::Icon
@@ -23,7 +24,7 @@ import { Link } from 'react-router';
 // EN: The data, the look and the bar.
 import { EXPORT_FILE_NAME, fetchMyData, type Profile } from './api';
 import { Icon } from './icons';
-import { PALETTES, SCHOOLS } from './look';
+import { SCHOOLS, THEMES, applyTheme, currentLook, type Theme } from './look';
 import { useProfile, useSaveProfile } from './queries';
 import type { TextSize } from './textSize';
 import { ScreenTop } from './ScreenTop';
@@ -80,7 +81,16 @@ function SettingsForm({ initial }: { initial: Profile }) {
   // PL: Wpisywane wartości i zapis na serwer.
   // EN: The typed values and the save to the server.
   const [draft, setDraft] = useState<Profile>(initial);
+  // PL: Motyw jest tylko w tym telefonie, więc start to to, co jest teraz na stronie.
+  // EN: The theme is only on this phone, so the start is what is on the page now.
+  const [theme, setTheme] = useState<Theme>(() => currentLook().theme);
   const save = useSaveProfile();
+
+  /** PL: Zmienia motyw od razu na stronie i w telefonie, bez zapisu na serwer. EN: Changes the theme at once on the page and on the phone, without a save to the server. */
+  function handleTheme(next: Theme): void {
+    setTheme(next);
+    applyTheme(next);
+  }
 
   /** PL: Wysyła profil na serwer zamiast przeładowywać stronę. EN: Sends the profile to the server instead of reloading the page. */
   function handleSubmit(event: FormEvent): void {
@@ -99,7 +109,7 @@ function SettingsForm({ initial }: { initial: Profile }) {
         <span>Klasa</span>
         <input value={draft.className} maxLength={MAX_CLASS_LENGTH} onChange={(event) => setDraft({ ...draft, className: event.target.value })} />
       </label>
-      {/* PL: Przełącznik większego tekstu, wybór szkoły i palety. EN: The larger text switch, the school and palette choice. */}
+      {/* PL: Przełącznik większego tekstu, wybór szkoły i motywu. EN: The larger text switch, the school and theme choice. */}
       <fieldset className="pf-group">
         <legend>Wielkość tekstu</legend>
         <div className="pf-chips">
@@ -111,7 +121,7 @@ function SettingsForm({ initial }: { initial: Profile }) {
         </div>
       </fieldset>
       <ChipGroup legend="Szkoła" options={SCHOOLS.map((school) => ({ code: school.code, label: school.name }))} value={draft.school} onChange={(school) => setDraft({ ...draft, school })} />
-      <ChipGroup legend="Paleta kolorów" options={PALETTES.map((palette) => ({ code: palette.code, label: `${palette.code} ${palette.name}` }))} value={draft.palette} onChange={(palette) => setDraft({ ...draft, palette })} />
+      <ChipGroup legend="Motyw" options={THEMES.map((item) => ({ code: item.code, label: item.name }))} value={theme} onChange={handleTheme} />
       {/* PL: Wynik zapisu: potwierdzenie albo błąd. EN: The save result: a confirmation or an error. */}
       {save.isSuccess ? <p className="pf-hint" role="status">Zapisano.</p> : null}
       {save.isError ? <p className="pf-error" role="alert">Nie udało się zapisać.</p> : null}

@@ -19,18 +19,18 @@ import { renderToString } from 'react-dom/server';
 import { Button } from './Button';
 
 describe('przycisk / the button', () => {
-  it('domyślnie jest przyciskiem typu „button” w wyglądzie głównym / by default it is a "button" type button in the primary look', () => {
+  it('domyślnie jest przyciskiem typu „button” w wyglądzie wypełnionym / by default it is a "button" type button in the filled look', () => {
     const html = renderToString(<Button>Wyślij</Button>);
 
     expect(html).toContain('<button');
     expect(html).toContain('type="button"');
-    expect(html).toContain('class="ui-button ui-button--accent"');
+    expect(html).toContain('class="ui-button ui-button--filled"');
     expect(html).toContain('Wyślij');
   });
 
-  it('wygląd miękki i z obwódką dają własną klasę / the soft and outlined looks get their own class', () => {
-    expect(renderToString(<Button variant="soft">Anuluj</Button>)).toContain('ui-button--soft');
-    expect(renderToString(<Button variant="outline">Później</Button>)).toContain('ui-button--outline');
+  it('wygląd tekstowy i w kolorze błędu dają własną klasę / the text and the error-colored looks get their own class', () => {
+    expect(renderToString(<Button variant="plain">Edytuj</Button>)).toContain('ui-button--plain');
+    expect(renderToString(<Button variant="destructive">Usuń konto</Button>)).toContain('ui-button--destructive');
   });
 
   it('wyłączony przycisk ma atrybut disabled, więc nie reaguje na klik i klawisz / a disabled button has the disabled attribute, so it reacts to neither click nor key', () => {

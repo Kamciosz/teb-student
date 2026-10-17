@@ -73,8 +73,8 @@ export default defineConfig({
       // PL: Wtyczka sama dokłada do index.html skrypt, który rejestruje service worker, więc src/main.tsx zostaje bez zmian.
       // EN: The plugin adds the script that registers the service worker to index.html by itself, so src/main.tsx stays unchanged.
       injectRegister: 'auto',
-      // PL: Manifest aplikacji. Nazwa i opis są z docs/projekt/EKRANY.md (ekran 1.1), kolory z palety CE Grafit w src/shared/styles/tokens.css.
-      // EN: The app manifest. The name and description come from docs/projekt/EKRANY.md (screen 1.1), the colors from the CE Graphite palette in src/shared/styles/tokens.css.
+      // PL: Manifest aplikacji. Nazwa i opis są z docs/projekt/EKRANY.md (ekran 1.1), kolory z jasnego motywu w src/shared/styles/tokens.css.
+      // EN: The app manifest. The name and description come from docs/projekt/EKRANY.md (screen 1.1), the colors from the light theme in src/shared/styles/tokens.css.
       manifest: {
         // PL: Pełna nazwa aplikacji.
         // EN: The full app name.
@@ -95,12 +95,12 @@ export default defineConfig({
         // EN: The address opened from the icon and the range of addresses that belong to the app.
         start_url: '/',
         scope: '/',
-        // PL: Kolor paska systemowego: tło --bg z palety CE (#26282d).
-        // EN: The system bar color: the --bg background of the CE palette (#26282d).
-        theme_color: '#26282d',
-        // PL: Kolor ekranu startowego: też tło --bg z palety CE.
-        // EN: The splash screen color: also the --bg background of the CE palette.
-        background_color: '#26282d',
+        // PL: Kolor paska systemowego: tło --bg jasnego motywu (#F2F2F7). Ciemny motyw ustawia kolor w index.html.
+        // EN: The system bar color: the --bg background of the light theme (#F2F2F7). The dark theme sets its color in index.html.
+        theme_color: '#F2F2F7',
+        // PL: Kolor ekranu startowego: też tło --bg jasnego motywu.
+        // EN: The splash screen color: also the --bg background of the light theme.
+        background_color: '#F2F2F7',
         // PL: Ikony: znak marki (kwadrat w kolorze akcentu z literą „T”). Ikona „maskable” ma tło do samej krawędzi, bo Android przycina ją do własnego kształtu.
         // EN: Icons: the brand mark (an accent-colored square with the letter "T"). The "maskable" icon has the background up to the edge, because Android crops it to its own shape.
         icons: [
