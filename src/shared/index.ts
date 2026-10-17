@@ -6,6 +6,7 @@
  * @since 2026-10-09
  * @uses src/shared/ui/UnderConstruction.tsx::UnderConstruction
  * @uses src/shared/ui/Dock.tsx::Dock
+ * @uses src/shared/ui/Icon.tsx::Icon
  * @uses src/shared/navigation/items.ts::DOCK_ITEMS
  * @uses src/shared/query/AppQueryProvider.tsx::AppQueryProvider
  * @uses src/shared/query/clearQueryData.ts::clearQueryData
@@ -31,7 +32,10 @@ export { UnderConstruction } from './ui/UnderConstruction';
 export { Dock } from './ui/Dock';
 // PL: Wpisy dolnego paska i menu panelu oraz typ wpisu.
 // EN: The bottom bar and panel menu entries and the entry type.
-export { DOCK_ITEMS, PANEL_MENU_ITEMS, type NavigationItem } from './navigation/items';
+export { DOCK_ITEMS, PANEL_MENU_ITEMS, type NavigationItem, type DockItem } from './navigation/items';
+// PL: Wspólne ikony aplikacji i ich nazwy.
+// EN: The shared app icons and their names.
+export { Icon, type IconName } from './ui/Icon';
 // PL: Dostawca zapytań z zapisem w telefonie. Stoi tylko w korzeniu aplikacji (App.tsx).
 // EN: The query provider with saving on the phone. It stands only at the app root (App.tsx).
 export { AppQueryProvider } from './query/AppQueryProvider';
