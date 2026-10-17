@@ -53,20 +53,6 @@
   color: var(--ink-2);
 }
 
-/* PL: Wiersz przełącznika „Dziś lekcje skrócone”: napis z lewej, pole z prawej. EN: The row of the "Dziś lekcje skrócone" switch: the label on the left, the box on the right. */
-.bell-shortened__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-/* PL: Komunikat błędu pod przełącznikiem. EN: The error message under the switch. */
-.bell-shortened__error {
-  margin: 4px 0 0;
-  color: var(--ink-2);
-}
-
 /* PL: Komunikat, gdy planu dzwonków nie ma (zamiast pustego ekranu). EN: The message shown when there is no bell plan (instead of an empty screen). */
 .bell-empty {
   margin: 0;

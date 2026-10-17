@@ -25,6 +25,8 @@ Do #61 (stan z 12.10): szkielet, PWA i baza D1, logowanie kodem (1a), aktualnoś
 | 8 | panel Samorządu, role, kody zaproszeń, pilotaż, dziennik zmian (publikacja, usunięcie, zmiana etapu) | #68, #69, #100, #111, #134, #148 |
 | 9 | kafelek dzwonka, kolejność kafelków, minuty do dzwonka, stan dnia w nagłówku | #102, #116, #136, #142, #149, #153 |
 
+Dni skróconych nie ma (decyzja Szymona 14.10). Funkcja usunięta.
+
 Od #157 do #170 weszły zdjęcia w zgłoszeniach i we wpisach:
 
 | Podtor | Co | Pull requesty |

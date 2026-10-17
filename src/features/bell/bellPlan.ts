@@ -1,6 +1,6 @@
 /**
- * PL: Plan dzwonków podtoru 6 (licznik do dzwonka). To jedyne miejsce z godzinami lekcji. Plan wpisany wg planu szkoły z 14.10.2026. Lekcje są numerowane od 0 (lekcja 0 to 07:10–07:55). Planu skróconego nie wpisujemy: godziny poda szkoła.
- * EN: The bell plan of subtrack 6 (bell countdown). This is the only place with lesson times. The plan is filled in from the school's plan of 14.10.2026. Lessons are numbered from 0 (lesson 0 is 07:10–07:55). The shortened plan is not filled in: the school will give the hours.
+ * PL: Plan dzwonków podtoru 6 (licznik do dzwonka). To jedyne miejsce z godzinami lekcji. Plan wpisany wg planu szkoły z 14.10.2026. Lekcje są numerowane od 0 (lekcja 0 to 07:10–07:55).
+ * EN: The bell plan of subtrack 6 (bell countdown). This is the only place with lesson times. The plan is filled in from the school's plan of 14.10.2026. Lessons are numbered from 0 (lesson 0 is 07:10–07:55).
  *
  * @author Szymon Sosnowski
  * @since 2026-10-13
@@ -28,7 +28,3 @@ export const BELL_PLAN: readonly Lesson[] = [
   { start: '16:45', end: '17:30' },
   { start: '17:35', end: '18:20' },
 ];
-
-// PL: Plan skrócony, który Samorząd włącza na wybrany dzień (lekcje skrócone). Pusty, bo godziny poda szkoła. TO_AGREE: godziny planu skróconego uzgadniamy ze szkołą; dopóki są puste, dzień skrócony nie pokazuje licznika.
-// EN: The shortened plan the Student Council turns on for a chosen day (shortened lessons). Empty, because the school will provide the hours. TO_AGREE: the shortened plan hours are agreed with the school; while they are empty, a shortened day shows no countdown.
-export const SHORTENED_BELL_PLAN: readonly Lesson[] = [];
