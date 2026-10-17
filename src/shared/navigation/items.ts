@@ -6,8 +6,13 @@
  * @since 2026-10-09
  * @used_by src/shared/ui/Dock.tsx::Dock
  * @used_by src/features/admin/AdminLayout.tsx::AdminLayout
+ * @uses src/shared/ui/Icon.tsx::IconName
  * @used_by src/shared/index.ts::DOCK_ITEMS
  */
+
+// PL: Nazwa ikony dla pozycji dolnego paska.
+// EN: The icon name for a bottom bar entry.
+import type { IconName } from '../ui/Icon';
 
 /**
  * PL: Jeden wpis nawigacji: dokąd prowadzi i jak się nazywa.
@@ -16,21 +21,34 @@
 export type NavigationItem = {
   /** PL: Adres ekranu w aplikacji, zgodny z listą w src/app/routes.ts. EN: The screen address in the app, matching the list in src/app/routes.ts. */
   path: string;
-  /** PL: Napis, który widzi uczeń. Dla przycisku „+” w dolnym pasku to opis dla czytnika ekranu. EN: The text the student sees. For the "+" button in the bottom bar it is the screen reader description. */
+  /** PL: Napis, który widzi uczeń (w dolnym pasku także nazwa dla czytnika ekranu). EN: The text the student sees (in the bottom bar also the name for the screen reader). */
   label: string;
 };
 
 /**
- * PL: Dolny pasek: Pulpit, przycisk „+” prowadzący do zgłoszenia i Ankiety. Kolejność jak w docs/projekt/referencje/uklad_C.html.
- * EN: The bottom bar: Dashboard, the "+" button leading to a report, and Surveys. The order follows docs/projekt/referencje/uklad_C.html.
+ * PL: Pozycja dolnego paska: jak w zwykłym wpisie, plus nazwa ikony nad napisem.
+ * EN: A bottom bar entry: like a plain entry, plus the icon name shown above the label.
  */
-export const DOCK_ITEMS: readonly NavigationItem[] = [
+export type DockItem = NavigationItem & {
+  /** PL: Ikona z zestawu src/shared/ui/Icon.tsx. EN: The icon from the set in src/shared/ui/Icon.tsx. */
+  icon: IconName;
+};
+
+/**
+ * PL: Dolny pasek: Pulpit, Aktualności, Zgłoszenia, Ankiety i Profil, w tej kolejności. Pięć równych pozycji, bez przycisku dodawania.
+ * EN: The bottom bar: Dashboard, News, Reports, Surveys and Profile, in this order. Five equal entries, with no add button.
+ */
+export const DOCK_ITEMS: readonly DockItem[] = [
   // PL: Pulpit, ekran startowy (podtor 9). EN: The dashboard, the start screen (subtrack 9).
-  { path: '/', label: 'Pulpit' },
-  // PL: Zgłoszenie problemu (podtor 4a), w makiecie przycisk „+” z opisem „Zgłoś problem”. EN: Reporting a problem (subtrack 4a), in the mockup the "+" button labelled "Zgłoś problem".
-  { path: '/reports/student', label: 'Zgłoś problem' },
+  { path: '/', label: 'Pulpit', icon: 'layout-dashboard' },
+  // PL: Aktualności, lista wpisów (podtor 3a). EN: News, the list of entries (subtrack 3a).
+  { path: '/news/feed', label: 'Aktualności', icon: 'newspaper' },
+  // PL: Zgłaszanie problemów (podtor 4a). EN: Reporting problems (subtrack 4a).
+  { path: '/reports/student', label: 'Zgłoszenia', icon: 'clipboard-list' },
   // PL: Lista ankiet (podtor 5a). EN: The survey list (subtrack 5a).
-  { path: '/surveys/vote', label: 'Ankiety' },
+  { path: '/surveys/vote', label: 'Ankiety', icon: 'list-checks' },
+  // PL: Profil ucznia (podtor 7). EN: The student profile (subtrack 7).
+  { path: '/profile', label: 'Profil', icon: 'user-round' },
 ];
 
 /**

@@ -1,90 +1,94 @@
 /*
- * PL: Dolny pasek przyklejony do dołu ekranu, na środku, z szerokością do 398 px (jak w makiecie).
- *     Wewnątrz siatka 1fr auto 1fr: po bokach linki, na środku przycisk „+”.
- *     Ukryty tekst (.ui-sr-only) jest tu, bo base.css nie wolno edytować.
- * EN: The bottom bar pinned to the bottom of the screen, centered, up to 398 px wide (as in the mockup).
- *     Inside, a 1fr auto 1fr grid: links on the sides, the "+" button in the middle.
- *     The hidden text (.ui-sr-only) lives here, because base.css must not be edited.
+ * PL: Dolny pasek w wyglądzie natywnej aplikacji iPhone'a: pełna szerokość, przyklejony do dołu, cienka linia u góry, tło z lekką przezroczystością i rozmyciem tego, co pod spodem. Pięć równych pozycji: ikona 24 px nad napisem 11 px.
+ * EN: The bottom bar in the look of a native iPhone app: full width, pinned to the bottom, a thin line on top, a slightly see-through background blurring what is below. Five equal entries: a 24 px icon above an 11 px label.
  */
 
-/* PL: Pasek fixed; env() daje odstęp od paska iPhone'a. Bez 100dvh, bo iOS 15.
-   EN: The bar is fixed; env() gives space from the iPhone home bar. No 100dvh, because of iOS 15. */
-.ui-dock {
-  position: fixed;
-  left: 50%;
-  bottom: calc(16px + env(safe-area-inset-bottom));
-  z-index: 10;
-  transform: translateX(-50%);
-  width: min(calc(100% - 32px), 398px);
-  padding: 8px;
-  border-radius: var(--r-lg);
-  background: var(--tile-2);
-  box-shadow: var(--shadow);
+/* PL: Wysokość paska w jednej zmiennej. Pasek i odstęp pod treścią biorą ją stąd.
+   EN: The bar height in one variable. The bar and the space under the content take it from here. */
+:root {
+  --dock-h: 56px;
 }
 
-/* PL: Siatka wpisów: lewa i prawa połowa po bokach, przycisk „+” pośrodku.
-   EN: The grid of entries: left and right halves at the sides, the "+" button in the middle. */
+/* PL: Odstęp pod treścią: wysokość paska, dolny odstęp telefonu i mały margines, żeby ostatni element dał się przewinąć nad pasek.
+   EN: The space under the content: the bar height, the phone's bottom inset and a small margin, so the last element can be scrolled above the bar. */
+.ui-dock-spacer {
+  height: calc(var(--dock-h) + var(--safe-bottom) + 8px);
+}
+
+/* PL: Pasek przyklejony do dołu. Dolny odstęp to bezpieczny obszar telefonu (pasek domowy), więc przyciski nie leżą pod nim.
+   EN: The bar pinned to the bottom. The bottom padding is the phone's safe area (the home bar), so the buttons do not sit under it. */
+.ui-dock {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  padding-bottom: var(--safe-bottom);
+  border-top: 0.5px solid var(--line);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+/* PL: Tło w osobnej warstwie pod treścią paska, z lekką przezroczystością. Bez color-mix(), bo to zakazane w docs/TECHNOLOGIE.md.
+   EN: The background in its own layer under the bar content, slightly see-through. No color-mix(), because docs/TECHNOLOGIE.md forbids it. */
+.ui-dock::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  background: var(--tile);
+  opacity: 0.85;
+}
+
+/* PL: Siatka pięciu równych pozycji. Na szerokim ekranie pasek trzyma kolumnę treści (430 px), żeby pozycje nie rozjeżdżały się na cały monitor.
+   EN: A grid of five equal entries. On a wide screen the bar keeps the content column (430 px), so the entries do not spread across the whole monitor. */
 .ui-dock ul {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  margin: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  height: var(--dock-h);
+  max-width: 430px;
+  margin: 0 auto;
   padding: 0;
   list-style: none;
 }
 
-/* PL: Zwykły link: kolumna z ikoną i napisem, wysokość dotyku co najmniej 44 px.
-   EN: A plain link: a column with the icon and the label, touch height at least 44 px. */
+/* PL: Pozycja: kolumna z ikoną i napisem. Cały obszar kafelka to cel dotyku (co najmniej 44 na 44 px).
+   EN: An entry: a column with the icon and the label. The whole cell is the touch target (at least 44 by 44 px). */
 .ui-dock-link {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
+  min-width: 44px;
   min-height: 44px;
-  min-width: 44px;
-  padding: 4px;
-  border-radius: var(--r-sm);
+  padding: 4px 0;
   color: var(--ink-2);
-  font-size: var(--t-xs);
   text-decoration: none;
 }
 
-/* PL: Bieżący ekran: napis w pełnym kolorze tekstu. Atrybut ustawia NavLink.
-   EN: The current screen: the label in the full text color. The attribute is set by NavLink. */
-.ui-dock-link[aria-current='page'] {
-  color: var(--ink);
-  font-weight: 700;
+/* PL: Ikona 24 px. Rozmiar ustawia pasek, nie klasa profilu.
+   EN: The 24 px icon. The bar sets the size, not the profile class. */
+.ui-dock-link svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
 }
 
-/* PL: Przycisk „+”: 64 na 48 px, akcent szkoły, tekst z palety, tak jak w makiecie.
-   EN: The "+" button: 64 by 48 px, the school accent, palette text, as in the mockup. */
-.ui-dock-add {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  min-width: 44px;
-  min-height: 48px;
-  margin: 0 8px;
-  border-radius: var(--r);
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: var(--t-xl);
-  font-weight: 700;
-  line-height: 1;
-  text-decoration: none;
-}
-
-/* PL: Tekst tylko dla czytnika: zajmuje 1 px i nie widać go, ale czytnik go czyta.
-   EN: Text for the screen reader only: it takes 1 px and is not visible, but the screen reader reads it. */
-.ui-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
+/* PL: Napis pod ikoną: 11 px, bez zawijania, żeby „Aktualności” nie łamało się przy 320 px.
+   EN: The label under the icon: 11 px, no wrapping, so "Aktualności" does not break at 320 px. */
+.ui-dock-label {
+  display: block;
+  font-size: 0.6875rem;
+  line-height: 1.2;
   white-space: nowrap;
+}
+
+/* PL: Bieżący ekran: akcent szkoły w ikonie i napisie. Atrybut ustawia NavLink.
+   EN: The current screen: the school accent in the icon and the label. The attribute is set by NavLink. */
+.ui-dock-link[aria-current='page'] {
+  color: var(--accent);
 }

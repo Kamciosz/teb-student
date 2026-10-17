@@ -91,7 +91,7 @@ test('kafelki pokazują ważny wpis, ankietę, zgłoszenie i trzy ogłoszenia / 
   await expect(page.getByText('Etap 2 z 3')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Ogłoszenia' }).getByRole('listitem')).toHaveCount(3);
   await expect(page.getByText('12.10', { exact: true })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Menu główne' }).getByRole('link')).toHaveCount(3);
+  await expect(page.getByRole('navigation', { name: 'Menu główne' }).getByRole('link')).toHaveCount(5);
   await expect(page.locator('[data-subtrack="9"]')).toBeVisible();
 });
 
