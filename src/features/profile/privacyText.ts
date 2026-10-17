@@ -1,6 +1,6 @@
 /**
- * PL: Treść polityki prywatności: wersja robocza zebrana z założeń prywatności w docs/PLAN_APLIKACJI.md, część 3. W docs/projekt/EKRANY.md nie ma jej treści, więc zespół ma ją zatwierdzić (oznaczone w pull requeście jako „do ustalenia z zespołem”). Każde zdanie musi zgadzać się z działaniem aplikacji.
- * EN: The privacy policy content: a draft collected from the privacy assumptions in docs/PLAN_APLIKACJI.md, part 3. docs/projekt/EKRANY.md has no content for it, so the team must approve it (marked in the pull request as "do ustalenia z zespołem"). Every sentence must match how the app works.
+ * PL: Treść polityki prywatności, zebrana z założeń prywatności w docs/PLAN_APLIKACJI.md, część 3. W docs/projekt/EKRANY.md nie ma jej treści, a właściciel ją zatwierdził. Każde zdanie musi zgadzać się z działaniem aplikacji.
+ * EN: The privacy policy content, collected from the privacy assumptions in docs/PLAN_APLIKACJI.md, part 3. docs/projekt/EKRANY.md has no content for it, and the owner approved it. Every sentence must match how the app works.
  *
  * @author Jakub
  * @since 2026-10-11

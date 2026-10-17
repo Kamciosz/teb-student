@@ -1,6 +1,6 @@
 /**
- * PL: Ekran „Ustawienia”: zmiana imienia, klasy, szkoły, palety kolorów i większego tekstu. Szkoła wybiera akcent (liceum niebieski, technikum czerwony), a paleta zmienia kolory całej aplikacji, a większy tekst powiększa litery w całej aplikacji. Zapis idzie na serwer, a wygląd od razu zmienia się na stronie i zostaje w telefonie. Tekstów tego ekranu nie ma w docs/projekt/EKRANY.md (do ustalenia z zespołem).
- * EN: The "Ustawienia" screen: changing the name, class, school, color palette and larger text. The school picks the accent (lyceum blue, technical school red), the palette changes the colors of the whole app, and the larger text enlarges the letters of the whole app. The save goes to the server, and the look changes on the page at once and stays on the phone. The texts of this screen are not in docs/projekt/EKRANY.md (to be agreed with the team).
+ * PL: Ekran „Ustawienia”: zmiana imienia, klasy, szkoły, palety kolorów i większego tekstu. Szkoła wybiera akcent (liceum niebieski, technikum czerwony), a paleta zmienia kolory całej aplikacji, a większy tekst powiększa litery w całej aplikacji. Zapis idzie na serwer, a wygląd od razu zmienia się na stronie i zostaje w telefonie. Tekstów tego ekranu nie ma w docs/projekt/EKRANY.md, ale właściciel je zatwierdził.
+ * EN: The "Ustawienia" screen: changing the name, class, school, color palette and larger text. The school picks the accent (lyceum blue, technical school red), the palette changes the colors of the whole app, and the larger text enlarges the letters of the whole app. The save goes to the server, and the look changes on the page at once and stays on the phone. The texts of this screen are not in docs/projekt/EKRANY.md, but the owner approved them.
  *
  * @author Jakub
  * @since 2026-10-11
@@ -189,7 +189,7 @@ export function SettingsScreen() {
       {query.data ? <SettingsForm initial={query.data} /> : null}
       {/* PL: Pobranie własnych danych jest zawsze pod formularzem. EN: Downloading one's own data is always under the form. */}
       <ExportData />
-      {/* PL: Wiersz prowadzi do listy urządzeń (ekran podtoru 1a). Tekst „Moje urządzenia” nie ma w docs/projekt/EKRANY.md, więc jest do uzgodnienia z zespołem. EN: The row leads to the device list (the screen of subtrack 1a). The text "Moje urządzenia" is not in docs/projekt/EKRANY.md, so it is to be agreed with the team. */}
+      {/* PL: Wiersz prowadzi do listy urządzeń (ekran podtoru 1a). Tekst „Moje urządzenia” nie ma w docs/projekt/EKRANY.md, ale właściciel go zatwierdził. EN: The row leads to the device list (the screen of subtrack 1a). The text "Moje urządzenia" is not in docs/projekt/EKRANY.md, but the owner approved it. */}
       <ul className="pf-tile">
         <li>
           <Link className="pf-row" to="/auth/email/urzadzenia">

@@ -75,7 +75,7 @@ function AuthorTile({ isAnonymous, student }: { isAnonymous: boolean; student: A
 
 /**
  * PL: Rysuje pole „Odpowiedź dla autora” z licznikiem znaków. Pole ma `maxLength`, więc nie przyjmie więcej niż limit; licznik pokazuje, ile znaków jest wpisanych.
- * EN: Draws the "Odpowiedź dla autora" field with a character counter. The field has `maxLength`, so it does not take more than the limit; the counter shows how many characters are typed. The field name and the counter are to be agreed with the team.
+ * EN: Draws the "Odpowiedź dla autora" field with a character counter. The field has `maxLength`, so it does not take more than the limit; the counter shows how many characters are typed.
  *
  * @param props - PL: bieżący tekst i funkcja, która go zmienia. EN: the current text and the function that changes it.
  * @returns PL: drzewo elementów pola. EN: the tree of field elements.

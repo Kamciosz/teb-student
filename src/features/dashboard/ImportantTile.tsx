@@ -37,8 +37,8 @@ export type ImportantTileProps = {
  * @returns PL: kafel z linkiem do wpisu albo kafel z napisem o braku wpisów. EN: a tile with a link to the entry, or a tile with a label about no entries.
  */
 export function ImportantTile({ entry }: ImportantTileProps) {
-  // PL: Bez wpisu kafel nie znika, tylko mówi, że nic nie ma. Napis jest z modułu aktualności (do ustalenia z zespołem).
-  // EN: Without an entry the tile does not disappear, it says there is nothing. The label is from the news module (to be agreed with the team).
+  // PL: Bez wpisu kafel nie znika, tylko mówi, że nic nie ma. Napis jest z modułu aktualności.
+  // EN: Without an entry the tile does not disappear, it says there is nothing. The label is from the news module.
   if (entry === null) {
     return (
       <section className="dash-tile dash-tile--important" aria-label="Ważne">

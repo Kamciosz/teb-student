@@ -1,6 +1,6 @@
 /**
- * PL: Logowanie loginem i hasłem dla ucznia, który założył konto kodem zaproszenia. Docs/projekt/EKRANY.md nie ma tego ekranu, więc układ wzoruje się na ekranie 1.3 (login i hasło), a teksty są do ustalenia z zespołem (MESSAGES w inviteMessages.ts).
- * EN: Sign-in with a login and a password for a student who created an account with an invitation code. docs/projekt/EKRANY.md does not have this screen, so the layout follows screen 1.3 (login and password) and the texts are to be agreed with the team (MESSAGES in inviteMessages.ts).
+ * PL: Logowanie loginem i hasłem dla ucznia, który założył konto kodem zaproszenia. Docs/projekt/EKRANY.md nie ma tego ekranu, więc układ wzoruje się na ekranie 1.3 (login i hasło), a teksty są zatwierdzone przez właściciela (MESSAGES w inviteMessages.ts).
+ * EN: Sign-in with a login and a password for a student who created an account with an invitation code. docs/projekt/EKRANY.md does not have this screen, so the layout follows screen 1.3 (login and password) and the texts are approved by the owner (MESSAGES in inviteMessages.ts).
  *
  * @author Szymon
  * @since 2026-10-11
