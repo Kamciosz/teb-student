@@ -9,7 +9,6 @@
  * @uses worker/db/seed/news.ts::*
  * @uses worker/db/seed/reports.ts::*
  * @uses worker/db/seed/surveys.ts::*
- * @uses worker/db/seed/bell.ts::*
  * @uses worker/db/seed/profile.ts::*
  * @uses worker/db/seed/admin.ts::*
  */
@@ -33,10 +32,6 @@ export * from './reports';
 // PL: Moduł surveys.
 // EN: The surveys module.
 export * from './surveys';
-
-// PL: Moduł bell.
-// EN: The bell module.
-export * from './bell';
 
 // PL: Moduł profile.
 // EN: The profile module.

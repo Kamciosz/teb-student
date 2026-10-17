@@ -1,6 +1,6 @@
 /**
- * PL: Test listy routerów serwera. Sprawdza, że każdy z 14 podtorów ma wpis w API_MOUNTS pod adresem /api/<moduł>/<część> i że adresy się nie powtarzają. Podtor 0 (wspólne) nie ma routera z założenia. Pusty router odpowiada 404 tak samo, gdy jest podpięty i gdy go nie ma, więc test sprawdza listę, a nie zapytanie.
- * EN: Test of the server router list. Checks that each of the 14 subtracks has an entry in API_MOUNTS at /api/<module>/<part> and that the addresses do not repeat. Subtrack 0 (shared) has no router by design. An empty router answers 404 both when it is mounted and when it is not, so the test checks the list, not a request.
+ * PL: Test listy routerów serwera. Sprawdza, że każdy z 13 podtorów ma wpis w API_MOUNTS pod adresem /api/<moduł>/<część> i że adresy się nie powtarzają. Podtor 0 (wspólne) nie ma routera z założenia. Pusty router odpowiada 404 tak samo, gdy jest podpięty i gdy go nie ma, więc test sprawdza listę, a nie zapytanie.
+ * EN: Test of the server router list. Checks that each of the 13 subtracks has an entry in API_MOUNTS at /api/<module>/<part> and that the addresses do not repeat. Subtrack 0 (shared) has no router by design. An empty router answers 404 both when it is mounted and when it is not, so the test checks the list, not a request.
  *
  * @author Bohdan
  * @since 2026-10-09
@@ -33,7 +33,6 @@ const EXPECTED_MOUNTS: ReadonlyArray<{ id: string; basePath: string }> = [
   { id: '4b', basePath: '/api/reports/admin' },
   { id: '5a', basePath: '/api/surveys/vote' },
   { id: '5b', basePath: '/api/surveys/admin' },
-  { id: '6', basePath: '/api/bell' },
   { id: '7', basePath: '/api/profile' },
   { id: '8', basePath: '/api/admin' },
   { id: '9', basePath: '/api/dashboard' },

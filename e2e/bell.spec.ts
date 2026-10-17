@@ -1,11 +1,10 @@
 /**
- * PL: Testy ekranu /bell w przeglądarce. Licznik do dzwonka: test z pustym podstawionym planem sprawdza, że licznik się nie pokazuje, a jest napis; testy z podstawionym planem PRZYKŁADOWYM (page.route na moduł planu) i ustawionym zegarem sprawdzają minuty w czasie lekcji i przerwy oraz skrócony plan; jeden test używa prawdziwego planu szkoły. Przełącznik „Dziś lekcje skrócone”: Samorząd go włącza, uczeń go nie widzi. Sieć jest zastąpiona atrapami API.
- * EN: Tests of the /bell screen in the browser. The bell countdown: a test with an empty stubbed plan checks that the countdown is hidden and the text is shown; tests with a stubbed EXAMPLE plan (page.route on the plan module) and a fixed clock check the minutes during a lesson and a break, and the shortened plan; one test uses the school's real plan. The "Dziś lekcje skrócone" switch: the Council turns it on, a student does not see it. The network is replaced by API stubs.
+ * PL: Testy ekranu /bell w przeglądarce. Licznik do dzwonka: test z pustym podstawionym planem sprawdza, że licznik się nie pokazuje, a jest napis; testy z podstawionym planem PRZYKŁADOWYM (page.route na moduł planu) i ustawionym zegarem sprawdzają minuty w czasie lekcji i przerwy; jeden test używa prawdziwego planu szkoły. Sieć jest zastąpiona atrapami API.
+ * EN: Tests of the /bell screen in the browser. The bell countdown: a test with an empty stubbed plan checks that the countdown is hidden and the text is shown; tests with a stubbed EXAMPLE plan (page.route on the plan module) and a fixed clock check the minutes during a lesson and a break; one test uses the school's real plan. The network is replaced by API stubs.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-13
  * @uses src/features/bell/BellScreen.tsx::BellScreen
- * @uses src/features/bell/ShortenedDaySwitch.tsx::ShortenedDaySwitch
  * @used_by playwright.config.ts::testDir
  */
 
@@ -23,71 +22,16 @@ const EXAMPLE_PLAN_JS = `export const BELL_PLAN = [
   { start: '08:00', end: '08:45' },
   { start: '08:55', end: '09:40' },
   { start: '09:50', end: '10:35' },
-];
-export const SHORTENED_BELL_PLAN = [];`;
+];`;
 
 // PL: PUSTY plan podstawiony w miejscu modułu: ekran nie pokazuje licznika.
 // EN: An EMPTY plan stubbed in place of the module: the screen shows no countdown.
-const EMPTY_PLAN_JS = `export const BELL_PLAN = [];
-export const SHORTENED_BELL_PLAN = [];`;
-
-// PL: PRZYKŁADOWY skrócony plan: lekcje po 30 minut, ten sam początek co w zwykłym planie.
-// EN: EXAMPLE shortened plan: 30-minute lessons, the same start as the regular plan.
-const SHORTENED_PLAN_JS = `export const BELL_PLAN = [
-  { start: '08:00', end: '08:45' },
-  { start: '08:55', end: '09:40' },
-  { start: '09:50', end: '10:35' },
-];
-export const SHORTENED_BELL_PLAN = [
-  { start: '08:00', end: '08:30' },
-  { start: '08:40', end: '09:10' },
-];`;
+const EMPTY_PLAN_JS = `export const BELL_PLAN = [];`;
 
 // PL: Podstawia plan przykładowy w miejsce modułu planu (domyślnie zwykły przykład).
 // EN: Stubs the example plan in place of the plan module (the regular example by default).
 async function useExamplePlan(page: Page, body: string = EXAMPLE_PLAN_JS): Promise<void> {
   await page.route(PLAN_MODULE, (route) => route.fulfill({ contentType: 'text/javascript', body }));
-}
-
-/**
- * PL: Podstawia rolę w panelu: Samorząd dostaje poziom „council”, uczeń dostaje 403 (bez roli).
- * EN: Stubs the panel role: the Council gets the "council" level, a student gets a 403 (no role).
- *
- * @param page - PL: strona testu. EN: the test page.
- * @param role - PL: „council” albo „student”. EN: "council" or "student".
- */
-async function stubRole(page: Page, role: 'council' | 'student'): Promise<void> {
-  await page.route('**/api/admin/me', (route) =>
-    role === 'council'
-      ? route.fulfill({ json: { level: 'council' } })
-      : route.fulfill({ status: 403, json: { error: 'role_required' } }),
-  );
-}
-
-/**
- * PL: Podstawia listę dni skróconych z pamięcią: GET oddaje listę, POST na dzień dopisuje go (201), DELETE go usuwa.
- * EN: Stubs the list of shortened days with memory: GET returns the list, POST on a day adds it (201), DELETE removes it.
- *
- * @param page - PL: strona testu. EN: the test page.
- * @param dates - PL: lista dni (RRRR-MM-DD), którą zmienia zapis. EN: the list of days (YYYY-MM-DD) that saving changes.
- */
-async function stubShortened(page: Page, dates: string[] = []): Promise<void> {
-  // PL: Wyrażenie regularne, bo glob z gwiazdką nie łapie adresu z dniem po ukośniku.
-  // EN: A regular expression, because a glob with a star does not match the address with a day after the slash.
-  await page.route(/\/api\/bell\/shortened(\/[^/]*)?$/, (route) => {
-    const request = route.request();
-    if (request.method() === 'GET') return route.fulfill({ json: { dates: [...dates].sort() } });
-    // PL: Ostatni fragment adresu to dzień; bierzemy go z adresu, nie z treści.
-    // EN: The last part of the address is the day; we take it from the address, not from the body.
-    const day = decodeURIComponent(new URL(request.url()).pathname.split('/').pop() ?? '');
-    if (request.method() === 'POST') {
-      if (!dates.includes(day)) dates.push(day);
-      return route.fulfill({ status: 201, json: { date: day, shortened: true } });
-    }
-    const index = dates.indexOf(day);
-    if (index >= 0) dates.splice(index, 1);
-    return route.fulfill({ json: { date: day, shortened: false } });
-  });
 }
 
 /**
@@ -105,12 +49,10 @@ async function stubSession(page: Page): Promise<void> {
   });
 }
 
-// PL: Domyślnie w każdym teście jest zalogowana osoba, uczeń i pusta lista dni skróconych; test może to nadpisać.
-// EN: By default each test has a signed-in person, a student and an empty list of shortened days; a test can override it.
+// PL: Domyślnie w każdym teście jest zalogowana osoba; test może to nadpisać.
+// EN: By default each test has a signed-in person; a test can override it.
 test.beforeEach(async ({ page }) => {
   await stubSession(page);
-  await stubRole(page, 'student');
-  await stubShortened(page, []);
 });
 
 // PL: Pusty plan: ekran pokazuje tylko napis, bez licznika (nawet w godzinach lekcji).
@@ -169,50 +111,4 @@ test('w przerwie pokazuje minuty do lekcji', async ({ page }) => {
   const countdown = page.getByLabel('Licznik do dzwonka');
   await expect(countdown).toContainText('5');
   await expect(countdown).toContainText('Przerwa, do lekcji 1');
-});
-
-// PL: Uczeń w dniu z listy Samorządu widzi licznik według skróconego planu.
-// EN: A student on a day from the Council's list sees the countdown from the shortened plan.
-test('w dniu skróconym licznik liczy według skróconego planu', async ({ page }) => {
-  await stubShortened(page, ['2026-10-19']);
-  await useExamplePlan(page, SHORTENED_PLAN_JS);
-  // PL: 08:10 w Warszawie: lekcja 0 w planie skróconym kończy się o 8:30, zostaje 20 minut.
-  // EN: 08:10 in Warsaw: lesson 0 in the shortened plan ends at 8:30, so 20 minutes are left.
-  await page.clock.setFixedTime(new Date('2026-10-19T06:10:00Z'));
-  await page.goto('/bell');
-  const countdown = page.getByLabel('Licznik do dzwonka');
-  await expect(countdown).toContainText('20');
-  await expect(countdown).toContainText('Następna: lekcja 1 o 8:40');
-});
-
-// PL: Samorząd włącza „Dziś lekcje skrócone”: wysyłany jest zapis dnia i przełącznik zostaje włączony.
-// EN: The Council turns on "Dziś lekcje skrócone": the day is saved and the switch stays on.
-test('Samorząd włącza dziś lekcje skrócone', async ({ page }) => {
-  await stubRole(page, 'council');
-  // PL: Poniedziałek 19.10.2026 09:10 w Warszawie (czas letni: 07:10 UTC), dzień bieżący dla przełącznika.
-  // EN: Monday 19.10.2026 09:10 in Warsaw (summer time: 07:10 UTC), the current day for the switch.
-  await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
-  await page.goto('/bell');
-  const toggle = page.getByRole('switch', { name: 'Dziś lekcje skrócone' });
-  await expect(toggle).not.toBeChecked();
-  const saved = page.waitForRequest(
-    (request) => request.method() === 'POST' && request.url().endsWith('/api/bell/shortened/2026-10-19'),
-  );
-  await toggle.click();
-  await saved;
-  await expect(toggle).toBeChecked();
-});
-
-// PL: Uczeń nie widzi przełącznika „Dziś lekcje skrócone”, choć licznik się pokazuje.
-// EN: A student does not see the "Dziś lekcje skrócone" switch, although the countdown shows.
-test('uczeń nie widzi przełącznika lekcji skróconych', async ({ page }) => {
-  await useExamplePlan(page);
-  // PL: Czekamy na odpowiedź o rolę, zanim sprawdzimy brak przełącznika.
-  // EN: We wait for the role answer before checking that there is no switch.
-  const roleAnswered = page.waitForResponse('**/api/admin/me');
-  await page.clock.setFixedTime(new Date('2026-10-19T07:10:00Z'));
-  await page.goto('/bell');
-  await roleAnswered;
-  await expect(page.getByLabel('Licznik do dzwonka')).toBeVisible();
-  await expect(page.getByRole('switch')).toHaveCount(0);
 });
