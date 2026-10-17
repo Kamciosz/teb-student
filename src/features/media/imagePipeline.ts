@@ -21,8 +21,8 @@ export const PHOTO_MAX_SIDE = 1600;
 export const PHOTO_JPEG_QUALITY = 0.8;
 
 /**
- * PL: Komunikat, gdy przeglądarka nie umie odczytać zdjęcia. Tekst do ustalenia z właścicielem, bo docs/projekt/EKRANY.md go nie zawiera.
- * EN: The message when the browser cannot read the photo. The text is to be agreed with the owner, because docs/projekt/EKRANY.md does not contain it.
+ * PL: Komunikat, gdy przeglądarka nie umie odczytać zdjęcia. Tekst zatwierdzony przez właściciela, a docs/projekt/EKRANY.md go nie zawiera.
+ * EN: The message when the browser cannot read the photo. The text is approved by the owner, because docs/projekt/EKRANY.md does not contain it.
  */
 export const PHOTO_FORMAT_MESSAGE = 'Tego formatu zdjęcia nie da się wysłać. Wybierz zdjęcie w formacie JPG albo PNG.';
 

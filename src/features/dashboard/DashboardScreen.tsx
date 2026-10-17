@@ -32,8 +32,8 @@ import { loadTileOrder, moveTile, saveTileOrder, type TileId } from './tileOrder
 import './dashboard.css';
 
 /**
- * PL: Rysuje komunikat o stanie pobierania: ładowanie, brak internetu bez zapisanych danych, błąd z przyciskiem ponowienia albo ostrzeżenie, że pokazujemy zapisane dane. Gdy wszystko jest w porządku, nie rysuje nic. Napisy są jak w module aktualności (do ustalenia z zespołem).
- * EN: Draws a message about the fetching state: loading, no internet without saved data, an error with a retry button, or a warning that we show saved data. When everything is fine, it draws nothing. The labels are as in the news module (to be agreed with the team).
+ * PL: Rysuje komunikat o stanie pobierania: ładowanie, brak internetu bez zapisanych danych, błąd z przyciskiem ponowienia albo ostrzeżenie, że pokazujemy zapisane dane. Gdy wszystko jest w porządku, nie rysuje nic. Napisy są jak w module aktualności.
+ * EN: Draws a message about the fetching state: loading, no internet without saved data, an error with a retry button, or a warning that we show saved data. When everything is fine, it draws nothing. The labels are as in the news module.
  *
  * @param props - PL: wynik zapytania o pulpit. EN: the dashboard query result.
  * @returns PL: komunikat albo null. EN: the message or null.

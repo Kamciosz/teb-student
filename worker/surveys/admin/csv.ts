@@ -19,8 +19,8 @@ const BOM = '﻿';
 // EN: The column header of the file. The fifth column is only for the scale average; in the other rows it is empty.
 const HEADER = ['Pytanie', 'Odpowiedź', 'Liczba głosów', 'Procent', 'Średnia'];
 
-// PL: Etykieta wiersza ze średnią skali (do uzgodnienia z zespołem).
-// EN: The label of the scale average row (to be agreed with the team).
+// PL: Etykieta wiersza ze średnią skali.
+// EN: The label of the scale average row.
 const AVERAGE_LABEL = 'Średnia';
 
 // PL: Znaki, od których Excel potraktuje pole jak formułę (OWASP CSV injection): znak równości, plus, minus, małpa, tabulator i powrót karetki.

@@ -1,6 +1,6 @@
 /**
- * PL: Testy stanu dnia (bellDayStatus): przed lekcjami, w trakcie lekcji i przerwy, po lekcjach, weekend, pusty plan i plan skrócony. Czas jest udawany (Europe/Warsaw, CEST = +02:00 w październiku 2026). Plan PRZYKŁADOWY w tym pliku nie jest planem szkoły.
- * EN: Tests of the state of the day (bellDayStatus): before lessons, during a lesson and a break, after lessons, weekend, empty plan and shortened plan. The time is faked (Europe/Warsaw, CEST = +02:00 in October 2026). The EXAMPLE plan in this file is not the school's plan.
+ * PL: Testy stanu dnia (bellDayStatus): przed lekcjami, w trakcie lekcji i przerwy, po lekcjach, weekend i pusty plan. Czas jest udawany (Europe/Warsaw, CEST = +02:00 w październiku 2026). Plan PRZYKŁADOWY w tym pliku nie jest planem szkoły.
+ * EN: Tests of the state of the day (bellDayStatus): before lessons, during a lesson and a break, after lessons, weekend and empty plan. The time is faked (Europe/Warsaw, CEST = +02:00 in October 2026). The EXAMPLE plan in this file is not the school's plan.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-13
@@ -13,11 +13,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { bellDayStatus } from './index';
 
-// PL: Plany PRZYKŁADOWE trzymane w zmiennej, którą test może zmieniać.
-// EN: EXAMPLE plans held in a variable the test can change.
+// PL: Plan PRZYKŁADOWY trzymany w zmiennej, którą test może zmieniać.
+// EN: The EXAMPLE plan held in a variable the test can change.
 const plan = vi.hoisted(() => ({
   BELL_PLAN: [] as { start: string; end: string }[],
-  SHORTENED_BELL_PLAN: [] as { start: string; end: string }[],
 }));
 vi.mock('./bellPlan', () => plan);
 
@@ -27,23 +26,20 @@ const TUESDAY = '2026-10-13';
 const SATURDAY = '2026-10-17';
 const SUNDAY = '2026-10-18';
 
-// PL: Stan dnia dla podanej chwili w czasie polskim, opcjonalnie z listą dni skróconych.
-// EN: The state of the day for a given moment in Polish time, optionally with the list of shortened days.
-function statusAt(iso: string, shortenedDays: string[] = []): string {
-  return bellDayStatus(new Date(iso), new Set(shortenedDays));
+// PL: Stan dnia dla podanej chwili w czasie polskim.
+// EN: The state of the day for a given moment in Polish time.
+function statusAt(iso: string): string {
+  return bellDayStatus(new Date(iso));
 }
 
 beforeEach(() => {
-  // PL: Sterowany zegar i przykładowe plany przed każdym testem.
-  // EN: A controlled clock and the example plans before each test.
+  // PL: Sterowany zegar i przykładowy plan przed każdym testem.
+  // EN: A controlled clock and the example plan before each test.
   vi.useFakeTimers();
   plan.BELL_PLAN = [
     { start: '08:00', end: '08:45' },
     { start: '08:55', end: '09:40' },
   ];
-  // PL: Plan skrócony: jedna krótka lekcja, żeby było widać, który plan wybrano.
-  // EN: The shortened plan: one short lesson, so it is clear which plan was chosen.
-  plan.SHORTENED_BELL_PLAN = [{ start: '08:00', end: '08:30' }];
 });
 
 afterEach(() => {
@@ -120,34 +116,6 @@ describe('pusty plan', () => {
     expect(statusAt(`${TUESDAY}T07:00:00+02:00`)).toBe('no-plan');
     expect(statusAt(`${TUESDAY}T08:10:00+02:00`)).toBe('no-plan');
     expect(statusAt(`${TUESDAY}T17:00:00+02:00`)).toBe('no-plan');
-  });
-});
-
-describe('plan skrócony', () => {
-  it('w dniu skróconym plan skrócony kończy lekcje wcześniej, więc 08:40 daje „after”', () => {
-    // PL: Plan skrócony kończy się o 08:30, więc o 08:40 lekcji już nie ma.
-    // EN: The shortened plan ends at 08:30, so at 08:40 there is no lesson any more.
-    expect(statusAt(`${TUESDAY}T08:40:00+02:00`, [TUESDAY])).toBe('after');
-  });
-
-  it('w tym samym czasie w zwykły dzień daje „during”', () => {
-    // PL: Ten sam czas 08:40, ale dzień nie jest skrócony: zwykły plan trwa do 08:45.
-    // EN: The same time 08:40, but the day is not shortened: the regular plan runs until 08:45.
-    expect(statusAt(`${TUESDAY}T08:40:00+02:00`, [SATURDAY])).toBe('during');
-  });
-
-  it('w dniu skróconym przed lekcją daje „before”, a w jej trakcie „during”', () => {
-    // PL: 07:50 przed pierwszą skróconą lekcją, 08:10 w jej trakcie.
-    // EN: 07:50 is before the first shortened lesson, 08:10 is during it.
-    expect(statusAt(`${TUESDAY}T07:50:00+02:00`, [TUESDAY])).toBe('before');
-    expect(statusAt(`${TUESDAY}T08:10:00+02:00`, [TUESDAY])).toBe('during');
-  });
-
-  it('dzień skrócony z pustym planem skróconym daje „no-plan”, nawet gdy zwykły plan jest wpisany', () => {
-    // PL: Plan skrócony pusty (godziny jeszcze nie podane): wybieramy go, więc nie ma planu.
-    // EN: The shortened plan is empty (hours not given yet): it is the one picked, so there is no plan.
-    plan.SHORTENED_BELL_PLAN = [];
-    expect(statusAt(`${TUESDAY}T08:10:00+02:00`, [TUESDAY])).toBe('no-plan');
   });
 });
 

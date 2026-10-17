@@ -35,8 +35,8 @@ export type SurveyTileProps = {
  * @returns PL: kafel z przyciskiem „Wypełnij” albo kafel z napisem o braku ankiet. EN: a tile with the "Wypełnij" button, or a tile with a label about no surveys.
  */
 export function SurveyTile({ survey }: SurveyTileProps) {
-  // PL: Bez ankiety do wypełnienia kafel mówi to wprost (napis do ustalenia z zespołem).
-  // EN: Without a survey to fill in, the tile says so plainly (the label is to be agreed with the team).
+  // PL: Bez ankiety do wypełnienia kafel mówi to wprost.
+  // EN: Without a survey to fill in, the tile says so plainly.
   if (survey === null) {
     return (
       <section className="dash-tile" aria-label="Ankieta">

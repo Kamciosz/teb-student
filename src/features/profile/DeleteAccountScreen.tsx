@@ -1,6 +1,6 @@
 /**
- * PL: Ekran potwierdzenia „Usuń konto i dane”. Usunięcie jest ostateczne, więc wymaga osobnego przycisku. Po usunięciu telefon czyści zapisane dane, a wspólny kod przenosi na ekran logowania. Tekst „Usuniemy zgłoszenia i odpowiedzi.” pochodzi z ekranu 2.4, a reszty tekstów nie ma w docs/projekt/EKRANY.md (do ustalenia z zespołem).
- * EN: The confirmation screen "Usuń konto i dane". The deletion is final, so it needs a separate button. After the deletion the phone clears the saved data, and the shared code takes the student to the sign-in screen. The text "Usuniemy zgłoszenia i odpowiedzi." comes from screen 2.4, and the other texts are not in docs/projekt/EKRANY.md (to be agreed with the team).
+ * PL: Ekran potwierdzenia „Usuń konto i dane”. Usunięcie jest ostateczne, więc wymaga osobnego przycisku. Po usunięciu telefon czyści zapisane dane, a wspólny kod przenosi na ekran logowania. Tekst „Usuniemy zgłoszenia i odpowiedzi.” pochodzi z ekranu 2.4, a pozostałych tekstów nie ma w docs/projekt/EKRANY.md, ale właściciel je zatwierdził.
+ * EN: The confirmation screen "Usuń konto i dane". The deletion is final, so it needs a separate button. After the deletion the phone clears the saved data, and the shared code takes the student to the sign-in screen. The text "Usuniemy zgłoszenia i odpowiedzi." comes from screen 2.4, and the other texts are not in docs/projekt/EKRANY.md, but the owner approved them.
  *
  * @author Jakub
  * @since 2026-10-11

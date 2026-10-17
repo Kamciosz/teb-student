@@ -34,7 +34,7 @@ Podtor to jedna część modułu. Numery podtorów i właściciele: `docs/PODZIA
 | 4b | `reports/admin` | `/reports/admin/*` | `/api/reports/admin` | do ustalenia | tabele z 4a | przez 4a |
 | 5a | `surveys/vote` | `/surveys/vote/*` | `/api/surveys/vote` | Jakub | `schema/surveys.ts` | tak |
 | 5b | `surveys/admin` | `/surveys/admin/*` | `/api/surveys/admin` | Jakub | tabele z 5a | przez 5a |
-| 6 | `bell` | `/bell/*` | `/api/bell` | Kacper | `schema/bell.ts` | nie, brak danych ucznia |
+| 6 | `bell` | `/bell/*` | brak | Kacper | brak | nie, brak danych ucznia |
 | 7 | `profile` | `/profile/*` | `/api/profile` | Jakub | `schema/profile.ts` | tak |
 | 8 | `admin` | `/admin/*` | `/api/admin` | do ustalenia | `schema/admin.ts` | tak |
 | 9 | `dashboard` | `/` | `/api/dashboard` | Kacper | brak | nie, brak danych ucznia |

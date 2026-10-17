@@ -9,7 +9,6 @@
  * @uses worker/news/index.ts::newsFeedApp
  * @uses worker/reports/index.ts::reportsStudentApp
  * @uses worker/surveys/index.ts::surveysVoteApp
- * @uses worker/bell/index.ts::bellApp
  * @uses worker/profile/index.ts::profileApp
  * @uses worker/admin/index.ts::adminApp
  * @uses worker/dashboard/index.ts::dashboardApp
@@ -27,7 +26,6 @@ import { mediaApp } from './media';
 import { newsAdminApp, newsEditorApp, newsFeedApp } from './news';
 import { reportsAdminApp, reportsStudentApp } from './reports';
 import { surveysAdminApp, surveysVoteApp } from './surveys';
-import { bellApp } from './bell';
 import { profileApp } from './profile';
 import { adminApp } from './admin';
 import { dashboardApp } from './dashboard';
@@ -63,7 +61,6 @@ export const API_MOUNTS: readonly ApiMount[] = [
   { id: '4b', basePath: '/api/reports/admin', router: reportsAdminApp },
   { id: '5a', basePath: '/api/surveys/vote', router: surveysVoteApp },
   { id: '5b', basePath: '/api/surveys/admin', router: surveysAdminApp },
-  { id: '6', basePath: '/api/bell', router: bellApp },
   { id: '7', basePath: '/api/profile', router: profileApp },
   { id: '8', basePath: '/api/admin', router: adminApp },
   { id: '9', basePath: '/api/dashboard', router: dashboardApp },

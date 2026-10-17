@@ -22,7 +22,7 @@ const SCHOOL_TIME_ZONE = 'Europe/Warsaw';
 /** PL: Reguły liczby mnogiej dla polskiego (jedna, dwie–cztery, reszta). EN: The plural rules for Polish (one, two to four, the rest). */
 const polishPlural = new Intl.PluralRules('pl-PL');
 
-/** PL: Słowo „osoba” w odmianie: dla kategorii `one` i `few`; reszta to „osób”. Tekst do uzgodnienia z zespołem. EN: The word "person" in its forms: for the `one` and `few` categories; the rest is "osób". The text is to be agreed with the team. */
+/** PL: Słowo „osoba” w odmianie: dla kategorii `one` i `few`; reszta to „osób”. EN: The word "person" in its forms: for the `one` and `few` categories; the rest is "osób". */
 const PERSON_WORDS: Record<string, string> = { one: 'osoba', few: 'osoby' };
 
 /**
