@@ -50,13 +50,13 @@ describe('PasskeySignIn', () => {
     expect(renderPasskeySignIn()).not.toContain(BUTTON_TEXT);
   });
 
-  // PL: Telefon z WebAuthn: przycisk jest, z wyłączoną blokadą i w stylu przycisku konturowego.
-  // EN: A phone with WebAuthn: the button is there, not disabled, and in the outline button style.
+  // PL: Telefon z WebAuthn: przycisk jest, z wyłączoną blokadą i w stylu przycisku tekstowego.
+  // EN: A phone with WebAuthn: the button is there, not disabled, and in the text button style.
   it('z WebAuthn rysuje przycisk logowania / draws the sign-in button with WebAuthn', () => {
     vi.stubGlobal('window', { PublicKeyCredential: function PublicKeyCredential() {} });
     const html = renderPasskeySignIn();
     expect(html).toContain(BUTTON_TEXT);
-    expect(html).toContain('auth-email__button--outline');
+    expect(html).toContain('ui-button--plain');
     expect(html).not.toContain('disabled');
   });
 });

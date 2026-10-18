@@ -7,7 +7,7 @@
  * @uses src/features/dashboard/useBellState.ts::readBellSnapshot
  * @uses src/features/dashboard/bellTicker.ts::startBellTicker
  * @uses src/features/dashboard/bellTicker.ts::BELL_REFRESH_MS
- * @uses src/features/dashboard/DashboardHeader.tsx::BellReadout
+ * @uses src/features/dashboard/DashboardHero.tsx::BellReadout
  * @used_by vitest.config.ts::include
  */
 
@@ -21,14 +21,15 @@ import { renderToString } from 'react-dom/server';
 // EN: The dashboard reading, the refresh and the countdown drawing (tested).
 import { readBellSnapshot, type BellSnapshot } from './useBellState';
 import { BELL_REFRESH_MS, startBellTicker, type VisibilityTarget } from './bellTicker';
-import { BellReadout } from './DashboardHeader';
+import { BellReadout } from './DashboardHero';
 // PL: Odczyty modułu bell do podstawienia.
 // EN: The bell module reads to substitute.
 import { bellDayStatus, currentBellState, type BellDayStatus, type BellState } from '../bell';
 
 // PL: Podstawiamy tylko odczyty, bo plan w main jest pusty. Plan testowy: w dni szkolne (pon.–pt.) pierwsza lekcja trwa od 8:00 do 8:45, w weekend nie ma lekcji.
 // EN: We substitute only the reads, because the plan in main is empty. The test plan: on school days (Mon.–Fri.) the first lesson runs from 8:00 to 8:45, there are no lessons at weekends.
-vi.mock('../bell', () => ({
+vi.mock('../bell', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../bell')>()),
   currentBellState: vi.fn(),
   bellDayStatus: vi.fn(),
 }));

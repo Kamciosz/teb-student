@@ -71,3 +71,8 @@
 .ui-screen-header--bar .ui-screen-header-action {
   justify-self: end;
 }
+
+/* PL: Tytuł dostaje fokus z kodu, nie z klawiatury, więc bez obwódki. EN: The title gets focus from code, not from the keyboard, so no outline. */
+.ui-screen-header h1:focus:not(:focus-visible) {
+  outline: none;
+}

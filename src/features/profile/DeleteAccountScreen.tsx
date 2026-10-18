@@ -5,6 +5,7 @@
  * @author Jakub
  * @since 2026-10-11
  * @uses src/features/profile/queries.ts::useDeleteAccount
+ * @uses src/shared/index.ts::Button
  * @used_by src/features/profile/ProfileScreen.tsx::DeleteAccountScreen
  */
 
@@ -14,7 +15,9 @@ import { Link } from 'react-router';
 // PL: Usunięcie konta i pasek.
 // EN: The account deletion and the bar.
 import { useDeleteAccount } from './queries';
-import { ScreenTop } from './ScreenTop';
+// PL: Wspólny nagłówek ekranu z przyciskiem wstecz i przycisk w wariancie na czerwono.
+// EN: The shared screen header with the back button, and the button in the red variant.
+import { Button, ScreenHeader } from '../../shared';
 
 /**
  * PL: Rysuje ekran potwierdzenia usunięcia konta.
@@ -29,14 +32,14 @@ export function DeleteAccountScreen() {
 
   return (
     <>
-      <ScreenTop title="Usuń konto i dane" backTo="/profile" backLabel="Wróć do profilu" />
+      <ScreenHeader title="Usuń konto i dane" backTo="/profile" backLabel="Profil" />
       {/* PL: Pytanie i opis skutków. EN: The question and the description of the consequences. */}
-      <h1>Usunąć konto?</h1>
+      <h2>Usunąć konto?</h2>
       <p className="pf-lead">Usuniemy zgłoszenia i odpowiedzi.</p>
       {/* PL: Błąd usunięcia (na przykład brak internetu); konto zostaje. EN: The deletion error (for example no internet); the account stays. */}
       {remove.isError ? <p className="pf-error" role="alert">Nie udało się usunąć konta.</p> : null}
       {/* PL: Przycisk usunięcia; w trakcie jest wyłączony, żeby nie wysłać dwa razy. EN: The delete button; disabled while running, so it is not sent twice. */}
-      <button type="button" className="pf-btn pf-btn-accent" disabled={remove.isPending} onClick={() => remove.mutate()}>Usuń konto i dane</button>
+      <Button variant="destructive" disabled={remove.isPending} onClick={() => remove.mutate()}>Usuń konto i dane</Button>
       {/* PL: Rezygnacja: wraca do profilu bez zmian. EN: Giving up: goes back to the profile with no change. */}
       <Link className="pf-btn pf-btn-soft" to="/profile">Anuluj</Link>
     </>
