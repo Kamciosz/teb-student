@@ -212,7 +212,7 @@ test('usunięcie wymaga potwierdzenia / deleting needs a confirmation', async ({
 test('pusta lista i przejście do kreatora / the empty list and the way to the wizard', async ({ page }) => {
   await stubAdminApi(page, []);
   await page.goto('/news/admin');
-  await expect(page.getByRole('heading', { name: 'Nie ma jeszcze wpisów' })).toBeVisible();
+  await expect(page.getByText('Nie ma jeszcze wpisów')).toBeVisible();
 
   await page.getByRole('link', { name: 'Nowy wpis' }).click();
 
@@ -341,13 +341,13 @@ test('przy szerokości 320 px nic się nie przewija w poziomie / nothing scrolls
   expect(fits(await page.getByRole('link', { name: 'Nowy wpis' }).boundingBox())).toBe(true);
   expect(fits(await page.getByRole('button', { name: 'Przypnij: Dzień sportu' }).boundingBox())).toBe(true);
 
-  // PL: Arkusz usuwania: oba przyciski mieszczą się w oknie.
-  // EN: The delete sheet: both buttons fit in the window.
+  // PL: Arkusz usuwania: oba przyciski mieszczą się w oknie. Arkusz wjeżdża animacją, więc czekamy, aż przyciski staną na miejscu.
+  // EN: The delete sheet: both buttons fit in the window. The sheet slides in with an animation, so we wait until the buttons settle in place.
   await page.getByRole('button', { name: /^Usuń: Dzień sportu/ }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   expect(await overflow()).toBeLessThanOrEqual(0);
-  expect(fits(await page.getByRole('button', { name: 'Usuń wpis' }).boundingBox())).toBe(true);
-  expect(fits(await page.getByRole('button', { name: 'Anuluj' }).boundingBox())).toBe(true);
+  await expect.poll(async () => fits(await page.getByRole('button', { name: 'Usuń wpis' }).boundingBox())).toBe(true);
+  await expect.poll(async () => fits(await page.getByRole('button', { name: 'Anuluj' }).boundingBox())).toBe(true);
 });
 
 // PL: Bez internetu lista zostaje z ostatnich danych, a publikacja, przypinanie i usuwanie są wyłączone z objaśnieniem.

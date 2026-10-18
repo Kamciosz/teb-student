@@ -1,14 +1,15 @@
 /**
- * PL: Górny pasek kreatora wpisu (jak „flowTop” i „bars” w docs/projekt/EKRANY.md): strzałka powrotu, tytuł „Nowy wpis”, numer kroku „1/3” i pasek postępu z trzema odcinkami.
- * EN: The top bar of the entry wizard (like "flowTop" and "bars" in docs/projekt/EKRANY.md): the back arrow, the "Nowy wpis" title, the step number "1/3" and the progress bar with three segments.
+ * PL: Górny pasek kreatora wpisu. W kroku 1 to ScreenHeader z „Wróć” do panelu wpisów. W krokach 2 i 3 to lokalny pasek z przyciskiem „Wróć” o krok wstecz, bo ScreenHeader nie ma wywołania zwrotnego. Pod nim pasek postępu z trzema odcinkami i numer kroku.
+ * EN: The top bar of the entry wizard. In step 1 it is a ScreenHeader with "Wróć" back to the entries panel. In steps 2 and 3 it is a local bar with a "Wróć" button that goes one step back, because ScreenHeader has no callback. Under it the progress bar with three segments and the step number.
  *
  * @author Szymon
  * @since 2026-10-12
+ * @uses src/shared/index.ts::ScreenHeader
  * @uses src/features/news/editor/texts.ts::SCREEN
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::WizardTop
  */
 
-import { Link } from 'react-router';
+import { ScreenHeader } from '../../../shared';
 import { SCREEN, TEXTS } from './texts';
 
 // PL: Liczba kroków kreatora: typ, treść, podgląd.
@@ -22,40 +23,38 @@ const STEPS = [1, 2, 3];
 export type WizardTopProps = {
   /** PL: Numer kroku, 1 do 3. EN: The step number, 1 to 3. */
   step: number;
-  /** PL: Wywoływane po strzałce w krokach 2 i 3 (krok wstecz). EN: Called after the arrow in steps 2 and 3 (one step back). */
+  /** PL: Wywoływane po „Wróć” w krokach 2 i 3 (krok wstecz). EN: Called after "Wróć" in steps 2 and 3 (one step back). */
   onBack: () => void;
 };
 
 /**
- * PL: Rysuje pasek. W kroku 1 strzałka wraca do panelu wpisów, w pozostałych o krok wstecz.
- * EN: Draws the bar. In step 1 the arrow returns to the entries panel, in the others one step back.
+ * PL: Rysuje pasek. W kroku 1 „Wróć” wraca do panelu wpisów, w pozostałych o krok wstecz.
+ * EN: Draws the bar. In step 1 "Wróć" returns to the entries panel, in the others it goes one step back.
  *
  * @param props - PL: krok i funkcja powrotu. EN: the step and the back function.
  * @returns PL: drzewo elementów. EN: the element tree.
  */
 export function WizardTop({ step, onBack }: WizardTopProps) {
   return (
-    <header className="editor-top">
-      <div className="editor-top__row">
-        {/* PL: Strzałka powrotu. Pole dotyku 44 × 44 px. EN: The back arrow. A 44 × 44 px touch area. */}
-        {step === 1 ? (
-          <Link className="editor-top__back" to="/news/admin" aria-label={TEXTS.back}>
-            <span aria-hidden="true">←</span>
-          </Link>
-        ) : (
+    <div className="editor-top">
+      {step === 1 ? (
+        <ScreenHeader title={SCREEN.title} backTo="/news/admin" backLabel={TEXTS.back} />
+      ) : (
+        <div className="editor-top__row">
+          {/* PL: Przycisk „Wróć” o krok wstecz. Pole dotyku 44 × 44 px. EN: The "Wróć" button, one step back. A 44 × 44 px touch area. */}
           <button type="button" className="editor-top__back" aria-label={TEXTS.back} onClick={onBack}>
             <span aria-hidden="true">←</span>
           </button>
-        )}
-        <p className="editor-top__title">{SCREEN.title}</p>
-        <p className="editor-top__step">{step}/3</p>
-      </div>
+          <p className="editor-top__title">{SCREEN.title}</p>
+        </div>
+      )}
       {/* PL: Pasek postępu: odcinki do bieżącego kroku są wypełnione. EN: The progress bar: the segments up to the current step are filled. */}
       <div className="editor-progress" role="progressbar" aria-label={TEXTS.stepOf(step)} aria-valuemin={1} aria-valuemax={3} aria-valuenow={step}>
         {STEPS.map((number) => (
           <span key={number} className={number <= step ? 'editor-progress__bar editor-progress__bar--on' : 'editor-progress__bar'} />
         ))}
       </div>
-    </header>
+      <p className="editor-top__step">{step}/3</p>
+    </div>
   );
 }

@@ -1,9 +1,11 @@
 /**
- * PL: Ekran „Wpisy” w panelu Samorządu (podtor 3c): lista wszystkich wpisów ze szkicami, publikacja szkicu, przypinanie i odpinanie opublikowanych (najwyżej 3), usuwanie z potwierdzeniem i przejście do kreatora „Nowy wpis” (podtor 3b, `/news/editor`). Stoi w ramie panelu z menu. Uprawnienia sprawdza serwer, ten ekran tylko pokazuje błąd, gdy serwer odmówi. Bez internetu lista zostaje z ostatnich danych, a publikacja, przypinanie i usuwanie są wyłączone z objaśnieniem.
- * EN: The "Wpisy" screen in the Student Council panel (subtrack 3c): the list of all entries with drafts, publishing a draft, pinning and unpinning published entries (at most 3), deleting with a confirmation and the way to the "Nowy wpis" wizard (subtrack 3b, `/news/editor`). It stands in the panel frame with the menu. The server checks permissions, this screen only shows an error when the server refuses. Without internet the list stays with the last data, and publishing, pinning and deleting are off with an explanation.
+ * PL: Ekran „Wpisy” w panelu Samorządu (podtor 3c): lista wszystkich wpisów ze szkicami, publikacja szkicu, przypinanie i odpinanie opublikowanych (najwyżej 3), usuwanie z potwierdzeniem i przejście do kreatora „Nowy wpis” (podtor 3b, `/news/editor`). Stoi w ramie panelu z menu, a nagłówek ma „Wróć” do panelu i tekstowy „Nowy wpis”. Uprawnienia sprawdza serwer, ten ekran tylko pokazuje błąd, gdy serwer odmówi. Bez internetu lista zostaje z ostatnich danych, a publikacja, przypinanie i usuwanie są wyłączone z objaśnieniem.
+ * EN: The "Wpisy" screen in the Student Council panel (subtrack 3c): the list of all entries with drafts, publishing a draft, pinning and unpinning published entries (at most 3), deleting with a confirmation and the way to the "Nowy wpis" wizard (subtrack 3b, `/news/editor`). It stands in the panel frame with the menu, and its header has "Wróć" back to the panel and the text "Nowy wpis". The server checks permissions, this screen only shows an error when the server refuses. Without internet the list stays with the last data, and publishing, pinning and deleting are off with an explanation.
  *
  * @author Bohdan
  * @since 2026-10-09
+ * @uses src/shared/index.ts::ScreenHeader
+ * @uses src/shared/index.ts::EmptyState
  * @uses src/features/news/admin/queries.ts::usePanelEntries
  * @uses src/features/news/admin/api.ts::PinLimitError
  * @uses src/features/news/admin/EntryTile.tsx::EntryTile
@@ -13,31 +15,14 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { EmptyState, ScreenHeader } from '../../../shared';
 import { EntryInReviewError, type PanelEntry, PinLimitError } from './api';
 import { DeleteSheet } from './DeleteSheet';
 import { EntryTile } from './EntryTile';
-import { Icon } from './icons';
 import './newsAdmin.css';
 import { Notice } from './Notice';
-import { PanelTop } from './PanelTop';
 import { useDeleteEntry, useIsOnline, usePanelEntries, usePinEntry, usePublishEntry, useUnpinEntry } from './queries';
-import { TEXTS } from './texts';
-
-/**
- * PL: Rysuje pusty stan: jeszcze nie ma żadnego wpisu.
- * EN: Draws the empty state: there is no entry yet.
- *
- * @returns PL: drzewo elementów. EN: the tree of elements.
- */
-function EmptyState() {
-  return (
-    <div className="na-empty">
-      <Icon name="inbox" />
-      <h2>{TEXTS.emptyTitle}</h2>
-      <p>{TEXTS.emptyHint}</p>
-    </div>
-  );
-}
+import { SCREEN, TEXTS } from './texts';
 
 /**
  * PL: Dane listy.
@@ -52,8 +37,8 @@ type EntriesBodyProps = {
 };
 
 /**
- * PL: Rysuje treść pod paskiem: listę, pusty stan, błąd albo wczytywanie. Zapisana lista ma pierwszeństwo, więc przy błędzie sieci Samorząd nadal ją widzi.
- * EN: Draws the body under the bar: the list, the empty state, the error or the loading. The saved list takes priority, so with a network error the Student Council still sees it.
+ * PL: Rysuje treść pod nagłówkiem: listę, pusty stan, błąd albo wczytywanie. Zapisana lista ma pierwszeństwo, więc przy błędzie sieci Samorząd nadal ją widzi.
+ * EN: Draws the body under the header: the list, the empty state, the error or the loading. The saved list takes priority, so with a network error the Student Council still sees it.
  *
  * @param props - PL: wynik zapytania i funkcje przycisków. EN: the query result and the button functions.
  * @returns PL: drzewo elementów treści. EN: the tree of body elements.
@@ -62,7 +47,7 @@ function EntriesBody({ query, isLocked, onPublish, onTogglePin, onDelete }: Entr
   // PL: Dane (z serwera albo z zapisu w telefonie) mają pierwszeństwo nad stanem zapytania.
   // EN: The data (from the server or from the saved copy) takes priority over the query state.
   if (query.data) {
-    if (query.data.length === 0) return <EmptyState />;
+    if (query.data.length === 0) return <EmptyState title={TEXTS.emptyTitle}>{TEXTS.emptyHint}</EmptyState>;
     return (
       <ul className="na-list" aria-label={TEXTS.listLabel}>
         {query.data.map((entry) => (
@@ -111,11 +96,16 @@ export function NewsAdminScreen() {
   const pinLimited = pin.error instanceof PinLimitError;
   const pinFailed = (pin.isError && !pinLimited) || unpin.isError;
 
-  // PL: Pasek, komunikaty błędów zapisu, lista, przycisk „Nowy wpis” z objaśnieniem nad nim i arkusz usuwania.
-  // EN: The bar, the save error messages, the list, the "Nowy wpis" button with the explanation above it and the delete sheet.
+  // PL: Nagłówek z „Wróć” i „Nowy wpis”, komunikaty błędów zapisu, lista, objaśnienie bez internetu i arkusz usuwania.
+  // EN: The header with "Wróć" and "Nowy wpis", the save error messages, the list, the explanation without internet and the delete sheet.
   return (
     <section className="na-screen" data-subtrack="3c">
-      <PanelTop />
+      <ScreenHeader
+        title={SCREEN.title}
+        backTo="/admin"
+        backLabel={TEXTS.back}
+        action={<Link className="na-text-action" to="/news/editor">{TEXTS.newEntry}</Link>}
+      />
       {publish.isError ? <Notice text={publishErrorText(publish.error)} /> : null}
       {pinLimited ? <Notice text={TEXTS.pinLimit} /> : null}
       {pinFailed ? <Notice text={TEXTS.pinFailed} /> : null}
@@ -127,10 +117,7 @@ export function NewsAdminScreen() {
         onTogglePin={(entry) => (entry.pinnedAt === null ? pin.mutate(entry.id) : unpin.mutate(entry.id))}
         onDelete={setAsked}
       />
-      <div className="na-cta">
-        {isOnline ? null : <p className="na-small">{TEXTS.offlineNote}</p>}
-        <Link className="na-btn" to="/news/editor"><Icon name="plus" />{TEXTS.newEntry}</Link>
-      </div>
+      {isOnline ? null : <p className="na-small na-footnote">{TEXTS.offlineNote}</p>}
       {asked ? (
         <DeleteSheet entry={asked} isDeleting={remove.isPending} onCancel={() => setAsked(null)} onConfirm={() => remove.mutate(asked.id, { onSettled: () => setAsked(null) })} />
       ) : null}

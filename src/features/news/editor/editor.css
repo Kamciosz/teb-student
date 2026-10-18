@@ -1,6 +1,6 @@
 /**
- * PL: Style kreatora „Nowy wpis” (podtor 3b): pasek z postępem, chipy typu, pola, pasek narzędzi, pole edytora, podgląd i przyciski. Kolory tylko przez var(--...) z tokens.css. Bez color-mix(), zagnieżdżania CSS, :has() i 100dvh, bo iOS 15.0–15.3 ich nie zna. Wszystko zawija się do następnego wiersza, więc przy 320 px nic nie wychodzi poza ekran.
- * EN: Styles of the "Nowy wpis" wizard (subtrack 3b): the progress bar, the type chips, the fields, the toolbar, the editor field, the preview and the buttons. Colors only through var(--...) from tokens.css. No color-mix(), CSS nesting, :has() or 100dvh, because iOS 15.0–15.3 does not know them. Everything wraps to the next row, so at 320 px nothing goes off the screen.
+ * PL: Style kreatora „Nowy wpis” (podtor 3b) w stylu iOS: pasek z postępem, chipy typu, grupowane pola z ListGroup i TextField, pasek narzędzi, pole edytora, podgląd i przycisk „Opublikuj” przyklejony do dołu. Kolory tylko przez var(--...) z tokens.css. Bez color-mix(), zagnieżdżania CSS, :has() i 100dvh, bo iOS 15.0–15.3 ich nie zna. Wszystko zawija się do następnego wiersza, więc przy 320 px nic nie wychodzi poza ekran.
+ * EN: Styles of the "Nowy wpis" wizard (subtrack 3b) in the iOS style: the progress bar, the type chips, the grouped fields from ListGroup and TextField, the toolbar, the editor field, the preview and the "Opublikuj" button stuck to the bottom. Colors only through var(--...) from tokens.css. No color-mix(), CSS nesting, :has() or 100dvh, because iOS 15.0–15.3 does not know them. Everything wraps to the next row, so at 320 px nothing goes off the screen.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -8,12 +8,13 @@
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::import
  */
 
-/* PL: Kolumna ekranu: do 430 px, na środku, z marginesem 16 px i bezpiecznym dolnym marginesem iPhone'a. min-width: 0 pozwala dzieciom się zwężać.
-   EN: The screen column: up to 430 px, centered, with a 16 px margin and the iPhone safe bottom margin. min-width: 0 lets the children shrink. */
+/* PL: Kolumna ekranu: do 430 px, na środku, z marginesem 16 px. Nagłówek daje ScreenHeader albo pasek kroku, więc góra zostaje bez odstępu. Dolny margines zostawia miejsce na pasek domowy iPhone'a.
+   EN: The screen column: up to 430 px, centered, with a 16 px margin. The header comes from ScreenHeader or the step bar, so the top has no gap. The bottom margin leaves room for the iPhone home bar. */
 .editor-screen {
+  min-height: 100dvh;
   max-width: 430px;
   margin: 0 auto;
-  padding: 16px 16px calc(24px + var(--safe-bottom));
+  padding: 0 16px calc(24px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -21,18 +22,28 @@
 }
 
 .editor-step {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
 }
 
-/* PL: Pasek: strzałka, tytuł i numer kroku w jednym wierszu, pod nim pasek postępu.
-   EN: The bar: the arrow, the title and the step number in one row, the progress bar under them. */
+/* PL: Nagłówek kroku: tytuł sekcji w kolorze tekstu głównego. Jest h2, bo h1 należy do paska ScreenHeader.
+   EN: The step heading: the section title in the primary text color. It is an h2, because h1 belongs to the ScreenHeader bar. */
+.editor-step > h2 {
+  font-size: var(--t-lg);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* PL: Pasek kroków 2 i 3: strzałka wstecz, tytuł i numer kroku w jednym wierszu, pod nim pasek postępu. Krok 1 ma ScreenHeader, więc tu go nie ma.
+   EN: The bar of steps 2 and 3: the back arrow, the title and the step number in one row, the progress bar under them. Step 1 has a ScreenHeader, so it is not here. */
 .editor-top {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-top: 8px;
 }
 
 .editor-top__row {
@@ -52,7 +63,6 @@
   border-radius: var(--r);
   background: var(--tile);
   color: var(--ink);
-  text-decoration: none;
   font-size: var(--t-lg);
   cursor: pointer;
 }
@@ -66,6 +76,7 @@
 .editor-top__step {
   color: var(--ink-2);
   font-size: var(--t-sm);
+  text-align: right;
 }
 
 .editor-progress {
@@ -84,33 +95,55 @@
   background: var(--ink);
 }
 
-/* PL: Chipy typu: zawijane, wysokość 44 px, wybrany ma kolor akcentu.
-   EN: The type chips: wrapped, 44 px tall, the chosen one has the accent color. */
+/* PL: Chipy typu: zawijane w wiersze. Wygląd daje wspólny Chip.
+   EN: The type chips: wrapped in rows. The look comes from the shared Chip. */
 .editor-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.editor-chip {
+/* PL: Kolumna przycisków: każdy przycisk rozciąga się na szerokość kolumny.
+   EN: A column of buttons: each button stretches to the column width. */
+.editor-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* PL: Pole w grupie (wiersz z podpisem i polem). Kolejne pole w tej samej grupie dostaje linię oddzielającą.
+   EN: A field in a group (a row with a label and a field). The next field in the same group gets a dividing line. */
+.editor-field {
+  padding: 12px 16px;
+}
+
+.editor-field + .editor-field {
+  border-top: 1px solid var(--line);
+}
+
+/* PL: Przełącznik jako wiersz listy: pole wyboru po lewej, tekst obok, dotyk co najmniej 44 px.
+   EN: The switch as a list row: the checkbox on the left, the text beside it, a touch area of at least 44 px. */
+.editor-switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--tile);
-  font-size: var(--t-sm);
-  font-weight: 600;
+  padding: 12px 16px;
+  color: var(--ink);
+  font-size: var(--t-md);
   cursor: pointer;
 }
 
-.editor-chip[aria-pressed='true'] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+.editor-switch input {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--accent);
 }
 
-/* PL: Etykieta i pole. Rozmiar 16 px, żeby iPhone nie przybliżał ekranu po dotknięciu pola.
-   EN: The label and the field. 16 px size, so the iPhone does not zoom the screen after a tap on the field. */
+/* PL: Etykieta i pole do pisania adresu w okienku pod paskiem narzędzi. Pole tekstu (textarea) nie ma wspólnego komponentu, więc zostaje tu.
+   EN: The label and the field for an address in the panel under the toolbar. The text area (textarea) has no shared component, so it stays here. */
 .editor-label {
   display: flex;
   flex-direction: column;
@@ -132,8 +165,25 @@
   font-weight: 400;
 }
 
-/* PL: Edytor: kafel z paskiem narzędzi na górze (ekran 5.2).
-   EN: The editor: a tile with the toolbar on top (screen 5.2). */
+/* PL: Przyklejony pasek z przyciskiem „Opublikuj”. Stoi na dole ekranu nad paskiem domowym, a tło daje kolor strony, żeby treść pod nim nie prześwitywała.
+   EN: The sticky bar with the "Opublikuj" button. It sits at the bottom of the screen above the home bar, and its background is the page color, so the content under it does not show through. */
+.editor-sticky {
+  position: sticky;
+  bottom: 0;
+  margin: auto -16px 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+/* PL: Przycisk na całą szerokość kolumny (akcja główna i powrót do panelu).
+   EN: A button across the full column width (the main action and the way back to the panel). */
+.editor-wide {
+  width: 100%;
+}
+
+/* PL: Edytor: kafel z paskiem narzędzi na górze.
+   EN: The editor: a tile with the toolbar on top. */
 .editor-box {
   min-width: 0;
   border: 1px solid var(--line);
@@ -249,16 +299,16 @@
   border-radius: var(--r);
 }
 
-/* PL: Napis „Film z YouTube” na miniaturze, żeby redaktor wiedział, co wstawił. Nie zasłania obrazu całego.
-   EN: The "Film z YouTube" label on the thumbnail, so the editor knows what was inserted. It does not cover the whole image. */
+/* PL: Napis „Film z YouTube” na miniaturze, żeby redaktor wiedział, co wstawił. Kolor kafla z tekstem głównym, bez przezroczystości, więc napis czyta się na każdym motywie.
+   EN: The "Film z YouTube" label on the thumbnail, so the editor knows what was inserted. A tile color with the primary text, with no transparency, so the label reads on every theme. */
 .editor-video__label {
   position: absolute;
   left: 8px;
   bottom: 8px;
   padding: 2px 8px;
   border-radius: var(--r);
-  background: rgba(0, 0, 0, 0.75);
-  color: #fff;
+  background: var(--tile-2);
+  color: var(--ink);
   font-size: var(--t-sm);
 }
 
@@ -289,40 +339,8 @@
   outline: 3px solid var(--focus);
 }
 
-/* PL: Przyciski: wypełniony i z samym obrysem. Wysokość co najmniej 48 px.
-   EN: Buttons: filled and outline only. At least 48 px tall. */
-.editor-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 48px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: var(--r);
-  background: var(--accent);
-  color: var(--on-accent);
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.editor-button--wide {
-  width: 100%;
-}
-
-.editor-button--outline {
-  border: 2px solid var(--line);
-  background: transparent;
-  color: var(--ink);
-}
-
-.editor-button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-/* PL: Komunikaty: błąd, napis o ładowaniu i potwierdzenie zapisu.
-   EN: Messages: an error, the loading label and the save confirmation. */
+/* PL: Komunikaty: błąd, napis o ładowaniu i potwierdzenie zapisu. Przycisk w komunikacie o ładowaniu dostaje odstęp od tekstu.
+   EN: Messages: an error, the loading label and the save confirmation. A button in the loading message gets a gap from the text. */
 .editor-error {
   color: var(--ink);
   font-size: var(--t-sm);
@@ -334,7 +352,7 @@
   font-size: var(--t-sm);
 }
 
-.editor-note .editor-button {
+.editor-note .ui-button {
   margin-top: 12px;
 }
 

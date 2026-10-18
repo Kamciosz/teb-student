@@ -1,9 +1,11 @@
 /**
- * PL: Widok wpisu w korekcie (podtor 3b): podgląd wpisu i przycisk „Zatwierdź i opublikuj” dla redaktora, który nie jest autorem wpisu. Autor i redaktor-autor widzą tylko komunikat, że wpis czeka na korektę. Zatwierdzenie idzie do serwera, który sam sprawdza, że to nie autor.
- * EN: The view of an entry in review (subtrack 3b): a preview of the entry and the "Zatwierdź i opublikuj" button for an editor who is not the author. The author, and the author-editor, only see a message that the entry waits for review. Approval goes to the server, which checks by itself that the editor is not the author.
+ * PL: Widok wpisu w korekcie (podtor 3b): pasek ScreenHeader z „Wróć” do panelu, podgląd wpisu i przycisk „Zatwierdź i opublikuj” dla redaktora, który nie jest autorem wpisu. Autor i redaktor-autor widzą tylko komunikat, że wpis czeka na korektę. Zatwierdzenie idzie do serwera, który sam sprawdza, że to nie autor.
+ * EN: The view of an entry in review (subtrack 3b): a ScreenHeader with "Wróć" back to the panel, a preview of the entry, and the "Zatwierdź i opublikuj" button for an editor who is not the author. The author, and the author-editor, only see a message that the entry waits for review. Approval goes to the server, which checks by itself that the editor is not the author.
  *
  * @author Szymon
  * @since 2026-10-13
+ * @uses src/shared/index.ts::Button
+ * @uses src/shared/index.ts::ScreenHeader
  * @uses src/features/news/editor/api.ts::approveEntry
  * @uses src/features/news/editor/api.ts::DraftToEdit
  * @uses src/features/news/editor/previewEntry.ts::previewEntry
@@ -15,10 +17,11 @@
 import type { JSONContent } from '@tiptap/core';
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { Button, ScreenHeader } from '../../../shared';
 import { EntryCard, RichContent } from '../feed';
 import { approveEntry, type DraftToEdit } from './api';
 import { previewEntry } from './previewEntry';
-import { TEXTS } from './texts';
+import { SCREEN, TEXTS } from './texts';
 import type { EntryType } from './TypeStep';
 
 /**
@@ -61,8 +64,9 @@ export function ReviewStep({ draft }: ReviewStepProps) {
   if (isApproved) {
     return (
       <main className="editor-screen" data-subtrack="3b">
+        <ScreenHeader title={SCREEN.title} backTo="/news/admin" backLabel={TEXTS.back} />
         <p role="status" className="editor-done">{TEXTS.savedPublished}</p>
-        <Link className="editor-button editor-button--wide" to="/news/admin">{TEXTS.goToPanel}</Link>
+        <Link className="ui-button ui-button--filled editor-wide" to="/news/admin">{TEXTS.goToPanel}</Link>
       </main>
     );
   }
@@ -71,22 +75,26 @@ export function ReviewStep({ draft }: ReviewStepProps) {
   const body = draft.body as JSONContent;
   return (
     <main className="editor-screen" data-subtrack="3b">
+      <ScreenHeader title={SCREEN.title} backTo="/news/admin" backLabel={TEXTS.back} />
       <section className="editor-step" aria-labelledby="editor-step-heading">
-        <h1 id="editor-step-heading">{TEXTS.reviewHeading}</h1>
+        <h2 id="editor-step-heading">{TEXTS.reviewHeading}</h2>
         {/* PL: Kafel z listy. Podgląd nie ma adresu na serwerze, więc kliknięcie kafla nic nie otwiera. EN: The list tile. The preview has no address on the server, so clicking the tile opens nothing. */}
         <div onClickCapture={(event) => event.preventDefault()}>
           <EntryCard entry={previewEntry(type, draft.title, body, publishedAt)} />
         </div>
         <RichContent body={body} />
+        {/* PL: Błąd zatwierdzenia. Czytnik ekranu odczytuje go od razu. EN: The approval error. A screen reader reads it at once. */}
+        {message ? <p role="alert" className="editor-error">{message}</p> : null}
         {draft.canApprove ? (
-          <button type="button" className="editor-button editor-button--wide" disabled={isApproving} onClick={() => void approve()}>
-            {isApproving ? TEXTS.approving : TEXTS.approve}
-          </button>
+          /* PL: Zatwierdzenie przyklejone do dołu, jedyny wypełniony przycisk ekranu. EN: The approval stuck to the bottom, the only filled button of the screen. */
+          <div className="editor-sticky">
+            <Button type="button" className="editor-wide" disabled={isApproving} onClick={() => void approve()}>
+              {isApproving ? TEXTS.approving : TEXTS.approve}
+            </Button>
+          </div>
         ) : (
           <p>{TEXTS.reviewWaiting}</p>
         )}
-        {/* PL: Błąd zatwierdzenia. Czytnik ekranu odczytuje go od razu. EN: The approval error. A screen reader reads it at once. */}
-        {message ? <p role="alert" className="editor-error">{message}</p> : null}
       </section>
     </main>
   );
