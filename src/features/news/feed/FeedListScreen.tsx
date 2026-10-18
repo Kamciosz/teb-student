@@ -63,7 +63,7 @@ export function FeedListScreen() {
 
   return (
     <main className="news-feed" data-subtrack="3a">
-      <ScreenHeader title="Aktualności" />
+      <ScreenHeader focusTitle title="Aktualności" />
       <div className="news-feed__body">
         <SearchField value={text} onChange={setText} />
         <TypeFilterRow value={filter} onChange={setFilter} />

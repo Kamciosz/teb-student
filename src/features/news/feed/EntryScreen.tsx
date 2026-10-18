@@ -63,7 +63,7 @@ export function EntryScreen() {
 
   return (
     <main className="news-feed" data-subtrack="3a">
-      <ScreenHeader title={entry ? entry.title : 'Aktualność'} backTo="/news/feed" backLabel="Aktualności" />
+      <ScreenHeader focusTitle title={entry ? entry.title : 'Aktualność'} backTo="/news/feed" backLabel="Aktualności" />
       <div className="news-feed__body">
         {query.isPending ? (
           <p role="status" className="news-note">
@@ -82,7 +82,7 @@ export function EntryScreen() {
         {entry ? (
           <article className="news-entry">
             <p className="news-entry__meta">
-              <span className="news-tag">{NEWS_TYPE_LABELS[entry.type]}</span>
+              <span className="news-tag" data-type={entry.type}>{NEWS_TYPE_LABELS[entry.type]}</span>
               <small>
                 {entry.source} · {formatDay(entry.publishedAt)}
               </small>

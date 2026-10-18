@@ -41,7 +41,7 @@ export function EntryCard({ entry, featured = false }: EntryCardProps) {
   return (
     <Link className={className} to={`/news/feed/${encodeURIComponent(entry.id)}`}>
       <span className="news-card__meta">
-        <span className="news-tag">{NEWS_TYPE_LABELS[entry.type]}</span>
+        <span className="news-tag" data-type={entry.type}>{NEWS_TYPE_LABELS[entry.type]}</span>
         {entry.pinned ? <span className="news-tag news-tag--pinned">Przypięte</span> : null}
         <small>
           {entry.source} · {formatRelative(entry.publishedAt)}
