@@ -5,11 +5,15 @@
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/admin/icons.tsx::Icon
+ * @uses src/shared/index.ts::Button
  * @used_by src/features/admin/InvitesScreen.tsx::CopyCodeButton
  * @used_by src/features/admin/InviteList.tsx::CopyCodeButton
  */
 
 import { useEffect, useState } from 'react';
+// PL: Wspólny przycisk w wariancie tekstowym (pełny) i lokalna ikona kopiowania (kompakt).
+// EN: The shared button in the text variant (full) and the local copy icon (compact).
+import { Button } from '../../shared';
 import { Icon } from './icons';
 
 /** PL: Jak długo (ms) po skopiowaniu stoi napis „Skopiowano”, zgodnie z opisem w ekranie 6.2b. EN: How long (ms) the "Skopiowano" label stays after copying, as the screen 6.2b describes. */
@@ -55,9 +59,9 @@ export function CopyCodeButton({ code, compact = false }: { code: string; compac
     );
   }
   return (
-    <button type="button" className="ad-btn ad-btn-outline" onClick={handleCopy}>
+    <Button variant="plain" onClick={handleCopy}>
       <Icon name={iconName} />
       {isCopied ? 'Skopiowano' : 'Kopiuj kod'}
-    </button>
+    </Button>
   );
 }

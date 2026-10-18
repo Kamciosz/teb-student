@@ -26,7 +26,7 @@
 /* PL: Liczba minut: duża i pogrubiona. */
 /* EN: Number of minutes: large and bold. */
 .bell-countdown__num {
-  font-size: var(--t-xl);
+  font-size: var(--t-num);
   font-weight: 800;
   line-height: 1;
   color: var(--ink);

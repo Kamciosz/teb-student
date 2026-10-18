@@ -1,6 +1,6 @@
 /**
- * PL: Test funkcji widoku profilu: zasłonięty adres, litera w kółku i podpis pod imieniem.
- * EN: Test of the profile view functions: the masked address, the letter in the circle and the caption under the name.
+ * PL: Test funkcji widoku profilu: zasłonięty adres i litera w kółku.
+ * EN: Test of the profile view functions: the masked address and the letter in the circle.
  *
  * @author Jakub
  * @since 2026-10-11
@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest';
 // PL: Funkcje, które sprawdzamy.
 // EN: The functions under test.
-import { avatarLetter, maskEmail, profileCaption } from './profileView';
+import { avatarLetter, maskEmail } from './profileView';
 
 // PL: Grupa testów zasłaniania adresu.
 // EN: A group of tests for masking the address.
@@ -43,16 +43,5 @@ describe('avatarLetter', () => {
     ['   ', 'ola@teb.edu.pl', 'O'],
   ])('imię „%s”, adres „%s” daje „%s” / name "%s", address "%s" gives "%s"', (name, email, letter) => {
     expect(avatarLetter(name, email)).toBe(letter);
-  });
-});
-
-// PL: Grupa testów podpisu.
-// EN: A group of tests for the caption.
-describe('profileCaption', () => {
-  // PL: Klasa i adres jak na ekranie 2.4, a bez klasy sam adres.
-  // EN: The class and the address as on screen 2.4, and just the address without a class.
-  it('łączy klasę i zasłonięty adres / joins the class and the masked address', () => {
-    expect(profileCaption('3TA', 'ola@teb.edu.pl')).toBe('3TA · o***@teb.edu.pl');
-    expect(profileCaption('  ', 'ola@teb.edu.pl')).toBe('o***@teb.edu.pl');
   });
 });

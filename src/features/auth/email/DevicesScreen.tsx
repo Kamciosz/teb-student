@@ -9,6 +9,10 @@
  * @uses src/features/auth/email/devicesApi.ts::revokeOtherDevices
  * @uses src/features/auth/email/authApi.ts::signOutStudent
  * @uses src/features/auth/email/useAuthSession.ts::SESSION_QUERY_KEY
+ * @uses src/shared/ui/ScreenHeader.tsx::ScreenHeader
+ * @uses src/shared/ui/ListGroup.tsx::ListGroup
+ * @uses src/shared/ui/ListRow.tsx::ListRow
+ * @uses src/shared/ui/Button.tsx::Button
  * @used_by src/features/auth/email/AuthEmailScreen.tsx::AuthEmailScreen
  */
 
@@ -16,11 +20,10 @@
 // EN: The data query, its invalidation and the effect after a session error.
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router';
+import { Button, ListGroup, ListRow, ScreenHeader } from '../../../shared';
 import { signOutStudent } from './authApi';
 import { MESSAGES } from './authMessages';
 import { fetchDevices, revokeDevice, revokeOtherDevices, type DevicesResult } from './devicesApi';
-import { Icon } from './icons';
 import { SESSION_QUERY_KEY } from './useAuthSession';
 
 /** PL: Klucz zapytania o listę urządzeń. EN: The key of the device list query. */
@@ -41,8 +44,8 @@ function formatLastActive(iso: string): string {
 }
 
 /**
- * PL: Rysuje ekran urządzeń: lista albo komunikat, przycisk wylogowania innych i powrót do pulpitu.
- * EN: Draws the devices screen: the list or a message, the sign-out-others button and the way back to the dashboard.
+ * PL: Rysuje ekran urządzeń: lista albo komunikat, przycisk wylogowania innych i powrót do ustawień.
+ * EN: Draws the devices screen: the list or a message, the sign-out-others button and the way back to the settings.
  *
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
@@ -73,10 +76,7 @@ export function DevicesScreen() {
 
   return (
     <main className="auth-email" data-subtrack="1a">
-      <Link className="auth-email__back" to="/" aria-label="Wróć do pulpitu">
-        <Icon name="arrow-left" />
-      </Link>
-      <h1 className="auth-email__title">Moje urządzenia</h1>
+      <ScreenHeader backTo="/profile/ustawienia" title="Moje urządzenia" />
       <p className="auth-email__lead">Tu widać, na których urządzeniach konto jest zalogowane.</p>
 
       {result === undefined && !query.isError ? <p className="auth-email__hint">Ładowanie listy…</p> : null}
@@ -85,54 +85,54 @@ export function DevicesScreen() {
         <>
           <p className="auth-email__error" role="alert">{result.message}</p>
           {result.error === 'session_not_fresh' ? (
-            <button className="auth-email__button auth-email__button--outline" type="button" onClick={() => void signOutStudent()} disabled={isBusy}>
+            <Button variant="destructive" onClick={() => void signOutStudent()} disabled={isBusy}>
               Wyloguj się
-            </button>
+            </Button>
           ) : null}
         </>
       ) : null}
 
       {result !== undefined && result.ok ? (
-        <ul className="auth-email__devices">
-          {result.value.map((device) => (
-            <li className="auth-email__device" key={device.id}>
-              <div>
-                <p className="auth-email__device-name">{device.browser} na {device.system}</p>
-                <p className="auth-email__hint">Ostatnia aktywność: {formatLastActive(device.lastActiveAt)}</p>
-              </div>
-              {device.current ? (
-                <span className="auth-email__badge">To urządzenie</span>
-              ) : (
-                <button
-                  className="auth-email__button auth-email__button--outline"
-                  type="button"
-                  disabled={isBusy}
-                  aria-label={`Wyloguj: ${device.browser} na ${device.system}`}
-                  onClick={() => void runAction(() => revokeDevice(device.id), MESSAGES.deviceSignedOut)}
-                >
-                  Wyloguj
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+        <ListGroup>
+          {result.value.map((device) => {
+            const name = `${device.browser} na ${device.system}`;
+            return (
+              <ListRow
+                key={device.id}
+                title={name}
+                subtitle={`Ostatnia aktywność: ${formatLastActive(device.lastActiveAt)}`}
+                value={device.current ? (
+                  'To urządzenie'
+                ) : (
+                  <Button
+                    variant="destructive"
+                    disabled={isBusy}
+                    aria-label={`Wyloguj: ${name}`}
+                    onClick={() => void runAction(() => revokeDevice(device.id), MESSAGES.deviceSignedOut)}
+                  >
+                    Wyloguj
+                  </Button>
+                )}
+              />
+            );
+          })}
+        </ListGroup>
       ) : null}
 
       {notice === null ? null : (
-        <p className={notice.isError ? 'auth-email__error' : 'auth-email__hint'} role={notice.isError ? 'alert' : 'status'}>
+        <p className={notice.isError ? 'auth-email__error' : 'auth-email__note'} role={notice.isError ? 'alert' : 'status'}>
           {notice.text}
         </p>
       )}
 
       <div className="auth-email__actions">
-        <button
-          className="auth-email__button"
-          type="button"
+        <Button
+          variant="destructive"
           disabled={isBusy || sessionEnded}
           onClick={() => void runAction(revokeOtherDevices, MESSAGES.othersSignedOut)}
         >
           Wyloguj z innych urządzeń
-        </button>
+        </Button>
       </div>
     </main>
   );

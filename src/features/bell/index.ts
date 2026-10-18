@@ -22,6 +22,9 @@ export { BellCountdown } from './BellCountdown';
 // PL: Stan licznika dla danej chwili z planu szkoły. Przeniesiona do bellState.ts, żeby licznik nie importował drzwi (cykl).
 // EN: The countdown state for a given moment from the school plan. Moved to bellState.ts so that the countdown does not import the door (a cycle).
 export { currentBellState, getBellState, type BellState, type NextLesson } from './bellState';
+// PL: Napis o następnej lekcji (licznik i pulpit pokazują ten sam tekst).
+// EN: The text about the next lesson (the countdown and the dashboard show the same text).
+export { nextLessonLabel } from './nextLessonLabel';
 // PL: Czy plan dnia ma choć jedną lekcję (pulpit: odróżnia „brak planu” od „po lekcjach”).
 // EN: Whether the day's plan has at least one lesson (the dashboard tells "no plan" from "after lessons").
 export { hasBellPlan } from './bellState';
