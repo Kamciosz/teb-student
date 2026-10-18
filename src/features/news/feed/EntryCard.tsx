@@ -25,20 +25,23 @@ import { NEWS_TYPE_LABELS, type NewsEntrySummary } from './types';
 export type EntryCardProps = {
   /** PL: Wpis do pokazania. EN: The entry to show. */
   entry: NewsEntrySummary;
+  /** PL: Czy to wyróżniony, większy wpis na górze listy. EN: Whether it is the highlighted, larger entry at the top of the list. */
+  featured?: boolean;
 };
 
 /**
- * PL: Rysuje kafel wpisu.
- * EN: Draws the entry tile.
+ * PL: Rysuje kafel wpisu. Wyróżniony wpis ma większy tytuł i dwa wiersze opisu, zwykły jest zwarty.
+ * EN: Draws the entry tile. A featured entry has a larger title and two lines of description, a regular one is compact.
  *
- * @param props - PL: wpis. EN: the entry.
+ * @param props - PL: wpis i czy wyróżniony. EN: the entry and whether it is featured.
  * @returns PL: drzewo elementów. EN: the element tree.
  */
-export function EntryCard({ entry }: EntryCardProps) {
+export function EntryCard({ entry, featured = false }: EntryCardProps) {
+  const className = ['news-card', `news-card--${entry.type}`, featured ? 'news-card--featured' : ''].filter(Boolean).join(' ');
   return (
-    <Link className={`news-card news-card--${entry.type}`} to={`/news/feed/${encodeURIComponent(entry.id)}`}>
+    <Link className={className} to={`/news/feed/${encodeURIComponent(entry.id)}`}>
       <span className="news-card__meta">
-        <span className="news-tag">{NEWS_TYPE_LABELS[entry.type]}</span>
+        <span className="news-tag" data-type={entry.type}>{NEWS_TYPE_LABELS[entry.type]}</span>
         {entry.pinned ? <span className="news-tag news-tag--pinned">Przypięte</span> : null}
         <small>
           {entry.source} · {formatRelative(entry.publishedAt)}
