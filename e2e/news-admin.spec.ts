@@ -320,7 +320,7 @@ test('po powrocie z edycji lista pokazuje nowy tytuł / after returning from edi
 
   // PL: Powrót strzałką w kreatorze to nawigacja w aplikacji, bez przeładowania strony.
   // EN: Going back with the wizard arrow is in-app navigation, without reloading the page.
-  await page.getByRole('link', { name: 'Wróć' }).click();
+  await page.getByRole('link', { name: 'Wpisy' }).click();
 
   await expect(page).toHaveURL(/\/news\/admin$/);
   await expect(tiles(page).first()).toContainText('Turniej szkolny klas');

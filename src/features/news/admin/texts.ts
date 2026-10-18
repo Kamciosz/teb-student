@@ -29,7 +29,7 @@ export const SCREEN = {
  * EN: The texts outside EKRANY.md.
  */
 export const TEXTS = {
-  back: 'Wróć',
+  back: 'Panel',
   newEntry: 'Nowy wpis',
   listLabel: 'Wpisy',
   draft: 'Szkic',

@@ -37,8 +37,8 @@
   line-height: 1.2;
 }
 
-/* PL: Pasek kroków 2 i 3: strzałka wstecz, tytuł i numer kroku w jednym wierszu, pod nim pasek postępu. Krok 1 ma ScreenHeader, więc tu go nie ma.
-   EN: The bar of steps 2 and 3: the back arrow, the title and the step number in one row, the progress bar under them. Step 1 has a ScreenHeader, so it is not here. */
+/* PL: Górny pasek kreatora: nagłówek, pod nim pasek postępu i numer kroku.
+   EN: The top bar of the wizard: the header, then the progress bar and the step number. */
 .editor-top {
   display: flex;
   flex-direction: column;
@@ -46,31 +46,14 @@
   padding-top: 8px;
 }
 
-.editor-top__row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
+/* PL: Przycisk „Wstecz” wygląda jak link powrotu w pasku: bez tła i ramki.
+   EN: The "Wstecz" button looks like the back link in the bar: no background and no border. */
 .editor-top__back {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
+  padding: 0;
   border: 0;
-  border-radius: var(--r);
-  background: var(--tile);
-  color: var(--ink);
-  font-size: var(--t-lg);
+  background: none;
+  font: inherit;
   cursor: pointer;
-}
-
-.editor-top__title {
-  flex: 1;
-  font-size: var(--t-lg);
-  font-weight: 700;
 }
 
 .editor-top__step {
@@ -368,4 +351,10 @@
 .editor-done {
   font-size: var(--t-lg);
   font-weight: 700;
+}
+
+/* PL: Ekran ma już margines 16 px, więc nagłówek nie dokłada drugiego.
+   EN: The screen already has a 16 px margin, so the header does not add a second one. */
+.editor-screen .ui-screen-header {
+  padding-inline: 0;
 }

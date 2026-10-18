@@ -40,3 +40,7 @@
 @media (prefers-reduced-motion: reduce) {
   .na-sheet { animation: none; }
 }
+
+/* PL: Ekran ma już margines 16 px, więc nagłówek nie dokłada drugiego.
+   EN: The screen already has a 16 px margin, so the header does not add a second one. */
+.na-screen .ui-screen-header { padding-inline: 0; }

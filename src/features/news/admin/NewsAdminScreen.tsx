@@ -1,6 +1,6 @@
 /**
- * PL: Ekran „Wpisy” w panelu Samorządu (podtor 3c): lista wszystkich wpisów ze szkicami, publikacja szkicu, przypinanie i odpinanie opublikowanych (najwyżej 3), usuwanie z potwierdzeniem i przejście do kreatora „Nowy wpis” (podtor 3b, `/news/editor`). Stoi w ramie panelu z menu, a nagłówek ma „Wróć” do panelu i tekstowy „Nowy wpis”. Uprawnienia sprawdza serwer, ten ekran tylko pokazuje błąd, gdy serwer odmówi. Bez internetu lista zostaje z ostatnich danych, a publikacja, przypinanie i usuwanie są wyłączone z objaśnieniem.
- * EN: The "Wpisy" screen in the Student Council panel (subtrack 3c): the list of all entries with drafts, publishing a draft, pinning and unpinning published entries (at most 3), deleting with a confirmation and the way to the "Nowy wpis" wizard (subtrack 3b, `/news/editor`). It stands in the panel frame with the menu, and its header has "Wróć" back to the panel and the text "Nowy wpis". The server checks permissions, this screen only shows an error when the server refuses. Without internet the list stays with the last data, and publishing, pinning and deleting are off with an explanation.
+ * PL: Ekran „Wpisy” w panelu Samorządu (podtor 3c): lista wszystkich wpisów ze szkicami, publikacja szkicu, przypinanie i odpinanie opublikowanych (najwyżej 3), usuwanie z potwierdzeniem i przejście do kreatora „Nowy wpis” (podtor 3b, `/news/editor`). Stoi w ramie panelu z menu, a nagłówek ma „Panel” do panelu i tekstowy „Nowy wpis”. Uprawnienia sprawdza serwer, ten ekran tylko pokazuje błąd, gdy serwer odmówi. Bez internetu lista zostaje z ostatnich danych, a publikacja, przypinanie i usuwanie są wyłączone z objaśnieniem.
+ * EN: The "Wpisy" screen in the Student Council panel (subtrack 3c): the list of all entries with drafts, publishing a draft, pinning and unpinning published entries (at most 3), deleting with a confirmation and the way to the "Nowy wpis" wizard (subtrack 3b, `/news/editor`). It stands in the panel frame with the menu, and its header has "Panel" back to the panel and the text "Nowy wpis". The server checks permissions, this screen only shows an error when the server refuses. Without internet the list stays with the last data, and publishing, pinning and deleting are off with an explanation.
  *
  * @author Bohdan
  * @since 2026-10-09
@@ -96,8 +96,8 @@ export function NewsAdminScreen() {
   const pinLimited = pin.error instanceof PinLimitError;
   const pinFailed = (pin.isError && !pinLimited) || unpin.isError;
 
-  // PL: Nagłówek z „Wróć” i „Nowy wpis”, komunikaty błędów zapisu, lista, objaśnienie bez internetu i arkusz usuwania.
-  // EN: The header with "Wróć" and "Nowy wpis", the save error messages, the list, the explanation without internet and the delete sheet.
+  // PL: Nagłówek z „Panel” i „Nowy wpis”, komunikaty błędów zapisu, lista, objaśnienie bez internetu i arkusz usuwania.
+  // EN: The header with "Panel" and "Nowy wpis", the save error messages, the list, the explanation without internet and the delete sheet.
   return (
     <section className="na-screen" data-subtrack="3c">
       <ScreenHeader

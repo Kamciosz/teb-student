@@ -1,6 +1,6 @@
 /**
- * PL: Widok wpisu w korekcie (podtor 3b): pasek ScreenHeader z „Wróć” do panelu, podgląd wpisu i przycisk „Zatwierdź i opublikuj” dla redaktora, który nie jest autorem wpisu. Autor i redaktor-autor widzą tylko komunikat, że wpis czeka na korektę. Zatwierdzenie idzie do serwera, który sam sprawdza, że to nie autor.
- * EN: The view of an entry in review (subtrack 3b): a ScreenHeader with "Wróć" back to the panel, a preview of the entry, and the "Zatwierdź i opublikuj" button for an editor who is not the author. The author, and the author-editor, only see a message that the entry waits for review. Approval goes to the server, which checks by itself that the editor is not the author.
+ * PL: Widok wpisu w korekcie (podtor 3b): pasek ScreenHeader z „Wpisy” do listy wpisów, podgląd wpisu i przycisk „Zatwierdź i opublikuj” dla redaktora, który nie jest autorem wpisu. Autor i redaktor-autor widzą tylko komunikat, że wpis czeka na korektę. Zatwierdzenie idzie do serwera, który sam sprawdza, że to nie autor.
+ * EN: The view of an entry in review (subtrack 3b): a ScreenHeader with "Wpisy" back to the entries list, a preview of the entry, and the "Zatwierdź i opublikuj" button for an editor who is not the author. The author, and the author-editor, only see a message that the entry waits for review. Approval goes to the server, which checks by itself that the editor is not the author.
  *
  * @author Szymon
  * @since 2026-10-13
