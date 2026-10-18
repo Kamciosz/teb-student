@@ -6,7 +6,7 @@
  * @since 2026-10-11
  * @uses src/shared/index.ts::Icon
  * @used_by src/features/profile/ProfileHome.tsx::Icon
- * @used_by src/features/profile/ScreenTop.tsx::Icon
+ * @used_by src/features/profile/SettingsScreen.tsx::Icon
  */
 
 // PL: Wspólny zestaw ikon i jego nazwy.

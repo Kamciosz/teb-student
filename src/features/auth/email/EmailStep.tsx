@@ -6,14 +6,17 @@
  * @since 2026-10-09
  * @uses src/features/auth/email/authApi.ts::requestCode
  * @uses src/features/auth/email/schoolEmail.ts::checkEmailInput
+ * @uses src/shared/ui/ScreenHeader.tsx::ScreenHeader
+ * @uses src/shared/ui/TextField.tsx::TextField
+ * @uses src/shared/ui/Button.tsx::Button
  * @used_by src/features/auth/email/AuthEmailScreen.tsx::EmailStep
  */
 
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
+import { Button, ScreenHeader, TextField } from '../../../shared';
 import { requestCode } from './authApi';
 import { MESSAGES } from './authMessages';
-import { Icon } from './icons';
 import { checkEmailInput, normalizeEmail } from './schoolEmail';
 
 /** PL: Numer elementu z komunikatem błędu. EN: The id of the error message element. */
@@ -45,42 +48,6 @@ async function submitEmail(raw: string): Promise<string | null> {
 }
 
 /**
- * PL: Pole adresu z etykietą i komunikatem błędu pod spodem.
- * EN: The address field with a label and the error message below it.
- *
- * @param props - PL: wartość, funkcja zmiany, blokada i błąd. EN: the value, the change function, the lock and the error.
- * @returns PL: etykieta, pole i opcjonalny błąd. EN: the label, the field and an optional error.
- */
-function EmailField(props: {
-  value: string;
-  onChange: (value: string) => void;
-  isDisabled: boolean;
-  error: string | null;
-}) {
-  return (
-    <>
-      <label className="auth-email__label" htmlFor="auth-email-input">Szkolny e-mail</label>
-      <input
-        id="auth-email-input"
-        className="auth-email__input"
-        type="email"
-        inputMode="email"
-        autoComplete="email"
-        autoCapitalize="none"
-        spellCheck={false}
-        placeholder="imie.nazwisko@teb.edu.pl"
-        value={props.value}
-        disabled={props.isDisabled}
-        aria-invalid={props.error !== null}
-        aria-describedby={props.error === null ? undefined : ERROR_ID}
-        onChange={(event) => props.onChange(event.target.value)}
-      />
-      {props.error === null ? null : <p id={ERROR_ID} className="auth-email__error" role="alert">{props.error}</p>}
-    </>
-  );
-}
-
-/**
  * PL: Rysuje ekran 1.1 i obsługuje wysłanie formularza.
  * EN: Draws screen 1.1 and handles the form submission.
  *
@@ -105,18 +72,32 @@ export function EmailStep({ onCodeSent }: EmailStepProps) {
 
   return (
     <form className="auth-email__form" onSubmit={handleSubmit} noValidate>
-      <div className="auth-email__mark" aria-hidden="true">T</div>
-      <h1 className="auth-email__title">TEB Student</h1>
+      <ScreenHeader title="TEB Student" />
       <p className="auth-email__lead">Aktualności, zgłoszenia i ankiety szkoły w jednym miejscu.</p>
-      <EmailField value={email} onChange={setEmail} isDisabled={isSending} error={error} />
-      <p className="auth-email__note"><Icon name="lock" />Wyślemy sześciocyfrowy kod. Hasło nie jest potrzebne.</p>
+
+      {/* PL: Błąd ma własny komunikat z role="alert"; pole dostaje aria-invalid i opis przez właściwości wejścia. EN: The error has its own message with role="alert"; the field gets aria-invalid and the description through the input properties. */}
+      <TextField
+        label="Szkolny e-mail"
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        autoCapitalize="none"
+        spellCheck={false}
+        placeholder="imie.nazwisko@teb.edu.pl"
+        value={email}
+        disabled={isSending}
+        aria-invalid={error === null ? undefined : true}
+        aria-describedby={error === null ? undefined : ERROR_ID}
+        onChange={(event) => setEmail(event.target.value)}
+      />
+      {error === null ? null : <p id={ERROR_ID} className="auth-email__error" role="alert">{error}</p>}
+      <p className="auth-email__note">Wyślemy sześciocyfrowy kod. Hasło nie jest potrzebne.</p>
 
       <div className="auth-email__actions">
-        <Link className="auth-email__button auth-email__button--outline" to="/auth/invite">Mam kod zaproszenia</Link>
-        <button className="auth-email__button" type="submit" disabled={isSending}>
+        <Button type="submit" disabled={isSending}>
           {isSending ? 'Wysyłanie…' : 'Wyślij kod'}
-          <Icon name="send" />
-        </button>
+        </Button>
+        <Link className="ui-button ui-button--plain" to="/auth/invite">Mam kod zaproszenia</Link>
       </div>
     </form>
   );

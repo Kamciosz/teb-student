@@ -5,14 +5,16 @@
  * @author Jakub
  * @since 2026-10-11
  * @uses src/features/profile/privacyText.ts::PRIVACY_SECTIONS
- * @uses src/features/profile/ScreenTop.tsx::ScreenTop
+ * @uses src/shared/index.ts::ScreenHeader
  * @used_by src/features/profile/ProfileScreen.tsx::PrivacyScreen
  */
 
 // PL: Treść polityki i górny pasek.
 // EN: The policy content and the top bar.
 import { PRIVACY_SECTIONS } from './privacyText';
-import { ScreenTop } from './ScreenTop';
+// PL: Wspólny nagłówek ekranu z przyciskiem wstecz.
+// EN: The shared screen header with the back button.
+import { ScreenHeader } from '../../shared';
 
 /**
  * PL: Rysuje politykę prywatności.
@@ -24,7 +26,7 @@ export function PrivacyScreen() {
   return (
     <>
       {/* PL: Pasek z powrotem do profilu (bez sesji profil odeśle na logowanie). EN: The bar with the way back to the profile (without a session the profile sends to sign-in). */}
-      <ScreenTop title="Polityka prywatności" backTo="/profile" backLabel="Wróć do profilu" />
+      <ScreenHeader title="Polityka prywatności" backTo="/profile" backLabel="Profil" />
       {/* PL: Części polityki: nagłówek i akapity. EN: The parts of the policy: a heading and paragraphs. */}
       {PRIVACY_SECTIONS.map((section) => (
         <section key={section.heading} className="pf-section">

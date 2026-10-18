@@ -1,14 +1,17 @@
 /**
- * PL: Sekcja „Face ID i odcisk palca” w ustawieniach: przycisk dodania klucza, lista z nazwą i datą oraz „Usuń” przy każdym kluczu. Bez WebAuthn zostaje jedno zdanie, bez przycisku. Komponent tylko rysuje; logikę ma usePasskeys.
- * EN: The "Face ID i odcisk palca" (Face ID and fingerprint) section in the settings: an add-key button, a list with name and date, and "Usuń" (delete) on each key. Without WebAuthn one sentence stays, with no button. The component only draws; the logic is in usePasskeys.
+ * PL: Sekcja „Face ID i odcisk palca” w ustawieniach: grupa z nagłówkiem, lista kluczy z nazwą, datą i „Usuń” przy każdym kluczu oraz przycisk dodania. Bez WebAuthn grupa ma tylko zdanie w stopce, bez przycisku. Komponent tylko rysuje; logikę ma usePasskeys.
+ * EN: The "Face ID i odcisk palca" (Face ID and fingerprint) section in the settings: a group with a header, a list of keys with name, date and "Usuń" (delete) on each key, and the add button. Without WebAuthn the group has only a sentence in its footer, with no button. The component only draws; the logic is in usePasskeys.
  *
  * @author Szymon
  * @since 2026-10-14
+ * @uses src/shared/index.ts::Button
+ * @uses src/shared/index.ts::ListGroup
  * @uses src/features/profile/usePasskeys.ts::usePasskeys
  * @uses src/features/profile/passkeyApi.ts::isPasskeySupported
  * @uses src/features/profile/passkeyApi.ts::PASSKEY_UNSUPPORTED_MESSAGE
  * @used_by src/features/profile/SettingsScreen.tsx::SettingsScreen
  */
+import { Button, ListGroup } from '../../shared';
 import { isPasskeySupported, PASSKEY_UNSUPPORTED_MESSAGE, type PasskeyItem } from './passkeyApi';
 import { usePasskeys } from './usePasskeys';
 
@@ -28,47 +31,54 @@ function formatDate(iso: string | null): string {
 }
 
 /**
- * PL: Cała sekcja. Bez WebAuthn pokazuje tylko zdanie.
- * EN: The whole section. Without WebAuthn it shows only a sentence.
+ * PL: Cała sekcja. Bez WebAuthn grupa ma tylko zdanie w stopce, a pusty blok z przyciskami jest ukryty w CSS.
+ * EN: The whole section. Without WebAuthn the group has only a sentence in its footer, and the empty block with the buttons is hidden in CSS.
  *
  * @returns PL: sekcja ustawień. EN: the settings section.
  */
 export function PasskeySection() {
-  return (
-    <fieldset className="pf-group">
-      <legend>Face ID i odcisk palca</legend>
-      {isPasskeySupported() ? <PasskeyList /> : <p className="pf-hint">{PASSKEY_UNSUPPORTED_MESSAGE}</p>}
-    </fieldset>
-  );
+  if (!isPasskeySupported()) {
+    return (
+      <div className="pf-passkeys">
+        <ListGroup header="Face ID i odcisk palca" footer={PASSKEY_UNSUPPORTED_MESSAGE}>{null}</ListGroup>
+      </div>
+    );
+  }
+  return <PasskeyList />;
 }
 
 /**
  * PL: Lista kluczy z przyciskiem dodania i komunikatami.
  * EN: The list of keys with the add button and the messages.
  *
- * @returns PL: lista i przycisk. EN: the list and the button.
+ * @returns PL: grupa z listą i przyciskiem. EN: the group with the list and the button.
  */
 function PasskeyList() {
   const { loading, items, listError, message, busy, add, remove } = usePasskeys();
+  // PL: Pusta lista bez błędu i bez ładowania: podpowiedź idzie do stopki grupy.
+  // EN: An empty list with no error and no loading: the hint goes to the group footer.
+  const empty = !loading && !listError && items.length === 0;
   return (
-    <>
-      {loading ? <p className="pf-hint" role="status">Ładowanie kluczy…</p> : null}
-      {listError ? <p className="pf-error" role="alert">{listError}</p> : null}
-      {items.length > 0 ? (
-        <ul className="pf-tile">
-          {items.map((item) => (
-            <PasskeyRow key={item.id} item={item} disabled={busy} onRemove={() => remove(item.id)} />
-          ))}
-        </ul>
-      ) : null}
-      {!loading && !listError && items.length === 0 ? (
-        <p className="pf-hint">Nie masz jeszcze klucza. Dodaj Face ID albo odcisk palca, żeby logować się szybciej.</p>
-      ) : null}
-      <button type="button" className="pf-btn pf-btn-soft" disabled={busy} onClick={() => add()}>
-        Dodaj Face ID lub odcisk palca
-      </button>
-      {message ? <p className="pf-error" role="alert">{message}</p> : null}
-    </>
+    <div className="pf-passkeys">
+      <ListGroup
+        header="Face ID i odcisk palca"
+        footer={empty ? 'Nie masz jeszcze klucza. Dodaj Face ID albo odcisk palca, żeby logować się szybciej.' : undefined}
+      >
+        {loading ? <p className="pf-hint" role="status">Ładowanie kluczy…</p> : null}
+        {listError ? <p className="pf-error" role="alert">{listError}</p> : null}
+        {items.length > 0 ? (
+          <ul className="pf-keys">
+            {items.map((item) => (
+              <PasskeyRow key={item.id} item={item} disabled={busy} onRemove={() => remove(item.id)} />
+            ))}
+          </ul>
+        ) : null}
+        <Button variant="plain" disabled={busy} onClick={() => add()}>
+          Dodaj Face ID lub odcisk palca
+        </Button>
+        {message ? <p className="pf-error" role="alert">{message}</p> : null}
+      </ListGroup>
+    </div>
   );
 }
 
@@ -82,14 +92,14 @@ function PasskeyList() {
 function PasskeyRow({ item, disabled, onRemove }: { item: PasskeyItem; disabled: boolean; onRemove: () => void }) {
   const name = item.name ?? 'Klucz bez nazwy';
   return (
-    <li className="pf-row">
+    <li className="ui-list-row pf-key-row">
       <span className="pf-row-text">
         {name}
         <small>Dodano {formatDate(item.createdAt)}</small>
       </span>
-      <button type="button" className="pf-btn pf-btn-soft pf-passkey-delete" disabled={disabled} onClick={onRemove} aria-label={`Usuń klucz: ${name}`}>
+      <Button variant="destructive" disabled={disabled} onClick={onRemove} aria-label={`Usuń klucz: ${name}`}>
         Usuń
-      </button>
+      </Button>
     </li>
   );
 }

@@ -10,6 +10,7 @@
  * @used_by src/features/auth/email/AuthEmailScreen.tsx::AuthEmailScreen
  */
 import { useState } from 'react';
+import { Button } from '../../../shared';
 import { isPasskeySupported, signInWithPasskey } from './authApi';
 import { useSessionRefresh } from './useAuthSession';
 
@@ -38,14 +39,10 @@ export function PasskeySignIn() {
 
   return (
     <>
-      <button
-        type="button"
-        className="auth-email__button auth-email__button--outline"
-        onClick={handleSignIn}
-        disabled={busy}
-      >
+      {/* PL: Przycisk tekstowy, wysokość 44 px z klasy Button. EN: A text button, 44 px high from the Button class. */}
+      <Button variant="plain" onClick={handleSignIn} disabled={busy}>
         Zaloguj Face ID lub odciskiem palca
-      </button>
+      </Button>
       {message && (
         <p className="auth-email__error" role="alert">
           {message}

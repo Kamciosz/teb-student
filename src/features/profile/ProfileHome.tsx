@@ -1,58 +1,39 @@
 /**
- * PL: Ekran „Profil” (ekran 2.4 w docs/projekt/EKRANY.md, z wierszem 6.1a „Panel Samorządu” dla osoby z rolą): litera, imię, klasa i zasłonięty adres, wiersze „Moje zgłoszenia” i „Polityka prywatności”, „Wyloguj” oraz „Usuń konto i dane”. Do tego wiersz „Ustawienia”, który prowadzi do zmiany imienia, klasy, szkoły i palety (tekstu nie ma w projekcie ekranów).
- * EN: The "Profil" screen (screen 2.4 in docs/projekt/EKRANY.md, with the row "Panel Samorządu" of screen 6.1a for a person with a role): the letter, name, class and masked address, the rows "Moje zgłoszenia" and "Polityka prywatności", "Wyloguj" and "Usuń konto i dane". Plus the "Ustawienia" row, which leads to changing the name, class, school and palette (the screen design has no text for it).
+ * PL: Ekran „Profil” w wyglądzie ustawień telefonu: nagłówek „Profil”, kółko z literą, imię i klasa, potem grupy list. Grupa „Konto” pokazuje tylko zasłonięty adres e-mail. Druga grupa ma „Ustawienia”, wiersz panelu (tylko dla osoby z rolą), „Moje zgłoszenia” i „Polityka prywatności”. „Wyloguj” jest w osobnej grupie, a „Usuń konto i dane” na dole, w osobnej grupie, na czerwono. Na dole jest dolny pasek nawigacji.
+ * EN: The "Profil" screen in the look of the phone's settings: the "Profil" header, the circle with the letter, the name and the class, then groups of lists. The "Konto" group shows only the masked e-mail address. The second group has "Ustawienia", the panel row (only for a person with a role), "Moje zgłoszenia" and "Polityka prywatności". "Wyloguj" is in its own group, and "Usuń konto i dane" at the bottom, in a separate group, in red. The bottom navigation bar is at the bottom.
  *
- * @author Jakub
- * @since 2026-10-11
+ * @author Szymon Sosnowski
+ * @since 2026-10-18
+ * @uses src/shared/index.ts::Dock
+ * @uses src/shared/index.ts::ListGroup
+ * @uses src/shared/index.ts::ListRow
+ * @uses src/shared/index.ts::ScreenHeader
  * @uses src/features/auth/index.ts::useAuthSession
  * @uses src/features/auth/index.ts::signOutStudent
  * @uses src/features/admin/index.ts::usePanelEntry
  * @uses src/features/profile/queries.ts::useProfile
- * @uses src/features/profile/profileView.ts::profileCaption
+ * @uses src/features/profile/profileView.ts::avatarLetter
+ * @uses src/features/profile/profileView.ts::maskEmail
  * @used_by src/features/profile/ProfileScreen.tsx::ProfileHome
  */
 
 // PL: useState trzyma komunikat błędu wylogowania.
 // EN: useState keeps the sign-out error message.
 import { useState } from 'react';
-// PL: Link do innego ekranu.
-// EN: A link to another screen.
-import { Link } from 'react-router';
+// PL: Wspólne klocki wyglądu: pasek dolny, grupy, wiersze i nagłówek ekranu.
+// EN: The shared look blocks: the bottom bar, the groups, the rows and the screen header.
+import { Dock, ListGroup, ListRow, ScreenHeader } from '../../shared';
 // PL: Sesja i wylogowanie, przez drzwi modułu auth.
 // EN: The session and the sign-out, through the auth module door.
 import { signOutStudent, useAuthSession } from '../auth';
 // PL: Wiersz panelu dla osoby z rolą, przez drzwi modułu admin.
 // EN: The panel row for a person with a role, through the admin module door.
 import { usePanelEntry } from '../admin';
-// PL: Ikony, pasek, dane i funkcje widoku.
-// EN: The icons, the bar, the data and the view functions.
-import { Icon, type IconName } from './icons';
-import { avatarLetter, profileCaption } from './profileView';
+// PL: Ikony i funkcje widoku.
+// EN: The icons and the view functions.
+import { Icon } from './icons';
+import { avatarLetter, maskEmail } from './profileView';
 import { useProfile } from './queries';
-import { ScreenTop } from './ScreenTop';
-
-/**
- * PL: Jeden wiersz kafla z linkiem: ikona, tekst i strzałka w prawo.
- * EN: One tile row with a link: an icon, the text and the right arrow.
- *
- * @param props - PL: ikona, adres, tekst i opcjonalny podpis pod tekstem. EN: the icon, the address, the text and an optional caption under the text.
- * @returns PL: element listy. EN: a list item.
- */
-function LinkRow({ icon, to, label, hint }: { icon: IconName; to: string; label: string; hint?: string }) {
-  return (
-    <li>
-      {/* PL: Cały wiersz jest linkiem do podanego ekranu. EN: The whole row is a link to the given screen. */}
-      <Link className="pf-row" to={to}>
-        <Icon name={icon} />
-        <span className="pf-row-text">
-          {label}
-          {hint ? <small>{hint}</small> : null}
-        </span>
-        <Icon name="chevron-right" />
-      </Link>
-    </li>
-  );
-}
 
 /**
  * PL: Rysuje ekran profilu. Wylogowanie kasuje sesję i dane w telefonie, a wspólny kod przenosi potem na ekran logowania.
@@ -65,12 +46,13 @@ export function ProfileHome() {
   // EN: The session gives the e-mail address, the profile gives the name and class (from the server or the saved copy).
   const session = useAuthSession();
   const profile = useProfile().data;
-  // PL: Wiersz panelu: null, gdy uczeń nie ma roli (wtedy wiersza nie ma).
-  // EN: The panel row: null when the student has no role (then there is no row).
+  // PL: Wiersz panelu: null, gdy uczeń nie ma roli (wtedy wiersza panelu nie ma).
+  // EN: The panel row: null when the student has no role (then there is no panel row).
   const panel = usePanelEntry();
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const email = session.status === 'signed-in' ? session.student.email : '';
   const name = profile?.name ?? '';
+  const className = profile?.className.trim() ?? '';
 
   /** PL: Wylogowuje; po sukcesie wspólny kod (clearQueryData) sam przenosi na logowanie, a przy błędzie pokazujemy komunikat z modułu auth. EN: Signs out; after success the shared code (clearQueryData) takes the student to sign-in itself, and on an error we show the message from the auth module. */
   async function handleSignOut(): Promise<void> {
@@ -80,45 +62,47 @@ export function ProfileHome() {
 
   return (
     <>
-      <ScreenTop title="Profil" backTo="/" backLabel="Wróć na pulpit" />
-      {/* PL: Kółko z literą, imię i podpis z klasą i zasłoniętym adresem. EN: The circle with the letter, the name and the caption with the class and the masked address. */}
-      <div className="pf-who">
-        <div className="pf-avatar" aria-hidden="true">{avatarLetter(name, email)}</div>
-        <div className="pf-who-text">
-          {name ? <h2>{name}</h2> : null}
-          <small>{profileCaption(profile?.className ?? '', email)}</small>
+      <ScreenHeader title="Profil" />
+      <div className="pf-stack">
+        {/* PL: Kółko z literą, imię i klasa obok. EN: The circle with the letter, the name and the class beside it. */}
+        <div className="pf-who">
+          <div className="pf-avatar" aria-hidden="true">{avatarLetter(name, email)}</div>
+          <div className="pf-who-text">
+            {name ? <h2>{name}</h2> : null}
+            {className ? <small>{className}</small> : null}
+          </div>
         </div>
+        {/* PL: Konto tylko z zasłoniętym adresem. EN: The account with only the masked address. */}
+        <ListGroup header="Konto">
+          <ListRow title="E-mail" value={email ? maskEmail(email) : ''} />
+        </ListGroup>
+        {/* PL: Ustawienia, panel Samorządu (tylko dla osoby z rolą), zgłoszenia i polityka prywatności. EN: Settings, the Samorząd panel (only for a person with a role), reports and the privacy policy. */}
+        <ListGroup>
+          <ListRow title="Ustawienia" icon={<Icon name="sliders-horizontal" />} to="/profile/ustawienia" />
+          {panel ? <ListRow title={panel.label} icon={<Icon name="layout-dashboard" />} to="/admin" /> : null}
+          <ListRow title="Moje zgłoszenia" icon={<Icon name="list-checks" />} to="/reports/student/moje" />
+          <ListRow title="Polityka prywatności" icon={<Icon name="file-text" />} to="/profile/prywatnosc" />
+        </ListGroup>
+        {/* PL: Wylogowanie jako osobna grupa z jednym wierszem-akcją. EN: Signing out as a separate group with one action row. */}
+        <ListGroup>
+          <ListRow title="Wyloguj" icon={<Icon name="log-out" />} onClick={handleSignOut} />
+        </ListGroup>
+        {/* PL: Błąd wylogowania (na przykład brak internetu). EN: The sign-out error (for example no internet). */}
+        {signOutError ? <p className="pf-error" role="alert">{signOutError}</p> : null}
+        {/* PL: Usunięcie konta na dole, w osobnej grupie, na czerwono. EN: Deleting the account at the bottom, in a separate group, in red. */}
+        <ListGroup>
+          <ListRow
+            title="Usuń konto i dane"
+            subtitle="Usuniemy zgłoszenia i odpowiedzi."
+            icon={<Icon name="trash-2" />}
+            to="/profile/usun"
+            destructive
+          />
+        </ListGroup>
+        {/* PL: Podpis wersji na dole ekranu. EN: The version caption at the bottom of the screen. */}
+        <p className="pf-version">TEB Student · wersja przykładowa</p>
       </div>
-      {/* PL: Pierwszy kafel: wiersz panelu (tylko dla osoby z rolą), ustawienia, zgłoszenia i polityka prywatności. EN: The first tile: the panel row (only for a person with a role), settings, reports and the privacy policy. */}
-      <ul className="pf-tile">
-        {panel ? (
-          <li>
-            <Link className="pf-row" to="/admin">
-              <Icon name="layout-dashboard" />
-              <span className="pf-row-text">{panel.label}</span>
-              <span className="pf-badge">{panel.badge}</span>
-              <Icon name="chevron-right" />
-            </Link>
-          </li>
-        ) : null}
-        <LinkRow icon="sliders-horizontal" to="/profile/ustawienia" label="Ustawienia" />
-        <LinkRow icon="list-checks" to="/reports/student/moje" label="Moje zgłoszenia" />
-        <LinkRow icon="file-text" to="/profile/prywatnosc" label="Polityka prywatności" />
-      </ul>
-      {/* PL: Drugi kafel: wylogowanie i usunięcie konta. EN: The second tile: signing out and deleting the account. */}
-      <ul className="pf-tile">
-        <li>
-          <button type="button" className="pf-row" onClick={handleSignOut}>
-            <Icon name="log-out" />
-            <span className="pf-row-text">Wyloguj</span>
-          </button>
-        </li>
-        <LinkRow icon="trash-2" to="/profile/usun" label="Usuń konto i dane" hint="Usuniemy zgłoszenia i odpowiedzi." />
-      </ul>
-      {/* PL: Błąd wylogowania (na przykład brak internetu). EN: The sign-out error (for example no internet). */}
-      {signOutError ? <p className="pf-error" role="alert">{signOutError}</p> : null}
-      {/* PL: Podpis wersji na dole ekranu. EN: The version caption at the bottom of the screen. */}
-      <p className="pf-version">TEB Student · wersja przykładowa</p>
+      <Dock />
     </>
   );
 }
