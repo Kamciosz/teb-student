@@ -134,7 +134,7 @@ export function ReportDetails() {
 
   return (
     <>
-      <ScreenHeader title="Zgłoszenie" backTo={LIST_ADDRESS} />
+      <ScreenHeader title="Zgłoszenie" backTo={LIST_ADDRESS} backLabel="Zgłoszenia" />
       {body}
     </>
   );

@@ -143,7 +143,7 @@ export function ReportForm() {
   if (step === 'similar') {
     return (
       <div className="rs-flow">
-        <ScreenHeader title="Zgłoś problem" backTo={LIST_ADDRESS} />
+        <ScreenHeader title="Zgłoś problem" backTo={LIST_ADDRESS} backLabel="Anuluj" />
         <SimilarReports category={draft.category} place={draft.place} onBack={() => setStep(2)} onNewReport={() => setStep(3)} />
       </div>
     );
@@ -158,7 +158,7 @@ export function ReportForm() {
   const CurrentStep = STEP_COMPONENTS[step];
   return (
     <div className="rs-flow">
-      <ScreenHeader title="Zgłoś problem" backTo={LIST_ADDRESS} />
+      <ScreenHeader title="Zgłoś problem" backTo={LIST_ADDRESS} backLabel="Anuluj" />
       <form onSubmit={(event) => event.preventDefault()} noValidate>
         <CurrentStep draft={draft} onChange={(patch) => setDraft({ ...draft, ...patch })} />
         {step === 3 ? <ReportPhotoField {...photo} /> : null}
