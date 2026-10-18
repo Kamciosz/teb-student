@@ -35,10 +35,20 @@
    EN: The text fields in a group: the space from the tile edge and between the fields. */
 .pf-fields { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px; }
 
-/* PL: Wybór szkoły i motywu jako segmenty: wybrany ma jaśniejsze tło (--tile), reszta przezroczysta na tle --tile-2. Przy większym tekście segmenty przechodzą do drugiego wiersza, a nie łamią słów.
-   EN: The school and theme choice as segments: the chosen one has the lighter background (--tile), the rest is transparent on --tile-2. With larger text the segments move to a second row instead of breaking words. */
+/* PL: Wybór szkoły i motywu jako segmenty: wybrany ma jaśniejsze tło (--tile), reszta przezroczysta na tle --tile-2. Gdy wszystkie opcje mieszczą się w rzędzie, mają równą szerokość. Gdy się nie mieszczą, każda idzie do osobnego rzędu na pełną szerokość, bez układu mieszanego.
+   EN: The school and theme choice as segments: the chosen one has the lighter background (--tile), the rest is transparent on --tile-2. When all options fit in a row, they have equal widths. When they do not fit, each one goes to its own full-width row, with no mixed layout. */
+/* PL: Próg to szerokość, od której mieszczą się wszystkie opcje. Liczony w em, więc rośnie razem z większym tekstem. Metoda „Switcher” (Heydon Pickering, Every Layout): baza elastyczna wynosi 0, gdy pojemnik jest szerszy od progu, i jest ogromna, gdy węższy. Nie ma stanu pośredniego.
+   EN: The threshold is the width at which all options fit. It is counted in em, so it grows with the larger text. The "Switcher" method (Heydon Pickering, Every Layout): the flexible basis is 0 when the container is wider than the threshold and huge when it is narrower. There is no state in between. */
 .pf-segment { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; border-radius: var(--r); background: var(--tile-2); }
-.pf-segment .ui-chip { flex: 1 1 auto; min-width: 0; padding: 0 6px; white-space: normal; }
+.pf-segment .ui-chip { flex: 1 1 0; min-width: 0; padding: 0 6px; white-space: normal; }
+/* PL: Dwie opcje (szkoła): najdłuższy napis „Technikum” mieści się w 5,5 em, więc próg to 2 × (5,5 em + 12 px) + 8 px odstępu.
+   EN: Two options (the school): the longest label "Technikum" fits in 5.5 em, so the threshold is 2 × (5.5 em + 12 px) + 8 px of gap. */
+.pf-segment .ui-chip:first-child:nth-last-child(2),
+.pf-segment .ui-chip:first-child:nth-last-child(2) ~ .ui-chip { flex-basis: calc((11em + 32px - 100%) * 999); }
+/* PL: Trzy opcje (motyw): najdłuższy napis „Automatyczny” to 7,2 em, więc próg to 3 × (7,2 em + 12 px) + 2 × 8 px odstępu. Nowa grupa z inną liczbą opcji potrzebuje własnej reguły.
+   EN: Three options (the theme): the longest label "Automatyczny" is 7.2 em, so the threshold is 3 × (7.2 em + 12 px) + 2 × 8 px of gap. A new group with another number of options needs its own rule. */
+.pf-segment .ui-chip:first-child:nth-last-child(3),
+.pf-segment .ui-chip:first-child:nth-last-child(3) ~ .ui-chip { flex-basis: calc((21.6em + 52px - 100%) * 999); }
 .pf-segment .ui-chip:not([aria-pressed='true']) { background: transparent; }
 
 /* PL: Pasek zapisu i wyniku: przycisk na całą szerokość, pod nim komunikat.
