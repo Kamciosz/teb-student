@@ -35,7 +35,7 @@ test('401 przy wysyłaniu zgłoszenia przenosi na /auth/email / a 401 when sendi
   await page.route('**/api/reports/student/similar*', (route) => route.fulfill({ json: { reports: [] } }));
 
   await page.goto('/reports/student');
-  await page.getByRole('radio', { name: 'Sala lub sprzęt' }).click();
+  await page.getByText('Sala lub sprzęt', { exact: true }).click();
   await page.getByRole('button', { name: 'Dalej' }).click();
   await page.getByRole('radio', { name: 'Sala', exact: true }).click();
   await page.getByLabel('Dokładne miejsce').fill('Sala 112');

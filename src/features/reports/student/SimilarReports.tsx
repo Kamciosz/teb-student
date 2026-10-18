@@ -8,13 +8,17 @@
  * @uses src/features/reports/student/queries.ts::useSimilarReports
  * @uses src/features/reports/student/queries.ts::useJoinReport
  * @uses src/features/reports/student/api.ts::SimilarReport
- * @uses src/features/reports/student/reportOptions.ts::STAGE_ORDER
+ * @uses src/features/reports/student/reportView.ts::stageLabel
+ * @uses src/shared/index.ts::Button
  * @used_by src/features/reports/student/ReportForm.tsx::SimilarReports
  */
 
 // PL: Efekt przejścia dalej, gdy nie ma listy do pokazania.
 // EN: The effect that moves on when there is no list to show.
 import { useEffect } from 'react';
+// PL: Przyciski wspólnego interfejsu.
+// EN: The shared buttons.
+import { Button } from '../../../shared';
 // PL: Ikony przycisków.
 // EN: The button icons.
 import { Icon } from './icons';
@@ -24,9 +28,9 @@ import type { SimilarReport } from './api';
 // PL: Hook dołączania (typ mutacji do listy).
 // EN: The join hook (the mutation type for the list).
 import { useJoinReport, useSimilarReports } from './queries';
-// PL: Polskie nazwy etapów.
-// EN: The Polish stage names.
-import { STAGE_ORDER } from './reportOptions';
+// PL: Polska nazwa etapu do podpisu.
+// EN: The Polish stage name for the caption.
+import { stageLabel } from './reportView';
 
 /** PL: Dane kroku: kategoria i miejsce z szkicu oraz przyciski. EN: The step data: the category and place from the draft, and the buttons. */
 export type SimilarReportsProps = {
@@ -37,19 +41,6 @@ export type SimilarReportsProps = {
   /** PL: Idzie do opisu, żeby wysłać nowe zgłoszenie. EN: Goes to the description, to send a new report. */
   onNewReport: () => void;
 };
-
-/**
- * PL: Podaje polską nazwę etapu do podpisu na karcie.
- * EN: Gives the Polish stage name for the caption on the card.
- *
- * @param code - PL: kod etapu z serwera. EN: the stage code from the server.
- * @returns PL: nazwa etapu albo sam kod, gdy serwer wyśle nieznany. EN: the stage name, or the code itself when the server sends an unknown one.
- */
-function stageLabel(code: string): string {
-  // PL: Nieznany etap pokazujemy bez zmian, żeby nic nie zniknęło.
-  // EN: An unknown stage is shown as is, so nothing disappears.
-  return STAGE_ORDER.find((stage) => stage.code === code)?.label ?? code;
-}
 
 /** PL: Dane jednej karty na liście. EN: The data of one card on the list. */
 type ItemProps = {
@@ -76,7 +67,7 @@ function SimilarItem({ item, joined, joining, onJoin }: ItemProps) {
       <small className="rs-similar-meta">
         {stageLabel(item.stage)} · Liczba „Mnie też”: {item.joinCount}
       </small>
-      <button type="button" className="rs-btn rs-btn-soft rs-similar-join" disabled={joined || joining} onClick={onJoin}>
+      <Button variant="plain" className="rs-similar-join" disabled={joined || joining} onClick={onJoin}>
         {joined ? (
           <>
             <Icon name="check" />
@@ -85,7 +76,7 @@ function SimilarItem({ item, joined, joining, onJoin }: ItemProps) {
         ) : (
           'Mnie też'
         )}
-      </button>
+      </Button>
     </li>
   );
 }
@@ -144,7 +135,7 @@ export function SimilarReports({ category, place, onBack, onNewReport }: Similar
 
   return (
     <div>
-      <h1 tabIndex={-1}>Ktoś już to zgłosił?</h1>
+      <h2 tabIndex={-1}>Ktoś już to zgłosił?</h2>
       <p className="rs-lead">Jeśli to ten sam problem, dołącz. Nie trzeba zgłaszać go drugi raz.</p>
       {similar.isSuccess ? (
         <SimilarList items={items} join={join} />
@@ -153,13 +144,13 @@ export function SimilarReports({ category, place, onBack, onNewReport }: Similar
       )}
       {join.error ? <p className="rs-error" role="alert">Nie udało się dołączyć. Spróbuj ponownie za chwilę.</p> : null}
       <div className="rs-cta">
-        <button type="button" className="rs-btn rs-btn-soft rs-btn-back" aria-label="Wstecz" onClick={onBack}>
+        <Button variant="plain" aria-label="Wstecz" onClick={onBack}>
           <Icon name="arrow-left" />
-        </button>
-        <button type="button" className="rs-btn rs-btn-accent" onClick={onNewReport}>
+        </Button>
+        <Button variant="filled" onClick={onNewReport}>
           Wyślę nowe zgłoszenie
           <Icon name="arrow-right" />
-        </button>
+        </Button>
       </div>
     </div>
   );
