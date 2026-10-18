@@ -119,12 +119,6 @@
   cursor: pointer;
 }
 
-/* PL: Licznik „1 z 3” w prawym rogu paska też nie łamie się w pionie, kiedy kolumna jest wąska (320 px).
-   EN: The "1 z 3" counter in the right corner of the bar also does not break vertically when the column is narrow (320 px). */
-.vote .ui-screen-header-action {
-  white-space: nowrap;
-}
-
 /* PL: Pasek postępu pod nagłówkiem, w tych samych marginesach co treść.
    EN: The progress bar under the header, in the same margins as the content. */
 .vote-top__bar {

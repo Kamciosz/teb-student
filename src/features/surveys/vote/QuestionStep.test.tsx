@@ -28,7 +28,7 @@ const SHORT_QUESTION: SurveyQuestion = { id: 'k1', type: 'short_text', prompt: '
 // PL: Rysuje pytanie z podanym tekstem i zwraca HTML.
 // EN: Renders the question with the given text and returns the HTML.
 function render(text: string): string {
-  return renderToString(<QuestionStep question={SHORT_QUESTION} number={1} selectedIds={[]} onChange={() => {}} text={text} onTextChange={() => {}} />);
+  return renderToString(<QuestionStep question={SHORT_QUESTION} surveyTitle="Ankieta" selectedIds={[]} onChange={() => {}} text={text} onTextChange={() => {}} />);
 }
 
 describe('podpowiedź o anonimowości pod krótką odpowiedzią / the anonymity hint under the short answer', () => {

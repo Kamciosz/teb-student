@@ -62,10 +62,10 @@ function SurveyQuestions({ survey }: { survey: SurveyDetail }) {
 
   return (
     <main className="vote vote--flow" data-subtrack="5a">
-      <FlowTop title={survey.title} step={step + 1} total={survey.questions.length} onBack={step === 0 ? null : () => setStep(step - 1)} />
+      <FlowTop step={step + 1} total={survey.questions.length} onBack={step === 0 ? null : () => setStep(step - 1)} />
       <QuestionStep
         question={question}
-        number={step + 1}
+        surveyTitle={survey.title}
         selectedIds={selectedIds}
         onChange={(optionIds) => setAnswers({ ...answers, [question.id]: optionIds })}
         text={text}

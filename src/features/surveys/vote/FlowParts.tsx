@@ -1,6 +1,6 @@
 /**
- * PL: Części wspólne ekranów ankiety w trakcie wypełniania: pasek nagłówka z „Wstecz”, tytułem i krokiem „2 z 5”, pasek postępu oraz komunikat zamiast pytań.
- * EN: The parts shared by the survey screens during filling in: the header bar with "Wstecz", the title and the step "2 z 5", the progress bar and the message in place of the questions.
+ * PL: Części wspólne ekranów ankiety w trakcie wypełniania: pasek nagłówka z powrotem i krokiem „Pytanie 2 z 5”, pasek postępu oraz komunikat zamiast pytań.
+ * EN: The parts shared by the survey screens during filling in: the header bar with the way back and the step "Pytanie 2 z 5", the progress bar and the message in place of the questions.
  *
  * @author Jakub
  * @since 2026-10-09
@@ -18,7 +18,6 @@ import { Button, ProgressBar } from '../../../shared';
 
 /** PL: Dane górnego paska. EN: The data of the top bar. */
 export type FlowTopProps = {
-  title: string;
   /** PL: Numer kroku od 1. EN: The step number from 1. */
   step: number;
   total: number;
@@ -27,27 +26,27 @@ export type FlowTopProps = {
 };
 
 /**
- * PL: Rysuje pasek nagłówka: „Wstecz”, tytuł ankiety, „krok z razem” i pasek postępu. Na pierwszym kroku „Wstecz” prowadzi do listy, na kolejnych do poprzedniego pytania.
- * EN: Draws the header bar: "Wstecz", the survey title, "step z total" and the progress bar. On the first step "Wstecz" leads to the list, on later steps to the previous question.
+ * PL: Rysuje pasek nagłówka: powrót, „Pytanie krok z razem” i pasek postępu. Na pierwszym kroku „Ankiety” prowadzi do listy, na kolejnych „Wstecz” do poprzedniego pytania. Tytuł paska nie jest nagłówkiem h1, bo h1 to treść pytania.
+ * EN: Draws the header bar: the way back, "Pytanie step z total" and the progress bar. On the first step "Ankiety" leads to the list, on later steps "Wstecz" leads to the previous question. The bar title is not an h1 heading, because the h1 is the question text.
  *
- * @param props - PL: tytuł, krok, liczba kroków i funkcja powrotu. EN: the title, the step, the number of steps and the back function.
+ * @param props - PL: krok, liczba kroków i funkcja powrotu. EN: the step, the number of steps and the back function.
  * @returns PL: drzewo elementów paska. EN: the tree of bar elements.
  */
-export function FlowTop({ title, step, total, onBack }: FlowTopProps) {
+export function FlowTop({ step, total, onBack }: FlowTopProps) {
   return (
     <>
       <header className="ui-screen-header ui-screen-header--bar">
         {onBack === null ? (
-          <Link className="ui-screen-header-back" to="/surveys/vote" aria-label="Wstecz, do listy ankiet">
-            ‹ Wstecz
+          <Link className="ui-screen-header-back" to="/surveys/vote">
+            <span aria-hidden="true">‹</span> Ankiety
           </Link>
         ) : (
           <button type="button" className="ui-screen-header-back" onClick={onBack} aria-label="Wstecz, do poprzedniego pytania">
             ‹ Wstecz
           </button>
         )}
-        <h1 className="ui-screen-header-bar-title">{title}</h1>
-        <span className="ui-screen-header-action">{`${step} z ${total}`}</span>
+        <p className="ui-screen-header-bar-title">{`Pytanie ${step} z ${total}`}</p>
+        <span className="ui-screen-header-action" />
       </header>
       <ProgressBar value={step} max={total} label="Postęp ankiety" className="vote-top__bar" />
     </>

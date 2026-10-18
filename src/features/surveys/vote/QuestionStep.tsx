@@ -1,6 +1,6 @@
 /**
- * PL: Jedno pytanie ankiety na ekranie: numer pytania, treść, odpowiedzi jako wiersze listy (albo skala 1–5, albo pole krótkiej odpowiedzi) i notatka o anonimowości (ekrany 4.2 i 4.3 w docs/projekt/EKRANY.md). Pytanie jednokrotnego wyboru ma pola radio, wielokrotnego wyboru pola wyboru, skala 1–5 przyciski (ScaleOptions), krótka odpowiedź pole tekstowe z podpowiedzią o anonimowości pod spodem i licznikiem znaków. Sam niczego nie zapisuje, tylko zgłasza wybór wyżej.
- * EN: One survey question on the screen: the question number, the text, the options as the rows of a list (or the 1–5 scale, or the short-answer field) and the anonymity note (screens 4.2 and 4.3 in docs/projekt/EKRANY.md). A single-choice question has radio inputs, a multiple-choice one has checkboxes, the 1–5 scale has buttons (ScaleOptions), a short answer is a text field with the anonymity hint under it and a character counter. It stores nothing itself, it only reports the choice upward.
+ * PL: Jedno pytanie ankiety na ekranie: tytuł ankiety, treść pytania, odpowiedzi jako wiersze listy (albo skala 1–5, albo pole krótkiej odpowiedzi) i notatka o anonimowości (ekrany 4.2 i 4.3 w docs/projekt/EKRANY.md). Pytanie jednokrotnego wyboru ma pola radio, wielokrotnego wyboru pola wyboru, skala 1–5 przyciski (ScaleOptions), krótka odpowiedź pole tekstowe z podpowiedzią o anonimowości pod spodem i licznikiem znaków. Sam niczego nie zapisuje, tylko zgłasza wybór wyżej.
+ * EN: One survey question on the screen: the survey title, the question text, the options as the rows of a list (or the 1–5 scale, or the short-answer field) and the anonymity note (screens 4.2 and 4.3 in docs/projekt/EKRANY.md). A single-choice question has radio inputs, a multiple-choice one has checkboxes, the 1–5 scale has buttons (ScaleOptions), a short answer is a text field with the anonymity hint under it and a character counter. It stores nothing itself, it only reports the choice upward.
  *
  * @author Jakub
  * @since 2026-10-09
@@ -24,8 +24,8 @@ import type { SurveyQuestion } from './types';
 /** PL: Dane kroku z pytaniem. EN: The data of a question step. */
 export type QuestionStepProps = {
   question: SurveyQuestion;
-  /** PL: Numer pytania od 1. EN: The question number from 1. */
-  number: number;
+  /** PL: Tytuł ankiety nad pytaniem. Numer pytania jest w pasku nagłówka. EN: The survey title above the question. The question number is in the header bar. */
+  surveyTitle: string;
   /** PL: Numery wybranych odpowiedzi (pusta lista, gdy nic). EN: The chosen option ids (an empty list when none). */
   selectedIds: string[];
   /** PL: Zgłasza nowy zestaw wybranych odpowiedzi tego pytania. EN: Reports the new set of chosen options of this question. */
@@ -40,10 +40,10 @@ export type QuestionStepProps = {
  * PL: Rysuje pytanie z odpowiedziami. Odpowiedzi to prawdziwe pola wyboru (radio albo checkbox), więc działają z klawiatury i z czytnikiem ekranu. Krótka odpowiedź to pole tekstowe z licznikiem „x / 200 znaków”, liczonym tak samo jak na serwerze. Po zmianie pytania nagłówek dostaje fokus.
  * EN: Draws the question with its options. The options are real radio or checkbox inputs, so they work with the keyboard and a screen reader. A short answer is a text field with a "x / 200 characters" counter, counted the same way as on the server. After the question changes, the heading gets focus.
  *
- * @param props - PL: pytanie, numer, wybrane odpowiedzi, tekst i funkcje zmiany. EN: the question, the number, the chosen options, the text and the change functions.
+ * @param props - PL: pytanie, tytuł ankiety, wybrane odpowiedzi, tekst i funkcje zmiany. EN: the question, the survey title, the chosen options, the text and the change functions.
  * @returns PL: drzewo elementów kroku. EN: the tree of step elements.
  */
-export function QuestionStep({ question, number, selectedIds, onChange, text, onTextChange }: QuestionStepProps) {
+export function QuestionStep({ question, surveyTitle, selectedIds, onChange, text, onTextChange }: QuestionStepProps) {
   // PL: Po przejściu do następnego pytania czytnik ekranu ma przeczytać nowe pytanie, więc przenosimy na nie fokus.
   // EN: After moving to the next question the screen reader must read the new question, so we move focus to it.
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -74,7 +74,7 @@ export function QuestionStep({ question, number, selectedIds, onChange, text, on
 
   return (
     <>
-      <p className="vote-label">Pytanie {number}</p>
+      <p className="vote-label">{surveyTitle}</p>
       <h1 ref={headingRef} tabIndex={-1} className="vote-question">
         {question.prompt}
       </h1>
