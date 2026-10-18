@@ -1,6 +1,6 @@
 # Stan prac
 
-Stan na 17.10.2026. `main` po scaleniu #179. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
+Stan na 18.10.2026. `main` po scaleniu #195. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
 
 Wszystkie teksty aplikacji zatwierdził Szymon 14.10.2026 (#175, #179).
 
@@ -52,11 +52,38 @@ Od #172 do #179 weszły plan dzwonków, logowanie kluczem dostępu jako opcja, z
 | #179 | fix(komentarze): usuń dopiski „do ustalenia” z komentarzy | Dopiski „do ustalenia” znikają z komentarzy w kodzie; teksty dla ucznia bez zmian. |
 | #180 | build: usuń dni skrócone z licznika dzwonka | Licznik zawsze liczy według zwykłego planu; przełącznik, trasy i tabela dnia skróconego zniknęły. |
 
-Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (sprawdzone na #168). Usuwanie danych ucznia w modułach aktualności, mediów i panelu nie jest już atrapą.
+Od #181 do #195 wszedł nowy wygląd ekranów: jak aplikacja systemowa (duże tytuły, grupy wierszy, pasek z powrotem). Zasady są w `docs/projekt/wyglad-ekranow.md`. #185 został zamknięty bez scalenia i zastąpiony przez #186.
+
+| PR | Tytuł | Co daje uczniowi lub zespołowi |
+|---|---|---|
+| #181 | build(deps-dev): bump the babel group with 2 updates | Aktualizacja narzędzi budowania (Dependabot), bez zmian dla ucznia. |
+| #182 | docs: stan prac po scaleniu #179 | Ten plik po scaleniu #179. |
+| #183 | fix(news): nie zabieraj fokusu polu opisu zdjęcia po otwarciu okienka | Opis zdjęcia w edytorze da się wpisać od razu po otwarciu okienka. |
+| #184 | fix(nawigacja): wyrównaj dolny pasek i usuń przycisk „+” | Dolny pasek ma pięć równych pozycji, bez przycisku „+” na środku. |
+| #186 | feat(wyglad): wygląd aplikacji systemowej | Wspólne elementy: `ScreenHeader` (duży tytuł albo pasek z powrotem), `ListGroup`, `ListRow`, przyciski, segmenty, kolory i rozmiary tekstu. |
+| #187 | style(profil): ekran Profil w wyglądzie ustawień systemu | Profil i ustawienia jako grupy wierszy, segmenty szkoły i motywu, przełącznik większego tekstu. |
+| #188 | style(aktualnosci): ekran aktualności w wyglądzie systemowym | Lista i wpis z dużym tytułem, spokojne znaczniki, akcent tylko przy „Ważne”. |
+| #189 | style(pulpit): pulpit w stylu aplikacji systemowej | Najbliższa lekcja na górze, reszta jako sekcje z wierszami. |
+| #190 | style(logowanie): ekrany logowania w wyglądzie systemowym | Logowanie i kod zaproszenia bez podwójnych marginesów. |
+| #191 | style(ankiety): odpowiedzi jako wiersze i wygląd ekranów ankiety | Odpowiedzi jako wiersze listy z ✓, w pasku „Pytanie 1 z 3”, tytuł ankiety nad pytaniem. |
+| #192 | style(panel): lista zamiast kafli | Panel Samorządu jako lista, powrót do profilu, pola bez ramki. |
+| #193 | style(zgloszenia): wiersze listy zamiast kart | Moje zgłoszenia jako wiersze, szczegóły zgłoszenia, kreator z „Anuluj” i przełącznikiem po prawej. |
+| #194 | style(redakcja): ekrany redakcji w nowym wyglądzie | Lista wpisów i kreator z jednym paskiem nagłówka we wszystkich krokach. |
+| #195 | style(samorzad): ekrany zgłoszeń i ankiet w wyglądzie systemowym | Zgłoszenia i ankiety w panelu: pola bez podwójnego kafla, segmenty jak w ustawieniach, przycisk na całą szerokość. |
+
+Każdy ekran z paskiem pokazuje w powrocie nazwę poprzedniego ekranu („Panel”, „Wpisy”, „Ankiety”, „Zgłoszenia”, „Profil”), a nie „Wróć”. Wyjątek: „Wstecz” cofa o krok w kreatorze.
+
+Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (sprawdzone na #191). Usuwanie danych ucznia w modułach aktualności, mediów i panelu nie jest już atrapą.
 
 ## Otwarte pull requesty
 
-- #181 `build(deps-dev): bump the babel group with 2 updates` (Dependabot). Aktualizacja narzędzi budowania, bez zmian dla ucznia.
+Brak. Wszystkie pull requesty do #195 są scalone.
+
+Do poprawy w wyglądzie:
+
+- Pasek narzędzi edytora wpisu zawija się na wąskim telefonie do trzech rzędów, a strzałki „Cofnij” i „Ponów” są małe.
+- Tytuł pustego stanu (`EmptyState`) to akapit, a nie nagłówek. Czytnik ekranu nie traktuje go jak tytułu.
+- Segmenty w profilu zawijają się przy szerokości 320 px i włączonym większym tekście.
 
 Do sprawdzenia po wdrożeniu: Face ID na prawdziwym telefonie.
 
