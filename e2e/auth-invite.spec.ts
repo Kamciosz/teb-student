@@ -82,7 +82,7 @@ test.describe('ekran 1.3 / screen 1.3', () => {
   test('strzałka wraca do logowania szkolnym adresem / the arrow goes back to the school address sign-in', async ({ page }) => {
     await stubServer(page);
     await page.goto('/auth/invite');
-    await page.getByRole('link', { name: 'Wróć do logowania szkolnym adresem e-mail' }).click();
+    await page.getByRole('link', { name: 'Wstecz', exact: true }).click();
     await expect(page).toHaveURL(/\/auth\/email$/);
   });
 
