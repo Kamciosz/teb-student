@@ -105,7 +105,7 @@ test('zapis szkicu wysyła stan draft, a powrót zachowuje treść / saving a dr
   });
   await fillEntry(page, 'Szkic do dokończenia.');
   await openPreview(page);
-  await page.getByRole('button', { name: 'Wróć' }).click();
+  await page.getByRole('button', { name: 'Wstecz' }).click();
   await expect(page.getByRole('textbox', { name: 'Opis' })).toContainText('Szkic do dokończenia.');
   await openPreview(page);
   await page.getByRole('button', { name: 'Zapisz szkic i dokończ później' }).click();

@@ -1,15 +1,19 @@
 /**
- * PL: Krok 2 kreatora (ekran 5.2): tytuł i treść w edytorze z paskiem narzędzi. „Dalej” działa dopiero wtedy, gdy tytuł i treść nie są puste.
- * EN: Wizard step 2 (screen 5.2): the title and the content in the editor with the toolbar. "Dalej" works only when the title and the content are not empty.
+ * PL: Krok 2 kreatora (ekran 5.2): tytuł w polu z grupy i treść w edytorze z paskiem narzędzi. „Dalej” działa dopiero wtedy, gdy tytuł i treść nie są puste.
+ * EN: Wizard step 2 (screen 5.2): the title in a field of a group and the content in the editor with the toolbar. "Dalej" works only when the title and the content are not empty.
  *
  * @author Szymon
  * @since 2026-10-12
+ * @uses src/shared/index.ts::Button
+ * @uses src/shared/index.ts::ListGroup
+ * @uses src/shared/index.ts::TextField
  * @uses src/features/news/editor/LazyEditor.tsx::LazyEditor
  * @uses src/features/news/editor/document/limits.ts::MAX_TITLE_CHARS
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::ContentStep
  */
 
 import type { JSONContent } from '@tiptap/core';
+import { Button, ListGroup, TextField } from '../../../shared';
 import { MAX_TITLE_CHARS } from './document/limits';
 import { LazyEditor } from './LazyEditor';
 import { SCREEN } from './texts';
@@ -46,16 +50,16 @@ export function ContentStep({ title, body, textLength, onTitle, onBody, onNext }
   const canContinue = title.trim() !== '' && textLength > 0;
   return (
     <section className="editor-step" aria-labelledby="editor-step-heading">
-      <h1 id="editor-step-heading">{SCREEN.contentHeading}</h1>
-      {/* PL: Pole tytułu z limitem znaków. EN: The title field with a character limit. */}
-      <label className="editor-label">
-        {SCREEN.titleLabel}
-        <input className="editor-input" type="text" value={title} maxLength={MAX_TITLE_CHARS} onChange={(event) => onTitle(event.target.value)} />
-      </label>
-      {/* PL: Etykieta „Opis” opisuje edytor, który ładuje się leniwie. EN: The "Opis" label describes the editor, which loads lazily. */}
-      <p className="editor-label">{SCREEN.bodyLabel}</p>
-      <LazyEditor content={body} onChange={onBody} />
-      <button type="button" className="editor-button editor-button--wide" disabled={!canContinue} onClick={onNext}>{SCREEN.next}</button>
+      <h2 id="editor-step-heading">{SCREEN.contentHeading}</h2>
+      {/* PL: Pole tytułu z limitem znaków, w grupie jak w ustawieniach iOS. EN: The title field with a character limit, in a group as in the iOS settings. */}
+      <ListGroup>
+        <TextField className="editor-field" label={SCREEN.titleLabel} type="text" value={title} maxLength={MAX_TITLE_CHARS} onChange={(event) => onTitle(event.target.value)} />
+      </ListGroup>
+      {/* PL: Nagłówek „Opis” opisuje edytor, który ładuje się leniwie. EN: The "Opis" header describes the editor, which loads lazily. */}
+      <ListGroup header={SCREEN.bodyLabel}>
+        <LazyEditor content={body} onChange={onBody} />
+      </ListGroup>
+      <Button disabled={!canContinue} onClick={onNext}>{SCREEN.next}</Button>
     </section>
   );
 }
