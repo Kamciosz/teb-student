@@ -1,0 +1,73 @@
+/* PL: Nagłówek ekranu. Odstęp od góry uwzględnia wycięcie ekranu w trybie PWA.
+   EN: The screen header. The top space takes the screen cutout into account in PWA mode. */
+.ui-screen-header {
+  padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
+}
+
+/* PL: Duży tytuł: siatka, w której akcja stoi w prawym górnym rogu nad tytułem.
+   EN: The large title: a grid where the action stands in the top right corner above the title. */
+.ui-screen-header--large {
+  display: grid;
+  gap: 2px;
+}
+
+.ui-screen-header-action--corner {
+  justify-self: end;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ui-screen-header-eyebrow {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
+.ui-screen-header-title {
+  margin: 0;
+  font-size: var(--t-title);
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+/* PL: Pasek ekranu podrzędnego: trzy kolumny, tytuł zawsze na środku.
+   EN: The sub-screen bar: three columns, the title always in the middle. */
+.ui-screen-header--bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.ui-screen-header-back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  color: var(--accent);
+  font-size: var(--t-md);
+  text-decoration: none;
+}
+
+.ui-screen-header-back:active {
+  opacity: 0.5;
+}
+
+.ui-screen-header-bar-title {
+  margin: 0;
+  max-width: 60vw;
+  font-size: var(--t-md);
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-screen-header--bar .ui-screen-header-action {
+  justify-self: end;
+}

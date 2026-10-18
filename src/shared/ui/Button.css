@@ -1,12 +1,14 @@
 /*
- * PL: Przycisk aplikacji. Wysokość co najmniej 48 px, kolory tylko przez var(--...) z tokens.css.
+ * PL: Przycisk aplikacji: wypełniony (główna akcja), tekstowy w kolorze akcentu i tekstowy w kolorze błędu.
+ *     Wysokość co najmniej 48 px, kolory tylko przez var(--...) z tokens.css.
  *     Fokus z klawiatury rysuje base.css, więc tutaj obwódki nie wyłączamy.
- * EN: The app button. At least 48 px high, colors only through var(--...) from tokens.css.
+ * EN: The app button: filled (the main action), accent text and error-colored text.
+ *     At least 48 px high, colors only through var(--...) from tokens.css.
  *     The keyboard focus is drawn by base.css, so the outline is not turned off here.
  */
 
-/* PL: Wspólne dla każdego przycisku: rozmiar dotyku, środek, zawijanie długiego napisu w wąskim ekranie.
-   EN: Shared by every button: touch size, centering, wrapping of a long label on a narrow screen. */
+/* PL: Wspólne dla każdego przycisku: rozmiar dotyku, środek, zawijanie długiego napisu. Domyślnie bez tła, tekst w akcencie.
+   EN: Shared by every button: touch size, centering, wrapping of a long label. By default no background, text in the accent. */
 .ui-button {
   display: inline-flex;
   align-items: center;
@@ -18,44 +20,51 @@
   padding: 0 20px;
   border: 0;
   border-radius: var(--r);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
   font-size: var(--t-md);
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
   text-decoration: none;
   overflow-wrap: anywhere;
   cursor: pointer;
 }
 
-/* PL: Główny przycisk w kolorze akcentu szkoły, z tekstem z palety.
-   EN: The primary button in the school accent color, with the text from the palette. */
-.ui-button--accent {
+/* PL: Wypełniony przycisk głównej akcji: kolor akcentu szkoły, biały tekst, wysokość 50 px.
+   EN: The filled button of the main action: the school accent color, white text, 50 px high. */
+.ui-button--filled {
+  min-height: 50px;
   background: var(--accent);
   color: var(--on-accent);
+  font-weight: 700;
 }
 
 /* PL: Najechanie myszą zmienia kolor tylko wtedy, gdy przycisk działa.
    EN: Hovering with a mouse changes the color only when the button works. */
-.ui-button--accent:not(:disabled):hover {
+.ui-button--filled:not(:disabled):hover {
   background: var(--accent-hover);
 }
 
-/* PL: Miękki przycisk na kaflu, dla działań drugorzędnych.
-   EN: A soft button on the tile, for secondary actions. */
-.ui-button--soft {
-  background: var(--tile-2);
-  color: var(--ink);
+/* PL: Przycisk tekstowy bez tła, dla działań drugorzędnych, np. „Edytuj”.
+   EN: A text button without a background, for secondary actions, for example "Edit". */
+.ui-button--plain {
+  min-height: 44px;
+  padding: 0 8px;
 }
 
-/* PL: Przycisk z obwódką zamiast wypełnienia.
-   EN: A button with an outline instead of a fill. */
-.ui-button--outline {
-  background: transparent;
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1.5px var(--line);
+/* PL: Przycisk tekstowy w kolorze błędu, np. „Usuń konto”.
+   EN: A text button in the error color, for example "Delete account". */
+.ui-button--destructive {
+  color: var(--danger);
 }
 
-/* PL: Wciśnięty przycisk lekko się kurczy, jak w makiecie.
-   EN: A pressed button shrinks a little, as in the mockup. */
+/* PL: Wciśnięty przycisk lekko się kurczy. To transformacja, więc nie kosztuje układu.
+   EN: A pressed button shrinks a little. It is a transform, so it costs no layout. */
+.ui-button {
+  transition: transform 150ms ease;
+}
+
 .ui-button:not(:disabled):active {
   transform: scale(0.97);
 }

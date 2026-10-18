@@ -69,7 +69,7 @@ export function ProgressBar({ value, max = 100, label, className }: ProgressBarP
       aria-valuemax={max}
       aria-valuenow={percent === 0 && !(max > 0) ? 0 : Math.min(Math.max(value, 0), max)}
     >
-      <div className="ui-progress-fill" style={{ width: `${percent}%` }} />
+      <div className="ui-progress-fill" style={{ transform: `scaleX(${percent / 100})` }} />
     </div>
   );
 }

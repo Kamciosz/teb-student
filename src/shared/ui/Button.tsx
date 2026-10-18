@@ -1,6 +1,6 @@
 /**
- * PL: Przycisk aplikacji: główny (akcent szkoły), miękki i z obwódką. Wysokość co najmniej 48 px, żeby dało się go trafić palcem. Wyłączony przycisk nie reaguje i jest przygaszony.
- * EN: The app button: primary (school accent), soft and outlined. At least 48 px high, so a finger can hit it. A disabled button does not react and looks faded.
+ * PL: Przycisk aplikacji: wypełniony (główna akcja), tekstowy w kolorze akcentu i tekstowy w kolorze błędu. Wysokość co najmniej 48 px, żeby dało się go trafić palcem. Wyłączony przycisk nie reaguje i jest przygaszony.
+ * EN: The app button: filled (the main action), accent text and error-colored text. At least 48 px high, so a finger can hit it. A disabled button does not react and looks faded.
  *
  * @author Kacper
  * @since 2026-10-13
@@ -16,17 +16,17 @@ import type { ComponentProps } from 'react';
 import './Button.css';
 
 /**
- * PL: Wygląd przycisku: „accent” główny, „soft” miękki, „outline” z obwódką.
- * EN: The button look: "accent" primary, "soft" soft, "outline" with an outline.
+ * PL: Wygląd przycisku: „filled” wypełniony (główna akcja), „plain” tekst w kolorze akcentu, „destructive” tekst w kolorze błędu.
+ * EN: The button look: "filled" filled (the main action), "plain" text in the accent color, "destructive" text in the error color.
  */
-export type ButtonVariant = 'accent' | 'soft' | 'outline';
+export type ButtonVariant = 'filled' | 'plain' | 'destructive';
 
 /**
  * PL: Właściwości przycisku: wszystko, co ma zwykły przycisk, plus wygląd.
  * EN: Button properties: everything a plain button has, plus the look.
  */
 export type ButtonProps = ComponentProps<'button'> & {
-  /** PL: Wygląd przycisku, domyślnie główny. EN: The button look, primary by default. */
+  /** PL: Wygląd przycisku, domyślnie wypełniony. EN: The button look, filled by default. */
   variant?: ButtonVariant;
 };
 
@@ -37,7 +37,7 @@ export type ButtonProps = ComponentProps<'button'> & {
  * @param props - PL: wygląd i zwykłe właściwości przycisku. EN: the look and the usual button properties.
  * @returns PL: przycisk. EN: the button.
  */
-export function Button({ variant = 'accent', className, type = 'button', ...rest }: ButtonProps) {
+export function Button({ variant = 'filled', className, type = 'button', ...rest }: ButtonProps) {
   // PL: Połącz klasę bazową, klasę wyglądu i klasę od wywołującego.
   // EN: Join the base class, the look class and the caller's class.
   const classes = ['ui-button', `ui-button--${variant}`, className].filter(Boolean).join(' ');

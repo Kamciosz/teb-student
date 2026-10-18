@@ -1,6 +1,8 @@
 /*
- * PL: Pasek postępu: tło z palety i wypełnienie w kolorze akcentu szkoły. Wysokość 8 px to sam pasek, nie obszar dotyku, bo nie jest sterowny.
- * EN: The progress bar: a background from the palette and a fill in the school accent color. The 8 px height is the bar itself, not a touch area, because it is not a control.
+ * PL: Pasek postępu: tło z tokenów i wypełnienie w kolorze akcentu szkoły. Wysokość 8 px to sam pasek, nie obszar dotyku, bo nie jest sterowny.
+ *     Wypełnienie skaluje się transformacją, nie szerokością, bo animacja szerokości obciąża układ.
+ * EN: The progress bar: a background from the tokens and a fill in the school accent color. The 8 px height is the bar itself, not a touch area, because it is not a control.
+ *     The fill scales with a transform, not with width, because animating width loads the layout.
  */
 
 /* PL: Tor paska: pełna szerokość kolumny, zaokrąglony, z ukrytym wypełnieniem poza torem.
@@ -14,17 +16,19 @@
   overflow: hidden;
 }
 
-/* PL: Wypełnienie rośnie od lewej; szerokość w procentach ustawia komponent.
-   EN: The fill grows from the left; the component sets the width in percent. */
+/* PL: Wypełnienie rośnie od lewej; skalę w procentach ustawia komponent w transformacji.
+   EN: The fill grows from the left; the component sets the scale in percent in a transform. */
 .ui-progress-fill {
+  width: 100%;
   height: 100%;
   border-radius: 999px;
   background: var(--accent);
-  transition: width 0.3s ease;
+  transform-origin: left center;
+  transition: transform 250ms ease;
 }
 
-/* PL: Przy ograniczeniu ruchu animacja szerokości znika.
-   EN: With reduced motion the width animation is gone. */
+/* PL: Przy ograniczeniu ruchu zmiana skali nie jest animowana.
+   EN: With reduced motion the change of scale is not animated. */
 @media (prefers-reduced-motion: reduce) {
   .ui-progress-fill {
     transition: none;

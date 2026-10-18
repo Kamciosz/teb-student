@@ -1,13 +1,19 @@
 /**
- * PL: Wygląd aplikacji wybrany przez ucznia: paleta kolorów (8 do wyboru) i szkoła (liceum albo technikum, od niej zależy akcent). Plik ustawia atrybuty data-paleta i data-szkola na elemencie <html>, a kolory wybierają z nich reguły z src/shared/styles/tokens.css. Wybór zostaje w pamięci telefonu, więc po ponownym uruchomieniu aplikacji wygląd jest ten sam, także bez internetu.
- * EN: The app look chosen by the student: the color palette (8 to choose from) and the school (lyceum or technical school, the accent depends on it). The file sets the data-paleta and data-szkola attributes on the <html> element, and the rules from src/shared/styles/tokens.css pick the colors from them. The choice stays in the phone storage, so after the app is restarted the look is the same, also without internet.
+ * PL: Wygląd aplikacji wybrany przez ucznia: motyw (automatyczny, jasny albo ciemny) i szkoła (liceum albo technikum, od niej zależy akcent).
+ *     Plik ustawia atrybut data-motyw (przy automatycznym go usuwa) i data-szkola na elemencie <html>, a kolory wybierają z nich reguły
+ *     z src/shared/styles/tokens.css. Wybór zostaje w pamięci telefonu, więc po ponownym uruchomieniu aplikacji wygląd jest ten sam, także bez internetu.
+ *     Stary zapis z paletą kolorów (klucz palette) wczytuje się jako motyw automatyczny, bez błędu.
+ * EN: The app look chosen by the student: the theme (automatic, light or dark) and the school (lyceum or technical school, the accent depends on it).
+ *     The file sets the data-motyw attribute (it removes it for automatic) and data-szkola on the <html> element, and the rules from
+ *     src/shared/styles/tokens.css pick the colors from them. The choice stays in the phone storage, so after the app is restarted the look
+ *     is the same, also without internet. An old record with the color palette (the palette key) loads as the automatic theme, without an error.
  *
  * @author Jakub
  * @since 2026-10-11
- * @uses src/shared/styles/tokens.css::data-paleta
+ * @uses src/shared/styles/tokens.css::data-motyw
  * @used_by src/features/profile/index.ts::applyStoredLook
- * @used_by src/features/profile/queries.ts::applyLook
- * @used_by src/features/profile/SettingsScreen.tsx::PALETTES
+ * @used_by src/features/profile/queries.ts::applySchool
+ * @used_by src/features/profile/SettingsScreen.tsx::THEMES
  * @used_by src/features/profile/look.test.ts::applyLook
  * @used_by src/features/profile/textSize.ts::browserRoot
  */
@@ -15,25 +21,23 @@
 /** PL: Szkoła: L to liceum (niebieski akcent), T to technikum (czerwony akcent). EN: The school: L is the lyceum (blue accent), T is the technical school (red accent). */
 export type School = 'L' | 'T';
 
-/** PL: Kod palety z tokens.css: CA do CH. EN: A palette code from tokens.css: CA to CH. */
-export type PaletteCode = 'CA' | 'CB' | 'CC' | 'CD' | 'CE' | 'CF' | 'CG' | 'CH';
-
-/** PL: Wygląd aplikacji: paleta i szkoła. EN: The app look: the palette and the school. */
-export type Look = { palette: PaletteCode; school: School };
+/** PL: Motyw: auto idzie za telefonem, jasny i ciemny są wybrane ręcznie. EN: The theme: auto follows the phone, light and dark are chosen by hand. */
+export type Theme = 'auto' | 'jasny' | 'ciemny';
 
 /**
- * PL: Osiem palet z nazwami z docs/projekt/referencje/uklad_C.html. Kolejność jak w tokens.css. Kody CC i CE mają tę samą nazwę „Grafit”, więc na ekranie stoją obok kodu.
- * EN: The eight palettes with the names from docs/projekt/referencje/uklad_C.html. The order is as in tokens.css. The codes CC and CE share the name "Grafit", so on screen they stand next to the code.
+ * PL: Kod palety kolorów z dawnego wyboru. Serwer nadal go przechowuje (podtor 7), ale kolory w aplikacji już z niego nie korzystają.
+ * EN: A code of the old color palette. The server still stores it (podtor 7), but the app colors no longer use it.
  */
-export const PALETTES: readonly { code: PaletteCode; name: string }[] = [
-  { code: 'CA', name: 'Szałwia' },
-  { code: 'CB', name: 'Błękit' },
-  { code: 'CC', name: 'Grafit' },
-  { code: 'CD', name: 'Śliwka' },
-  { code: 'CE', name: 'Grafit' },
-  { code: 'CF', name: 'Czerń' },
-  { code: 'CG', name: 'Biel' },
-  { code: 'CH', name: 'Granat' },
+export type PaletteCode = 'CA' | 'CB' | 'CC' | 'CD' | 'CE' | 'CF' | 'CG' | 'CH';
+
+/** PL: Wygląd aplikacji: motyw i szkoła. EN: The app look: the theme and the school. */
+export type Look = { theme: Theme; school: School };
+
+/** PL: Motywy do wyboru, w kolejności na ekranie. EN: The themes to choose from, in the order on the screen. */
+export const THEMES: readonly { code: Theme; name: string }[] = [
+  { code: 'auto', name: 'Automatyczny' },
+  { code: 'jasny', name: 'Jasny' },
+  { code: 'ciemny', name: 'Ciemny' },
 ];
 
 /** PL: Szkoły do wyboru. EN: The schools to choose from. */
@@ -42,8 +46,8 @@ export const SCHOOLS: readonly { code: School; name: string }[] = [
   { code: 'T', name: 'Technikum' },
 ];
 
-/** PL: Wygląd domyślny, taki sam jak w tokens.css bez atrybutów: paleta CE Grafit i akcent liceum. EN: The default look, the same as tokens.css without attributes: the CE Grafit palette and the lyceum accent. */
-export const DEFAULT_LOOK: Look = { palette: 'CE', school: 'L' };
+/** PL: Wygląd domyślny, taki sam jak w tokens.css bez atrybutów: motyw telefonu i akcent liceum. EN: The default look, the same as tokens.css without attributes: the phone's theme and the lyceum accent. */
+export const DEFAULT_LOOK: Look = { theme: 'auto', school: 'L' };
 
 /** PL: Klucz w pamięci telefonu, pod którym leży wybrany wygląd. EN: The key in the phone storage under which the chosen look lies. */
 export const LOOK_STORAGE_KEY = 'teb-student-look';
@@ -79,14 +83,14 @@ export function browserStorage(): LookStorage | undefined {
 }
 
 /**
- * PL: Czy tekst jest kodem jednej z ośmiu palet.
- * EN: Whether the text is the code of one of the eight palettes.
+ * PL: Czy tekst jest jednym z motywów.
+ * EN: Whether the text is one of the themes.
  *
- * @param value - PL: wartość z pamięci albo z serwera. EN: a value from the storage or the server.
- * @returns PL: prawda dla kodów CA do CH. EN: true for the codes CA to CH.
+ * @param value - PL: wartość z pamięci. EN: a value from the storage.
+ * @returns PL: prawda dla auto, jasny i ciemny. EN: true for auto, jasny and ciemny.
  */
-function isPaletteCode(value: unknown): value is PaletteCode {
-  return PALETTES.some((palette) => palette.code === value);
+function isTheme(value: unknown): value is Theme {
+  return THEMES.some((theme) => theme.code === value);
 }
 
 /**
@@ -101,17 +105,21 @@ function isSchool(value: unknown): value is School {
 }
 
 /**
- * PL: Ustawia atrybuty wyglądu na elemencie. Bez elementu (poza przeglądarką) nic nie robi.
- * EN: Sets the look attributes on the element. Without an element (outside a browser) it does nothing.
+ * PL: Ustawia atrybuty wyglądu na elemencie. Motyw auto usuwa atrybut data-motyw, żeby działał motyw telefonu.
+ * EN: Sets the look attributes on the element. The auto theme removes the data-motyw attribute, so the phone's theme applies.
  *
- * @param look - PL: paleta i szkoła do ustawienia. EN: the palette and the school to set.
+ * @param look - PL: motyw i szkoła do ustawienia. EN: the theme and the school to set.
  * @param target - PL: element z atrybutami albo undefined. EN: the element with the attributes or undefined.
  */
 function setAttributes(look: Look, target: LookTarget | undefined): void {
   // PL: Atrybuty, z których reguły w tokens.css wybierają kolory.
   // EN: The attributes the rules in tokens.css pick the colors from.
   if (!target) return;
-  target.dataset.paleta = look.palette;
+  if (look.theme === 'auto') {
+    delete target.dataset.motyw;
+  } else {
+    target.dataset.motyw = look.theme;
+  }
   target.dataset.szkola = look.school;
 }
 
@@ -119,7 +127,7 @@ function setAttributes(look: Look, target: LookTarget | undefined): void {
  * PL: Ustawia wygląd na stronie i zapisuje go w pamięci telefonu. Zmienia atrybuty elementu <html> i klucz w localStorage.
  * EN: Sets the look on the page and saves it in the phone storage. Changes the attributes of the <html> element and a key in localStorage.
  *
- * @param look - PL: paleta i szkoła do ustawienia. EN: the palette and the school to set.
+ * @param look - PL: motyw i szkoła do ustawienia. EN: the theme and the school to set.
  * @param target - PL: element z atrybutami (domyślnie <html>). EN: the element with the attributes (<html> by default).
  * @param storage - PL: pamięć do zapisu (domyślnie localStorage). EN: the storage to save to (localStorage by default).
  */
@@ -138,8 +146,8 @@ export function applyLook(look: Look, target: LookTarget | undefined = browserRo
 }
 
 /**
- * PL: Czyta zapisany wygląd. Zepsuty zapis albo nieznany kod palety to brak zapisu.
- * EN: Reads the saved look. A broken record or an unknown palette code counts as no record.
+ * PL: Czyta zapisany wygląd. Zepsuty zapis albo nieznana szkoła to brak zapisu. Nieznany albo brakujący motyw (na przykład stary zapis z paletą) to motyw automatyczny.
+ * EN: Reads the saved look. A broken record or an unknown school counts as no record. An unknown or missing theme (for example an old record with a palette) is the automatic theme.
  *
  * @param storage - PL: pamięć do odczytu (domyślnie localStorage). EN: the storage to read from (localStorage by default).
  * @returns PL: zapisany wygląd albo undefined. EN: the saved look or undefined.
@@ -150,7 +158,8 @@ export function readStoredLook(storage: LookStorage | undefined = browserStorage
   try {
     const parsed: unknown = JSON.parse(storage?.getItem(LOOK_STORAGE_KEY) ?? 'null');
     const record = typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
-    return isPaletteCode(record.palette) && isSchool(record.school) ? { palette: record.palette, school: record.school } : undefined;
+    if (!isSchool(record.school)) return undefined;
+    return { theme: isTheme(record.theme) ? record.theme : 'auto', school: record.school };
   } catch {
     return undefined;
   }
@@ -170,8 +179,46 @@ export function applyStoredLook(target: LookTarget | undefined = browserRoot(), 
 }
 
 /**
- * PL: Wraca do wyglądu domyślnego i kasuje zapis. Wołamy po usunięciu konta, żeby na telefonie nie została paleta usuniętego ucznia.
- * EN: Goes back to the default look and deletes the record. We call it after the account deletion, so the deleted student's palette does not stay on the phone.
+ * PL: Wygląd, który widać teraz na stronie, czytany z atrybutów elementu. Gdy pamięć jest zablokowana, nadal pokazuje wybór z tej sesji.
+ * EN: The look shown on the page now, read from the attributes of the element. When the storage is blocked, it still shows the choice of this session.
+ *
+ * @param target - PL: element z atrybutami (domyślnie <html>). EN: the element with the attributes (<html> by default).
+ * @returns PL: motyw i szkoła na stronie. EN: the theme and the school on the page.
+ */
+export function currentLook(target: LookTarget | undefined = browserRoot()): Look {
+  const motyw = target?.dataset.motyw;
+  const theme: Theme = motyw === 'jasny' || motyw === 'ciemny' ? motyw : 'auto';
+  const school: School = target?.dataset.szkola === 'T' ? 'T' : 'L';
+  return { theme, school };
+}
+
+/**
+ * PL: Zmienia tylko szkołę z serwera i zostawia motyw, który jest teraz na stronie. Motyw nie jest w profilu na serwerze, więc nie wolno go nadpisać.
+ * EN: Changes only the school from the server and keeps the theme that is on the page now. The theme is not in the server profile, so it must not be overwritten.
+ *
+ * @param school - PL: szkoła z serwera. EN: the school from the server.
+ * @param target - PL: element z atrybutami (domyślnie <html>). EN: the element with the attributes (<html> by default).
+ * @param storage - PL: pamięć do zapisu (domyślnie localStorage). EN: the storage to save to (localStorage by default).
+ */
+export function applySchool(school: School, target: LookTarget | undefined = browserRoot(), storage: LookStorage | undefined = browserStorage()): void {
+  applyLook({ theme: currentLook(target).theme, school }, target, storage);
+}
+
+/**
+ * PL: Zmienia tylko motyw, na przykład po kliknięciu w ustawieniach, i zostawia szkołę, która jest teraz na stronie. Motyw działa od razu i zostaje w telefonie.
+ * EN: Changes only the theme, for example when clicked in the settings, and keeps the school that is on the page now. The theme works at once and stays on the phone.
+ *
+ * @param theme - PL: nowy motyw. EN: the new theme.
+ * @param target - PL: element z atrybutami (domyślnie <html>). EN: the element with the attributes (<html> by default).
+ * @param storage - PL: pamięć do zapisu (domyślnie localStorage). EN: the storage to save to (localStorage by default).
+ */
+export function applyTheme(theme: Theme, target: LookTarget | undefined = browserRoot(), storage: LookStorage | undefined = browserStorage()): void {
+  applyLook({ theme, school: currentLook(target).school }, target, storage);
+}
+
+/**
+ * PL: Wraca do wyglądu domyślnego i kasuje zapis. Wołamy po usunięciu konta, żeby na telefonie nie został motyw usuniętego ucznia.
+ * EN: Goes back to the default look and deletes the record. We call it after the account deletion, so the deleted student's theme does not stay on the phone.
  *
  * @param target - PL: element z atrybutami (domyślnie <html>). EN: the element with the attributes (<html> by default).
  * @param storage - PL: pamięć do wyczyszczenia (domyślnie localStorage). EN: the storage to clear (localStorage by default).
