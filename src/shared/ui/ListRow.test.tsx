@@ -17,6 +17,8 @@ import { renderToString } from 'react-dom/server';
 // PL: Komponent pod testem.
 // EN: The component under test.
 import { ListRow } from './ListRow';
+// PL: Router w pamięci, bo link potrzebuje routera. EN: An in-memory router, because the link needs a router.
+import { MemoryRouter } from 'react-router';
 
 describe('wiersz listy / the list row', () => {
   it('zwykły wiersz to blok bez przycisku, z tytułem i wartością / a plain row is a block without a button, with the title and the value', () => {
@@ -60,5 +62,18 @@ describe('wiersz listy / the list row', () => {
     const html = renderToString(<ListRow title="Klucze" icon={<svg />} />);
 
     expect(html).toContain('class="ui-list-row-icon" aria-hidden="true"');
+  });
+
+  it('wiersz z adresem to link ze strzałką / a row with an address is a link with the arrow', () => {
+    const html = renderToString(
+      <MemoryRouter>
+        <ListRow title="Ustawienia" to="/profile/ustawienia" />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain('href="/profile/ustawienia"');
+    expect(html).toContain('ui-list-row--action');
+    expect(html).toContain('class="ui-list-row-chevron"');
+    expect(html).not.toContain('<button');
   });
 });

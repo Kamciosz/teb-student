@@ -22,6 +22,7 @@
   font: inherit;
   text-align: left;
   overflow-wrap: anywhere;
+  text-decoration: none;
 }
 
 /* PL: Linia między wierszami: cienka, wcięta 16 px od lewej. Pierwszy wiersz jej nie ma.

@@ -77,3 +77,6 @@ export { ListGroup } from './ui/ListGroup';
 // PL: Wiersz grupowanej listy: tytuł, wartość, strzałka albo akcja.
 // EN: The row of a grouped list: a title, a value, an arrow or an action.
 export { ListRow } from './ui/ListRow';
+// PL: Nagłówek ekranu: duży tytuł albo pasek z „Wstecz”.
+// EN: The screen header: a large title or a bar with "Back".
+export { ScreenHeader } from './ui/ScreenHeader';

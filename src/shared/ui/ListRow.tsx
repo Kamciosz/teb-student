@@ -11,6 +11,9 @@
 // PL: Typy węzłów Reacta.
 // EN: The React node types.
 import type { ReactNode } from 'react';
+// PL: Link routera dla wiersza, który otwiera inny ekran.
+// EN: The router link for a row that opens another screen.
+import { Link } from 'react-router';
 // PL: Style wiersza.
 // EN: The row styles.
 import './ListRow.css';
@@ -34,6 +37,8 @@ export type ListRowProps = {
   destructive?: boolean;
   /** PL: Akcja po kliknięciu. Bez niej wiersz jest zwykłym tekstem, bez przycisku. EN: The action on click. Without it the row is plain text, with no button. */
   onClick?: () => void;
+  /** PL: Adres ekranu w aplikacji. Wiersz staje się linkiem ze strzałką „›”. EN: The screen address in the app. The row becomes a link with the "›" arrow. */
+  to?: string;
   /** PL: Dodatkowa klasa od wywołującego. EN: An extra class from the caller. */
   className?: string;
 };
@@ -45,10 +50,12 @@ export type ListRowProps = {
  * @param props - PL: treść i zachowanie wiersza. EN: the content and the behavior of the row.
  * @returns PL: wiersz listy. EN: the list row.
  */
-export function ListRow({ title, subtitle, value, icon, chevron = false, destructive = false, onClick, className }: ListRowProps) {
+export function ListRow({ title, subtitle, value, icon, chevron, destructive = false, onClick, to, className }: ListRowProps) {
   // PL: Wiersz z akcją dostaje klasę działania (wciśnięcie), a czerwony wiersz klasę błędu.
   // EN: A row with an action gets the action class (press), and a red row the error class.
-  const isAction = onClick !== undefined;
+  const isAction = onClick !== undefined || to !== undefined;
+  // PL: Link domyślnie ma strzałkę, bo otwiera ekran. EN: A link has the arrow by default, because it opens a screen.
+  const showChevron = chevron ?? to !== undefined;
   const classes = [
     'ui-list-row',
     isAction ? 'ui-list-row--action' : '',
@@ -68,9 +75,18 @@ export function ListRow({ title, subtitle, value, icon, chevron = false, destruc
         {subtitle !== undefined ? <span className="ui-list-row-subtitle">{subtitle}</span> : null}
       </span>
       {value !== undefined ? <span className="ui-list-row-value">{value}</span> : null}
-      {chevron ? <span className="ui-list-row-chevron" aria-hidden="true">›</span> : null}
+      {showChevron ? <span className="ui-list-row-chevron" aria-hidden="true">›</span> : null}
     </>
   );
+
+  // PL: Wiersz z adresem jest linkiem routera. EN: A row with an address is a router link.
+  if (to !== undefined) {
+    return (
+      <Link to={to} className={classes}>
+        {content}
+      </Link>
+    );
+  }
 
   // PL: Przycisk ma typ „button”, żeby nie wysłał formularza. EN: The button has the "button" type, so it does not submit a form.
   if (isAction) {
