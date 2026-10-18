@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useState, type ComponentType } from 'react';
+import { Button } from '../../../shared';
 import type { RichEditorProps } from './RichEditor';
 import { TEXTS } from './texts';
 
@@ -39,7 +40,7 @@ function LazyComponent<Props extends object>({ load, props }: { load: () => Prom
   return (
     <div className="editor-note" role="alert">
       <p>{TEXTS.loadFailed}</p>
-      <button type="button" className="editor-button" onClick={() => window.location.reload()}>{TEXTS.reload}</button>
+      <Button type="button" onClick={() => window.location.reload()}>{TEXTS.reload}</Button>
     </div>
   );
 }

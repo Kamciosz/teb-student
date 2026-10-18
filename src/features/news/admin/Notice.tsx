@@ -1,6 +1,6 @@
 /**
- * PL: Element „Komunikat” z przepływu 6: ikona ostrzeżenia i tekst błędu na kaflu. Błędu nie oznaczamy kolorem, tylko ikoną i tekstem.
- * EN: The "Komunikat" element of flow 6: a warning icon and the error text on a tile. We do not mark an error with color, only with an icon and text.
+ * PL: Element „Komunikat” z przepływu 6: ikona ostrzeżenia i tekst błędu nad listą. Błędu nie oznaczamy kolorem, tylko ikoną i tekstem.
+ * EN: The "Komunikat" element of flow 6: a warning icon and the error text above the list. We do not mark an error with color, only with an icon and text.
  *
  * @author Szymon
  * @since 2026-10-12

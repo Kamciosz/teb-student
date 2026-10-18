@@ -1,11 +1,11 @@
 /**
- * PL: Test czystych funkcji widoku „Moje zgłoszenia”: segmenty paska etapu, nazwa etapu i krótka data.
- * EN: Test of the pure functions of the "Moje zgłoszenia" view: the stage bar segments, the stage name and the short date.
+ * PL: Test czystych funkcji widoku zgłoszeń ucznia: nazwa etapu i krótka data.
+ * EN: Test of the pure functions of the student reports view: the stage name and the short date.
  *
  * @author Szymon
  * @since 2026-10-09
- * @uses src/features/reports/student/reportView.ts::stageSegments
  * @uses src/features/reports/student/reportView.ts::stageLabel
+ * @uses src/features/reports/student/reportView.ts::formatShortDate
  * @used_by vitest.config.ts::include
  */
 
@@ -14,31 +14,7 @@
 import { describe, expect, it } from 'vitest';
 // PL: Funkcje, które sprawdzamy.
 // EN: The functions under test.
-import { formatShortDate, stageLabel, stageSegments } from './reportView';
-
-// PL: Grupa testów paska etapu.
-// EN: A group of tests for the stage bar.
-describe('stageSegments', () => {
-  // PL: Każdy etap zapala tyle segmentów, ile ma numer.
-  // EN: Every stage lights as many segments as its position.
-  it.each([
-    ['received', [true, false, false]],
-    ['in_progress', [true, true, false]],
-    ['resolved', [true, true, true]],
-  ])('etap %s / stage %s', (stage, expected) => {
-    // PL: Porównaj z oczekiwanym paskiem.
-    // EN: Compare with the expected bar.
-    expect(stageSegments(stage)).toEqual(expected);
-  });
-
-  // PL: Nieznany etap z serwera nie psuje listy.
-  // EN: An unknown stage from the server does not break the list.
-  it('nieznany etap świeci jak „przyjęte” / an unknown stage lights like "received"', () => {
-    // PL: Sprawdź etap spoza listy.
-    // EN: Check a stage outside the list.
-    expect(stageSegments('coś-nowego')).toEqual([true, false, false]);
-  });
-});
+import { formatShortDate, stageLabel } from './reportView';
 
 // PL: Grupa testów nazwy etapu.
 // EN: A group of tests for the stage name.

@@ -12,6 +12,7 @@
 import { useState, type FormEvent } from 'react';
 import { MAX_SOURCES } from './document/limits';
 import { normalizeHttpsUrl, parseYouTubeId, socialNetworkName } from './document/urls';
+import { Button, TextField } from '../../../shared';
 import { TEXTS } from './texts';
 
 /**
@@ -80,22 +81,22 @@ export function AddressPanel({ kind, initial, onSubmit, onCancel, onRemove }: Ad
 
   return (
     <form className="editor-panel" onSubmit={handleSubmit}>
-      {/* PL: Pole na adres. Źródła to pole wielowierszowe. EN: The address field. Sources use a multi-line field. */}
-      <label className="editor-label">
-        {copy.label}
-        {kind === 'sources' ? (
+      {/* PL: Pole na adres: zwykłe pole z grupy. Źródła to pole wielowierszowe, którego nie ma we wspólnym komponencie, więc zostaje zwykła etykieta. EN: The address field: a plain field. Sources use a multi-line field, which the shared component does not have, so it keeps a plain label. */}
+      {kind === 'sources' ? (
+        <label className="editor-label">
+          {copy.label}
           <textarea className="editor-input" rows={3} value={text} onChange={(event) => setText(event.target.value)} autoFocus />
-        ) : (
-          <input className="editor-input" type="url" inputMode="url" value={text} onChange={(event) => setText(event.target.value)} autoFocus />
-        )}
-      </label>
+        </label>
+      ) : (
+        <TextField label={copy.label} type="url" inputMode="url" value={text} onChange={(event) => setText(event.target.value)} autoFocus />
+      )}
       {/* PL: Błąd po polsku, czytany przez czytnik ekranu. EN: The error in Polish, read by a screen reader. */}
       {error ? <p role="alert" className="editor-error">{error}</p> : null}
       <div className="editor-row">
-        <button type="submit" className="editor-button">{copy.submit}</button>
-        {/* PL: Usuń istniejący link. EN: Remove an existing link. */}
-        {onRemove ? <button type="button" className="editor-button editor-button--outline" onClick={onRemove}>{TEXTS.prompt.link.remove}</button> : null}
-        <button type="button" className="editor-button editor-button--outline" onClick={onCancel}>{TEXTS.prompt.cancel}</button>
+        <Button type="submit">{copy.submit}</Button>
+        {/* PL: Usuń istniejący link, zwykłym tekstem. EN: Remove an existing link, as plain text. */}
+        {onRemove ? <Button type="button" variant="plain" onClick={onRemove}>{TEXTS.prompt.link.remove}</Button> : null}
+        <Button type="button" variant="plain" onClick={onCancel}>{TEXTS.prompt.cancel}</Button>
       </div>
     </form>
   );

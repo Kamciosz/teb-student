@@ -37,7 +37,8 @@ export const SCREEN = {
  * EN: The texts outside EKRANY.md: the toolbar, the address panels, the error messages.
  */
 export const TEXTS = {
-  back: 'Wróć',
+  back: 'Wpisy',
+  stepBack: 'Wstecz',
   stepOf: (step: number) => `Krok ${step} z 3`,
   counter: (length: number, max: number) => `${length} / ${max} znaków`,
   toolbarLabel: 'Formatowanie tekstu',

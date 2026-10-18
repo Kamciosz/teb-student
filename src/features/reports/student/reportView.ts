@@ -1,14 +1,17 @@
 /**
- * PL: Czyste funkcje widoku „Moje zgłoszenia”: które segmenty paska etapu świecą, jak pokazać nazwę etapu i krótką datę. Bez Reacta, żeby dało się je sprawdzić testem.
- * EN: Pure functions of the "Moje zgłoszenia" view: which segments of the stage bar light up, how to show the stage name and a short date. No React, so a test can check them.
+ * PL: Czyste funkcje widoku zgłoszeń ucznia: nazwa etapu i krótka data. Bez Reacta, żeby dało się je sprawdzić testem.
+ * EN: Pure functions of the student reports view: the stage name and a short date. No React, so a test can check them.
  *
  * @author Szymon
  * @since 2026-10-09
  * @uses src/features/reports/student/reportOptions.ts::STAGE_ORDER
- * @used_by src/features/reports/student/MyReports.tsx::stageSegments
- * @used_by src/features/reports/student/MyReports.tsx::formatShortDate
  * @used_by src/features/reports/student/MyReports.tsx::stageLabel
- * @used_by src/features/reports/student/reportView.test.ts::stageSegments
+ * @used_by src/features/reports/student/MyReports.tsx::formatShortDate
+ * @used_by src/features/reports/student/ReportDetails.tsx::stageLabel
+ * @used_by src/features/reports/student/ReportDetails.tsx::formatShortDate
+ * @used_by src/features/reports/student/SimilarReports.tsx::stageLabel
+ * @used_by src/features/reports/student/reportView.test.ts::stageLabel
+ * @used_by src/features/reports/student/reportView.test.ts::formatShortDate
  */
 
 // PL: Kolejność etapów.
@@ -17,22 +20,6 @@ import { STAGE_ORDER } from './reportOptions';
 
 /** PL: Strefa czasowa szkoły. Data zgłoszenia ma być taka sama w całym kraju i na każdym telefonie. EN: The school time zone. A report date must be the same everywhere and on every phone. */
 const SCHOOL_TIME_ZONE = 'Europe/Warsaw';
-
-/**
- * PL: Mówi, które z trzech segmentów paska etapu są zapalone (ekran 3.5).
- * EN: Tells which of the three stage bar segments are lit (screen 3.5).
- *
- * @param stage - PL: kod bieżącego etapu. EN: the code of the current stage.
- * @returns PL: trzy wartości; segment świeci, gdy etap jest osiągnięty. Nieznany etap zapala tylko pierwszy segment. EN: three values; a segment is lit when its stage is reached. An unknown stage lights only the first segment.
- */
-export function stageSegments(stage: string): boolean[] {
-  // PL: Numer etapu na liście; nieznany kod traktujemy jak „przyjęte”.
-  // EN: The stage position in the list; an unknown code counts as "received".
-  const index = Math.max(0, STAGE_ORDER.findIndex((item) => item.code === stage));
-  // PL: Segment świeci, gdy jego numer nie przekracza numeru etapu.
-  // EN: A segment is lit when its position does not exceed the stage position.
-  return STAGE_ORDER.map((_item, position) => position <= index);
-}
 
 /**
  * PL: Podaje nazwę etapu do pokazania uczniowi (na przykład „W trakcie”). Nieznany kod wraca bez zmian.

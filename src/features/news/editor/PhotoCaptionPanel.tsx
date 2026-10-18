@@ -11,6 +11,7 @@
  */
 
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import { Button, TextField } from '../../../shared';
 import { MAX_CAPTION_CHARS } from './document/limits';
 import { captionAttrs, type CaptionAttrs } from './photoCaption';
 import { TEXTS } from './texts';
@@ -60,17 +61,11 @@ export function PhotoCaptionPanel({ alt, caption, onSubmit, onCancel }: PhotoCap
 
   return (
     <form className="editor-panel" onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
-      <label className="editor-label">
-        {TEXTS.captionPanel.alt}
-        <input className="editor-input" type="text" value={altText} maxLength={MAX_CAPTION_CHARS} onChange={(event) => setAltText(event.target.value)} autoFocus />
-      </label>
-      <label className="editor-label">
-        {TEXTS.captionPanel.caption}
-        <input className="editor-input" type="text" value={captionText} maxLength={MAX_CAPTION_CHARS} onChange={(event) => setCaptionText(event.target.value)} />
-      </label>
+      <TextField label={TEXTS.captionPanel.alt} type="text" value={altText} maxLength={MAX_CAPTION_CHARS} onChange={(event) => setAltText(event.target.value)} autoFocus />
+      <TextField label={TEXTS.captionPanel.caption} type="text" value={captionText} maxLength={MAX_CAPTION_CHARS} onChange={(event) => setCaptionText(event.target.value)} />
       <div className="editor-row">
-        <button type="submit" className="editor-button">{TEXTS.captionPanel.save}</button>
-        <button type="button" className="editor-button editor-button--outline" onClick={onCancel}>{TEXTS.prompt.cancel}</button>
+        <Button type="submit">{TEXTS.captionPanel.save}</Button>
+        <Button type="button" variant="plain" onClick={onCancel}>{TEXTS.prompt.cancel}</Button>
       </div>
     </form>
   );

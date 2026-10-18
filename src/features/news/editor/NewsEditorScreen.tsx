@@ -17,12 +17,13 @@
 import type { JSONContent } from '@tiptap/core';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { ScreenHeader } from '../../../shared';
 import { loadDraft, sendEntry, updateEntry, type DraftToEdit } from './api';
 import { ContentStep } from './ContentStep';
 import './editor.css';
 import { PreviewStep } from './PreviewStep';
 import { ReviewStep } from './ReviewStep';
-import { TEXTS } from './texts';
+import { SCREEN, TEXTS } from './texts';
 import { TypeStep, type EntryType } from './TypeStep';
 import { WizardTop } from './WizardTop';
 import { formatWarsawMoment } from './warsawTime';
@@ -95,6 +96,7 @@ function DraftLoader({ draftId }: { draftId: string }) {
   if (state.status === 'loading') {
     return (
       <main className="editor-screen" data-subtrack="3b">
+        <ScreenHeader title={SCREEN.title} backTo="/news/admin" backLabel={TEXTS.back} />
         <p role="status">{TEXTS.draftLoading}</p>
       </main>
     );
@@ -103,8 +105,9 @@ function DraftLoader({ draftId }: { draftId: string }) {
   if (state.status === 'failed') {
     return (
       <main className="editor-screen" data-subtrack="3b">
+        <ScreenHeader title={SCREEN.title} backTo="/news/admin" backLabel={TEXTS.back} />
         <p role="alert" className="editor-error">{state.message}</p>
-        <Link className="editor-button editor-button--wide" to="/news/admin">{TEXTS.goToPanel}</Link>
+        <Link className="ui-button ui-button--filled editor-wide" to="/news/admin">{TEXTS.goToPanel}</Link>
       </main>
     );
   }
@@ -162,8 +165,9 @@ function EntryWizard({ draftId, start }: { draftId?: string; start?: StartData }
         : saved.publishAt === null ? TEXTS.savedPublished : TEXTS.scheduledFor(formatWarsawMoment(saved.publishAt));
     return (
       <main className="editor-screen" data-subtrack="3b">
+        <ScreenHeader title={SCREEN.title} backTo="/news/admin" backLabel={TEXTS.back} />
         <p role="status" className="editor-done">{confirmation}</p>
-        <Link className="editor-button editor-button--wide" to="/news/admin">{TEXTS.goToPanel}</Link>
+        <Link className="ui-button ui-button--filled editor-wide" to="/news/admin">{TEXTS.goToPanel}</Link>
       </main>
     );
   }

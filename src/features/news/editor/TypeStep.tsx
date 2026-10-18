@@ -4,10 +4,13 @@
  *
  * @author Szymon
  * @since 2026-10-12
+ * @uses src/shared/index.ts::Button
+ * @uses src/shared/index.ts::Chip
  * @uses src/features/news/editor/texts.ts::SCREEN
  * @used_by src/features/news/editor/NewsEditorScreen.tsx::TypeStep
  */
 
+import { Button, Chip } from '../../../shared';
 import { SCREEN } from './texts';
 
 /**
@@ -43,16 +46,16 @@ export type TypeStepProps = {
 export function TypeStep({ type, onType, onNext }: TypeStepProps) {
   return (
     <section className="editor-step" aria-labelledby="editor-step-heading">
-      <h1 id="editor-step-heading">{SCREEN.typeHeading}</h1>
+      <h2 id="editor-step-heading">{SCREEN.typeHeading}</h2>
       {/* PL: Chipy typu. Wciśnięty chip to wybrany typ. EN: The type chips. The pressed chip is the chosen type. */}
       <div className="editor-chips">
         {TYPES.map((item) => (
-          <button key={item} type="button" className="editor-chip" aria-pressed={item === type} onClick={() => onType(item)}>
+          <Chip key={item} selected={item === type} onClick={() => onType(item)}>
             {SCREEN.types[item]}
-          </button>
+          </Chip>
         ))}
       </div>
-      <button type="button" className="editor-button editor-button--wide" onClick={onNext}>{SCREEN.next}</button>
+      <Button onClick={onNext}>{SCREEN.next}</Button>
     </section>
   );
 }
