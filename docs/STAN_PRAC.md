@@ -1,6 +1,6 @@
 # Stan prac
 
-Stan na 18.10.2026. `main` po scaleniu #195. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
+Stan na 18.10.2026. `main` po scaleniu #200. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
 
 Wszystkie teksty aplikacji zatwierdził Szymon 14.10.2026 (#175, #179).
 
@@ -52,7 +52,7 @@ Od #172 do #179 weszły plan dzwonków, logowanie kluczem dostępu jako opcja, z
 | #179 | fix(komentarze): usuń dopiski „do ustalenia” z komentarzy | Dopiski „do ustalenia” znikają z komentarzy w kodzie; teksty dla ucznia bez zmian. |
 | #180 | build: usuń dni skrócone z licznika dzwonka | Licznik zawsze liczy według zwykłego planu; przełącznik, trasy i tabela dnia skróconego zniknęły. |
 
-Od #181 do #195 wszedł nowy wygląd ekranów: jak aplikacja systemowa (duże tytuły, grupy wierszy, pasek z powrotem). Zasady są w `docs/projekt/wyglad-ekranow.md`. #185 został zamknięty bez scalenia i zastąpiony przez #186.
+Od #181 do #200 wszedł nowy wygląd ekranów: jak aplikacja systemowa (duże tytuły, grupy wierszy, pasek z powrotem). Zasady są w `docs/projekt/wyglad-ekranow.md`. #185 został zamknięty bez scalenia i zastąpiony przez #186.
 
 | PR | Tytuł | Co daje uczniowi lub zespołowi |
 |---|---|---|
@@ -70,6 +70,11 @@ Od #181 do #195 wszedł nowy wygląd ekranów: jak aplikacja systemowa (duże ty
 | #193 | style(zgloszenia): wiersze listy zamiast kart | Moje zgłoszenia jako wiersze, szczegóły zgłoszenia, kreator z „Anuluj” i przełącznikiem po prawej. |
 | #194 | style(redakcja): ekrany redakcji w nowym wyglądzie | Lista wpisów i kreator z jednym paskiem nagłówka we wszystkich krokach. |
 | #195 | style(samorzad): ekrany zgłoszeń i ankiet w wyglądzie systemowym | Zgłoszenia i ankiety w panelu: pola bez podwójnego kafla, segmenty jak w ustawieniach, przycisk na całą szerokość. |
+| #196 | docs: stan prac po scaleniu #195 | Ten plik po scaleniu #195. |
+| #197 | fix(ui): zmień tytuł pustego stanu na nagłówek h2 | Tytuł pustego stanu („Nie ma ankiet” itd.) czytnik ekranu czyta jako nagłówek. |
+| #198 | style(redakcja): ułóż pasek edytora w jednym rzędzie | Pasek edytora ma jeden rząd przewijany w bok, a „Cofnij” i „Ponów” stoją stale po prawej. |
+| #199 | style(profil): równe segmenty przy wąskim ekranie | Szkoła i motyw mieszczą się w jednym rzędzie, a przy 320 px z większym tekstem motywy idą jeden pod drugim. |
+| #200 | style(ui): widoczne pola tekstowe na kaflu grupy | Pola „Imię” i „Klasa” (i inne pola w grupie) mają szare tło, więc widać, gdzie pisać. |
 
 Każdy ekran z paskiem pokazuje w powrocie nazwę poprzedniego ekranu („Panel”, „Wpisy”, „Ankiety”, „Zgłoszenia”, „Profil”), a nie „Wróć”. Wyjątek: „Wstecz” cofa o krok w kreatorze.
 
@@ -79,11 +84,7 @@ Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (
 
 Brak. Wszystkie pull requesty do #195 są scalone.
 
-Do poprawy w wyglądzie:
-
-- Pasek narzędzi edytora wpisu zawija się na wąskim telefonie do trzech rzędów, a strzałki „Cofnij” i „Ponów” są małe.
-- Tytuł pustego stanu (`EmptyState`) to akapit, a nie nagłówek. Czytnik ekranu nie traktuje go jak tytułu.
-- Segmenty w profilu zawijają się przy szerokości 320 px i włączonym większym tekście.
+Do poprawy w wyglądzie: nic znanego. Trzy rzeczy z listy po #195 poprawiły #197, #198 i #199, a #200 dodał widoczne pola. `.editor-screen` dostał wysokość zapasową `100vh` dla iOS 15.0–15.3, które nie znają `100dvh` (#202).
 
 Do sprawdzenia po wdrożeniu: Face ID na prawdziwym telefonie.
 
