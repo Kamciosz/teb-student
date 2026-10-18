@@ -51,6 +51,12 @@
   outline-offset: -2px;
 }
 
+/* PL: Pole w grupowanej liście stoi na kaflu grupy, a kafel ma ten sam kolor co zwykłe pole, więc pole by znikło. Dostaje kafel wtórny, szary jak w aplikacjach systemowych, i jest widoczne.
+   EN: A field in a grouped list stands on the group tile, which has the same color as a normal field, so the field would vanish. It gets the secondary tile, gray as in system apps, and stays visible. */
+.ui-list-group .ui-field input {
+  background: var(--tile-2);
+}
+
 /* PL: Komunikat o błędzie: mały tekst w akcencie, zawija się w wąskim ekranie.
    EN: The error message: small text in the accent, wraps on a narrow screen. */
 .ui-field-error {

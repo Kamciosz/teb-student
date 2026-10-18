@@ -215,6 +215,12 @@
   background: var(--tile-2);
 }
 
+/* PL: Edytor stoi w grupowanej liście, więc pole w okienku adresu i podpisu dostaje kafel edytora, jak wcześniej. Pole ma być widoczne na szarym tle okienka.
+   EN: The editor stands in a grouped list, so a field in the address and caption panel keeps the editor tile, as before. The field must stay visible on the gray panel background. */
+.ui-list-group .editor-panel .ui-field input {
+  background: var(--tile);
+}
+
 .editor-row {
   display: flex;
   flex-wrap: wrap;
