@@ -1,6 +1,6 @@
 /**
- * PL: Style kreatora „Nowy wpis” (podtor 3b) w stylu iOS: pasek z postępem, chipy typu, grupowane pola z ListGroup i TextField, pasek narzędzi, pole edytora, podgląd i przycisk „Opublikuj” przyklejony do dołu. Kolory tylko przez var(--...) z tokens.css. Bez color-mix(), zagnieżdżania CSS, :has() i 100dvh, bo iOS 15.0–15.3 ich nie zna. Wszystko zawija się do następnego wiersza, więc przy 320 px nic nie wychodzi poza ekran.
- * EN: Styles of the "Nowy wpis" wizard (subtrack 3b) in the iOS style: the progress bar, the type chips, the grouped fields from ListGroup and TextField, the toolbar, the editor field, the preview and the "Opublikuj" button stuck to the bottom. Colors only through var(--...) from tokens.css. No color-mix(), CSS nesting, :has() or 100dvh, because iOS 15.0–15.3 does not know them. Everything wraps to the next row, so at 320 px nothing goes off the screen.
+ * PL: Style kreatora „Nowy wpis” (podtor 3b) w stylu iOS: pasek z postępem, chipy typu, grupowane pola z ListGroup i TextField, pasek narzędzi, pole edytora, podgląd i przycisk „Opublikuj” przyklejony do dołu. Kolory tylko przez var(--...) z tokens.css. Bez color-mix(), zagnieżdżania CSS, :has() i 100dvh, bo iOS 15.0–15.3 ich nie zna. Pasek narzędzi ma jeden rząd: przyciski formatowania i adresów przewijają się w bok palcem, a „Cofnij” i „Ponów” stoją stale po prawej. Dzięki temu przy 320 px nic nie wychodzi poza ekran, a pasek nie zajmuje pół ekranu.
+ * EN: Styles of the "Nowy wpis" wizard (subtrack 3b) in the iOS style: the progress bar, the type chips, the grouped fields from ListGroup and TextField, the toolbar, the editor field, the preview and the "Opublikuj" button stuck to the bottom. Colors only through var(--...) from tokens.css. No color-mix(), CSS nesting, :has() or 100dvh, because iOS 15.0–15.3 does not know them. The toolbar is one row: the formatting and address buttons scroll sideways with a finger, and "Cofnij" (undo) and "Ponów" (redo) stay on the right. So at 320 px nothing goes off the screen, and the toolbar does not take half the screen.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -175,15 +175,51 @@
   overflow: hidden;
 }
 
+/* PL: Pasek narzędzi w jednym rzędzie: po lewej przewijany środek, po prawej stały blok „Cofnij” i „Ponów”. Nic się tu nie zawija.
+   EN: The toolbar in one row: a scrolling middle on the left and the fixed "Cofnij" and "Ponów" block on the right. Nothing wraps here. */
 .editor-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 4px;
   padding: 8px;
   border-bottom: 1px solid var(--line);
 }
 
+/* PL: Przewijany rząd przycisków: przesuwa się w bok palcem, a przyciski się w nim nie zwężają.
+   EN: The scrolling row of buttons: it moves sideways with a finger, and the buttons in it do not shrink. */
+.editor-toolbar__scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+/* PL: Pasek przewijania w Chrome i Safari jest ukryty, przewijać można palcem.
+   EN: The scrollbar in Chrome and Safari is hidden, you scroll with a finger. */
+.editor-toolbar__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* PL: „Cofnij” i „Ponów” zawsze widoczne po prawej, oddzielone cienką linią.
+   EN: "Cofnij" and "Ponów" always visible on the right, separated by a thin line. */
+.editor-toolbar__history {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  margin-left: 4px;
+  padding-left: 4px;
+  border-left: 1px solid var(--line);
+}
+
+/* PL: Przycisk paska: pole dotyku 44 × 44 px, które nie kurczy się w przewijanym rzędzie.
+   EN: A toolbar button: a 44 × 44 px touch area that does not shrink in the scrolling row. */
 .editor-tool {
+  flex: 0 0 auto;
   min-width: 44px;
   height: 44px;
   padding: 0 8px;
@@ -193,6 +229,12 @@
   font-size: var(--t-sm);
   font-weight: 700;
   cursor: pointer;
+}
+
+/* PL: Strzałki „Cofnij” i „Ponów” są większe od napisów; pole dotyku zostaje 44 × 44 px z .editor-tool.
+   EN: The "Cofnij" and "Ponów" arrows are larger than the labels; the touch area stays 44 × 44 px from .editor-tool. */
+.editor-toolbar__history .editor-tool {
+  font-size: var(--t-lg);
 }
 
 .editor-tool[aria-pressed='true'] {
@@ -345,12 +387,11 @@
   margin-top: 12px;
 }
 
-/* PL: Komunikat pod paskiem narzędzi (wysyłka zdjęcia). Zajmuje całą szerokość, więc zawija się do kolejnego wiersza.
-   EN: A message under the toolbar (a photo upload). It takes the full width, so it wraps to the next row. */
+/* PL: Komunikat pod paskiem narzędzi (wysyłka zdjęcia albo błąd). Stoi pod paskiem na całą szerokość, poza jego rzędem.
+   EN: A message under the toolbar (a photo upload or an error). It stands under the toolbar across the full width, outside its row. */
 .editor-toolbar__message {
-  flex-basis: 100%;
   margin: 0;
-  padding: 0 4px;
+  padding: 8px 12px;
   font-size: var(--t-sm);
 }
 

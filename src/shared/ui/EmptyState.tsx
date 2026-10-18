@@ -39,9 +39,11 @@ export function EmptyState({ title, children, className }: EmptyStateProps) {
   // EN: Join the base class with the caller's class.
   const classes = ['ui-empty', className].filter(Boolean).join(' ');
 
+  // PL: Tytuł to nagłówek h2, bo ekran ma już h1 w pasku. Czytnik ekranu czyta go wtedy jako tytuł.
+  // EN: The title is an h2 heading, because the screen already has the h1 in its bar. A screen reader then reads it as the title.
   return (
     <div className={classes}>
-      <p className="ui-empty-title">{title}</p>
+      <h2 className="ui-empty-title">{title}</h2>
       {children ? <div className="ui-empty-body">{children}</div> : null}
     </div>
   );

@@ -35,10 +35,20 @@
    EN: The text fields in a group: the space from the tile edge and between the fields. */
 .pf-fields { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px; }
 
-/* PL: Wybór szkoły i motywu jako segmenty: wybrany ma jaśniejsze tło (--tile), reszta przezroczysta na tle --tile-2. Przy większym tekście segmenty przechodzą do drugiego wiersza, a nie łamią słów.
-   EN: The school and theme choice as segments: the chosen one has the lighter background (--tile), the rest is transparent on --tile-2. With larger text the segments move to a second row instead of breaking words. */
+/* PL: Wybór szkoły i motywu jako segmenty: wybrany ma jaśniejsze tło (--tile), reszta przezroczysta na tle --tile-2. Gdy wszystkie opcje mieszczą się w jednym rzędzie, idą w jednym rzędzie. Gdy się nie mieszczą, każda idzie do osobnego rzędu na pełną szerokość, bez układu mieszanego. Szkoły mają równą szerokość. Motywy mają szerokość według napisu, bo najdłuższy „Automatyczny” nie mieści się w równej trzeciej części rzędu na 375 px.
+   EN: The school and theme choice as segments: the chosen one has the lighter background (--tile), the rest is transparent on --tile-2. When all options fit in one row, they go in one row. When they do not fit, each one goes to its own full-width row, with no mixed layout. The school options have equal widths. The themes are as wide as their labels, because the longest "Automatyczny" does not fit into an equal third of the row at 375 px. */
+/* PL: Próg to szerokość, od której mieszczą się wszystkie opcje w jednym rzędzie. Liczony w em, więc rośnie razem z większym tekstem. Metoda „Switcher” (Heydon Pickering, Every Layout): baza elastyczna jest mała, gdy pojemnik jest szerszy od progu, i ogromna, gdy węższy. Nie ma stanu pośredniego. Przycisk nie zwęża się poniżej swojego napisu (min-width: auto), a napis się nie zawija (nowrap), więc nic nie pęka w połowie słowa i nic nie wychodzi poza kafel.
+   EN: The threshold is the width at which all options fit in one row. It is counted in em, so it grows with the larger text. The "Switcher" method (Heydon Pickering, Every Layout): the flexible basis is small when the container is wider than the threshold and huge when it is narrower. There is no state in between. A button never gets narrower than its label (min-width: auto), and the label does not wrap (nowrap), so no word breaks in the middle and nothing sticks out of the tile. */
 .pf-segment { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; border-radius: var(--r); background: var(--tile-2); }
-.pf-segment .ui-chip { flex: 1 1 auto; min-width: 0; padding: 0 6px; white-space: normal; }
+.pf-segment .ui-chip { flex: 1 1 0; min-width: auto; padding: 0 6px; white-space: nowrap; }
+/* PL: Dwie opcje (szkoła): najdłuższy napis „Technikum” to 5,2 em (78 px przy 15 px), więc równa baza to 5,2 em + 12 px, a próg to 2 × (5,2 em + 12 px) + 8 px odstępu.
+   EN: Two options (the school): the longest label "Technikum" is 5.2 em (78 px at 15 px), so the equal basis is 5.2 em + 12 px, and the threshold is 2 × (5.2 em + 12 px) + 8 px of gap. */
+.pf-segment .ui-chip:first-child:nth-last-child(2),
+.pf-segment .ui-chip:first-child:nth-last-child(2) ~ .ui-chip { flex-basis: max(calc(5.2em + 12px), calc((10.4em + 32px - 100%) * 999)); }
+/* PL: Trzy opcje (motyw): suma najkrótszych napisów to 13,3 em („Automatyczny” 6,9 em, „Jasny” 2,8 em, „Ciemny” 3,6 em), więc próg to 13,5 em + 3 × 12 px + 2 × 8 px odstępu. Zapas 0,2 em to różnice między przeglądarkami. Nowa grupa z inną liczbą opcji potrzebuje własnej reguły.
+   EN: Three options (the theme): the sum of the shortest labels is 13.3 em ("Automatyczny" 6.9 em, "Jasny" 2.8 em, "Ciemny" 3.6 em), so the threshold is 13.5 em + 3 × 12 px + 2 × 8 px of gap. The 0.2 em margin covers differences between browsers. A new group with another number of options needs its own rule. */
+.pf-segment .ui-chip:first-child:nth-last-child(3),
+.pf-segment .ui-chip:first-child:nth-last-child(3) ~ .ui-chip { flex-basis: calc((13.5em + 52px - 100%) * 999); }
 .pf-segment .ui-chip:not([aria-pressed='true']) { background: transparent; }
 
 /* PL: Pasek zapisu i wyniku: przycisk na całą szerokość, pod nim komunikat.

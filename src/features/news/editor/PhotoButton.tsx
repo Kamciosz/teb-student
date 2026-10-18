@@ -1,6 +1,6 @@
 /**
- * PL: Przycisk „Zdjęcie” na pasku edytora. Otwiera wybór pliku, wysyła zdjęcie przez uploadEditorPhoto i wstawia je do treści wpisu. Podczas wysyłki blokuje przycisk i pokazuje informację, a błąd pokazuje po polsku pod paskiem.
- * EN: The "Zdjęcie" button on the editor toolbar. It opens the file picker, sends the photo with uploadEditorPhoto and inserts it into the entry content. While sending it disables the button and shows a note, and it shows the error in Polish under the toolbar.
+ * PL: Przycisk „Zdjęcie” na pasku edytora. Otwiera wybór pliku, wysyła zdjęcie przez uploadEditorPhoto i wstawia je do treści wpisu. Podczas wysyłki blokuje przycisk. Komunikaty (wysyłka, błąd) pokazuje pasek przez stan przekazany z zewnątrz, bo leżą pod paskiem, a nie w jego przewijanym rzędzie.
+ * EN: The "Zdjęcie" button on the editor toolbar. It opens the file picker, sends the photo with uploadEditorPhoto and inserts it into the entry content. While sending it disables the button. The messages (the upload, the error) are shown by the toolbar from the state passed in, because they sit under the toolbar, not in its scrolling row.
  *
  * @author Szymon
  * @since 2026-10-14
@@ -12,10 +12,16 @@
  */
 
 import type { Editor } from '@tiptap/core';
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useRef, type ChangeEvent } from 'react';
 import { uploadEditorPhoto } from '../../media';
 import { photoErrorMessage, photoImageNode } from './photoNode';
 import { TEXTS } from './texts';
+
+/**
+ * PL: Stan wysyłki zdjęcia: czy trwa wysyłka i ostatni komunikat błędu (null: brak).
+ * EN: The state of the photo upload: whether an upload is running and the last error message (null: none).
+ */
+export type PhotoStatus = { sending: boolean; error: string | null };
 
 /**
  * PL: Dane przycisku.
@@ -26,23 +32,23 @@ export type PhotoButtonProps = {
   editor: Editor;
   /** PL: Wywoływane z adresem wstawionego zdjęcia. EN: Called with the address of the inserted photo. */
   onInserted: (src: string) => void;
+  /** PL: Aktualny stan wysyłki, trzymany przez pasek. EN: The current upload state, kept by the toolbar. */
+  status: PhotoStatus;
+  /** PL: Wywoływane przy każdej zmianie stanu wysyłki. EN: Called on every change of the upload state. */
+  onStatus: (status: PhotoStatus) => void;
 };
 
 /**
- * PL: Rysuje przycisk „Zdjęcie”, ukryte pole wyboru pliku i komunikat o wysyłce albo o błędzie.
- * EN: Draws the "Zdjęcie" button, the hidden file input and the note about the upload or the error.
+ * PL: Rysuje przycisk „Zdjęcie” i ukryte pole wyboru pliku.
+ * EN: Draws the "Zdjęcie" button and the hidden file input.
  *
- * @param props - PL: edytor. EN: the editor.
+ * @param props - PL: edytor, stan wysyłki i wywołania. EN: the editor, the upload state and the callbacks.
  * @returns PL: drzewo elementów. EN: the element tree.
  */
-export function PhotoButton({ editor, onInserted }: PhotoButtonProps) {
+export function PhotoButton({ editor, onInserted, status, onStatus }: PhotoButtonProps) {
   // PL: Ukryte pole wyboru pliku, otwierane przyciskiem.
   // EN: The hidden file input, opened by the button.
   const input = useRef<HTMLInputElement>(null);
-  // PL: Czy trwa wysyłka i ostatni komunikat błędu (null: brak).
-  // EN: Whether an upload is running and the last error message (null: none).
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // PL: Po wyborze pliku wyczyść pole (żeby ten sam plik dało się wybrać ponownie), wyślij zdjęcie i wstaw je do treści.
   // EN: After a file is picked, clear the field (so the same file can be picked again), send the photo and insert it into the content.
@@ -50,32 +56,27 @@ export function PhotoButton({ editor, onInserted }: PhotoButtonProps) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    setSending(true);
-    setError(null);
+    onStatus({ sending: true, error: null });
     try {
       const photo = await uploadEditorPhoto(file);
-      if (editor.isDestroyed) return;
-      // PL: Kursor zostaje za zdjęciem, a nie na nim, bo zaznaczone zdjęcie zamieniłoby się w tekst przy pierwszym znaku.
-      // EN: The cursor stays after the photo, not on it, because a selected photo would be replaced by the first typed character.
-      editor.chain().focus().insertContent(photoImageNode(photo), { updateSelection: false }).run();
-      onInserted(photo.src);
+      if (!editor.isDestroyed) {
+        // PL: Kursor zostaje za zdjęciem, a nie na nim, bo zaznaczone zdjęcie zamieniłoby się w tekst przy pierwszym znaku.
+        // EN: The cursor stays after the photo, not on it, because a selected photo would be replaced by the first typed character.
+        editor.chain().focus().insertContent(photoImageNode(photo), { updateSelection: false }).run();
+        onInserted(photo.src);
+      }
+      onStatus({ sending: false, error: null });
     } catch (failure) {
-      setError(photoErrorMessage(failure));
-    } finally {
-      setSending(false);
+      onStatus({ sending: false, error: photoErrorMessage(failure) });
     }
   }
 
   return (
     <>
-      <button type="button" className="editor-tool" aria-label={TEXTS.buttons.photo} disabled={sending} onClick={() => input.current?.click()}>
+      <button type="button" className="editor-tool" aria-label={TEXTS.buttons.photo} disabled={status.sending} onClick={() => input.current?.click()}>
         {TEXTS.buttons.photo}
       </button>
       <input ref={input} type="file" accept="image/*" hidden onChange={handleChange} />
-      {/* PL: Informacja podczas wysyłki. EN: The note while sending. */}
-      {sending ? <p className="editor-toolbar__message" role="status">{TEXTS.photo.sending}</p> : null}
-      {/* PL: Błąd pod paskiem, czytany przez czytnik ekranu. EN: The error under the toolbar, read by a screen reader. */}
-      {error ? <p className="editor-toolbar__message editor-error" role="alert">{error}</p> : null}
     </>
   );
 }
