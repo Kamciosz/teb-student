@@ -11,10 +11,10 @@
  */
 
 import { useState, type FormEvent } from 'react';
+import { Button, Icon, ScreenHeader } from '../../../shared';
 import { requestCode, verifyCode } from './authApi';
 import { CodeFields } from './CodeFields';
 import { emptyDigits, formatCountdown, isCodeComplete, RESEND_SECONDS } from './codeDigits';
-import { Icon } from './icons';
 import { maskEmail } from './schoolEmail';
 import { useCountdown } from './useCountdown';
 import { useSessionRefresh } from './useAuthSession';
@@ -93,10 +93,12 @@ export function CodeStep({ email, onBack }: CodeStepProps) {
 
   return (
     <form className="auth-email__form" onSubmit={step.submit} noValidate>
-      <button className="auth-email__back" type="button" onClick={onBack} aria-label="Wróć do wpisania adresu e-mail">
-        <Icon name="arrow-left" />
-      </button>
-      <h1 className="auth-email__title">Wpisz kod</h1>
+      <div className="auth-email__top">
+        <Button variant="plain" className="auth-email__back" onClick={onBack} aria-label="Wróć do wpisania adresu e-mail">
+          <Icon name="arrow-left" />
+        </Button>
+      </div>
+      <ScreenHeader title="Wpisz kod" />
       <p className="auth-email__lead">Wysłaliśmy sześć cyfr na {maskEmail(email)}. Kod działa 10 minut.</p>
 
       <CodeFields
@@ -111,16 +113,15 @@ export function CodeStep({ email, onBack }: CodeStepProps) {
       {step.notice === null ? null : <p className="auth-email__note" role="status">{step.notice}</p>}
 
       {canResend ? (
-        <button className="auth-email__link" type="button" onClick={step.resend} disabled={step.isBusy}>Wyślij kod ponownie</button>
+        <Button variant="plain" className="auth-email__link" onClick={step.resend} disabled={step.isBusy}>Wyślij kod ponownie</Button>
       ) : (
         <p className="auth-email__hint">Nie dotarł? Wyślij ponownie za {formatCountdown(step.countdown.secondsLeft)}</p>
       )}
 
       <div className="auth-email__actions">
-        <button className="auth-email__button" type="submit" disabled={step.isBusy || !isCodeComplete(step.digits)}>
+        <Button type="submit" disabled={step.isBusy || !isCodeComplete(step.digits)}>
           {step.isBusy ? 'Logowanie…' : 'Zaloguj'}
-          <Icon name="arrow-right" />
-        </button>
+        </Button>
       </div>
     </form>
   );
