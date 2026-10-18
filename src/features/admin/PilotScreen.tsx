@@ -32,7 +32,7 @@ export function PilotScreen() {
   const download = usePilotDownload();
   return (
     <main className="ad-screen" data-subtrack="8">
-      <ScreenHeader title="Dane z pilotażu" backTo="/admin" backLabel="Wróć do panelu" />
+      <ScreenHeader title="Dane z pilotażu" backTo="/admin" backLabel="Panel" />
       <PilotContents />
       {/* PL: Dół ekranu: błąd lub napis o internecie nad przyciskiem. EN: The bottom of the screen: the error or the internet text above the button. */}
       <div className="ad-bottom">

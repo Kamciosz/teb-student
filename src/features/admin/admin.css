@@ -81,3 +81,15 @@
 /* PL: Nagłówek ekranu z planszy, na przykład „Liczby z pilotażu”.
    EN: The screen heading from the design, for example "Liczby z pilotażu". */
 .ad-h1 { font-size: var(--t-xl); font-weight: 700; margin-bottom: 8px; }
+
+/* PL: Podpis roli pod paskiem ekranu głównego panelu. EN: The role caption below the bar of the panel home screen. */
+.ad-role-caption {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+}
+
+/* PL: Ekran ma już boczny margines, więc nagłówek go nie dubluje. EN: The screen already has a side margin, so the header does not double it. */
+.ad-screen .ui-screen-header {
+  padding-inline: 0;
+}

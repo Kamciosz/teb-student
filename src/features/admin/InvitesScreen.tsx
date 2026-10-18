@@ -40,7 +40,7 @@ export function InvitesScreen() {
 
   return (
     <main className="ad-screen" data-subtrack="8">
-      <ScreenHeader title="Kody zaproszeń" backTo="/admin" backLabel="Wróć do panelu" />
+      <ScreenHeader title="Kody zaproszeń" backTo="/admin" backLabel="Panel" />
       {/* PL: Do kogo jest kod i jak długo działa. EN: Who the code is for and how long it works. */}
       <p className="ad-lead">Dla osób bez szkolnej skrzynki. Kod działa jeden raz i jest ważny 14 dni.</p>
       <NewCodeTile invite={issue.data} />

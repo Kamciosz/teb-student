@@ -51,7 +51,7 @@ export function DiaryScreen() {
   const diary = useDiary(page);
   return (
     <main className="ad-screen" data-subtrack="8">
-      <ScreenHeader title="Dziennik zmian" backTo="/admin" backLabel="Wróć do panelu" />
+      <ScreenHeader title="Dziennik zmian" backTo="/admin" backLabel="Panel" />
       <p className="ad-lead">Kto wydał kod, nadał rolę albo pobrał plik. Najnowsze na górze.</p>
       <DiaryContents data={diary.data} isError={diary.isError} />
       <DiaryPager page={page} hasNext={diary.data?.hasNext ?? false} onChange={setPage} />

@@ -38,8 +38,9 @@ export function PanelHome() {
   const pilot = pilotSectionsFor(level);
   return (
     <main className="ad-screen" data-subtrack="8">
-      {/* PL: Redakcja ma „Panel redakcji”, reszta „Panel Samorządu”. Podpis roli idzie pod tytuł. EN: The editorial team has "Panel redakcji", the rest "Panel Samorządu". The role caption goes below the title. */}
-      <ScreenHeader title={level === 'editor' ? 'Panel redakcji' : 'Panel Samorządu'} eyebrow={roleCaption(level)} />
+      {/* PL: Redakcja ma „Panel redakcji”, reszta „Panel Samorządu”. Pasek prowadzi z powrotem do profilu, a podpis roli stoi pod paskiem. EN: The editorial team has "Panel redakcji", the rest "Panel Samorządu". The bar leads back to the profile, and the role caption stands below the bar. */}
+      <ScreenHeader title={level === 'editor' ? 'Panel redakcji' : 'Panel Samorządu'} backTo="/profile" backLabel="Profil" />
+      <p className="ad-role-caption">{roleCaption(level)}</p>
       {/* PL: Główna grupa z wierszami części panelu. EN: The main group with the panel section rows. */}
       <SectionGroup sections={sectionsFor(level)} footer={level === 'editor' ? 'Redakcja publikuje tylko wpisy. Resztę panelu widzi Samorząd.' : undefined} />
       {/* PL: Administrator widzi pod nagłówkiem „Pilotaż” osobną grupę. EN: The administrator sees a separate group under the "Pilotaż" header. */}

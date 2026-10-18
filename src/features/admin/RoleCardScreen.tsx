@@ -49,7 +49,7 @@ export function RoleCardScreen() {
   if (!card.data) {
     return (
       <main className="ad-screen" data-subtrack="8">
-        <ScreenHeader title="Role" backTo="/admin/role" backLabel="Wróć do wyszukiwania" />
+        <ScreenHeader title="Role" backTo="/admin/role" backLabel="Role" />
       </main>
     );
   }
@@ -69,7 +69,7 @@ function RoleCardBody({ card, studentId }: { card: RoleCard; studentId: string }
   const draft = useRoleDraft(card, studentId);
   return (
     <main className="ad-screen" data-subtrack="8">
-      <ScreenHeader title="Role" backTo="/admin/role" backLabel="Wróć do wyszukiwania" />
+      <ScreenHeader title="Role" backTo="/admin/role" backLabel="Role" />
       <PersonFields card={card} email={email} />
       <RoleSwitches card={card} shown={draft.shown} onToggle={draft.onToggle} />
       <p className="ad-note">

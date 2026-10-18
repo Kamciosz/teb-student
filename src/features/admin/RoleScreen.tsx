@@ -94,7 +94,7 @@ export function RoleScreen() {
   const form = useRoleSearchForm();
   return (
     <main className="ad-screen" data-subtrack="8">
-      <ScreenHeader title="Role" backTo="/admin" backLabel="Wróć do panelu" />
+      <ScreenHeader title="Role" backTo="/admin" backLabel="Panel" />
       <p className="ad-lead ad-lead-tight">Wpisz szkolny adres ucznia, żeby nadać albo odebrać rolę.</p>
       <form className="ad-form" onSubmit={form.onSubmit} noValidate>
         <SearchField email={form.email} message={form.message} onChange={form.onChange} />
