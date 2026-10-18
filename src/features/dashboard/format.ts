@@ -1,11 +1,11 @@
 /**
- * PL: Formatowanie tekstów pulpitu: data u góry, wiek wpisu, krótka data wiersza i słowo „dni”. Czas liczymy w strefie szkoły, żeby nie zależał od ustawień telefonu.
- * EN: Formatting of the dashboard texts: the date at the top, the entry age, the short date of a row and the word "dni". We count time in the school time zone, so it does not depend on the phone settings.
+ * PL: Formatowanie tekstów pulpitu: data u góry, wiek wpisu, krótka data wiersza i termin ankiety. Czas liczymy w strefie szkoły, żeby nie zależał od ustawień telefonu.
+ * EN: Formatting of the dashboard texts: the date at the top, the entry age, the short date of a row and the survey deadline. We count time in the school time zone, so it does not depend on the phone settings.
  *
  * @author Kacper
  * @since 2026-10-11
- * @used_by src/features/dashboard/DashboardHeader.tsx::DashboardHeader
- * @used_by src/features/dashboard/DashboardTiles.tsx::ImportantTile
+ * @used_by src/features/dashboard/DashboardHero.tsx::DashboardHero
+ * @used_by src/features/dashboard/TodoSection.tsx::TodoSection
  */
 
 /** PL: Strefa szkoły. EN: The school time zone. */
@@ -77,12 +77,13 @@ export function formatAge(iso: string, now: number = Date.now()): string {
 }
 
 /**
- * PL: Podpis pod liczbą dni kafla „Ankieta”: „dzień do końca” dla jedynki, w pozostałych przypadkach „dni do końca” (jak w module ankiet).
- * EN: The caption under the day count of the "Ankieta" tile: "dzień do końca" for one, "dni do końca" otherwise (as in the surveys module).
+ * PL: Termin ankiety w wierszu „Do zrobienia”: „dziś” w dniu zamknięcia, potem „jeszcze N dni” (dla jedynki „jeszcze 1 dzień”).
+ * EN: The survey deadline in the "Do zrobienia" row: "dziś" on the closing day, then "jeszcze N dni" (for one, "jeszcze 1 dzień").
  *
  * @param days - PL: dni do końca ankiety. EN: days left until the survey ends.
- * @returns PL: podpis. EN: the caption.
+ * @returns PL: tekst terminu. EN: the deadline text.
  */
-export function daysLeftLabel(days: number): string {
-  return `${days === 1 ? 'dzień' : 'dni'} do końca`;
+export function surveyDeadlineText(days: number): string {
+  if (days <= 0) return 'dziś';
+  return days === 1 ? 'jeszcze 1 dzień' : `jeszcze ${days} dni`;
 }

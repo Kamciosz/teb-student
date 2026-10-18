@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest';
 // PL: Funkcje pod testem.
 // EN: The functions under test.
-import { daysLeftLabel, formatAge, formatShortDate, formatToday } from './format';
+import { formatAge, formatShortDate, formatToday, surveyDeadlineText } from './format';
 
 /** PL: Chwila odniesienia testów: wtorek 6 października 2026, 12:00 czasu polskiego (10:00 UTC). EN: The reference moment of the tests: Tuesday 6 October 2026, 12:00 Polish time (10:00 UTC). */
 const NOW = new Date('2026-10-06T10:00:00Z');
@@ -59,20 +59,20 @@ describe('formatAge', () => {
   });
 });
 
-// PL: Grupa testów krótkiej daty i podpisu dni.
-// EN: A group of tests of the short date and the day caption.
-describe('formatShortDate i daysLeftLabel', () => {
+// PL: Grupa testów krótkiej daty i terminu ankiety.
+// EN: A group of tests of the short date and the survey deadline.
+describe('formatShortDate i surveyDeadlineText', () => {
   // PL: Data wiersza ogłoszenia jak „12.10”.
   // EN: The announcement row date like "12.10".
   it('formatuje krótką datę / formats the short date', () => {
     expect(formatShortDate('2026-10-12T08:00:00Z')).toBe('12.10');
   });
 
-  // PL: Jeden to „dzień”, reszta (także zero) to „dni”.
-  // EN: One is "dzień", the rest (zero too) is "dni".
-  it('odmienia „dzień” i „dni” / inflects "dzień" and "dni"', () => {
-    expect(daysLeftLabel(1)).toBe('dzień do końca');
-    expect(daysLeftLabel(3)).toBe('dni do końca');
-    expect(daysLeftLabel(0)).toBe('dni do końca');
+  // PL: Zero albo mniej to „dziś”, jeden to „dzień”, reszta to „dni”.
+  // EN: Zero or less is "dziś", one is "dzień", the rest is "dni".
+  it('odmienia termin ankiety / inflects the survey deadline', () => {
+    expect(surveyDeadlineText(0)).toBe('dziś');
+    expect(surveyDeadlineText(1)).toBe('jeszcze 1 dzień');
+    expect(surveyDeadlineText(3)).toBe('jeszcze 3 dni');
   });
 });
