@@ -17,11 +17,16 @@
   overflow-wrap: anywhere;
 }
 
-/* PL: Tytuł pustego stanu: zwykły tekst, nie krzyczy.
-   EN: The empty state title: plain text, not shouting. */
+/* PL: Tytuł pustego stanu: zwykły tekst, nie krzyczy. Jest nagłówkiem h2, więc reset cofa jego domyślny margines i krój
+   i zostaje wygląd akapitu.
+   EN: The empty state title: plain text, not shouting. It is an h2 heading, so the reset takes back its default margin and
+   typeface and it keeps the look of a paragraph. */
 .ui-empty-title {
+  margin: 0;
+  font: inherit;
   font-size: var(--t-md);
   font-weight: 400;
+  text-wrap: pretty;
 }
 
 /* PL: Dodatkowa treść (np. przycisk tekstowy) zachowuje wysokość dotyku z jej własnego stylu.
