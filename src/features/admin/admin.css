@@ -36,6 +36,8 @@
 /* PL: Dół ekranu: przycisk stoi na dole, nad nim napis o internecie albo błąd.
    EN: The bottom of the screen: the button stands at the bottom, with the internet text or the error above it. */
 .ad-bottom { margin-top: auto; padding-top: 24px; }
+/* PL: Główna akcja na dole ma pełną szerokość, jak w formularzach systemu. EN: The main action at the bottom is full width, as in system forms. */
+.ad-bottom .ui-button--filled { width: 100%; }
 .ad-error { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; padding: 12px; border-radius: var(--r); background: var(--tile-2); font-size: var(--t-sm); }
 .ad-error .ad-icon { margin-top: 1px; }
 .ad-empty { text-align: center; color: var(--ink-2); padding: 32px 0; }
@@ -60,7 +62,7 @@
 /* PL: Formularz wyszukiwania ucznia: mniejszy odstęp pod opisem.
    EN: The student search form: a smaller gap under the lead. */
 .ad-lead-tight { margin-bottom: 16px; }
-.ad-form { display: flex; flex-direction: column; flex: 1; }
+.ad-form { display: flex; flex-direction: column; flex: 1; gap: 24px; }
 
 /* PL: Awatar z inicjałem w wierszu i na karcie roli (48 px).
    EN: The avatar with the initial in a row and on the role card (48 px). */

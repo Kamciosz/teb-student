@@ -135,9 +135,7 @@ function PersonFields({ card, email }: { card: RoleCard; email?: string }) {
   return (
     <>
       {email ? (
-        <ListGroup>
-          <TextField label="Szkolny e-mail" type="email" value={email} readOnly />
-        </ListGroup>
+        <TextField label="Szkolny e-mail" type="email" value={email} readOnly />
       ) : null}
       <div className="ad-person">
         <span className="ad-avatar ad-avatar-big">{card.firstName.charAt(0).toUpperCase()}</span>

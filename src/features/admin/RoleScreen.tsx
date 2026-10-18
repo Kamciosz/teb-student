@@ -112,16 +112,15 @@ export function RoleScreen() {
 }
 
 /**
- * PL: Pole szkolnego adresu w grupie, z podpisem i komunikatem błędu pod polem. Komunikat ustawia aria-invalid i opis pola (robi to wspólne pole).
- * EN: The school address field in a group, with a label and the error message under the field. The message sets aria-invalid and the field description (the shared field does this).
+ * PL: Pole szkolnego adresu, z podpisem i komunikatem błędu pod polem. Komunikat ustawia aria-invalid i opis pola (robi to wspólne pole).
+ * EN: The school address field, with a label and the error message under the field. The message sets aria-invalid and the field description (the shared field does this).
  *
  * @param props - PL: adres, komunikat (albo null) i obsługa zmiany. EN: the address, the message (or null) and the change handler.
- * @returns PL: grupa z polem. EN: the group with the field.
+ * @returns PL: pole adresu. EN: the address field.
  */
 function SearchField({ email, message, onChange }: { email: string; message: string | null; onChange: (value: string) => void }) {
   return (
-    <ListGroup>
-      <TextField
+    <TextField
         label="Szkolny e-mail"
         error={message ?? undefined}
         type="email"
@@ -131,7 +130,6 @@ function SearchField({ email, message, onChange }: { email: string; message: str
         value={email}
         onChange={(event) => onChange(event.target.value)}
       />
-    </ListGroup>
   );
 }
 
