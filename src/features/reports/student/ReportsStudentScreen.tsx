@@ -1,11 +1,12 @@
 /**
- * PL: Ekran podtoru 4a (zgłoszenie: formularz i „moje zgłoszenia”). Adres /reports/student otwiera formularz, a /reports/student/moje listę „Moje zgłoszenia”.
- * EN: The screen of subtrack 4a (report: form and "my reports"). The address /reports/student opens the form, and /reports/student/moje opens the "Moje zgłoszenia" list.
+ * PL: Ekran podtoru 4a (zgłoszenie: formularz i „moje zgłoszenia”). Adres /reports/student otwiera formularz, a /reports/student/moje listę „Moje zgłoszenia”, a /reports/student/moje/:id szczegóły zgłoszenia.
+ * EN: The screen of subtrack 4a (report: form and "my reports"). The address /reports/student opens the form, /reports/student/moje opens the "Moje zgłoszenia" list, and /reports/student/moje/:id opens the report details.
  *
  * @author Szymon
  * @since 2026-10-09
  * @uses src/features/reports/student/ReportForm.tsx::ReportForm
  * @uses src/features/reports/student/MyReports.tsx::MyReports
+ * @uses src/features/reports/student/ReportDetails.tsx::ReportDetails
  * @used_by src/features/reports/student/index.ts::ReportsStudentScreen
  */
 
@@ -18,6 +19,7 @@ import './reportsStudent.css';
 // PL: Ekrany podtoru. Dostawca zapytań stoi w korzeniu aplikacji.
 // EN: The subtrack screens. The query provider stands at the app root.
 import { MyReports } from './MyReports';
+import { ReportDetails } from './ReportDetails';
 import { ReportForm } from './ReportForm';
 
 /**
@@ -34,6 +36,7 @@ export function ReportsStudentScreen() {
       <Routes>
         <Route index element={<ReportForm />} />
         <Route path="moje" element={<MyReports />} />
+        <Route path="moje/:id" element={<ReportDetails />} />
         <Route path="*" element={<ReportForm />} />
       </Routes>
     </main>
