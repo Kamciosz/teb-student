@@ -37,7 +37,7 @@
 
 /* PL: Wybór szkoły i motywu jako segmenty: wybrany ma jaśniejsze tło (--tile), reszta przezroczysta na tle --tile-2. Przy większym tekście segmenty przechodzą do drugiego wiersza, a nie łamią słów.
    EN: The school and theme choice as segments: the chosen one has the lighter background (--tile), the rest is transparent on --tile-2. With larger text the segments move to a second row instead of breaking words. */
-.pf-segment { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; background: var(--tile-2); }
+.pf-segment { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; border-radius: var(--r); background: var(--tile-2); }
 .pf-segment .ui-chip { flex: 1 1 auto; min-width: 0; padding: 0 6px; white-space: normal; }
 .pf-segment .ui-chip:not([aria-pressed='true']) { background: transparent; }
 
@@ -56,6 +56,7 @@
 .pf-passkeys .ui-list-group-block:empty { display: none; }
 .pf-passkeys .pf-hint { margin: 0; padding: 11px 16px; }
 .pf-passkeys .pf-error { margin: 0; }
+.pf-passkeys .ui-button--plain { width: 100%; justify-content: flex-start; padding-inline: 16px; }
 .pf-keys { list-style: none; margin: 0; padding: 0; }
 .pf-key-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .pf-row-text { flex: 1; min-width: 0; }
