@@ -20,6 +20,12 @@
   background: var(--bg);
 }
 
+/* PL: Kolumna ma już boczny margines, więc nagłówek go nie dubluje. Tytuł stoi w jednej linii z treścią.
+   EN: The column already has a side margin, so the header does not double it. The title lines up with the content. */
+.auth-invite .ui-screen-header {
+  padding-inline: 0;
+}
+
 /* PL: Formularz rozciąga się na całą kolumnę, żeby przyciski były przy dolnej krawędzi.
    EN: The form stretches over the whole column, so the buttons sit at the bottom edge. */
 .auth-invite__form {

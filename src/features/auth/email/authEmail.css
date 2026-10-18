@@ -20,6 +20,12 @@
   background: var(--bg);
 }
 
+/* PL: Kolumna ma już boczny margines, więc nagłówek go nie dubluje. Tytuł stoi w jednej linii z treścią.
+   EN: The column already has a side margin, so the header does not double it. The title lines up with the content. */
+.auth-email .ui-screen-header {
+  padding-inline: 0;
+}
+
 /* PL: Rząd nad formularzem na przycisk wstecz, żeby tytuł zaczynał się pod nim.
    EN: The row above the form for the back button, so the title starts below it. */
 .auth-email__top {
