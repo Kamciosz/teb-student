@@ -1,33 +1,21 @@
 /*
- * PL: Style ekranów 4b (zgłoszenia w panelu). Kolory tylko przez zmienne z tokens.css. Klasy mają przedrostek ra-.
- * EN: Styles of the 4b screens (reports in the panel). Colors only through variables from tokens.css. Classes have the ra- prefix.
+ * PL: Style ekranów 4b (zgłoszenia w panelu). Kolory tylko przez zmienne z tokens.css. Klasy mają przedrostek ra-. Nagłówek, wiersze i przyciski współdzielone (ScreenHeader, ListRow, Chip, Button) mają własne style w src/shared/ui; tu zostaje tylko to, czego nie ma we wspólnych komponentach.
+ * EN: Styles of the 4b screens (reports in the panel). Colors only through variables from tokens.css. Classes have the ra- prefix. The header, rows and buttons shared (ScreenHeader, ListRow, Chip, Button) have their own styles in src/shared/ui; here stays only what the shared components do not have.
  */
 
 /* PL: Kolumna ekranu do 430 px, z miejscem na dolny przycisk. EN: The screen column up to 430 px, with room for the bottom button. */
 .ra-screen { max-width: 430px; margin: 0 auto; padding: 12px 16px calc(176px + env(safe-area-inset-bottom)); }
 .ra-icon { width: 20px; height: 20px; flex: none; }
 
-/* PL: Górny pasek: wstecz i tytuł. EN: The top bar: back and title. */
-.ra-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.ra-top h1 { flex: 1; font-size: var(--t-md); font-weight: 700; }
-.ra-icon-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--tile); display: grid; place-items: center; color: var(--ink); text-decoration: none; }
+/* PL: Filtr etapu w jednej linii; za szerokim zestawem przewija się w poziomie, nie łamie ekranu. EN: The stage filter in one line; a set too wide scrolls sideways, it does not break the screen. */
+.ra-chips { display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 16px; overflow-x: auto; }
 
-/* PL: Chipy filtra, zawijane. EN: The filter chips, wrapping. */
-.ra-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.ra-chip { min-height: 44px; background: var(--tile); border: 0; border-radius: var(--r-sm); padding: 8px 16px; font-size: var(--t-sm); font-weight: 600; color: var(--ink); cursor: pointer; }
-.ra-chip[aria-pressed='true'] { background: var(--ink); color: var(--bg); }
+/* PL: Lista zgłoszeń: bez punktorów i marginesów przeglądarki. Oddzielenie między wierszami jak w ListRow, ale między elementami listy. EN: The report list: no bullets and no browser margins. The separator between rows as in ListRow, but between list items. */
+.ra-list { margin: 0; padding: 0; list-style: none; }
+.ra-list li + li .ui-list-row::before { content: ''; position: absolute; top: 0; right: 0; left: 16px; height: 1px; background: var(--line); }
 
-/* PL: Lista kafli zgłoszeń. EN: The report tile list. */
-.ra-list { list-style: none; display: grid; gap: 12px; }
-.ra-tile { display: flex; flex-direction: column; gap: 8px; background: var(--tile); border-radius: var(--r); padding: 16px; color: var(--ink); text-decoration: none; }
-.ra-tile-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.ra-tile-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.ra-tile-foot .ra-tag-stage { margin-left: auto; }
-.ra-desc, .ra-title { overflow-wrap: anywhere; }
-.ra-title { font-size: var(--t-lg); line-height: 1.2; font-weight: 700; margin: 12px 0 16px; }
-.ra-tag { background: var(--tile-2); border-radius: var(--r-sm); padding: 4px 8px; font-size: var(--t-xs); font-weight: 700; }
-.ra-tag-stage { background: var(--ink); color: var(--bg); }
-.ra-small { font-size: var(--t-sm); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+/* PL: Załatwione to jedyny wiersz w kolorze sukcesu (wartość po prawej). EN: Resolved is the only row in the success color (the value on the right). */
+.ra-row--done .ui-list-row-value { color: var(--success); }
 
 /* PL: Pusty stan i komunikat błędu. EN: The empty state and the error message. */
 .ra-empty { display: grid; justify-items: center; gap: 8px; background: var(--tile); border-radius: var(--r); padding: 24px; text-align: center; }
@@ -37,18 +25,28 @@
 .ra-notice { display: flex; align-items: flex-start; gap: 8px; background: var(--tile-2); border-radius: var(--r); padding: 12px; font-size: var(--t-sm); }
 .ra-notice span { flex: 1; overflow-wrap: anywhere; }
 
+/* PL: Nagłówek zgłoszenia w szczegółach: znacznik kategorii, data, tytuł. EN: The report header in the detail: the category tag, the date, the title. */
+.ra-small { font-size: var(--t-sm); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.ra-tile-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ra-tag { background: var(--tile-2); border-radius: var(--r-sm); padding: 4px 8px; font-size: var(--t-xs); font-weight: 700; }
+.ra-title { font-size: var(--t-lg); line-height: 1.2; font-weight: 700; margin: 12px 0 16px; overflow-wrap: anywhere; }
+
 /* PL: Zdjęcie w szczegółach: nie szersze niż ekran. EN: The photo in the detail: not wider than the screen. */
 .ra-photo { display: block; max-width: 100%; height: auto; border-radius: var(--r); margin-bottom: 24px; }
-/* PL: Szczegół: kafel autora, etykiety, pasek wyboru i historia. EN: The detail: the author tile, labels, the segmented control and the history. */
+
+/* PL: Szczegół: kafel autora, etykiety, pole odpowiedzi i historia. EN: The detail: the author tile, labels, the answer field and the history. */
 .ra-author { display: flex; align-items: center; gap: 12px; background: var(--tile); border-radius: var(--r); padding: 16px; margin-bottom: 24px; }
 .ra-author .ra-icon { color: var(--ink-2); }
 .ra-author div { flex: 1; min-width: 0; }
 .ra-label { font-size: var(--t-sm); font-weight: 600; color: var(--ink-2); margin-bottom: 8px; }
 .ra-note { display: block; width: 100%; box-sizing: border-box; min-height: 96px; margin-bottom: 4px; border: 1px solid var(--tile-2); border-radius: var(--r); padding: 12px; background: var(--tile); color: inherit; font: inherit; resize: vertical; }
+
+/* PL: Pasek wyboru etapu i kolejności (radio jako przełącznik). EN: The stage and order switch (radio buttons as a switch). */
 .ra-segments { display: flex; gap: 4px; background: var(--tile); border-radius: var(--r); padding: 4px; margin-bottom: 24px; }
 .ra-segment { flex: 1; min-width: 0; min-height: 48px; border: 0; border-radius: var(--r-sm); background: none; padding: 0 4px; font-size: var(--t-sm); font-weight: 600; color: var(--ink); cursor: pointer; overflow-wrap: anywhere; }
 .ra-segment[aria-checked='true'] { background: var(--ink); color: var(--bg); }
-.ra-history { list-style: none; background: var(--tile); border-radius: var(--r); overflow: hidden; }
+
+.ra-history { margin: 0; padding: 0; list-style: none; background: var(--tile); border-radius: var(--r); overflow: hidden; }
 .ra-history li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 16px; }
 .ra-history li + li { border-top: 1px solid var(--line); }
 /* PL: Odpowiedź dla autora pod wpisem historii, w całej szerokości; długi tekst bez spacji łamiemy, żeby nie wypchnął ekranu w wąskim telefonie. EN: The answer for the author under the history entry, full width; long text without spaces breaks, so it does not push the screen out on a narrow phone. */
@@ -56,5 +54,4 @@
 
 /* PL: Dolny przycisk z uwagami nad nim. EN: The bottom button with the notes above it. */
 .ra-cta { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); width: min(calc(100% - 32px), 398px); display: grid; gap: 12px; }
-.ra-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; border: 0; border-radius: var(--r); padding: 16px; background: var(--accent); color: var(--on-accent); font-weight: 700; cursor: pointer; }
-.ra-btn:disabled { background: var(--tile-2); color: var(--ink-2); cursor: not-allowed; }
+.ra-save { width: 100%; }

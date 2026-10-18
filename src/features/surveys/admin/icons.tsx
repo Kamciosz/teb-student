@@ -1,12 +1,14 @@
 /**
- * PL: Ikony ekranów ankiet w panelu (podtor 5b): strzałki, plus, krzyżyk, kłódka, brak sieci, ostrzeżenie i wysłanie. Rysunki są z biblioteki Lucide z makiet (docs/projekt/EKRANY.md), wpisane jako SVG, żeby nie dodawać pakietu. Podtor 5a ma własne ikony w swoim katalogu, a inne podtory ich nie importują.
- * EN: The icons of the survey panel screens (subtrack 5b): arrows, plus, cross, lock, no network, warning and send. The drawings are from the Lucide library used in the mockups (docs/projekt/EKRANY.md), written as SVG so as not to add a package. Subtrack 5a has its own icons in its directory, and other subtracks do not import them.
+ * PL: Ikony ekranów ankiet w panelu (podtor 5b): plus, krzyżyk, kłódka, brak sieci, ostrzeżenie i wysłanie. Rysunki są z biblioteki Lucide z makiet (docs/projekt/EKRANY.md), wpisane jako SVG, żeby nie dodawać pakietu. Podtor 5a ma własne ikony w swoim katalogu, a inne podtory ich nie importują.
+ * EN: The icons of the survey panel screens (subtrack 5b): plus, cross, lock, no network, warning and send. The drawings are from the Lucide library used in the mockups (docs/projekt/EKRANY.md), written as SVG so as not to add a package. Subtrack 5a has its own icons in its directory, and other subtracks do not import them.
  *
  * @author Jakub
  * @since 2026-10-12
- * @used_by src/features/surveys/admin/PanelParts.tsx::ScreenTop
- * @used_by src/features/surveys/admin/SurveyListScreen.tsx::SurveyListScreen
+ * @used_by src/features/surveys/admin/PanelParts.tsx::ErrorMessage
+ * @used_by src/features/surveys/admin/QuestionEditor.tsx::QuestionEditor
  * @used_by src/features/surveys/admin/NewSurveyScreen.tsx::NewSurveyScreen
+ * @used_by src/features/surveys/admin/ResultsScreen.tsx::ResultsScreen
+ * @used_by src/features/surveys/admin/SurveyListScreen.tsx::SurveyListScreen
  */
 
 import type { ReactNode } from 'react';
@@ -25,21 +27,6 @@ function Icon({ size, children }: { size: number; children: ReactNode }) {
     </svg>
   );
 }
-
-/** PL: Strzałka w lewo (przycisk „Wstecz”). EN: The left arrow (the "Wstecz" button). */
-export const ArrowLeftIcon = () => (
-  <Icon size={24}>
-    <path d="m12 19-7-7 7-7" />
-    <path d="M19 12H5" />
-  </Icon>
-);
-
-/** PL: Szewron w prawo na kaflu ankiety. EN: The right chevron on a survey tile. */
-export const ChevronRightIcon = () => (
-  <Icon size={20}>
-    <path d="m9 18 6-6-6-6" />
-  </Icon>
-);
 
 /** PL: Plus (nowa ankieta, dodanie odpowiedzi i pytania). EN: Plus (a new survey, adding an option and a question). */
 export const PlusIcon = () => (

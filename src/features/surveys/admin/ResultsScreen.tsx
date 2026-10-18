@@ -7,11 +7,21 @@
  * @uses src/features/surveys/admin/surveyQueries.ts::useSurveyResults
  * @uses src/features/surveys/admin/surveyQueries.ts::useIsOnline
  * @uses src/features/surveys/admin/surveyApi.ts::fetchResultsCsv
+ * @uses src/shared/ui/ListGroup.tsx::ListGroup
+ * @uses src/shared/ui/ListRow.tsx::ListRow
+ * @uses src/shared/ui/ProgressBar.tsx::ProgressBar
+ * @uses src/shared/ui/Button.tsx::Button
  * @used_by src/features/surveys/admin/SurveysAdminScreen.tsx::SurveysAdminScreen
  */
 
 import { useState } from 'react';
 import { useParams } from 'react-router';
+// PL: Grupy, wiersze i pasek postępu w stylu systemowym.
+// EN: The groups, rows and progress bar in the system style.
+import { ListGroup } from '../../../shared/ui/ListGroup';
+import { ListRow } from '../../../shared/ui/ListRow';
+import { ProgressBar } from '../../../shared/ui/ProgressBar';
+import { Button } from '../../../shared/ui/Button';
 import { describeQuestions, describeResponses, formatShortDate, OPTION_LETTERS } from './format';
 import { LockIcon, WifiOffIcon } from './icons';
 import { ErrorMessage, PanelNote, ScreenTop } from './PanelParts';
@@ -38,8 +48,8 @@ function ResultsHeader({ results, summary }: { results: SurveyResults; summary: 
 }
 
 /**
- * PL: Rysuje ekran 6.5c: pasek z pięcioma odcinkami, liczba odpowiedzi i wyjaśnienie, dlaczego nie ma wyników.
- * EN: Draws screen 6.5c: a bar with five segments, the response count and the explanation why there are no results.
+ * PL: Rysuje ekran 6.5c: cienki pasek postępu do progu, podpis z liczbą i wyjaśnienie, dlaczego nie ma wyników.
+ * EN: Draws screen 6.5c: a thin progress bar to the threshold, the caption with the count and the explanation why there are no results.
  *
  * @param props - PL: wyniki bez rozkładu. EN: the results without distribution.
  * @returns PL: ekran. EN: the screen.
@@ -50,41 +60,35 @@ function TooFewResults({ results }: { results: SurveyResults }) {
     <main className="sa" data-subtrack="5b">
       <ScreenTop title="Wyniki" backTo="/surveys/admin" />
       <ResultsHeader results={results} summary={describeQuestions(results.questionCount)} />
-      <div className="sa-tile sa-tile--center">
-        {/* PL: Pasek postępu do progu: tyle odcinków, ile odpowiedzi potrzeba, wypełnione tyle, ile jest. EN: The progress bar to the threshold: as many segments as responses needed, filled as many as there are. */}
-        <div className="sa-segments" role="img" aria-label={`${responseCount} z ${minResponses} odpowiedzi`}>
-          {Array.from({ length: minResponses }, (_, index) => (
-            <span key={index} className={index < responseCount ? 'sa-segments__part sa-segments__part--on' : 'sa-segments__part'} />
-          ))}
+      <ListGroup>
+        <div className="sa-tile sa-tile--center">
+          {/* PL: Pasek postępu do progu: wypełniony tyle, ile jest odpowiedzi. EN: The progress bar to the threshold: filled as far as there are responses. */}
+          <ProgressBar value={responseCount} max={minResponses} label={`${responseCount} z ${minResponses} odpowiedzi`} />
+          <p className="sa-label sa-label--tight">{`z ${minResponses} odpowiedzi`}</p>
+          <h2 className="sa-h2">{`Wyniki zobaczysz od ${minResponses} odpowiedzi. Teraz: ${responseCount}.`}</h2>
+          <p className="sa-small">Przy mniejszej liczbie łatwo rozpoznać, kto głosował.</p>
         </div>
-        <p className="sa-numxl">{responseCount}</p>
-        <p className="sa-label sa-label--tight">{`z ${minResponses} odpowiedzi`}</p>
-        <h2 className="sa-h2">{`Wyniki zobaczysz od ${minResponses} odpowiedzi. Teraz: ${responseCount}.`}</h2>
-        <p className="sa-small">Przy mniejszej liczbie łatwo rozpoznać, kto głosował.</p>
-      </div>
+      </ListGroup>
     </main>
   );
 }
 
 /**
- * PL: Rysuje jedną odpowiedź w wynikach: litera, treść, „głosy · procent” i pasek o szerokości udziału.
- * EN: Draws one option in the results: the letter, the text, "votes · percent" and a bar as wide as the share.
+ * PL: Rysuje jedną odpowiedź w wynikach: litera (przy skali bez litery), tytuł, „głosy · procent” po prawej i cienki pasek udziału pod spodem.
+ * EN: Draws one option in the results: the letter (none for the scale), the title, "votes · percent" on the right and a thin share bar underneath.
  *
  * @param props - PL: litera i odpowiedź z wynikiem. EN: the letter and the option with its result.
  * @returns PL: pozycja listy. EN: the list item.
  */
-function ResultBar({ letter, option }: { letter: string; option: OptionResult }) {
+function ResultBar({ letter, option }: { letter: string | undefined; option: OptionResult }) {
   return (
-    <li className="sa-result">
-      <div className="sa-result__row">
-        <span className="sa-key">{letter}</span>
-        <span className="sa-result__label">{option.label}</span>
-        <span className="sa-result__value">{`${option.votes} · ${option.percent}%`}</span>
-      </div>
-      {/* PL: Pasek tylko ilustruje liczbę z wiersza nad nim, więc czytnik ekranu go pomija. EN: The bar only illustrates the number in the row above it, so the screen reader skips it. */}
-      <div className="sa-bar" aria-hidden="true">
-        <span className="sa-bar__fill" style={{ width: `${option.percent}%` }} />
-      </div>
+    <li>
+      <ListRow
+        icon={letter}
+        title={option.label}
+        value={`${option.votes} · ${option.percent}%`}
+        subtitle={<ProgressBar value={option.percent} label={`${option.label}: ${option.percent}%`} />}
+      />
     </li>
   );
 }
@@ -125,9 +129,9 @@ function DownloadCsvButton({ surveyId }: { surveyId: string }) {
 
   return (
     <>
-      <button type="button" className="sa-button sa-button--outline" disabled={!isOnline || busy} onClick={() => void download()}>
+      <Button variant="plain" disabled={!isOnline || busy} onClick={() => void download()}>
         Pobierz CSV
-      </button>
+      </Button>
       {isOnline ? null : <PanelNote icon={<WifiOffIcon />} text="Pobranie wymaga internetu." />}
       {failed ? <ErrorMessage text="Nie udało się pobrać pliku. Spróbuj ponownie za chwilę." /> : null}
     </>
@@ -165,23 +169,25 @@ function AverageNote({ question }: { question: QuestionResult }) {
 }
 
 /**
- * PL: Lista krótkich odpowiedzi jednego pytania: same teksty, bez procentów i bez autorów. Serwer już je posortował alfabetycznie.
- * EN: The list of short answers of one question: the texts only, without percentages and without authors. The server has already sorted them alphabetically.
+ * PL: Lista krótkich odpowiedzi jednego pytania w grupie: same teksty, bez procentów i bez autorów. Serwer już je posortował alfabetycznie.
+ * EN: The list of short answers of one question in a group: the texts only, without percentages and without authors. The server has already sorted them alphabetically.
  *
  * @param props - PL: teksty odpowiedzi. EN: the answer texts.
- * @returns PL: notatka i lista. EN: the note and the list.
+ * @returns PL: notatka i grupa z listą. EN: the note and the group with the list.
  */
 function TextAnswers({ texts }: { texts: string[] }) {
   return (
     <>
       <p className="sa-small">{TEXTS.textsNote}</p>
-      <ul className="sa-tile sa-results">
-        {texts.map((text, place) => (
-          <li key={place} className="sa-result__label">
-            {text}
-          </li>
-        ))}
-      </ul>
+      <ListGroup>
+        <ul className="sa-list sa-results">
+          {texts.map((text, place) => (
+            <li key={place}>
+              <ListRow title={text} />
+            </li>
+          ))}
+        </ul>
+      </ListGroup>
     </>
   );
 }
@@ -210,18 +216,20 @@ function QuestionResults({ results }: { results: SurveyResults }) {
       {question.type === 'short_text' ? (
         <TextAnswers texts={question.texts ?? []} />
       ) : (
-        <ul className="sa-tile sa-results">
-          {question.options.map((option, place) => (
-            <ResultBar key={place} letter={question.type === 'scale_1_5' ? '' : OPTION_LETTERS[place] ?? ''} option={option} />
-          ))}
-        </ul>
+        <ListGroup>
+          <ul className="sa-list">
+            {question.options.map((option, place) => (
+              <ResultBar key={place} letter={question.type === 'scale_1_5' ? undefined : OPTION_LETTERS[place]} option={option} />
+            ))}
+          </ul>
+        </ListGroup>
       )}
       <PanelNote icon={<LockIcon />} text="Wyniki są zbiorcze. Nie widać, kto co wybrał." />
       <DownloadCsvButton surveyId={results.id} />
       {index < questions.length - 1 ? (
-        <button type="button" className="sa-button sa-button--outline" onClick={() => setIndex(index + 1)}>
+        <Button variant="plain" onClick={() => setIndex(index + 1)}>
           Następne pytanie
-        </button>
+        </Button>
       ) : null}
     </main>
   );
