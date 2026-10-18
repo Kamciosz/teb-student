@@ -1,6 +1,6 @@
 /**
- * PL: Test pustego stanu: tytuł w znaczniku i treść dodatkowa tylko wtedy, gdy jest podana. Pusty stan nie jest sterowny, więc nie ma klawiatury ani stanu wyłączenia. Przycisk podany w treści ma swoje testy w Button.test.tsx.
- * EN: Test of the empty state: the title in the markup and the extra content only when given. The empty state is not a control, so it has no keyboard or disabled state. A button given in the content has its own tests in Button.test.tsx.
+ * PL: Test pustego stanu: tytuł jako nagłówek h2 i treść dodatkowa tylko wtedy, gdy jest podana. Pusty stan nie jest sterowny, więc nie ma klawiatury ani stanu wyłączenia. Przycisk podany w treści ma swoje testy w Button.test.tsx.
+ * EN: Test of the empty state: the title as an h2 heading and the extra content only when given. The empty state is not a control, so it has no keyboard or disabled state. A button given in the content has its own tests in Button.test.tsx.
  *
  * @author Kacper
  * @since 2026-10-13
@@ -25,6 +25,12 @@ describe('pusty stan / the empty state', () => {
     expect(html).toContain('class="ui-empty"');
     expect(html).toContain('Nie ma ankiet');
     expect(html).not.toContain('ui-empty-body');
+  });
+
+  it('tytuł jest nagłówkiem h2 / the title is an h2 heading', () => {
+    const html = renderToString(<EmptyState title="Nie ma ankiet" />);
+
+    expect(html).toContain('<h2 class="ui-empty-title">Nie ma ankiet</h2>');
   });
 
   it('dodatkowa treść pojawia się pod tytułem, gdy jest podana / extra content appears below the title when given', () => {
