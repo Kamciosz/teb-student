@@ -6,104 +6,95 @@
  * @since 2026-10-09
  * @uses src/features/surveys/vote/surveyQueries.ts::useSurveyList
  * @uses src/shared/index.ts::Dock
+ * @uses src/shared/index.ts::ScreenHeader
+ * @uses src/shared/index.ts::ListGroup
+ * @uses src/shared/index.ts::ListRow
+ * @uses src/shared/index.ts::Button
  * @used_by src/features/surveys/vote/SurveysVoteScreen.tsx::SurveysVoteScreen
  */
 
-// PL: Link do ekranu ankiety bez przeładowania strony.
-// EN: A link to the survey screen without reloading the page.
-import { Link } from 'react-router';
-// PL: Dolny pasek nawigacji. Wg EKRANY.md ma go tylko lista ankiet.
-// EN: The bottom navigation bar. Per EKRANY.md only the survey list has it.
-import { Dock } from '../../../shared';
-import { CircleCheckIcon } from './icons';
+// PL: Klocki wspólnego wyglądu: nagłówek ekranu, grupy i wiersze listy, przycisk i dolny pasek.
+// EN: The shared look pieces: the screen header, the list groups and rows, the button and the bottom bar.
+import { Button, Dock, ListGroup, ListRow, ScreenHeader } from '../../../shared';
 import { daysWord, describeSurvey, formatClosesAt, formatShortDate } from './format';
 import { useSurveyList } from './surveyQueries';
 import type { ActiveSurvey, EndedSurvey } from './types';
 
 /**
- * PL: Kafel ankiety jeszcze niewypełnionej: temat, tytuł, opis, przycisk „Wypełnij” i licznik dni.
- * EN: The tile of a survey not yet filled in: topic, title, description, the "Wypełnij" button and the day counter.
+ * PL: Wiersz ankiety jeszcze niewypełnionej: tytuł, liczba pytań i termin, po prawej dni do końca. Dzisiejszy termin jest wyróżniony. Cały wiersz otwiera ankietę.
+ * EN: The row of a survey not yet filled in: the title, the number of questions and the deadline, on the right the days left. Today's deadline is highlighted. The whole row opens the survey.
  *
  * @param props - PL: ankieta. EN: the survey.
- * @returns PL: kafel. EN: the tile.
+ * @returns PL: wiersz listy. EN: the list row.
  */
-function OpenSurveyTile({ survey }: { survey: ActiveSurvey }) {
+function OpenSurveyRow({ survey }: { survey: ActiveSurvey }) {
+  // PL: Dziś oznacza ostatni dzień, więc zamiast „za 0 dni” piszemy „Dziś”.
+  // EN: Today means the last day, so instead of "za 0 dni" we write "Dziś".
+  const isToday = survey.daysLeft === 0;
+
   return (
-    <li className="vote-tile vote-tile--row">
-      <div className="vote-tile__main">
-        {survey.label === null ? null : <p className="vote-label">{survey.label}</p>}
-        <h3 className="vote-tile__title">{survey.title}</h3>
-        <p className="vote-small">{describeSurvey(survey.questionCount)}</p>
-        {survey.closesAt === null ? null : <p className="vote-small">{formatClosesAt(survey.closesAt)}</p>}
-        <Link className="vote-button vote-button--outline" to={`/surveys/vote/${survey.id}`}>
-          Wypełnij
-        </Link>
-      </div>
-      <div className="vote-counter">
-        <p className="vote-counter__num">{survey.daysLeft}</p>
-        <p className="vote-label vote-label--ink">{daysWord(survey.daysLeft)}</p>
-      </div>
-    </li>
+    <ListRow
+      to={`/surveys/vote/${survey.id}`}
+      title={survey.title}
+      subtitle={
+        <>
+          {survey.label === null ? null : <span className="vote-row-line">{survey.label}</span>}
+          <span className="vote-row-line">{describeSurvey(survey.questionCount)}</span>
+          {survey.closesAt === null ? null : <span className="vote-row-line">{formatClosesAt(survey.closesAt)}</span>}
+        </>
+      }
+      value={isToday ? 'Dziś' : `za ${survey.daysLeft} ${daysWord(survey.daysLeft)}`}
+      className={isToday ? 'vote-row--today' : undefined}
+    />
   );
 }
 
 /**
- * PL: Kafel ankiety już wypełnionej: znacznik „Wypełniona”, tytuł i podziękowanie.
- * EN: The tile of an already filled survey: the "Wypełniona" mark, the title and a thank-you.
+ * PL: Wiersz ankiety już wypełnionej: tytuł, podziękowanie i znacznik „Wypełniona” po prawej. Nie otwiera ekranu.
+ * EN: The row of an already filled survey: the title, a thank-you and the "Wypełniona" mark on the right. It does not open a screen.
  *
  * @param props - PL: ankieta. EN: the survey.
- * @returns PL: kafel. EN: the tile.
+ * @returns PL: wiersz listy. EN: the list row.
  */
-function FilledSurveyTile({ survey }: { survey: ActiveSurvey }) {
-  return (
-    <li className="vote-tile">
-      <p className="vote-filled">
-        <CircleCheckIcon />
-        <span className="vote-label vote-label--ink">Wypełniona</span>
-      </p>
-      <h3 className="vote-tile__title">{survey.title}</h3>
-      <p className="vote-small">Dziękujemy za głos. Wyniki widzi Samorząd.</p>
-    </li>
-  );
+function FilledSurveyRow({ survey }: { survey: ActiveSurvey }) {
+  return <ListRow className="vote-row--filled" title={survey.title} subtitle="Dziękujemy za głos. Wyniki widzi Samorząd." value="Wypełniona" />;
 }
 
 /**
- * PL: Kafel ankiety zamkniętej: tytuł i stan „Ankieta zamknięta” z dniem zamknięcia.
- * EN: The tile of a closed survey: the title and the state "Ankieta zamknięta" with the closing day.
+ * PL: Wiersz ankiety zamkniętej: tytuł i stan „Ankieta zamknięta” z dniem zamknięcia.
+ * EN: The row of a closed survey: the title and the state "Ankieta zamknięta" with the closing day.
  *
  * @param props - PL: ankieta. EN: the survey.
- * @returns PL: kafel. EN: the tile.
+ * @returns PL: wiersz listy. EN: the list row.
  */
-function EndedSurveyTile({ survey }: { survey: EndedSurvey }) {
-  return (
-    <li className="vote-tile">
-      <h3 className="vote-tile__title">{survey.title}</h3>
-      <p className="vote-small">Ankieta zamknięta · {formatShortDate(survey.endedOn)}</p>
-    </li>
-  );
+function EndedSurveyRow({ survey }: { survey: EndedSurvey }) {
+  return <ListRow title={survey.title} subtitle={`Ankieta zamknięta · ${formatShortDate(survey.endedOn)}`} />;
 }
 
 /**
- * PL: Sekcje listy: „Aktywne” (albo informacja, że ich nie ma) i „Zakończone”, gdy są.
- * EN: The list sections: "Aktywne" (or a note that there are none) and "Zakończone" when there are some.
+ * PL: Grupy listy: „Aktywne” (albo informacja, że ich nie ma) i „Zakończone”, gdy są.
+ * EN: The list groups: "Aktywne" (or a note that there are none) and "Zakończone" when there are some.
  *
  * @param props - PL: ankiety trwające i zakończone. EN: the running and ended surveys.
- * @returns PL: sekcje. EN: the sections.
+ * @returns PL: grupy listy. EN: the list groups.
  */
 function SurveySections({ active, ended }: { active: ActiveSurvey[]; ended: EndedSurvey[] }) {
+  // PL: Najbliższy termin na górze. Kopia tablicy, bo lista z pamięci podręcznej nie może zmienić się w miejscu.
+  // EN: The nearest deadline on top. A copy of the array, because the cached list must not change in place.
+  const byDeadline = [...active].sort((a, b) => a.daysLeft - b.daysLeft);
+
   return (
     <>
-      <h2 className="vote-label">Aktywne</h2>
-      {active.length === 0 ? <p className="vote-small">Nie ma teraz aktywnych ankiet.</p> : null}
-      <ul className="vote-list">
-        {active.map((survey) => (survey.hasVoted ? <FilledSurveyTile key={survey.id} survey={survey} /> : <OpenSurveyTile key={survey.id} survey={survey} />))}
-      </ul>
-      {ended.length === 0 ? null : <h2 className="vote-label vote-label--spaced">Zakończone</h2>}
-      <ul className="vote-list">
-        {ended.map((survey) => (
-          <EndedSurveyTile key={survey.id} survey={survey} />
-        ))}
-      </ul>
+      <ListGroup header="Aktywne" footer={byDeadline.length === 0 ? 'Nie ma teraz aktywnych ankiet.' : undefined}>
+        {byDeadline.map((survey) => (survey.hasVoted ? <FilledSurveyRow key={survey.id} survey={survey} /> : <OpenSurveyRow key={survey.id} survey={survey} />))}
+      </ListGroup>
+      {ended.length === 0 ? null : (
+        <ListGroup header="Zakończone">
+          {ended.map((survey) => (
+            <EndedSurveyRow key={survey.id} survey={survey} />
+          ))}
+        </ListGroup>
+      )}
     </>
   );
 }
@@ -120,14 +111,14 @@ export function SurveyListScreen() {
   return (
     <>
       <main className="vote" data-subtrack="5a">
-        <h1>Ankiety</h1>
+        <ScreenHeader title="Ankiety" />
         {query.data !== undefined ? <SurveySections active={query.data.active} ended={query.data.ended} /> : null}
         {query.data === undefined && query.isError ? (
           <div className="vote-message" role="alert">
             <p>Nie udało się pobrać ankiet. Sprawdź połączenie z internetem.</p>
-            <button type="button" className="vote-button vote-button--outline" onClick={() => void query.refetch()}>
+            <Button variant="plain" onClick={() => void query.refetch()}>
               Spróbuj ponownie
-            </button>
+            </Button>
           </div>
         ) : null}
         {query.data === undefined && !query.isError && query.fetchStatus === 'paused' ? <p className="vote-small" role="status">Brak internetu. Ankiety pojawią się, gdy wróci połączenie.</p> : null}

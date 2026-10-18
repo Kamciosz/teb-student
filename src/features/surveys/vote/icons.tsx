@@ -1,11 +1,10 @@
 /**
- * PL: Cztery ikony ekranów ankiety (znacznik, znacznik w kółku, strzałka w lewo, kłódka). Rysunki są z biblioteki Lucide z makiet (docs/projekt/EKRANY.md), wpisane jako SVG, żeby nie dodawać pakietu.
- * EN: Four icons of the survey screens (check, check in a circle, left arrow, lock). The drawings are from the Lucide library used in the mockups (docs/projekt/EKRANY.md), written as SVG so as not to add a package.
+ * PL: Dwie ikony ekranów ankiety (znacznik i kłódka). Rysunki są z biblioteki Lucide z makiet (docs/projekt/EKRANY.md), wpisane jako SVG, żeby nie dodawać pakietu.
+ * EN: Two icons of the survey screens (check and lock). The drawings are from the Lucide library used in the mockups (docs/projekt/EKRANY.md), written as SVG so as not to add a package.
  *
  * @author Jakub
  * @since 2026-10-09
- * @used_by src/features/surveys/vote/SurveyListScreen.tsx::SurveyListScreen
- * @used_by src/features/surveys/vote/SurveyFlowScreen.tsx::SurveyFlowScreen
+ * @used_by src/features/surveys/vote/QuestionStep.tsx::QuestionStep
  * @used_by src/features/surveys/vote/SurveyDoneScreen.tsx::SurveyDoneScreen
  */
 
@@ -33,26 +32,6 @@ export function CheckIcon({ size = 44 }: { size?: number }) {
   return (
     <Icon size={size} stroke={2.5}>
       <path d="M20 6 9 17l-5-5" />
-    </Icon>
-  );
-}
-
-/** PL: Znacznik w kółku przy wypełnionej ankiecie. EN: The check in a circle next to a filled survey. */
-export function CircleCheckIcon({ size = 20 }: { size?: number }) {
-  return (
-    <Icon size={size} stroke={1.75}>
-      <circle cx="12" cy="12" r="10" />
-      <path d="m9 12 2 2 4-4" />
-    </Icon>
-  );
-}
-
-/** PL: Strzałka w lewo przycisku „Wstecz”. EN: The left arrow of the "Wstecz" button. */
-export function ArrowLeftIcon({ size = 24 }: { size?: number }) {
-  return (
-    <Icon size={size} stroke={1.75}>
-      <path d="m12 19-7-7 7-7" />
-      <path d="M19 12H5" />
     </Icon>
   );
 }
