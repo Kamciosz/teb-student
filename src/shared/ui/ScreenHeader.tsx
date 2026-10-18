@@ -10,7 +10,7 @@
 
 // PL: Typy węzłów Reacta.
 // EN: The React node types.
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 // PL: Link do ekranu nadrzędnego.
 // EN: The link to the parent screen.
 import { Link } from 'react-router';
@@ -33,6 +33,8 @@ export type ScreenHeaderProps = {
   eyebrow?: ReactNode;
   /** PL: Akcja po prawej, np. przycisk tekstowy „Edytuj”. EN: The action on the right, for example the "Edit" text button. */
   action?: ReactNode;
+  /** PL: Gdy prawda, tytuł dostaje fokus po wejściu na ekran, żeby czytnik ekranu zaczął od tytułu. EN: When true, the title gets focus on entering the screen, so a screen reader starts from the title. */
+  focusTitle?: boolean;
 };
 
 /**
@@ -42,7 +44,18 @@ export type ScreenHeaderProps = {
  * @param props - PL: tytuł, powrót i akcja. EN: the title, the way back and the action.
  * @returns PL: nagłówek ekranu. EN: the screen header.
  */
-export function ScreenHeader({ title, backTo, backLabel = 'Wstecz', eyebrow, action }: ScreenHeaderProps) {
+export function ScreenHeader({ title, backTo, backLabel = 'Wstecz', eyebrow, action, focusTitle = false }: ScreenHeaderProps) {
+  // PL: Odwołanie do tytułu, któremu dajemy fokus. EN: The reference to the title that gets focus.
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  // PL: Po wejściu na ekran ustaw fokus na tytule, jeśli ekran o to prosi. EN: After entering the screen, put focus on the title, if the screen asks for it.
+  useEffect(() => {
+    if (focusTitle) titleRef.current?.focus();
+  }, [focusTitle]);
+
+  // PL: Tytuł z fokusem musi przyjmować fokus z kodu. EN: A title with focus must accept focus from code.
+  const focusProps = focusTitle ? { ref: titleRef, tabIndex: -1 } : {};
+
   // PL: Ekran podrzędny: trzy kolumny, środkowa z tytułem. EN: A sub-screen: three columns, the middle one with the title.
   if (backTo !== undefined) {
     return (
@@ -50,7 +63,7 @@ export function ScreenHeader({ title, backTo, backLabel = 'Wstecz', eyebrow, act
         <Link to={backTo} className="ui-screen-header-back">
           <span aria-hidden="true">‹</span> {backLabel}
         </Link>
-        <h1 className="ui-screen-header-bar-title">{title}</h1>
+        <h1 className="ui-screen-header-bar-title" {...focusProps}>{title}</h1>
         <span className="ui-screen-header-action">{action}</span>
       </header>
     );
@@ -61,7 +74,7 @@ export function ScreenHeader({ title, backTo, backLabel = 'Wstecz', eyebrow, act
     <header className="ui-screen-header ui-screen-header--large">
       {action !== undefined ? <span className="ui-screen-header-action ui-screen-header-action--corner">{action}</span> : null}
       {eyebrow !== undefined ? <p className="ui-screen-header-eyebrow">{eyebrow}</p> : null}
-      <h1 className="ui-screen-header-title">{title}</h1>
+      <h1 className="ui-screen-header-title" {...focusProps}>{title}</h1>
     </header>
   );
 }
