@@ -1,6 +1,6 @@
 /**
- * PL: Test pulpitu (podtor 9) w przeglądarce: cztery kafelki z danymi i adresy, do których prowadzą, pusty stan każdego kafelka, błąd serwera, widok bez internetu (zapisane dane), szerokość 320 px oraz jeden test na prawdziwym serwerze i lokalnej bazie D1. Większość odpowiedzi serwera jest podstawiona (page.route), bo atrapa nie zależy od dnia uruchomienia i od logowania. Test oblewa na gałęzi bez zmiany, bo tam adres główny pokazuje tylko „W budowie”.
- * EN: Test of the dashboard (subtrack 9) in the browser: the four tiles with data and the addresses they lead to, the empty state of every tile, a server error, the view without internet (saved data), the 320 px width and one test against the real server and the local D1 database. Most server answers are stubbed (page.route), because a stub does not depend on the day of the run or on signing in. The test fails on a branch without the change, because there the root address shows only "W budowie".
+ * PL: Test pulpitu (podtor 9) w przeglądarce: góra z licznikiem do dzwonka i blokiem „Ważne”, sekcja „Do zrobienia” z ankietą i zgłoszeniem, sekcja „Informacje” z ogłoszeniami, adresy, do których prowadzą, pusty stan, błąd serwera, widok bez internetu (zapisane dane), szerokość 320 px, układanie sekcji oraz jeden test na prawdziwym serwerze i lokalnej bazie D1. Większość odpowiedzi serwera jest podstawiona (page.route), bo atrapa nie zależy od dnia uruchomienia i od logowania. Test oblewa na gałęzi bez zmiany, bo tam adres główny pokazuje tylko „W budowie”.
+ * EN: Test of the dashboard (subtrack 9) in the browser: the top with the bell countdown and the "Ważne" block, the "Do zrobienia" section with the survey and the report, the "Informacje" section with the announcements, the addresses they lead to, the empty state, a server error, the view without internet (saved data), the 320 px width, arranging the sections and one test against the real server and the local D1 database. Most server answers are stubbed (page.route), because a stub does not depend on the day of the run or on signing in. The test fails on a branch without the change, because there the root address shows only "W budowie".
  *
  * @author Kacper
  * @since 2026-10-09
@@ -74,22 +74,36 @@ async function mockDashboard(page: Page, body: unknown): Promise<void> {
   await page.route('**/api/dashboard', (route) => route.fulfill({ json: body }));
 }
 
-// PL: Wszystkie kafelki z danymi i dolny pasek.
-// EN: All tiles with data and the bottom bar.
-test('kafelki pokazują ważny wpis, ankietę, zgłoszenie i trzy ogłoszenia / the tiles show the important entry, the survey, the report and three announcements', async ({ page }) => {
+/**
+ * PL: Znajduje grupę wierszy (sekcję) po nagłówku, np. „Do zrobienia” albo „Informacje”.
+ * EN: Finds the group of rows (the section) by its header, e.g. "Do zrobienia" or "Informacje".
+ *
+ * @param page - PL: strona testu. EN: the test page.
+ * @param name - PL: tekst nagłówka sekcji. EN: the text of the section header.
+ * @returns PL: lokalizator grupy. EN: the locator of the group.
+ */
+function sectionGroup(page: Page, name: string) {
+  return page.locator('section.ui-list-group').filter({ has: page.getByRole('heading', { name, exact: true }) });
+}
+
+// PL: Cała góra i obie sekcje z danymi oraz dolny pasek.
+// EN: The whole top and both sections with data, and the bottom bar.
+test('góra i sekcje pokazują ważny wpis, ankietę, zgłoszenie i trzy ogłoszenia / the top and the sections show the important entry, the survey, the report and three announcements', async ({ page }) => {
   await mockDashboard(page, FULL);
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: 'Cześć', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dzisiaj', level: 1 })).toBeVisible();
   await expect(page.getByText('Ważne · Sekretariat')).toBeVisible();
   await expect(page.getByText('20 min', { exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Jutro 3TA zaczyna o 9:50' })).toBeVisible();
+  await expect(page.getByText('Jutro 3TA zaczyna o 9:50')).toBeVisible();
   await expect(page.getByText('Dwie pierwsze lekcje przeniesione na piątek.')).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Ankieta' })).toContainText('dni do końca');
+  await expect(sectionGroup(page, 'Do zrobienia')).toContainText('jeszcze 3 dni');
   await expect(page.getByText('Zajęcia dodatkowe w II semestrze')).toBeVisible();
   await expect(page.getByText('Nie działa projektor w sali 204')).toBeVisible();
-  await expect(page.getByText('Etap 2 z 3')).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Ogłoszenia' }).getByRole('listitem')).toHaveCount(3);
+  await expect(page.getByText('W trakcie', { exact: true })).toBeVisible();
+  // PL: Trzy wiersze ogłoszeń i wiersz „Wszystkie aktualności”.
+  // EN: Three announcement rows and the "Wszystkie aktualności" row.
+  await expect(sectionGroup(page, 'Informacje').getByRole('link')).toHaveCount(4);
   await expect(page.getByText('12.10', { exact: true })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Menu główne' }).getByRole('link')).toHaveCount(5);
   await expect(page.locator('[data-subtrack="9"]')).toBeVisible();
@@ -161,19 +175,19 @@ test('przed lekcjami z planem nagłówek mówi „Lekcje jeszcze się nie zaczę
   await expect(bell).not.toContainText('Po lekcjach');
 });
 
-// PL: Każdy kafelek prowadzi do właściwego ekranu.
-// EN: Every tile leads to the right screen.
-test('kafelki prowadzą do właściwych ekranów / the tiles lead to the right screens', async ({ page }) => {
+// PL: Każdy link na pulpicie prowadzi do właściwego ekranu.
+// EN: Every link on the dashboard leads to the right screen.
+test('linki prowadzą do właściwych ekranów / the links lead to the right screens', async ({ page }) => {
   await mockDashboard(page, FULL);
   // PL: Ekrany docelowe pytają swoje moduły. Bez sesji dostałyby 401 i wspólna bramka przeniosłaby na logowanie, więc podstawiamy puste odpowiedzi 200: sprawdzamy tylko adres.
   // EN: The target screens ask their modules. Without a session they would get 401 and the shared gate would move to sign-in, so we stub empty 200 answers: we only check the address.
   await page.route(/\/api\/(news|surveys|reports)\//, (route) => route.fulfill({ json: {} }));
   const cases: { name: string; open: () => Promise<void>; path: string }[] = [
     { name: 'Ważne', open: () => page.getByRole('link', { name: /Jutro 3TA/ }).click(), path: '/news/feed/wazne-3ta' },
-    { name: 'Wypełnij', open: () => page.getByRole('link', { name: 'Wypełnij' }).click(), path: '/surveys/vote/dodatkowe' },
-    { name: 'Zgłoszenia', open: () => page.getByRole('link', { name: /Nie działa projektor/ }).click(), path: '/reports/student/moje' },
+    { name: 'ankieta', open: () => page.getByRole('link', { name: /Zajęcia dodatkowe/ }).click(), path: '/surveys/vote/dodatkowe' },
+    { name: 'zgłoszenie', open: () => page.getByRole('link', { name: /Nie działa projektor/ }).click(), path: '/reports/student/moje' },
     { name: 'wiersz ogłoszenia', open: () => page.getByRole('link', { name: /Próbny egzamin/ }).click(), path: '/news/feed/egzamin' },
-    { name: 'nagłówek Ogłoszenia', open: () => page.getByRole('link', { name: 'Ogłoszenia', exact: true }).click(), path: '/news/feed' },
+    { name: 'Wszystkie aktualności', open: () => page.getByRole('link', { name: 'Wszystkie aktualności', exact: true }).click(), path: '/news/feed' },
     { name: 'licznik do dzwonka', open: () => page.getByLabel('Licznik do dzwonka').click(), path: '/bell' },
   ];
 
@@ -184,17 +198,16 @@ test('kafelki prowadzą do właściwych ekranów / the tiles lead to the right s
   }
 });
 
-// PL: Pusty kafelek mówi, że nic nie ma, zamiast znikać.
-// EN: An empty tile says there is nothing instead of disappearing.
-test('bez danych każdy kafelek mówi, że nic nie ma / without data every tile says there is nothing', async ({ page }) => {
+// PL: Bez danych góra zostaje, „Ważne” znika, „Do zrobienia” się nie pokazuje, a „Informacje” mówi, że nic nie ma.
+// EN: Without data the top stays, "Ważne" disappears, "Do zrobienia" is not shown, and "Informacje" says there is nothing.
+test('bez danych góra zostaje, a sekcje mówią, że nic nie ma / without data the top stays and the sections say there is nothing', async ({ page }) => {
   await mockDashboard(page, EMPTY);
   await page.goto('/');
 
-  await expect(page.getByRole('region', { name: 'Ważne' })).toContainText('Nie ma jeszcze wpisów.');
-  await expect(page.getByRole('region', { name: 'Ankieta' })).toContainText('Nie ma ankiet do wypełnienia.');
-  await expect(page.getByRole('region', { name: 'Zgłoszenia' })).toContainText('Nie masz jeszcze żadnych zgłoszeń.');
-  await expect(page.getByRole('region', { name: 'Ogłoszenia' })).toContainText('Nie ma jeszcze wpisów.');
   await expect(page.getByLabel('Licznik do dzwonka')).toBeVisible();
+  await expect(page.getByText('Jutro 3TA zaczyna o 9:50')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Do zrobienia', exact: true })).toHaveCount(0);
+  await expect(sectionGroup(page, 'Informacje')).toContainText('Nie ma jeszcze wpisów.');
 });
 
 // PL: Błąd serwera bez zapisanych danych daje komunikat i przycisk ponowienia, a po ponowieniu pulpit się wczytuje.
@@ -204,27 +217,26 @@ test('błąd serwera daje komunikat i ponowienie / a server error gives a messag
   await page.goto('/');
 
   await expect(page.getByText('Nie udało się pobrać pulpitu.')).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Zgłoszenia' })).toContainText('Nie masz jeszcze żadnych zgłoszeń.');
 
   await page.unroute('**/api/dashboard');
   await mockDashboard(page, FULL);
   await page.getByRole('button', { name: 'Spróbuj ponownie' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Jutro 3TA zaczyna o 9:50' })).toBeVisible();
+  await expect(page.getByText('Jutro 3TA zaczyna o 9:50')).toBeVisible();
 });
 
-// PL: Bez internetu wspólny pasek mówi o braku internetu, a kafelki zostają na ekranie.
+// PL: Bez internetu wspólny pasek mówi o braku internetu, a sekcje i góra zostają na ekranie.
 // EN: Without internet the shared bar says there is no internet, and the tiles stay on screen.
-test('bez internetu pasek i kafelki z zapisu / without internet the bar and the tiles from the saved copy', async ({ page, context }) => {
+test('bez internetu pasek i sekcje z zapisu / without internet the bar and the sections from the saved copy', async ({ page, context }) => {
   await mockDashboard(page, FULL);
   await page.goto('/');
-  await expect(page.getByText('Etap 2 z 3')).toBeVisible();
+  await expect(page.getByText('W trakcie', { exact: true })).toBeVisible();
 
   await context.setOffline(true);
 
   await expect(page.locator('[data-offline-notice]')).toContainText('Brak internetu');
-  await expect(page.getByText('Etap 2 z 3')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Jutro 3TA zaczyna o 9:50' })).toBeVisible();
+  await expect(page.getByText('W trakcie', { exact: true })).toBeVisible();
+  await expect(page.getByText('Jutro 3TA zaczyna o 9:50')).toBeVisible();
 });
 
 // PL: Po ponownym otwarciu, gdy serwer nie odpowiada, pulpit pokazuje zapisane dane i napis o nieudanym odświeżeniu, a nie biały ekran.
@@ -232,7 +244,7 @@ test('bez internetu pasek i kafelki z zapisu / without internet the bar and the 
 test('po ponownym otwarciu bez serwera pulpit z zapisu / after reopening without the server the dashboard from the saved copy', async ({ page }) => {
   await mockDashboard(page, FULL);
   await page.goto('/');
-  await expect(page.getByText('Etap 2 z 3')).toBeVisible();
+  await expect(page.getByText('W trakcie', { exact: true })).toBeVisible();
   // PL: Poczekaj, aż dane trafią do localStorage (zapis jest opóźniony o około sekundę).
   // EN: Wait until the data reaches localStorage (the save is delayed by about a second).
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem('teb-student-query-cache')?.includes('wazne-3ta') ?? false)).toBe(true);
@@ -241,8 +253,8 @@ test('po ponownym otwarciu bez serwera pulpit z zapisu / after reopening without
   await page.route('**/api/dashboard', (route) => route.abort());
   await page.reload();
 
-  await expect(page.getByRole('heading', { name: 'Jutro 3TA zaczyna o 9:50' })).toBeVisible();
-  await expect(page.getByText('Etap 2 z 3')).toBeVisible();
+  await expect(page.getByText('Jutro 3TA zaczyna o 9:50')).toBeVisible();
+  await expect(page.getByText('W trakcie', { exact: true })).toBeVisible();
   await expect(page.getByText('Nie udało się odświeżyć pulpitu. Pokazujemy zapisane dane.')).toBeVisible();
 });
 
@@ -259,7 +271,7 @@ test('szerokość 320 px bez poziomego przewijania / 320 px width without horizo
   });
   await page.setViewportSize({ width: 320, height: 700 });
   await page.goto('/');
-  await expect(page.getByText('Etap 2 z 3')).toBeVisible();
+  await expect(page.getByText('W trakcie', { exact: true })).toBeVisible();
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
@@ -269,42 +281,42 @@ test('szerokość 320 px bez poziomego przewijania / 320 px width without horizo
 test('na lokalnej bazie: wpisy z bazy, ankieta i zgłoszenia puste bez sesji / on the local database: entries from the database, the survey and reports empty without a session', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: 'Jutro 3TA zaczyna o 9:50' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Ważne · Sekretariat/ }).getByText('Jutro 3TA zaczyna o 9:50')).toBeVisible();
   await expect(page.getByText('Ważne · Sekretariat')).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Ogłoszenia' }).getByRole('listitem')).toHaveCount(3);
-  await expect(page.getByRole('region', { name: 'Ankieta' })).toContainText('Nie ma ankiet do wypełnienia.');
-  await expect(page.getByRole('region', { name: 'Zgłoszenia' })).toContainText('Nie masz jeszcze żadnych zgłoszeń.');
+  // PL: Trzy wpisy z bazy i wiersz „Wszystkie aktualności”; bez sesji „Do zrobienia” się nie pokazuje.
+  // EN: Three entries from the database and the "Wszystkie aktualności" row; without a session "Do zrobienia" is not shown.
+  await expect(sectionGroup(page, 'Informacje').getByRole('link')).toHaveCount(4);
+  await expect(page.getByRole('heading', { name: 'Do zrobienia', exact: true })).toHaveCount(0);
 });
 
-// PL: Zmiana kolejności kafelków w trybie edycji przetrwa przeładowanie strony, a tryb edycji po przeładowaniu jest wyłączony.
-// EN: A change of the tile order in edit mode survives a page reload, and the edit mode is off after the reload.
-test('zmiana kolejności kafelków przetrwa przeładowanie / a tile order change survives a reload', async ({ page }) => {
+// PL: Zmiana kolejności sekcji w trybie edycji przetrwa przeładowanie strony, a tryb edycji po przeładowaniu jest wyłączony. Góra (licznik i „Ważne”) zawsze stoi nad sekcjami.
+// EN: A change of the section order in edit mode survives a page reload, and the edit mode is off after the reload. The top (countdown and "Ważne") always stands above the sections.
+test('zmiana kolejności sekcji przetrwa przeładowanie / a section order change survives a reload', async ({ page }) => {
   await mockDashboard(page, FULL);
   await page.goto('/');
 
-  // PL: Domyślnie „Ważne” stoi nad „Ankietą”.
-  // EN: By default "Ważne" stands above the "Ankieta".
-  const importantBox = page.getByText('Jutro 3TA zaczyna o 9:50');
-  await expect(importantBox).toBeVisible();
+  // PL: Domyślnie „Do zrobienia” stoi nad „Informacje”.
+  // EN: By default "Do zrobienia" stands above "Informacje".
+  const todo = sectionGroup(page, 'Do zrobienia');
+  const info = sectionGroup(page, 'Informacje');
+  expect((await todo.boundingBox())!.y).toBeLessThan((await info.boundingBox())!.y);
 
-  await page.getByRole('button', { name: 'Zmień układ' }).click();
+  await page.getByRole('button', { name: 'Edytuj' }).click();
   // PL: Przycisk „Wyżej” ma pole dotyku co najmniej 44×44 px.
   // EN: The "Wyżej" button has a touch area of at least 44×44 px.
-  const up = page.getByRole('button', { name: 'Wyżej: Ankieta' });
+  const up = page.getByRole('button', { name: 'Wyżej: Informacje' });
   const box = await up.boundingBox();
   expect(box?.width).toBeGreaterThanOrEqual(44);
   expect(box?.height).toBeGreaterThanOrEqual(44);
   await up.click();
   await page.getByRole('button', { name: 'Gotowe' }).click();
 
-  const survey = await page.getByRole('region', { name: 'Ankieta' }).boundingBox();
-  expect(survey!.y).toBeLessThan((await importantBox.boundingBox())!.y);
+  expect((await info.boundingBox())!.y).toBeLessThan((await todo.boundingBox())!.y);
 
   await page.reload();
 
   // PL: Po przeładowaniu kolejność nadal jest ta sama, a tryb edycji wrócił wyłączony.
   // EN: After the reload the order is still the same, and the edit mode is off again.
-  await expect(page.getByRole('button', { name: 'Zmień układ' })).toBeVisible();
-  const surveyAfter = await page.getByRole('region', { name: 'Ankieta' }).boundingBox();
-  expect(surveyAfter!.y).toBeLessThan((await importantBox.boundingBox())!.y);
+  await expect(page.getByRole('button', { name: 'Edytuj' })).toBeVisible();
+  expect((await sectionGroup(page, 'Informacje').boundingBox())!.y).toBeLessThan((await sectionGroup(page, 'Do zrobienia').boundingBox())!.y);
 });
