@@ -57,7 +57,7 @@ async function fillToPlace(page: Page, similar: SimilarStub[] = [], status = 200
   // PL: Krok 1: wybierz kategorię i idź dalej.
   // EN: Step 1: choose the category and move on.
   await page.goto('/reports/student');
-  await page.getByRole('radio', { name: 'Sala lub sprzęt' }).click();
+  await page.getByText('Sala lub sprzęt', { exact: true }).click();
   await page.getByRole('button', { name: 'Dalej' }).click();
   // PL: Krok 2: wybierz miejsce, dopisz dokładne miejsce i idź dalej.
   // EN: Step 2: choose the place, add the exact place and move on.
@@ -129,11 +129,16 @@ test('uczeń wysyła zgłoszenie i widzi je w „Moich zgłoszeniach” / studen
   const tile = page.getByRole('listitem').filter({ hasText: description });
   await expect(tile).toBeVisible();
   await expect(tile.getByText('Sala lub sprzęt')).toBeVisible();
-  await expect(tile.locator('[aria-current="step"]')).toHaveText('Przyjęte');
+  await expect(tile.getByText('Przyjęte')).toBeVisible();
+
+  // PL: Wiersz prowadzi do szczegółów; tam bieżący etap to „Przyjęte”.
+  // EN: The row leads to the details; there the current stage is "Przyjęte".
+  await tile.getByRole('link').click();
+  await expect(page.locator('[aria-current="step"]')).toHaveText('Przyjęte');
   // PL: Oś historii ma pierwszy wpis z etapem „Przyjęte” i bez odpowiedzi.
   // EN: The history axis has the first entry with the "Przyjęte" stage and no answer.
-  await expect(tile.getByRole('list', { name: 'Historia zgłoszenia' }).getByText('Przyjęte')).toBeVisible();
-  await expect(tile.getByText('Odpowiedź Samorządu')).toHaveCount(0);
+  await expect(page.getByRole('list', { name: 'Historia zgłoszenia' }).getByText('Przyjęte')).toBeVisible();
+  await expect(page.getByText('Odpowiedź Samorządu')).toHaveCount(0);
 });
 
 // PL: Zdjęcie nieobowiązkowe: wybrany plik dochodzi do zgłoszenia jako photoId, a „Usuń zdjęcie” go zdejmuje.
@@ -189,11 +194,17 @@ test('uczeń widzi odpowiedź Samorządu przy etapie / student sees the Student 
   };
   await page.route('**/api/reports/student', (route) => route.fulfill({ json: { reports: [report] } }));
 
-  // PL: Otwórz listę: odpowiedź Samorządu stoi przy etapie „W trakcie”.
-  // EN: Open the list: the Student Council answer stands next to the "W trakcie" stage.
+  // PL: Otwórz listę: przy zgłoszeniu stoi etap „W trakcie”.
+  // EN: Open the list: the report stands next to the "W trakcie" stage.
   await page.goto('/reports/student/moje');
   const tile = page.getByRole('listitem').filter({ hasText: 'Projektor nie włącza się' });
-  const history = tile.getByRole('list', { name: 'Historia zgłoszenia' });
+  await expect(tile.getByText('W trakcie')).toBeVisible();
+
+  // PL: Kliknij wiersz: na szczegółach odpowiedź Samorządu stoi przy etapie „W trakcie”.
+  // EN: Click the row: on the details the Student Council answer stands next to the "W trakcie" stage.
+  await tile.getByRole('link').click();
+  await expect(page.locator('[aria-current="step"]')).toHaveText('W trakcie');
+  const history = page.getByRole('list', { name: 'Historia zgłoszenia' });
   await expect(history.getByRole('listitem')).toHaveCount(2);
   await expect(history.getByText('Odpowiedź Samorządu')).toBeVisible();
   await expect(history.getByText('Sprawdzimy projektor na przerwie obiadowej.')).toBeVisible();
@@ -243,7 +254,7 @@ test('pusta lista albo błąd listy przepuszcza do opisu / an empty list or a li
 
   await page.goto('/reports/student');
   await stubSimilar(page, [], 500);
-  await page.getByRole('radio', { name: 'Sala lub sprzęt' }).click();
+  await page.getByText('Sala lub sprzęt', { exact: true }).click();
   await page.getByRole('button', { name: 'Dalej' }).click();
   await page.getByRole('radio', { name: 'Sala', exact: true }).click();
   await page.getByLabel('Dokładne miejsce').fill('Sala 112');
@@ -314,7 +325,7 @@ test('bez internetu: błąd przy wysyłaniu, pasek i zachowana lista / offline: 
   // EN: Open the list online: the report with the "W trakcie" stage is visible.
   await page.goto('/reports/student/moje');
   const tile = page.getByRole('listitem').filter({ hasText: 'Luźna deska w sali' });
-  await expect(tile.locator('[aria-current="step"]')).toHaveText('W trakcie');
+  await expect(tile).toContainText('W trakcie');
 
   // PL: Odetnij internet: pojawia się wspólny pasek z App.tsx, a lista zostaje.
   // EN: Cut the internet: the shared bar from App.tsx appears and the list stays.

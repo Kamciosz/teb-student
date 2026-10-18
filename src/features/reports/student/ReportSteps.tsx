@@ -1,9 +1,11 @@
 /**
- * PL: Trzy kroki formularza zgłoszenia: czego dotyczy (ekran 3.1), gdzie to jest (3.2) i opis z anonimowością (3.3). Każdy krok pokazuje dane z szkicu i zgłasza zmianę wyżej; o przejściu między krokami decyduje ReportForm.
- * EN: The three steps of the report form: what it is about (screen 3.1), where it is (3.2) and the description with anonymity (3.3). Every step shows the draft data and reports a change upward; ReportForm decides on moving between steps.
+ * PL: Trzy kroki formularza zgłoszenia: czego dotyczy (ekran 3.1), gdzie to jest (3.2) i opis z anonimowością (3.3). Kategorie są listą wierszy z natywnym przyciskiem wyboru. Każdy krok pokazuje dane z szkicu i zgłasza zmianę wyżej; o przejściu między krokami decyduje ReportForm.
+ * EN: The three steps of the report form: what it is about (screen 3.1), where it is (3.2) and the description with anonymity (3.3). The categories are a list of rows with a native choice button. Every step shows the draft data and reports a change upward; ReportForm decides on moving between steps.
  *
  * @author Szymon
  * @since 2026-10-09
+ * @uses src/shared/index.ts::ListGroup
+ * @uses src/shared/index.ts::ListRow
  * @uses src/features/reports/student/reportOptions.ts::CATEGORY_OPTIONS
  * @uses src/features/reports/student/icons.tsx::Icon
  * @used_by src/features/reports/student/ReportForm.tsx::StepCategory
@@ -11,8 +13,11 @@
  * @used_by src/features/reports/student/ReportForm.tsx::StepDescription
  */
 
-// PL: Ikony kart.
-// EN: The card icons.
+// PL: Wiersze listy i grupa wierszy.
+// EN: The list rows and the row group.
+import { ListGroup, ListRow } from '../../../shared';
+// PL: Ikony wierszy.
+// EN: The row icons.
 import { Icon } from './icons';
 // PL: Listy wyborów i limity długości.
 // EN: The choice lists and the length limits.
@@ -48,34 +53,48 @@ function focusHeading(element: HTMLElement | null): void {
 }
 
 /**
- * PL: Krok 1: cztery karty kategorii. Żadna nie jest wybrana na starcie, żeby uczeń zdecydował sam.
- * EN: Step 1: four category cards. None is chosen at the start, so the student decides.
+ * PL: Krok 1: cztery kategorie jako wiersze listy. Żadna nie jest wybrana na starcie, żeby uczeń zdecydował sam.
+ * EN: Step 1: four categories as list rows. None is chosen at the start, so the student decides.
  *
  * @param props - PL: szkic i funkcja zmiany. EN: the draft and the change function.
  * @returns PL: drzewo elementów kroku. EN: the tree of step elements.
  */
 export function StepCategory({ draft, onChange }: StepProps) {
-  // PL: Nagłówek, opis i siatka kart.
-  // EN: The heading, the lead and the card grid.
+  // PL: Nagłówek, opis i wiersze. Każdy wiersz ma natywny przycisk wyboru, a cały wiersz jest celem kliknięcia.
+  // EN: The heading, the lead and the rows. Each row has a native choice button, and the whole row is the click target.
   return (
     <div>
-      <h1 ref={focusHeading} tabIndex={-1}>Czego dotyczy?</h1>
+      <h2 ref={focusHeading} tabIndex={-1}>Czego dotyczy?</h2>
       <p className="rs-lead">Wybierz jedno. W następnych krokach dodasz miejsce i opis.</p>
-      <div className="rs-pick" role="radiogroup" aria-label="Czego dotyczy zgłoszenie">
-        {CATEGORY_OPTIONS.map((option) => (
-          <button
-            key={option.code}
-            type="button"
-            role="radio"
-            aria-checked={draft.category === option.code}
-            className={draft.category === option.code ? 'rs-card rs-on' : 'rs-card'}
-            onClick={() => onChange({ category: option.code })}
-          >
-            <Icon name={option.icon} />
-            {option.label}
-          </button>
-        ))}
-      </div>
+      <ListGroup>
+        <ul className="rs-rows">
+          {CATEGORY_OPTIONS.map((option) => {
+            const checked = draft.category === option.code;
+            return (
+              <li key={option.code}>
+                <ListRow
+                  className={checked ? 'rs-pick-row rs-on' : 'rs-pick-row'}
+                  icon={<Icon name={option.icon} />}
+                  value={checked ? <span aria-hidden="true"><Icon name="check" /></span> : undefined}
+                  title={
+                    <label className="rs-pick-label">
+                      <input
+                        type="radio"
+                        name="category"
+                        className="rs-radio-input"
+                        value={option.code}
+                        checked={checked}
+                        onChange={() => onChange({ category: option.code })}
+                      />
+                      {option.label}
+                    </label>
+                  }
+                />
+              </li>
+            );
+          })}
+        </ul>
+      </ListGroup>
     </div>
   );
 }
@@ -92,7 +111,7 @@ export function StepPlace({ draft, onChange }: StepProps) {
   // EN: The heading, the place chips and the text field.
   return (
     <div>
-      <h1 ref={focusHeading} tabIndex={-1}>Gdzie to jest?</h1>
+      <h2 ref={focusHeading} tabIndex={-1}>Gdzie to jest?</h2>
       <p className="rs-lead">Zaznacz miejsce i dopisz szczegóły.</p>
       <div className="rs-chips" role="radiogroup" aria-label="Miejsce">
         {PLACE_OPTIONS.map((option) => (
@@ -129,7 +148,7 @@ export function StepDescription({ draft, onChange }: StepProps) {
   const isEmpty = draft.description.trim() === '';
   return (
     <div>
-      <h1 ref={focusHeading} tabIndex={-1}>Opisz krótko</h1>
+      <h2 ref={focusHeading} tabIndex={-1}>Opisz krótko</h2>
       <p className="rs-lead">Wystarczą jedno lub dwa zdania.</p>
       <label className="rs-field">
         <span>Opis</span>
