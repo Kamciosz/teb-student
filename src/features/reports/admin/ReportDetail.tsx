@@ -8,14 +8,17 @@
  * @uses src/features/reports/admin/queries.ts::useChangeStage
  * @uses src/features/reports/admin/queries.ts::useIsOnline
  * @uses src/features/reports/admin/reportLabels.ts::STAGE_NOTE_MAX_LENGTH
+ * @uses src/shared/ui/Button.tsx::Button
+ * @uses src/shared/ui/ScreenHeader.tsx::ScreenHeader
  * @used_by src/features/reports/admin/ReportsAdminScreen.tsx::ReportDetail
  */
 
 import { useState } from 'react';
 import { useParams } from 'react-router';
+import { Button } from '../../../shared/ui/Button';
+import { ScreenHeader } from '../../../shared/ui/ScreenHeader';
 import { Icon } from './icons';
 import { Notice } from './Notice';
-import { PanelTop } from './PanelTop';
 import { StagePicker } from './StagePicker';
 import type { AdminReport, AdminStudent, StageChange } from './api';
 import { useAdminReport, useChangeStage, useIsOnline } from './queries';
@@ -176,9 +179,9 @@ function DetailBody({ report, history, student }: { report: AdminReport; history
         {isOnline ? null : <p className="ra-small">Zmiana etapu wymaga internetu.</p>}
         {save.isError ? <Notice text="Nie udało się zapisać etapu. Spróbuj ponownie za chwilę." /> : null}
         {/* PL: Pusta albo same spacje to brak odpowiedzi (`null`). EN: Empty or only spaces means no answer (`null`). */}
-        <button type="button" className="ra-btn" disabled={!canSave} onClick={() => save.mutate({ stage, note: note.trim() || null }, { onSuccess: () => { setPicked(null); setNote(''); } })}>
+        <Button variant="filled" className="ra-save" disabled={!canSave} onClick={() => save.mutate({ stage, note: note.trim() || null }, { onSuccess: () => { setPicked(null); setNote(''); } })}>
           <Icon name="check" />Zapisz etap
-        </button>
+        </Button>
       </div>
     </>
   );
@@ -199,7 +202,7 @@ export function ReportDetail() {
   // EN: The data takes priority, then the error, and with neither the query is still running.
   return (
     <>
-      <PanelTop title="Zgłoszenie" to="/reports/admin" backLabel="Wróć" />
+      <ScreenHeader title="Zgłoszenie" backTo="/reports/admin" />
       {query.data ? <DetailBody key={query.data.report.id} report={query.data.report} history={query.data.history} student={query.data.student} /> : null}
       {!query.data && query.isError ? <Notice text="Nie udało się pobrać zgłoszeń. Spróbuj ponownie za chwilę." /> : null}
       {!query.data && !query.isError ? <div role="status" aria-busy="true" /> : null}

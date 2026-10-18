@@ -207,7 +207,7 @@ test('Samorząd zmienia etap i widzi historię / the Student Council changes the
 
   // PL: Po powrocie lista pokazuje nowy etap.
   // EN: After going back the list shows the new stage.
-  await page.getByRole('link', { name: 'Wróć' }).click();
+  await page.getByRole('link', { name: 'Wstecz' }).click();
   await expect(page.getByRole('link', { name: /Nie działa projektor/ })).toContainText('Załatwione');
 });
 
@@ -389,7 +389,7 @@ test('bez internetu: dane zostają, a zapis jest zablokowany / offline: the data
   await page.goto('/reports/admin');
   await page.getByRole('link', { name: /Nie działa projektor/ }).click();
   await expect(page.getByRole('radio', { name: 'W trakcie' })).toBeChecked();
-  await page.getByRole('link', { name: 'Wróć' }).click();
+  await page.getByRole('link', { name: 'Wstecz' }).click();
 
   // PL: Wyłącz sieć: lista nadal jest, filtr działa.
   // EN: Turn the network off: the list is still there and the filter works.

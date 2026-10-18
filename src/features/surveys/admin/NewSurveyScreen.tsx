@@ -5,9 +5,17 @@
  * @author Jakub
  * @since 2026-10-12
  * @uses src/features/surveys/admin/useNewSurveyForm.ts::useNewSurveyForm
+ * @uses src/shared/ui/ListGroup.tsx::ListGroup
+ * @uses src/shared/ui/TextField.tsx::TextField
+ * @uses src/shared/ui/Button.tsx::Button
  * @used_by src/features/surveys/admin/SurveysAdminScreen.tsx::SurveysAdminScreen
  */
 
+// PL: Grupy pól w stylu systemowym i pole tekstowe z podpisem.
+// EN: The system-style field groups and the text field with a label.
+import { ListGroup } from '../../../shared/ui/ListGroup';
+import { TextField } from '../../../shared/ui/TextField';
+import { Button } from '../../../shared/ui/Button';
 import { addQuestion, MAX_QUESTIONS, MAX_TITLE_LENGTH, removeQuestion, updateQuestion } from './draft';
 import { PlusIcon, SendIcon, WifiOffIcon } from './icons';
 import { DurationPicker } from './DurationPicker';
@@ -16,8 +24,8 @@ import { FieldError, QuestionEditor } from './QuestionEditor';
 import { useNewSurveyForm, type NewSurveyForm } from './useNewSurveyForm';
 
 /**
- * PL: Rysuje dolną część formularza: notatkę bez internetu, błąd zapisu i przycisk „Opublikuj ankietę”.
- * EN: Draws the bottom part of the form: the no-internet note, the write error and the "Opublikuj ankietę" button.
+ * PL: Rysuje dolną część formularza: notatkę bez internetu, błąd zapisu i jedyny wypełniony przycisk „Opublikuj ankietę”.
+ * EN: Draws the bottom part of the form: the no-internet note, the write error and the single filled "Opublikuj ankietę" button.
  *
  * @param props - PL: stan formularza. EN: the form state.
  * @returns PL: stopka. EN: the footer.
@@ -28,10 +36,10 @@ function PublishFooter({ form }: { form: NewSurveyForm }) {
       {/* PL: Bez internetu zapis jest wyłączony i tak to nazywamy. EN: Without internet the write is disabled and we say so. */}
       {form.isOnline ? null : <PanelNote icon={<WifiOffIcon />} text="Publikacja ankiety wymaga internetu." />}
       {form.hasPublishError ? <ErrorMessage text="Nie udało się opublikować ankiety. Spróbuj ponownie za chwilę." /> : null}
-      <button type="submit" className="sa-button sa-button--primary" disabled={!form.isOnline || form.isPublishing}>
+      <Button variant="filled" type="submit" disabled={!form.isOnline || form.isPublishing}>
         <SendIcon />
         Opublikuj ankietę
-      </button>
+      </Button>
     </div>
   );
 }
@@ -50,9 +58,9 @@ export function NewSurveyScreen() {
     <main className="sa sa--flow" data-subtrack="5b">
       <ScreenTop title="Nowa ankieta" backTo="/surveys/admin" />
       <form className="sa-form" noValidate onSubmit={form.submit}>
-        <label className="sa-label sa-label--tight" htmlFor="sa-title">Tytuł ankiety</label>
-        <input id="sa-title" className="sa-input" value={draft.title} maxLength={MAX_TITLE_LENGTH} aria-invalid={errors?.title != null} aria-describedby="sa-title-error" onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
-        <FieldError id="sa-title-error" text={errors?.title} />
+        <ListGroup>
+          <TextField label="Tytuł ankiety" value={draft.title} maxLength={MAX_TITLE_LENGTH} error={errors?.title ?? undefined} onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
+        </ListGroup>
         {draft.questions.map((question, index) => (
           <QuestionEditor
             key={question.key}
@@ -64,16 +72,22 @@ export function NewSurveyScreen() {
             onRemove={() => setDraft(removeQuestion(draft, question.key))}
           />
         ))}
-        <button type="button" className="sa-button sa-button--outline" disabled={draft.questions.length >= MAX_QUESTIONS} onClick={() => setDraft(addQuestion(draft))}>
+        <Button variant="plain" disabled={draft.questions.length >= MAX_QUESTIONS} onClick={() => setDraft(addQuestion(draft))}>
           <PlusIcon />
           Dodaj pytanie
-        </button>
-        <DurationPicker value={draft.durationDays} onChange={(durationDays) => setDraft({ ...draft, durationDays })} />
+        </Button>
+        <ListGroup>
+          <DurationPicker value={draft.durationDays} onChange={(durationDays) => setDraft({ ...draft, durationDays })} />
+        </ListGroup>
         {/* PL: Termin jest nieobowiązkowy. Bez niego ankieta kończy się tylko ostatniego dnia. EN: The closing time is optional. Without it the survey ends only on its last day. */}
-        <label className="sa-label sa-label--tight" htmlFor="sa-closes-at">Zamknij ankietę (data i godzina)</label>
-        <p className="sa-small" id="sa-closes-at-hint">Nieobowiązkowe. Bez terminu ankieta kończy się ostatniego dnia.</p>
-        <input id="sa-closes-at" type="datetime-local" className="sa-input" value={draft.closesAt} aria-invalid={errors?.closesAt != null} aria-describedby="sa-closes-at-hint sa-closes-at-error" onChange={(event) => setDraft({ ...draft, closesAt: event.target.value })} />
-        <FieldError id="sa-closes-at-error" text={errors?.closesAt} />
+        <ListGroup>
+          <div className="sa-field">
+            <label className="sa-label sa-label--tight" htmlFor="sa-closes-at">Zamknij ankietę (data i godzina)</label>
+            <p className="sa-small" id="sa-closes-at-hint">Nieobowiązkowe. Bez terminu ankieta kończy się ostatniego dnia.</p>
+            <input id="sa-closes-at" type="datetime-local" className="sa-input" value={draft.closesAt} aria-invalid={errors?.closesAt != null} aria-describedby="sa-closes-at-hint sa-closes-at-error" onChange={(event) => setDraft({ ...draft, closesAt: event.target.value })} />
+            <FieldError id="sa-closes-at-error" text={errors?.closesAt} />
+          </div>
+        </ListGroup>
         <PublishFooter form={form} />
       </form>
     </main>

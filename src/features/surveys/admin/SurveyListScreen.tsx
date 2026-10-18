@@ -5,24 +5,32 @@
  * @author Jakub
  * @since 2026-10-12
  * @uses src/features/surveys/admin/surveyQueries.ts::usePanelSurveys
+ * @uses src/shared/ui/ListGroup.tsx::ListGroup
+ * @uses src/shared/ui/ListRow.tsx::ListRow
+ * @uses src/shared/ui/Button.tsx::Button
  * @used_by src/features/surveys/admin/SurveysAdminScreen.tsx::SurveysAdminScreen
  */
 
 import { Link } from 'react-router';
-import { ChevronRightIcon, PlusIcon, WifiOffIcon } from './icons';
+// PL: Grupa z nagłówkiem i wiersze w stylu listy systemowej.
+// EN: The group with a header and the rows in the style of a system list.
+import { ListGroup } from '../../../shared/ui/ListGroup';
+import { ListRow } from '../../../shared/ui/ListRow';
+import { Button } from '../../../shared/ui/Button';
+import { PlusIcon, WifiOffIcon } from './icons';
 import { describeQuestions, describeResponses, formatClosesAt, formatShortDate, MIN_RESPONSES } from './format';
 import { ErrorMessage, PanelNote, ScreenTop } from './PanelParts';
 import { useIsOnline, usePanelSurveys } from './surveyQueries';
 import type { PanelSurvey } from './types';
 
 /**
- * PL: Kafel jednej ankiety: tytuł, liczba pytań z terminem i, dla trwającej, stan odpowiedzi. Ankieta z terminem zamknięcia pokazuje jego godzinę, a zamknięta przez termin, „Zamknięta”. Prowadzi do wyników.
- * EN: The tile of one survey: the title, the question count with the deadline and, for a running one, the response state. A survey with a closing time shows its hour, and one closed by its time shows "Zamknięta". Leads to the results.
+ * PL: Wiersz jednej ankiety: tytuł, liczba pytań z terminem i, dla trwającej, stan odpowiedzi. Ankieta z terminem zamknięcia pokazuje jego godzinę, a zamknięta przez termin, „Zamknięta”. Prowadzi do wyników.
+ * EN: The row of one survey: the title, the question count with the deadline and, for a running one, the response state. A survey with a closing time shows its hour, and one closed by its time shows "Zamknięta". Leads to the results.
  *
  * @param props - PL: ankieta i czy już się skończyła. EN: the survey and whether it has ended.
- * @returns PL: kafel. EN: the tile.
+ * @returns PL: wiersz listy. EN: the list row.
  */
-function SurveyTile({ survey, isEnded }: { survey: PanelSurvey; isEnded: boolean }) {
+function SurveyRow({ survey, isEnded }: { survey: PanelSurvey; isEnded: boolean }) {
   // PL: Trwająca: „3 pytania · do 15.10” albo „3 pytania · do 15.10, 12:00”. Zakończona: „Zakończona 30.09 · 21 odpowiedzi”. Zamknięta przed czasem: „Zamknięta · 21 odpowiedzi”.
   // EN: Running: "3 pytania · do 15.10" or "3 pytania · do 15.10, 12:00". Ended: "Zakończona 30.09 · 21 odpowiedzi". Closed before its time: "Zamknięta · 21 odpowiedzi".
   const caption = (() => {
@@ -32,25 +40,28 @@ function SurveyTile({ survey, isEnded }: { survey: PanelSurvey; isEnded: boolean
     return `${describeQuestions(survey.questionCount)} · do ${deadline}`;
   })();
   const isHidden = survey.responseCount < MIN_RESPONSES;
+  // PL: Trwająca ankieta mówi pod opisem, czy wyniki są już widoczne; liczba odpowiedzi stoi po prawej, gdy są widoczne.
+  // EN: A running survey says under the caption whether the results are visible yet; the response count stands on the right when they are.
+  const subtitle = isEnded ? (
+    caption
+  ) : (
+    <>
+      <span className="sa-row-line">{caption}</span>
+      {isHidden ? <span className="sa-row-line">{`Wyniki zobaczysz od ${MIN_RESPONSES} odpowiedzi. Teraz: ${survey.responseCount}.`}</span> : null}
+    </>
+  );
+  const value = isEnded || isHidden ? undefined : describeResponses(survey.responseCount);
 
   return (
     <li>
-      <Link className="sa-tile sa-tile--row" to={`/surveys/admin/${encodeURIComponent(survey.id)}`}>
-        <span className="sa-tile__main">
-          <span className="sa-h2">{survey.title}</span>
-          <span className="sa-small">{caption}</span>
-          {/* PL: Trwająca ankieta mówi, czy wyniki są już widoczne. EN: A running survey says whether the results are visible yet. */}
-          {isEnded ? null : <span className="sa-small sa-small--ink">{isHidden ? `Wyniki zobaczysz od ${MIN_RESPONSES} odpowiedzi. Teraz: ${survey.responseCount}.` : describeResponses(survey.responseCount)}</span>}
-        </span>
-        <ChevronRightIcon />
-      </Link>
+      <ListRow to={`/surveys/admin/${encodeURIComponent(survey.id)}`} title={survey.title} subtitle={subtitle} value={value} />
     </li>
   );
 }
 
 /**
- * PL: Sekcja listy: etykieta („Aktywne” albo „Zakończone”) i kafle. Pusta sekcja nic nie rysuje.
- * EN: A list section: the label ("Aktywne" or "Zakończone") and the tiles. An empty section draws nothing.
+ * PL: Sekcja listy: nagłówek („Aktywne” albo „Zakończone”) i wiersze w jednej grupie. Pusta sekcja nic nie rysuje.
+ * EN: A list section: the header ("Aktywne" or "Zakończone") and the rows in one group. An empty section draws nothing.
  *
  * @param props - PL: etykieta, ankiety i czy są zakończone. EN: the label, the surveys and whether they are ended.
  * @returns PL: sekcja albo nic. EN: the section or nothing.
@@ -58,14 +69,13 @@ function SurveyTile({ survey, isEnded }: { survey: PanelSurvey; isEnded: boolean
 function SurveySection({ label, surveys, isEnded }: { label: string; surveys: PanelSurvey[]; isEnded: boolean }) {
   if (surveys.length === 0) return null;
   return (
-    <section className="sa-section">
-      <h2 className="sa-label">{label}</h2>
-      <ul className="sa-list">
+    <ListGroup header={label} className="sa-section">
+      <ul className="sa-list" aria-label={label}>
         {surveys.map((survey) => (
-          <SurveyTile key={survey.id} survey={survey} isEnded={isEnded} />
+          <SurveyRow key={survey.id} survey={survey} isEnded={isEnded} />
         ))}
       </ul>
-    </section>
+    </ListGroup>
   );
 }
 
@@ -81,15 +91,15 @@ function NewSurveyButton({ isOnline }: { isOnline: boolean }) {
     <div className="sa-footer">
       {isOnline ? null : <PanelNote icon={<WifiOffIcon />} text="Nowa ankieta wymaga internetu." />}
       {isOnline ? (
-        <Link className="sa-button sa-button--primary" to="/surveys/admin/new">
+        <Link className="ui-button ui-button--filled" to="/surveys/admin/new">
           <PlusIcon />
           Nowa ankieta
         </Link>
       ) : (
-        <button type="button" className="sa-button sa-button--primary" disabled>
+        <Button variant="filled" disabled>
           <PlusIcon />
           Nowa ankieta
-        </button>
+        </Button>
       )}
     </div>
   );

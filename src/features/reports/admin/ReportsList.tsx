@@ -1,6 +1,6 @@
 /**
- * PL: Ekrany 6.4a i 6.4d: lista zgłoszeń z filtrem po etapie i przełącznikiem kolejności („Najnowsze” domyślnie, „Najwięcej osób”), ze stanem pustym i błędem pobrania. Przy zgłoszeniu anonimowym stoi napis „Zgłoszenie anonimowe”. Filtr i kolejność działają w telefonie na pobranej liście, więc działają też bez internetu.
- * EN: Screens 6.4a and 6.4d: the report list with the stage filter and the order switch ("Najnowsze" by default, "Najwięcej osób"), with the empty state and the fetch error. An anonymous report shows the "Zgłoszenie anonimowe" label. The filter and the order work on the phone on the fetched list, so they work offline too.
+ * PL: Ekrany 6.4a i 6.4d: lista zgłoszeń z filtrem po etapie i przełącznikiem kolejności („Najnowsze” domyślnie, „Najwięcej osób”), ze stanem pustym i błędem pobrania. Każde zgłoszenie to wiersz listy z tytułem, podtytułem i etapem. Przy zgłoszeniu anonimowym stoi napis „Zgłoszenie anonimowe”. Filtr i kolejność działają w telefonie na pobranej liście, więc działają też bez internetu.
+ * EN: Screens 6.4a and 6.4d: the report list with the stage filter and the order switch ("Najnowsze" by default, "Najwięcej osób"), with the empty state and the fetch error. Each report is a list row with the title, the subtitle and the stage. An anonymous report shows the "Zgłoszenie anonimowe" label. The filter and the order work on the phone on the fetched list, so they work offline too.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -8,14 +8,20 @@
  * @uses src/features/reports/admin/reportView.ts::filterByStage
  * @uses src/features/reports/admin/reportView.ts::sortReports
  * @uses src/features/reports/admin/SortPicker.tsx::SortPicker
+ * @uses src/shared/ui/Chip.tsx::Chip
+ * @uses src/shared/ui/ListGroup.tsx::ListGroup
+ * @uses src/shared/ui/ListRow.tsx::ListRow
+ * @uses src/shared/ui/ScreenHeader.tsx::ScreenHeader
  * @used_by src/features/reports/admin/ReportsAdminScreen.tsx::ReportsList
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Chip } from '../../../shared/ui/Chip';
+import { ListGroup } from '../../../shared/ui/ListGroup';
+import { ListRow } from '../../../shared/ui/ListRow';
+import { ScreenHeader } from '../../../shared/ui/ScreenHeader';
 import { Icon } from './icons';
 import { Notice } from './Notice';
-import { PanelTop } from './PanelTop';
 import type { AdminReport } from './api';
 import { useAdminReports } from './queries';
 import { SortPicker } from './SortPicker';
@@ -23,32 +29,30 @@ import { ALL_STAGES, FILTERS, type ReportOrder } from './reportLabels';
 import { categoryLabel, filterByStage, formatShortDate, joinText, placeText, sortReports, stageLabel } from './reportView';
 
 /**
- * PL: Rysuje jeden kafel zgłoszenia, który prowadzi do szczegółu (ekran 6.4b).
- * EN: Draws one report tile that leads to the detail (screen 6.4b).
+ * PL: Rysuje jeden wiersz zgłoszenia, który prowadzi do szczegółu (ekran 6.4b). Tytuł to opis, podtytuł to kategoria, data z miejscem, liczba osób i napis o anonimowości, a etap stoi po prawej. Załatwione jest jedynym wierszem w kolorze sukcesu.
+ * EN: Draws one report row that leads to the detail (screen 6.4b). The title is the description, the subtitle is the category, the date with the place, the number of people and the anonymity label, and the stage stands on the right. Resolved is the only row in the success color.
  *
  * @param props - PL: zgłoszenie do pokazania. EN: the report to show.
- * @returns PL: drzewo elementów kafla. EN: the tree of tile elements.
+ * @returns PL: drzewo elementów wiersza. EN: the tree of row elements.
  */
 function ReportTile({ report }: { report: AdminReport }) {
   // PL: Liczba osób („Mnie też”) albo `null`, gdy nikt nie dołączył lub brak danych.
   // EN: The number of people ("Me too") or `null`, when nobody joined or there is no data.
   const joins = joinText(report.joinCount);
-  // PL: Cały kafel jest linkiem do szczegółu: znacznik kategorii, data z miejscem, liczba osób, opis, napis o anonimowości i znacznik etapu.
-  // EN: The whole tile is a link to the detail: the category tag, the date with the place, the number of people, the description, the anonymity label and the stage tag.
+  // PL: Części podtytułu oddzielone kropkami; puste (np. brak osób albo brak anonimowości) pomijamy.
+  // EN: The parts of the subtitle separated by dots; empty ones (for example no people or not anonymous) are skipped.
+  const details = [
+    categoryLabel(report.category),
+    `${formatShortDate(report.createdAt)} · ${placeText(report)}`,
+    joins,
+    report.isAnonymous ? 'Zgłoszenie anonimowe' : null,
+  ].filter(Boolean).join(' · ');
+  // PL: Kolor sukcesu tylko dla etapu „Załatwione”; reszta zostaje w szarości podtytułu.
+  // EN: The success color only for the "Załatwione" stage; the rest stays in the subtitle gray.
+  const className = report.stage === 'resolved' ? 'ra-row ra-row--done' : 'ra-row';
   return (
     <li>
-      <Link className="ra-tile" to={report.id}>
-        <span className="ra-tile-head">
-          <span className="ra-tag">{categoryLabel(report.category)}</span>
-          <span className="ra-small">{formatShortDate(report.createdAt)} · {placeText(report)}</span>
-          {joins ? <span className="ra-small">{joins}</span> : null}
-        </span>
-        <span className="ra-desc">{report.description}</span>
-        <span className="ra-tile-foot">
-          <span className="ra-small">{report.isAnonymous ? 'Zgłoszenie anonimowe' : null}</span>
-          <span className="ra-tag ra-tag-stage">{stageLabel(report.stage)}</span>
-        </span>
-      </Link>
+      <ListRow className={className} to={report.id} title={report.description} subtitle={details} value={stageLabel(report.stage)} />
     </li>
   );
 }
@@ -87,14 +91,16 @@ function ListBody({ query, filter, order }: { query: ReturnType<typeof useAdminR
     // EN: The stage filter and the order are computed on the phone, so they work offline too.
     const visible = sortReports(filterByStage(query.data, filter), order);
     if (visible.length === 0) return <EmptyState isFiltered={filter !== ALL_STAGES} />;
-    // PL: Kafle zgłoszeń w wybranej kolejności.
-    // EN: The report tiles in the chosen order.
+    // PL: Wiersze zgłoszeń w wybranej kolejności, w jednej grupie w stylu listy systemowej.
+    // EN: The report rows in the chosen order, in one group in the style of a system list.
     return (
-      <ul className="ra-list" aria-label="Zgłoszenia">
-        {visible.map((report) => (
-          <ReportTile key={report.id} report={report} />
-        ))}
-      </ul>
+      <ListGroup>
+        <ul className="ra-list" aria-label="Zgłoszenia">
+          {visible.map((report) => (
+            <ReportTile key={report.id} report={report} />
+          ))}
+        </ul>
+      </ListGroup>
     );
   }
   // PL: Bez danych i z błędem pokaż komunikat (także przy odmowie 403).
@@ -117,14 +123,14 @@ export function ReportsList() {
   const [filter, setFilter] = useState(ALL_STAGES);
   const [order, setOrder] = useState<ReportOrder>('newest');
   const query = useAdminReports();
-  // PL: Pasek z tytułem, chipy filtra, przełącznik kolejności i treść pod nimi.
-  // EN: The top bar with the title, the filter chips, the order switch and the body under them.
+  // PL: Nagłówek z powrotem do panelu, jedna linia chipów filtra, przełącznik kolejności i treść pod nimi.
+  // EN: The header with the way back to the panel, one line of filter chips, the order switch and the body under them.
   return (
     <>
-      <PanelTop title="Zgłoszenia" to="/admin" backLabel="Wróć" />
+      <ScreenHeader title="Zgłoszenia" backTo="/admin" />
       <div className="ra-chips" role="group" aria-label="Etap">
         {FILTERS.map((item) => (
-          <button key={item.code} type="button" className="ra-chip" aria-pressed={item.code === filter} onClick={() => setFilter(item.code)}>{item.label}</button>
+          <Chip key={item.code} selected={item.code === filter} onClick={() => setFilter(item.code)}>{item.label}</Chip>
         ))}
       </div>
       <SortPicker value={order} onChange={setOrder} />

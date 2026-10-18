@@ -4,7 +4,6 @@
  *
  * @author Szymon
  * @since 2026-10-12
- * @used_by src/features/reports/admin/PanelTop.tsx::Icon
  * @used_by src/features/reports/admin/ReportDetail.tsx::Icon
  * @used_by src/features/reports/admin/ReportsList.tsx::Icon
  */

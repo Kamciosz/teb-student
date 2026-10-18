@@ -1,44 +1,47 @@
 /**
- * PL: Wspólne części ekranów ankiet w panelu (podtor 5b): górny pasek z „Wstecz”, notatka z ikoną i komunikat błędu nad przyciskiem. Teksty są z EKRANY.md.
+ * PL: Wspólne części ekranów ankiet w panelu (podtor 5b): górny pasek z „Wstecz” (współdzielony ScreenHeader albo przycisk do poprzedniego pytania), notatka z ikoną i komunikat błędu nad przyciskiem. Teksty są z EKRANY.md.
  *     Ekran 6.1d „Tylko dla Samorządu” pokazuje bramka roli podtoru 8 (PanelGate), a nie ten plik.
- * EN: The shared parts of the survey panel screens (subtrack 5b): the top bar with "Wstecz", a note with an icon, the error message above the button. Screen 6.1d "no access" is shown by the role gate of subtrack 8 (PanelGate).
+ * EN: The shared parts of the survey panel screens (subtrack 5b): the top bar with "Wstecz" (the shared ScreenHeader or a button to the previous question), a note with an icon, the error message above the button. Screen 6.1d "no access" is shown by the role gate of subtrack 8 (PanelGate).
  *
  * @author Jakub
  * @since 2026-10-12
- * @uses src/features/surveys/admin/icons.tsx::ArrowLeftIcon
+ * @uses src/shared/ui/ScreenHeader.tsx::ScreenHeader
+ * @uses src/shared/ui/Button.tsx::Button
+ * @uses src/features/surveys/admin/icons.tsx::TriangleAlertIcon
  * @used_by src/features/surveys/admin/SurveyListScreen.tsx::SurveyListScreen
  * @used_by src/features/surveys/admin/NewSurveyScreen.tsx::NewSurveyScreen
  * @used_by src/features/surveys/admin/ResultsScreen.tsx::ResultsScreen
  */
 
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
-import { ArrowLeftIcon, TriangleAlertIcon } from './icons';
+// PL: Wspólny nagłówek ekranu (pasek z „Wstecz” i tytułem h1).
+// EN: The shared screen header (the bar with "Wstecz" and the h1 title).
+import { ScreenHeader } from '../../../shared/ui/ScreenHeader';
+// PL: Wspólny przycisk tekstowy.
+// EN: The shared text button.
+import { Button } from '../../../shared/ui/Button';
+import { TriangleAlertIcon } from './icons';
 
 /** PL: Dane górnego paska: tytuł i dokąd prowadzi „Wstecz” (adres albo funkcja). EN: The top bar data: the title and where "Wstecz" leads (an address or a function). */
 type ScreenTopProps = { title: string; backTo?: string; onBack?: () => void };
 
 /**
- * PL: Rysuje górny pasek ekranu: przycisk „Wstecz” i tytuł. „Wstecz” to funkcja (poprzednie pytanie) albo link (poprzedni ekran).
- * EN: Draws the screen's top bar: the "Wstecz" button and the title. "Wstecz" is a function (the previous question) or a link (the previous screen).
+ * PL: Rysuje górny pasek ekranu: „‹ Wstecz” i tytuł. Z adresem to link do poprzedniego ekranu (współdzielony nagłówek). Z funkcją to przycisk, np. do poprzedniego pytania, w tym samym pasku.
+ * EN: Draws the screen's top bar: "‹ Wstecz" and the title. With an address it is a link to the previous screen (the shared header). With a function it is a button, for example to the previous question, in the same bar.
  *
  * @param props - PL: tytuł i cel „Wstecz”. EN: the title and the "Wstecz" target.
  * @returns PL: pasek. EN: the bar.
  */
 export function ScreenTop({ title, backTo = '/admin', onBack }: ScreenTopProps) {
+  if (onBack === undefined) return <ScreenHeader title={title} backTo={backTo} />;
+  // PL: Ten sam pasek co w ScreenHeader, ale „Wstecz” jest przyciskiem. EN: The same bar as in ScreenHeader, but "Wstecz" is a button.
   return (
-    <header className="sa-top">
-      {/* PL: Powrót: do poprzedniego pytania (przycisk) albo do poprzedniego ekranu (link). EN: Back: to the previous question (a button) or to the previous screen (a link). */}
-      {onBack === undefined ? (
-        <Link className="sa-icon-button" to={backTo} aria-label="Wstecz">
-          <ArrowLeftIcon />
-        </Link>
-      ) : (
-        <button type="button" className="sa-icon-button" onClick={onBack} aria-label="Wstecz">
-          <ArrowLeftIcon />
-        </button>
-      )}
-      <h1 className="sa-top__title">{title}</h1>
+    <header className="ui-screen-header ui-screen-header--bar">
+      <button type="button" className="ui-screen-header-back sa-back-button" onClick={onBack}>
+        <span aria-hidden="true">‹</span> Wstecz
+      </button>
+      <h1 className="ui-screen-header-bar-title">{title}</h1>
+      <span className="ui-screen-header-action" />
     </header>
   );
 }
@@ -73,11 +76,7 @@ export function ErrorMessage({ text, onRetry }: { text: string; onRetry?: () => 
         <TriangleAlertIcon size={20} />
         <span>{text}</span>
       </p>
-      {onRetry === undefined ? null : (
-        <button type="button" className="sa-button sa-button--outline" onClick={onRetry}>
-          Spróbuj ponownie
-        </button>
-      )}
+      {onRetry === undefined ? null : <Button variant="plain" onClick={onRetry}>Spróbuj ponownie</Button>}
     </div>
   );
 }
