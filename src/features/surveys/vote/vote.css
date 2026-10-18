@@ -100,59 +100,64 @@
   color: var(--ink);
 }
 
-/* PL: Górny pasek ekranu pytań: „Wstecz”, tytuł ankiety, krok i pasek postępu.
-   EN: The top bar of the question screen: "Wstecz", the survey title, the step and the progress bar. */
-.vote-top__row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+/* PL: Pasek ekranu pytań to klasy wspólnego nagłówka (ui-screen-header--bar). Kolumna „vote” ma już 16 px po bokach, więc poziomy odstęp nagłówka zerujemy, żeby nie wcinać dwa razy.
+   EN: The question screen bar uses the shared header classes (ui-screen-header--bar). The "vote" column already has 16 px on the sides, so the header's side padding is reset to avoid double indent. */
+.vote .ui-screen-header {
+  padding-right: 0;
+  padding-left: 0;
 }
 
-.vote-top__title {
-  flex: 1;
-  min-width: 0;
-  font-weight: 700;
-}
-
-.vote-top__step {
-  font-size: var(--t-sm);
-  color: var(--ink-2);
-}
-
-.vote-top__bar {
-  margin-top: 8px;
-}
-
-.vote-icon-button {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
+/* PL: Przycisk „Wstecz” ma wygląd linku, więc zerujemy styl przycisku. Rozmiar tekstu zostaje z klasy wspólnej. Napis nie łamie się (kolumna „vote” łamie długie słowa), więc „‹ Wstecz” zostaje w jednej linii.
+   EN: The "Wstecz" button looks like a link, so we reset the button style. The text size stays from the shared class. The label does not wrap (the "vote" column breaks long words), so "‹ Wstecz" stays on one line. */
+.vote .ui-screen-header-back {
+  padding: 0;
   border: 0;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--ink);
+  background: none;
+  font: inherit;
+  font-size: var(--t-md);
+  white-space: nowrap;
   cursor: pointer;
 }
 
-/* PL: Odpowiedzi: prawdziwe pola wyboru są ukryte wizualnie, a wiersz rysujemy obok nich. Każdy wiersz ma co najmniej 44 px wysokości.
-   EN: Options: the real inputs are visually hidden, and the row is drawn next to them. Every row is at least 44 px high. */
+/* PL: Licznik „1 z 3” w prawym rogu paska też nie łamie się w pionie, kiedy kolumna jest wąska (320 px).
+   EN: The "1 z 3" counter in the right corner of the bar also does not break vertically when the column is narrow (320 px). */
+.vote .ui-screen-header-action {
+  white-space: nowrap;
+}
+
+/* PL: Pasek postępu pod nagłówkiem, w tych samych marginesach co treść.
+   EN: The progress bar under the header, in the same margins as the content. */
+.vote-top__bar {
+  margin: 0 0 8px;
+}
+
+/* PL: Odpowiedzi to jeden blok listy: tło kafla, zaokrąglenie i cienkie linie między wierszami, wcięte 16 px. Prawdziwe pola wyboru są ukryte wizualnie, a wiersz rysujemy obok nich. Każdy wiersz ma co najmniej 44 px wysokości.
+   EN: The options are one list block: the tile background, rounding and thin lines between the rows, inset 16 px. The real inputs are visually hidden, and the row is drawn next to them. Every row is at least 44 px high. */
 .vote-options {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   min-width: 0;
   margin: 24px 0 0;
   padding: 0;
   border: 0;
+  border-radius: var(--r);
+  background: var(--tile);
 }
 
 .vote-option {
   position: relative;
   display: block;
   cursor: pointer;
+}
+
+/* PL: Linia między wierszami, jak w ui-list-row. Pierwszy wiersz jej nie ma.
+   EN: The line between rows, as in ui-list-row. The first row has none. */
+.vote-option + .vote-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 16px;
+  height: 1px;
+  background: var(--line);
 }
 
 .vote-option input {
@@ -167,39 +172,13 @@
   gap: 12px;
   align-items: center;
   min-height: 44px;
-  padding: 12px 16px;
-  border: 1.5px solid var(--line);
-  border-radius: var(--r);
-  background: var(--tile);
-}
-
-.vote-option input:checked + .vote-option__body {
-  border-color: var(--ink);
-  background: var(--tile-2);
+  padding: 11px 16px;
+  font-size: 1.0625rem;
 }
 
 .vote-option input:focus-visible + .vote-option__body {
   outline: 3px solid var(--focus);
-  outline-offset: 2px;
-}
-
-.vote-option__letter {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1.5px solid var(--line);
-  border-radius: 999px;
-  font-size: var(--t-sm);
-  font-weight: 700;
-}
-
-.vote-option input:checked + .vote-option__body .vote-option__letter {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--bg);
+  outline-offset: -3px;
 }
 
 .vote-option__text {
@@ -207,13 +186,13 @@
   min-width: 0;
 }
 
-/* PL: Znacznik zaznaczenia po prawej stronie wiersza.
-   EN: The check mark on the right side of the row. */
+/* PL: Znacznik zaznaczenia po prawej stronie wiersza, w kolorze akcentu szkoły. Zaznaczony wiersz nie zmienia ramki ani tła.
+   EN: The check mark on the right side of the row, in the school accent color. A selected row does not change its frame or background. */
 .vote-option__mark {
   display: inline-flex;
   flex: none;
   margin-left: auto;
-  color: var(--ink);
+  color: var(--accent);
 }
 
 .vote-note {
@@ -271,9 +250,12 @@
   border: 0;
 }
 
+/* PL: Wszystkie pięć wartości to jeden blok kafla, a między nimi cienkie pionowe linie. Wybrana wartość ma akcent w kolorze i pasek pod spodem, bez czarnej ramki.
+   EN: All five values are one tile block, with thin vertical lines between them. The chosen value has the accent color and a bar underneath, with no black frame. */
 .vote-scale__row {
   display: flex;
-  gap: 8px;
+  border-radius: var(--r);
+  background: var(--tile);
 }
 
 .vote-scale__item {
@@ -283,6 +265,16 @@
   cursor: pointer;
 }
 
+.vote-scale__item + .vote-scale__item::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 1px;
+  background: var(--line);
+}
+
 .vote-scale__item input {
   position: absolute;
   width: 1px;
@@ -290,26 +282,26 @@
   opacity: 0;
 }
 
+/* PL: Pasek pod wybraną wartością to dolna ramka w kolorze akcentu. Segment nie jest pozycjonowany, żeby ukryte pole radio zostało na wierzchu i przyjmowało kliknięcie.
+   EN: The bar under the chosen value is a bottom border in the accent color. The segment is not positioned, so the hidden radio stays on top and takes the click. */
 .vote-scale__segment {
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
-  border: 1.5px solid var(--line);
-  border-radius: var(--r);
-  background: var(--tile);
+  border-bottom: 3px solid transparent;
   font-weight: 700;
 }
 
 .vote-scale__item input:checked + .vote-scale__segment {
-  border-color: var(--ink);
-  background: var(--tile-2);
+  border-bottom-color: var(--accent);
+  color: var(--accent);
 }
 
 .vote-scale__item input:focus-visible + .vote-scale__segment {
   outline: 3px solid var(--focus);
-  outline-offset: 2px;
+  outline-offset: -3px;
 }
 
 .vote-scale__ends {
@@ -330,8 +322,8 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 112px;
-  padding: 12px;
-  border: 1.5px solid var(--line);
+  padding: 12px 14px;
+  border: 0;
   border-radius: var(--r);
   background: var(--tile);
   color: var(--ink);

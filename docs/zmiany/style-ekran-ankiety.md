@@ -3,7 +3,7 @@
 ### Zmienione
 
 - Ekrany ankiet w wyglądzie aplikacji systemowej. Lista ma nagłówek „Ankiety”, a termin każdej aktywnej ankiety stoi po prawej: „Dziś” wyróżnione kolorem akcentu, inaczej „za N dni”. Wypełniona ankieta pokazuje „Wypełniona” w kolorze sukcesu.
-- Wypełnianie ankiety nie pokazuje dolnego menu. Ma pasek „Wstecz”, numer kroku „x z y” z paskiem postępu, pytanie w rozmiarze 1.25 rem i odpowiedzi jako wiersze, które się zaznaczają (co najmniej 44 px wysokości). Przycisk „Dalej” albo „Wyślij odpowiedzi” jest jeden, na pełną szerokość, przyklejony do dołu ekranu nad paskiem gestów iPhone'a.
+- Wypełnianie ankiety nie pokazuje dolnego menu. Ma pasek „Wstecz”, tytuł w jednej linii, numer kroku „x z y” z paskiem postępu i pytanie w rozmiarze 1.25 rem. Odpowiedzi to jeden blok listy na tle kafla, z cienkimi liniami między wierszami i znacznikiem ✓ w kolorze akcentu po prawej przy wybranej odpowiedzi (bez czarnej ramki i bez zmiany tła; wiersz ma co najmniej 44 px wysokości, tekst 1.0625 rem, bez liter A–D). Ten sam blok jest w skali 1–5, a pole krótkiej odpowiedzi jest na tle kafla. Przycisk „Dalej” albo „Wyślij odpowiedzi” jest jeden, na pełną szerokość, przyklejony do dołu ekranu nad paskiem gestów iPhone'a.
 - Ekran „Odpowiedzi wysłane” jest prosty: tekst na środku i jedna akcja „Wróć na pulpit”, bez ilustracji.
 - Bez zmian dla użytkownika w działaniu: zapis głosów, walidacja, błędy i dane są takie same.
 

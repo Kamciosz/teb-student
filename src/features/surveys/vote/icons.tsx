@@ -1,10 +1,9 @@
 /**
- * PL: Trzy ikony ekranów ankiety (znacznik, strzałka w lewo, kłódka). Rysunki są z biblioteki Lucide z makiet (docs/projekt/EKRANY.md), wpisane jako SVG, żeby nie dodawać pakietu.
- * EN: Three icons of the survey screens (check, left arrow, lock). The drawings are from the Lucide library used in the mockups (docs/projekt/EKRANY.md), written as SVG so as not to add a package.
+ * PL: Dwie ikony ekranów ankiety (znacznik i kłódka). Rysunki są z biblioteki Lucide z makiet (docs/projekt/EKRANY.md), wpisane jako SVG, żeby nie dodawać pakietu.
+ * EN: Two icons of the survey screens (check and lock). The drawings are from the Lucide library used in the mockups (docs/projekt/EKRANY.md), written as SVG so as not to add a package.
  *
  * @author Jakub
  * @since 2026-10-09
- * @used_by src/features/surveys/vote/FlowParts.tsx::FlowTop
  * @used_by src/features/surveys/vote/QuestionStep.tsx::QuestionStep
  * @used_by src/features/surveys/vote/SurveyDoneScreen.tsx::SurveyDoneScreen
  */
@@ -33,16 +32,6 @@ export function CheckIcon({ size = 44 }: { size?: number }) {
   return (
     <Icon size={size} stroke={2.5}>
       <path d="M20 6 9 17l-5-5" />
-    </Icon>
-  );
-}
-
-/** PL: Strzałka w lewo przycisku „Wstecz”. EN: The left arrow of the "Wstecz" button. */
-export function ArrowLeftIcon({ size = 24 }: { size?: number }) {
-  return (
-    <Icon size={size} stroke={1.75}>
-      <path d="m12 19-7-7 7-7" />
-      <path d="M19 12H5" />
     </Icon>
   );
 }

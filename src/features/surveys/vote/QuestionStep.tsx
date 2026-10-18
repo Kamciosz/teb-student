@@ -1,6 +1,6 @@
 /**
- * PL: Jedno pytanie ankiety na ekranie: numer pytania, treść, odpowiedzi z literami A–D (albo skala 1–5, albo pole krótkiej odpowiedzi) i notatka o anonimowości (ekrany 4.2 i 4.3 w docs/projekt/EKRANY.md). Pytanie jednokrotnego wyboru ma pola radio, wielokrotnego wyboru pola wyboru, skala 1–5 przyciski (ScaleOptions), krótka odpowiedź pole tekstowe z podpowiedzią o anonimowości pod spodem i licznikiem znaków. Sam niczego nie zapisuje, tylko zgłasza wybór wyżej.
- * EN: One survey question on the screen: the question number, the text, the options with letters A–D (or the 1–5 scale, or the short-answer field) and the anonymity note (screens 4.2 and 4.3 in docs/projekt/EKRANY.md). A single-choice question has radio inputs, a multiple-choice one has checkboxes, the 1–5 scale has buttons (ScaleOptions), a short answer is a text field with the anonymity hint under it and a character counter. It stores nothing itself, it only reports the choice upward.
+ * PL: Jedno pytanie ankiety na ekranie: numer pytania, treść, odpowiedzi jako wiersze listy (albo skala 1–5, albo pole krótkiej odpowiedzi) i notatka o anonimowości (ekrany 4.2 i 4.3 w docs/projekt/EKRANY.md). Pytanie jednokrotnego wyboru ma pola radio, wielokrotnego wyboru pola wyboru, skala 1–5 przyciski (ScaleOptions), krótka odpowiedź pole tekstowe z podpowiedzią o anonimowości pod spodem i licznikiem znaków. Sam niczego nie zapisuje, tylko zgłasza wybór wyżej.
+ * EN: One survey question on the screen: the question number, the text, the options as the rows of a list (or the 1–5 scale, or the short-answer field) and the anonymity note (screens 4.2 and 4.3 in docs/projekt/EKRANY.md). A single-choice question has radio inputs, a multiple-choice one has checkboxes, the 1–5 scale has buttons (ScaleOptions), a short answer is a text field with the anonymity hint under it and a character counter. It stores nothing itself, it only reports the choice upward.
  *
  * @author Jakub
  * @since 2026-10-09
@@ -20,10 +20,6 @@ import { ScaleOptions } from './ScaleOptions';
 import { cleanShortText, countShortTextCharacters, SHORT_TEXT_MAX_LENGTH } from './shortText';
 import { TEXTS } from './texts';
 import type { SurveyQuestion } from './types';
-
-// PL: Litery odpowiedzi. Ankieta ma najwyżej tyle odpowiedzi, ile liter; kolejne dostałyby myślnik.
-// EN: The option letters. A survey has at most as many options as letters; extra ones would get a dash.
-const LETTERS = 'ABCDEFGH';
 
 /** PL: Dane kroku z pytaniem. EN: The data of a question step. */
 export type QuestionStepProps = {
@@ -104,13 +100,12 @@ export function QuestionStep({ question, number, selectedIds, onChange, text, on
       ) : (
         <fieldset className="vote-options">
           <legend className="vote-sr-only">Odpowiedzi</legend>
-          {question.options.map((option, index) => {
+          {question.options.map((option) => {
             const isChosen = selectedIds.includes(option.id);
             return (
               <label key={option.id} className="vote-option">
                 <input type={isMultiple ? 'checkbox' : 'radio'} name={question.id} value={option.id} checked={isChosen} onChange={() => toggle(option.id)} />
                 <span className="vote-option__body">
-                  <span className="vote-option__letter">{LETTERS[index] ?? '-'}</span>
                   <span className="vote-option__text">{option.label}</span>
                   {isChosen ? (
                     <span className="vote-option__mark">

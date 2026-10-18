@@ -15,7 +15,6 @@ import { Link } from 'react-router';
 // PL: Przycisk i pasek postępu ze wspólnych klocków.
 // EN: The button and the progress bar from the shared pieces.
 import { Button, ProgressBar } from '../../../shared';
-import { ArrowLeftIcon } from './icons';
 
 /** PL: Dane górnego paska. EN: The data of the top bar. */
 export type FlowTopProps = {
@@ -36,22 +35,22 @@ export type FlowTopProps = {
  */
 export function FlowTop({ title, step, total, onBack }: FlowTopProps) {
   return (
-    <header className="vote-top">
-      <div className="vote-top__row">
+    <>
+      <header className="ui-screen-header ui-screen-header--bar">
         {onBack === null ? (
-          <Link className="vote-icon-button" to="/surveys/vote" aria-label="Wstecz, do listy ankiet">
-            <ArrowLeftIcon />
+          <Link className="ui-screen-header-back" to="/surveys/vote" aria-label="Wstecz, do listy ankiet">
+            ‹ Wstecz
           </Link>
         ) : (
-          <button type="button" className="vote-icon-button" onClick={onBack} aria-label="Wstecz, do poprzedniego pytania">
-            <ArrowLeftIcon />
+          <button type="button" className="ui-screen-header-back" onClick={onBack} aria-label="Wstecz, do poprzedniego pytania">
+            ‹ Wstecz
           </button>
         )}
-        <p className="vote-top__title">{title}</p>
-        <p className="vote-top__step">{`${step} z ${total}`}</p>
-      </div>
+        <h1 className="ui-screen-header-bar-title">{title}</h1>
+        <span className="ui-screen-header-action">{`${step} z ${total}`}</span>
+      </header>
       <ProgressBar value={step} max={total} label="Postęp ankiety" className="vote-top__bar" />
-    </header>
+    </>
   );
 }
 
