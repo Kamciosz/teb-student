@@ -7,7 +7,6 @@
  * @used_by src/features/admin/PanelHome.tsx::Icon
  * @used_by src/features/admin/InvitesScreen.tsx::Icon
  * @used_by src/features/admin/NoAccessScreen.tsx::Icon
- * @used_by src/features/admin/ScreenTop.tsx::Icon
  * @used_by src/features/admin/RoleScreen.tsx::Icon
  * @used_by src/features/admin/RoleCardScreen.tsx::Icon
  * @used_by src/features/admin/PilotScreen.tsx::Icon

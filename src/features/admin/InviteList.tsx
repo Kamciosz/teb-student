@@ -8,9 +8,15 @@
  * @uses src/features/admin/CopyCodeButton.tsx::CopyCodeButton
  * @uses src/features/admin/panelView.ts::formatInviteEnd
  * @uses src/features/admin/icons.tsx::Icon
+ * @uses src/shared/index.ts::ListGroup
+ * @uses src/shared/index.ts::ListRow
+ * @uses src/shared/index.ts::EmptyState
  * @used_by src/features/admin/InvitesScreen.tsx::InviteList
  */
 
+// PL: Wspólne elementy listy: grupa, wiersz i pusty stan.
+// EN: The shared list elements: the group, the row and the empty state.
+import { EmptyState, ListGroup, ListRow } from '../../shared';
 import type { InviteCode } from './api';
 import { CopyCodeButton } from './CopyCodeButton';
 import { Icon } from './icons';
@@ -46,52 +52,41 @@ export function InviteList({ codes, isError, shownCode }: InviteListProps) {
 }
 
 /**
- * PL: Rysuje nagłówek „Wydane wcześniej” i kafel z wierszami kodów, każdy z kopiowaniem.
- * EN: Draws the "Wydane wcześniej" heading and the tile with the code rows, each with copying.
+ * PL: Rysuje grupę „Wydane wcześniej” z wierszami kodów, każdy z kopiowaniem.
+ * EN: Draws the "Wydane wcześniej" group with the code rows, each with copying.
  *
  * @param props - PL: kody do pokazania. EN: the codes to show.
- * @returns PL: nagłówek i lista. EN: the heading and the list.
+ * @returns PL: grupa wierszy. EN: the group of rows.
  */
 function CodeRows({ codes }: { codes: InviteCode[] }) {
   return (
-    <>
-      {/* PL: Nagłówek listy z odstępem 8 pod nim (6.2b). EN: The list heading with 8 below it (6.2b). */}
-      <span className="ad-label ad-label-below">Wydane wcześniej</span>
-      <ul className="ad-tile">
-        {codes.map((item) => (
-          <li key={item.code}>
-            {/* PL: Wiersz: kod i data końca, a z prawej kopiowanie. EN: The row: the code and the end date, and copying on the right. */}
-            <div className="ad-row">
-              <div className="ad-row-text">
-                <span className="ad-code-row">{item.code}</span>
-                <small>do {formatInviteEnd(item.expiresAt)}</small>
-              </div>
-              <CopyCodeButton code={item.code} compact />
-            </div>
-          </li>
-        ))}
-      </ul>
-    </>
+    <ListGroup header="Wydane wcześniej">
+      {codes.map((item) => (
+        <ListRow
+          key={item.code}
+          title={<span className="ad-code-row">{item.code}</span>}
+          subtitle={`do ${formatInviteEnd(item.expiresAt)}`}
+          value={<CopyCodeButton code={item.code} compact />}
+        />
+      ))}
+    </ListGroup>
   );
 }
 
 /**
- * PL: Pusty stan z 6.2a: nie ma ważnych kodów, a kod wydaje przycisk na dole.
- * EN: The empty state from 6.2a: there are no valid codes, and the button at the bottom issues one.
+ * PL: Pusty stan z 6.2a: nie ma ważnych kodów, a kod wydaje przycisk na dole. Nagłówek „Ważne kody” stoi nad pustym kaflem.
+ * EN: The empty state from 6.2a: there are no valid codes, and the button at the bottom issues one. The "Ważne kody" heading stands above the empty tile.
  *
- * @returns PL: nagłówek i kafel z pustym stanem. EN: the heading and the tile with the empty state.
+ * @returns PL: nagłówek i pusty stan. EN: the heading and the empty state.
  */
 function NoCodes() {
   return (
     <>
-      {/* PL: Nagłówek „Ważne kody” z odstępem 8 pod nim (6.2a). EN: The "Ważne kody" heading with 8 below it (6.2a). */}
       <span className="ad-label ad-label-below">Ważne kody</span>
-      <div className="ad-empty-tile">
-        {/* PL: Ikona biletu, tytuł i podpowiedź, jak w projekcie. EN: The ticket icon, the title and the hint, as in the design. */}
-        <Icon name="ticket" />
-        <h2>Nie ma ważnych kodów</h2>
+      <EmptyState title="Nie ma ważnych kodów">
+        {/* PL: Podpowiedź pod tytułem pustego stanu. EN: The hint under the empty state title. */}
         <small>Dotknij „Wydaj kod”, żeby wydać pierwszy.</small>
-      </div>
+      </EmptyState>
     </>
   );
 }
