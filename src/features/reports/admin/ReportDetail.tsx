@@ -202,7 +202,7 @@ export function ReportDetail() {
   // EN: The data takes priority, then the error, and with neither the query is still running.
   return (
     <>
-      <ScreenHeader title="Zgłoszenie" backTo="/reports/admin" />
+      <ScreenHeader title="Zgłoszenie" backTo="/reports/admin" backLabel="Zgłoszenia" />
       {query.data ? <DetailBody key={query.data.report.id} report={query.data.report} history={query.data.history} student={query.data.student} /> : null}
       {!query.data && query.isError ? <Notice text="Nie udało się pobrać zgłoszeń. Spróbuj ponownie za chwilę." /> : null}
       {!query.data && !query.isError ? <div role="status" aria-busy="true" /> : null}

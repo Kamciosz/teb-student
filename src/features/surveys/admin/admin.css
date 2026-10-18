@@ -141,6 +141,12 @@ button.sa-back-button {
   background: var(--bg);
 }
 
+/* PL: Główny przycisk w stopce zajmuje całą szerokość, jak w innych ekranach panelu.
+   EN: The main button in the footer takes the full width, as on the other panel screens. */
+.sa-footer .ui-button--filled {
+  width: 100%;
+}
+
 /* PL: Notatka z ikoną i komunikat błędu.
    EN: A note with an icon and the error message. */
 .sa-note {
@@ -327,7 +333,7 @@ button.sa-back-button {
   gap: 4px;
   padding: 4px;
   border-radius: var(--r);
-  background: var(--tile);
+  background: var(--tile-2);
 }
 
 .sa-segment__choice {
@@ -352,14 +358,15 @@ button.sa-back-button {
   overflow-wrap: normal;
   text-align: center;
   border-radius: var(--r-sm);
+  color: var(--ink-2);
   font-size: var(--t-sm);
   font-weight: 600;
   cursor: pointer;
 }
 
 .sa-segment__choice input:checked + .sa-segment__text {
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--tile);
+  color: var(--ink);
 }
 
 .sa-segment__choice input:focus-visible + .sa-segment__text {

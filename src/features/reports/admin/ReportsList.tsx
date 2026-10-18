@@ -127,7 +127,7 @@ export function ReportsList() {
   // EN: The header with the way back to the panel, one line of filter chips, the order switch and the body under them.
   return (
     <>
-      <ScreenHeader title="Zgłoszenia" backTo="/admin" />
+      <ScreenHeader title="Zgłoszenia" backTo="/admin" backLabel="Panel" />
       <div className="ra-chips" role="group" aria-label="Etap">
         {FILTERS.map((item) => (
           <Chip key={item.code} selected={item.code === filter} onClick={() => setFilter(item.code)}>{item.label}</Chip>

@@ -5,15 +5,13 @@
  * @author Jakub
  * @since 2026-10-12
  * @uses src/features/surveys/admin/draft.ts::addOption
- * @uses src/shared/ui/ListGroup.tsx::ListGroup
  * @uses src/shared/ui/TextField.tsx::TextField
  * @uses src/shared/ui/Button.tsx::Button
  * @used_by src/features/surveys/admin/NewSurveyScreen.tsx::NewSurveyScreen
  */
 
-// PL: Grupa pola pytania, pole tekstu z podpisem i przycisk tekstowy.
-// EN: The question field group, the text field with a label and the text button.
-import { ListGroup } from '../../../shared/ui/ListGroup';
+// PL: Pole tekstu z podpisem i przycisk tekstowy.
+// EN: The text field with a label and the text button.
 import { TextField } from '../../../shared/ui/TextField';
 import { Button } from '../../../shared/ui/Button';
 import { addOption, MAX_OPTION_LENGTH, MAX_OPTIONS, MAX_PROMPT_LENGTH, MIN_OPTIONS, removeOption, type DraftQuestion, type QuestionErrors } from './draft';
@@ -109,9 +107,7 @@ export function QuestionEditor({ question, number, errors, canRemove, onChange, 
           </button>
         </div>
       ) : null}
-      <ListGroup>
-        <TextField label={`Pytanie ${number}`} value={question.prompt} maxLength={MAX_PROMPT_LENGTH} error={errors?.prompt ?? undefined} onChange={(event) => onChange((current) => ({ ...current, prompt: event.target.value }))} />
-      </ListGroup>
+      <TextField label={`Pytanie ${number}`} value={question.prompt} maxLength={MAX_PROMPT_LENGTH} error={errors?.prompt ?? undefined} onChange={(event) => onChange((current) => ({ ...current, prompt: event.target.value }))} />
       {/* PL: Rodzaj pytania: przyciski segmentowe jak czas trwania. Każde pytanie ma własną grupę, więc przyciski jednego pytania nie łączą się z innym. EN: The question type: segment buttons like the duration. Each question has its own group, so one question's buttons do not join another's. */}
       <fieldset className="sa-type">
         <legend className="sa-label">{TEXTS.questionType.legend}</legend>

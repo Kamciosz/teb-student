@@ -26,14 +26,14 @@ import { TriangleAlertIcon } from './icons';
 type ScreenTopProps = { title: string; backTo?: string; onBack?: () => void };
 
 /**
- * PL: Rysuje górny pasek ekranu: „‹ Wstecz” i tytuł. Z adresem to link do poprzedniego ekranu (współdzielony nagłówek). Z funkcją to przycisk, np. do poprzedniego pytania, w tym samym pasku.
- * EN: Draws the screen's top bar: "‹ Wstecz" and the title. With an address it is a link to the previous screen (the shared header). With a function it is a button, for example to the previous question, in the same bar.
+ * PL: Rysuje górny pasek ekranu: „‹ Wstecz” i tytuł. Z adresem to link do poprzedniego ekranu z jego nazwą: „Panel” albo „Ankiety” (współdzielony nagłówek). Z funkcją to przycisk, np. do poprzedniego pytania, w tym samym pasku.
+ * EN: Draws the screen's top bar: "‹ Wstecz" and the title. With an address it is a link to the previous screen with its name: "Panel" or "Ankiety" (the shared header). With a function it is a button, for example to the previous question, in the same bar.
  *
  * @param props - PL: tytuł i cel „Wstecz”. EN: the title and the "Wstecz" target.
  * @returns PL: pasek. EN: the bar.
  */
 export function ScreenTop({ title, backTo = '/admin', onBack }: ScreenTopProps) {
-  if (onBack === undefined) return <ScreenHeader title={title} backTo={backTo} />;
+  if (onBack === undefined) return <ScreenHeader title={title} backTo={backTo} backLabel={backTo === '/admin' ? 'Panel' : 'Ankiety'} />;
   // PL: Ten sam pasek co w ScreenHeader, ale „Wstecz” jest przyciskiem. EN: The same bar as in ScreenHeader, but "Wstecz" is a button.
   return (
     <header className="ui-screen-header ui-screen-header--bar">
