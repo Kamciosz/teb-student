@@ -5,6 +5,7 @@
  * @author Jakub
  * @since 2026-10-11
  * @used_by src/features/profile/ProfileHome.tsx::maskEmail
+ * @used_by src/features/profile/ProfileHome.tsx::avatarLetter
  * @used_by src/features/profile/profileView.test.ts::maskEmail
  */
 
@@ -38,18 +39,4 @@ export function avatarLetter(name: string, email: string): string {
   // EN: The name comes first and the address is the fallback.
   const source = name.trim() || email;
   return source.slice(0, 1).toLocaleUpperCase('pl');
-}
-
-/**
- * PL: Podpis pod imieniem: klasa i zasłonięty adres, rozdzielone kropką środkową (ekran 2.4: „3TA · o***@teb.edu.pl”). Bez klasy sam adres.
- * EN: The caption under the name: the class and the masked address, separated by a middle dot (screen 2.4: "3TA · o***@teb.edu.pl"). Without a class just the address.
- *
- * @param className - PL: klasa z profilu (może być pusta). EN: the class from the profile (may be empty).
- * @param email - PL: adres e-mail ucznia. EN: the student's e-mail address.
- * @returns PL: tekst podpisu. EN: the caption text.
- */
-export function profileCaption(className: string, email: string): string {
-  // PL: Złóż niepuste części w jeden podpis.
-  // EN: Join the non-empty parts into one caption.
-  return [className.trim(), maskEmail(email)].filter(Boolean).join(' · ');
 }

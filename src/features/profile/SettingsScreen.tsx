@@ -27,7 +27,9 @@ import { Icon } from './icons';
 import { SCHOOLS, THEMES, applyTheme, currentLook, type Theme } from './look';
 import { useProfile, useSaveProfile } from './queries';
 import type { TextSize } from './textSize';
-import { ScreenTop } from './ScreenTop';
+// PL: Wspólny nagłówek ekranu z przyciskiem wstecz.
+// EN: The shared screen header with the back button.
+import { ScreenHeader } from '../../shared';
 import { PasskeySection } from './PasskeySection';
 
 /** PL: Najwięcej znaków w imieniu i klasie, takie same jak na serwerze (worker/profile/validation.ts). EN: The most characters in the name and class, the same as on the server (worker/profile/validation.ts). */
@@ -194,7 +196,7 @@ export function SettingsScreen() {
   const query = useProfile();
   return (
     <>
-      <ScreenTop title="Ustawienia" backTo="/profile" backLabel="Wróć do profilu" />
+      <ScreenHeader title="Ustawienia" backTo="/profile" backLabel="Profil" />
       {/* PL: Dane mają pierwszeństwo przed stanem zapytania (bez internetu zostaje zapisany profil). EN: The data takes priority over the query state (without internet the saved profile stays). */}
       {query.data ? <SettingsForm initial={query.data} /> : null}
       {/* PL: Pobranie własnych danych jest zawsze pod formularzem. EN: Downloading one's own data is always under the form. */}

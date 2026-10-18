@@ -8,12 +8,6 @@
 .pf-screen { max-width: 430px; min-height: 100dvh; margin: 0 auto; background: var(--bg); padding: 12px 16px calc(32px + env(safe-area-inset-bottom)); overflow-wrap: anywhere; }
 .pf-icon { width: 20px; height: 20px; flex: none; }
 
-/* PL: Górny pasek: przycisk powrotu i tytuł.
-   EN: The top bar: the back button and the title. */
-.pf-top { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-.pf-top b { flex: 1; font-weight: 700; }
-.pf-icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--tile); display: grid; place-items: center; color: var(--ink); text-decoration: none; flex: none; }
-
 /* PL: Kółko z literą, imię i podpis.
    EN: The circle with the letter, the name and the caption. */
 .pf-who { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
@@ -30,7 +24,6 @@
 .pf-row-text { flex: 1; min-width: 0; }
 .pf-row-text small { display: block; color: var(--ink-2); font-size: var(--t-sm); }
 /* PL: Znacznik roli przy wierszu panelu (ekran 6.1a). EN: The role badge next to the panel row (screen 6.1a). */
-.pf-badge { flex: none; border-radius: var(--r-sm); background: var(--tile-2); padding: 4px 8px; font-size: var(--t-xs); font-weight: 700; color: var(--ink-2); }
 
 /* PL: Podpis wersji na dole.
    EN: The version caption at the bottom. */

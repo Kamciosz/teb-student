@@ -149,7 +149,8 @@ test('zmiana imienia, klasy i szkoły zmienia profil i akcent / changing name, c
   // EN: The profile shows the name and class with the masked address, and "Moje zgłoszenia" leads to the reports.
   await page.goto('/profile');
   await expect(page.getByRole('heading', { name: 'Ola' })).toBeVisible();
-  await expect(page.getByText('3TA · o***@teb.edu.pl')).toBeVisible();
+  await expect(page.getByText('3TA', { exact: true })).toBeVisible();
+  await expect(page.getByText('o***@teb.edu.pl', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Moje zgłoszenia' })).toHaveAttribute('href', '/reports/student/moje');
 
   // PL: Wróć do liceum: akcent znów niebieski.
@@ -452,7 +453,7 @@ test('przy szerokości 320 px nic się nie przewija w poziomie / nothing scrolls
   // EN: Check every screen: the page is not wider than the window.
   for (const path of ['/profile', '/profile/ustawienia', '/profile/usun', '/profile/prywatnosc']) {
     await page.goto(path);
-    await expect(page.locator('main[data-subtrack="7"] b').first()).toBeVisible();
+    await expect(page.locator('main[data-subtrack="7"] h1').first()).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, path).toBeLessThanOrEqual(0);
   }
@@ -491,7 +492,7 @@ test('bez internetu: zachowany profil, błąd zapisu i działająca polityka / o
 
   // PL: Polityka prywatności jest w aplikacji, więc otwiera się także bez internetu.
   // EN: The privacy policy is in the app, so it opens also without internet.
-  await page.getByRole('link', { name: 'Wróć do profilu' }).click();
+  await page.getByRole('link', { name: 'Profil', exact: true }).click();
   await page.getByRole('link', { name: 'Polityka prywatności' }).click();
   await expect(page.getByRole('heading', { name: 'Co zbieramy' })).toBeVisible();
 });
