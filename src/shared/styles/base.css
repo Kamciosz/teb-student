@@ -48,6 +48,7 @@ body {
   color: var(--ink);
   font-size: var(--t-md);
   line-height: 1.45;
+  padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   -webkit-font-smoothing: antialiased;
