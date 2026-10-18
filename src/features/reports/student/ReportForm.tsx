@@ -1,9 +1,12 @@
 /**
- * PL: Formularz zgłoszenia w trzech krokach (ekrany 3.1–3.4): kategoria, miejsce, opis, potem potwierdzenie. Między miejscem a opisem pokazuje krok „Ktoś już to zgłosił?”, żeby uczeń mógł dołączyć zamiast tworzyć duplikat. Szkic trzyma się w stanie ekranu, więc „Wstecz” niczego nie kasuje. Zgłoszenie idzie na serwer dopiero po ostatnim kroku.
- * EN: The report form in three steps (screens 3.1–3.4): category, place, description, then the confirmation. Between the place and the description it shows the step "Ktoś już to zgłosił?", so the student can join instead of making a duplicate. The draft lives in the screen state, so "Wstecz" erases nothing. The report goes to the server only after the last step.
+ * PL: Formularz zgłoszenia w trzech krokach (ekrany 3.1–3.4): kategoria, miejsce, opis, potem potwierdzenie. Między miejscem a opisem pokazuje krok „Ktoś już to zgłosił?”, żeby uczeń mógł dołączyć zamiast tworzyć duplikat. Szkic trzyma się w stanie ekranu, więc „Wstecz” niczego nie kasuje. Zgłoszenie idzie na serwer dopiero po ostatnim kroku. Dolny pasek z „Dalej” jest przyklejony na dole, a nagłówek ma powrót do listy „Moje zgłoszenia”.
+ * EN: The report form in three steps (screens 3.1–3.4): category, place, description, then the confirmation. Between the place and the description it shows the step "Ktoś już to zgłosił?", so the student can join instead of making a duplicate. The draft lives in the screen state, so "Wstecz" erases nothing. The report goes to the server only after the last step. The bottom bar with "Dalej" is sticky at the bottom, and the header has a way back to the "Moje zgłoszenia" list.
  *
  * @author Szymon
  * @since 2026-10-09
+ * @uses src/shared/index.ts::Button
+ * @uses src/shared/index.ts::ScreenHeader
+ * @uses src/features/reports/student/icons.tsx::Icon
  * @uses src/features/reports/student/ReportSteps.tsx::StepCategory
  * @uses src/features/reports/student/SimilarReports.tsx::SimilarReports
  * @uses src/features/reports/student/queries.ts::useSendReport
@@ -15,9 +18,11 @@
 // PL: useState trzyma szkic i numer kroku.
 // EN: useState holds the draft and the step number.
 import { useState } from 'react';
-// PL: Elementy ekranu.
-// EN: The screen elements.
-import { FlowTop } from './FlowTop';
+// PL: Elementy wspólnego interfejsu (nagłówek i przyciski).
+// EN: The shared interface elements (the header and the buttons).
+import { Button, ScreenHeader } from '../../../shared';
+// PL: Ikony przycisków.
+// EN: The button icons.
 import { Icon } from './icons';
 import { StepCategory, StepDescription, StepPlace, type Draft } from './ReportSteps';
 import { ReportSent } from './ReportSent';
@@ -31,6 +36,10 @@ import { useSendReport } from './queries';
 // EN: The photo for the report (optional): the form holds the state, the field only shows it.
 import { ReportPhotoField } from './ReportPhotoField';
 import { useReportPhoto } from './useReportPhoto';
+
+// PL: Adres listy, do którego prowadzi powrót z nagłówka kreatora.
+// EN: The list address that the back link of the wizard header leads to.
+const LIST_ADDRESS = '/reports/student/moje';
 
 /** PL: Pusty szkic: nic nie wybrane, anonimowo włączone. EN: The empty draft: nothing chosen, anonymity on. */
 const EMPTY_DRAFT: Draft = { category: '', place: '', placeDetail: '', description: '', isAnonymous: true };
@@ -72,7 +81,7 @@ function errorMessage(error: Error): string {
 /** PL: Komponent każdego kroku. EN: The component of every step. */
 const STEP_COMPONENTS = { 1: StepCategory, 2: StepPlace, 3: StepDescription };
 
-/** PL: Dane dolnych przycisków. EN: The data of the bottom buttons. */
+/** PL: Dane dolnego paska. EN: The data of the bottom bar. */
 type FooterProps = {
   step: 1 | 2 | 3;
   canContinue: boolean;
@@ -81,11 +90,11 @@ type FooterProps = {
 };
 
 /**
- * PL: Rysuje dolne przyciski: „Wstecz” od kroku 2 i „Dalej” albo „Wyślij zgłoszenie”.
- * EN: Draws the bottom buttons: "Wstecz" from step 2 and "Dalej" or "Wyślij zgłoszenie".
+ * PL: Rysuje dolny pasek: „Wstecz” (zwykły przycisk) od kroku 2 i jeden wypełniony przycisk „Dalej” albo „Wyślij zgłoszenie”.
+ * EN: Draws the bottom bar: "Wstecz" (a plain button) from step 2 and one filled button "Dalej" or "Wyślij zgłoszenie".
  *
  * @param props - PL: krok, zgoda na dalszy ruch i obsługa kliknięć. EN: the step, permission to move on and the click handlers.
- * @returns PL: drzewo elementów przycisków. EN: the tree of button elements.
+ * @returns PL: drzewo elementów paska. EN: the tree of bar elements.
  */
 function FormFooter({ step, canContinue, onBack, onNext }: FooterProps) {
   // PL: Ostatni krok wysyła zgłoszenie, więc ma inny napis i ikonę.
@@ -94,14 +103,14 @@ function FormFooter({ step, canContinue, onBack, onNext }: FooterProps) {
   return (
     <div className="rs-cta">
       {step > 1 ? (
-        <button type="button" className="rs-btn rs-btn-soft rs-btn-back" aria-label="Wstecz" onClick={onBack}>
+        <Button variant="plain" aria-label="Wstecz" onClick={onBack}>
           <Icon name="arrow-left" />
-        </button>
+        </Button>
       ) : null}
-      <button type="button" className="rs-btn rs-btn-accent" disabled={!canContinue} onClick={onNext}>
+      <Button variant="filled" disabled={!canContinue} onClick={onNext}>
         {isLast ? 'Wyślij zgłoszenie' : 'Dalej'}
         <Icon name={isLast ? 'send' : 'arrow-right'} />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -133,10 +142,10 @@ export function ReportForm() {
   // EN: The similar-reports step has its own buttons, so the form and the bottom bar do not cover it.
   if (step === 'similar') {
     return (
-      <>
-        <FlowTop title="Zgłoś problem" step={2} to="/" button={{ icon: 'x', label: 'Zamknij' }} />
+      <div className="rs-flow">
+        <ScreenHeader title="Zgłoś problem" backTo={LIST_ADDRESS} backLabel="Anuluj" />
         <SimilarReports category={draft.category} place={draft.place} onBack={() => setStep(2)} onNewReport={() => setStep(3)} />
-      </>
+      </div>
     );
   }
 
@@ -148,14 +157,14 @@ export function ReportForm() {
   };
   const CurrentStep = STEP_COMPONENTS[step];
   return (
-    <>
-      <FlowTop title="Zgłoś problem" step={step} to="/" button={{ icon: 'x', label: 'Zamknij' }} />
+    <div className="rs-flow">
+      <ScreenHeader title="Zgłoś problem" backTo={LIST_ADDRESS} backLabel="Anuluj" />
       <form onSubmit={(event) => event.preventDefault()} noValidate>
         <CurrentStep draft={draft} onChange={(patch) => setDraft({ ...draft, ...patch })} />
         {step === 3 ? <ReportPhotoField {...photo} /> : null}
       </form>
       {send.error ? <p className="rs-error" role="alert">{errorMessage(send.error)}</p> : null}
       <FormFooter step={step} canContinue={isStepComplete(step, draft) && !send.isPending && !(step === 3 && photoBlocks)} onBack={() => setStep(step === 3 ? 2 : 1)} onNext={onNext} />
-    </>
+    </div>
   );
 }

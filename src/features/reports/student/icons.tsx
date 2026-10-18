@@ -1,16 +1,17 @@
 /**
- * PL: Ikony ekranów 4a jako SVG w kodzie. Kształty pochodzą z biblioteki Lucide (licencja ISC), tej samej, której używa makieta; nie dodajemy pakietu, bo potrzeba tylko dziewięciu ikon.
- * EN: The icons of the 4a screens as inline SVG. The shapes come from the Lucide library (ISC license), the same one the mockup uses; we add no package, because only nine icons are needed.
+ * PL: Ikony ekranów 4a jako SVG w kodzie. Kształty pochodzą z biblioteki Lucide (licencja ISC), tej samej, której używa makieta; nie dodajemy pakietu, bo potrzeba tylko ośmiu ikon.
+ * EN: The icons of the 4a screens as inline SVG. The shapes come from the Lucide library (ISC license), the same one the mockup uses; we add no package, because only eight icons are needed.
  *
  * @author Szymon
  * @since 2026-10-09
  * @used_by src/features/reports/student/ReportForm.tsx::Icon
- * @used_by src/features/reports/student/MyReports.tsx::Icon
- * @used_by src/features/reports/student/FlowTop.tsx::Icon
+ * @used_by src/features/reports/student/ReportSteps.tsx::Icon
+ * @used_by src/features/reports/student/SimilarReports.tsx::Icon
+ * @used_by src/features/reports/student/ReportSent.tsx::Icon
  */
 
 /** PL: Nazwy ikon, które umiemy narysować. EN: The names of the icons we can draw. */
-export type IconName = 'wrench' | 'shield-alert' | 'lightbulb' | 'circle-help' | 'arrow-right' | 'arrow-left' | 'send' | 'check' | 'x';
+export type IconName = 'wrench' | 'shield-alert' | 'lightbulb' | 'circle-help' | 'arrow-right' | 'arrow-left' | 'send' | 'check';
 
 /** PL: Elementy SVG każdej ikony (siatka 24×24). EN: The SVG elements of every icon (24×24 grid). */
 const SHAPES: Record<IconName, string[]> = {
@@ -22,7 +23,6 @@ const SHAPES: Record<IconName, string[]> = {
   'arrow-left': ['m12 19-7-7 7-7', 'M19 12H5'],
   send: ['M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z', 'm21.854 2.147-10.94 10.939'],
   check: ['M20 6 9 17l-5-5'],
-  x: ['M18 6 6 18', 'm6 6 12 12'],
 };
 
 /**

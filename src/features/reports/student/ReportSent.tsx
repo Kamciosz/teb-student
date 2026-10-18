@@ -25,7 +25,7 @@ export function ReportSent() {
   // PL: Nagłówek dostaje fokus, żeby czytnik ekranu odczytał potwierdzenie.
   // EN: The heading gets focus, so a screen reader reads the confirmation.
   return (
-    <>
+    <div className="rs-flow">
       <div className="rs-done">
         <div className="rs-big-check">
           <Icon name="check" />
@@ -34,12 +34,12 @@ export function ReportSent() {
         <p>Zgłoszenie trafiło do Samorządu Uczniowskiego. Status zobaczysz na pulpicie.</p>
       </div>
       <div className="rs-cta">
-        <Link className="rs-btn rs-btn-soft" to="/reports/student/moje">Moje zgłoszenia</Link>
-        <Link className="rs-btn rs-btn-accent" to="/">
+        <Link className="ui-button ui-button--plain" to="/reports/student/moje">Moje zgłoszenia</Link>
+        <Link className="ui-button ui-button--filled" to="/">
           Wróć na pulpit
           <Icon name="arrow-right" />
         </Link>
       </div>
-    </>
+    </div>
   );
 }

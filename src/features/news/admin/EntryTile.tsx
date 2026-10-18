@@ -1,22 +1,24 @@
 /**
- * PL: Kafel jednego wpisu na liście panelu: znacznik typu, znacznik stanu (szkic, do korekty albo opublikowany), znacznik „Zaplanowany na …”, źródło z datą, tytuł i przyciski. Szkic ma „Edytuj” i „Opublikuj”, wpis w korekcie ma „Otwórz korektę” (zatwierdza go inny redaktor w kreatorze, podtor 3b), opublikowany ma „Przypnij” albo „Odepnij”. Każdy wpis ma „Usuń”. Kafel wpisu ucznia (podtor 3a) nie jest wystawiony przez drzwi modułu, więc to własny kafel panelu, nie podgląd wpisu.
- * EN: The tile of one entry on the panel list: the type tag, the status tag (draft, in review or published), the "Zaplanowany na …" tag, the source with the date, the title and the buttons. A draft has "Edytuj" and "Opublikuj", an entry in review has "Otwórz korektę" (another editor approves it in the wizard, subtrack 3b), a published entry has "Przypnij" or "Odepnij". Every entry has "Usuń". The student entry tile (subtrack 3a) is not exposed through the module door, so this is the panel's own tile, not an entry preview.
+ * PL: Wiersz jednego wpisu na liście panelu w stylu grupowanej listy iOS: tytuł, podpis z typem, źródłem i datą, znaczniki stanu (szkic, do korekty, opublikowany), znacznik „Przypięty” i „Zaplanowany na …” oraz rząd czynności. Szkic ma „Edytuj” i „Opublikuj”, wpis w korekcie ma „Otwórz korektę” (zatwierdza go inny redaktor w kreatorze, podtor 3b), opublikowany ma „Przypnij” albo „Odepnij”. Każdy wpis ma „Usuń”. Wiersz wpisu ucznia (podtor 3a) nie jest wystawiony przez drzwi modułu, więc to własny wiersz panelu, nie podgląd wpisu.
+ * EN: The row of one entry on the panel list in the iOS grouped-list style: the title, the subtitle with the type, the source and the date, the state tags (draft, in review or published), the "Przypięty" and "Zaplanowany na …" tags and the row of actions. A draft has "Edytuj" and "Opublikuj", an entry in review has "Otwórz korektę" (another editor approves it in the wizard, subtrack 3b), a published entry has "Przypnij" or "Odepnij". Every entry has "Usuń". The student entry row (subtrack 3a) is not exposed through the module door, so this is the panel's own row, not an entry preview.
  *
  * @author Szymon
  * @since 2026-10-12
- * @uses src/features/news/admin/icons.tsx::Icon
+ * @uses src/shared/index.ts::Badge
+ * @uses src/shared/index.ts::Button
+ * @uses src/features/news/admin/schedule.ts::scheduledLabel
  * @used_by src/features/news/admin/NewsAdminScreen.tsx::EntryTile
  */
 
 import { Link } from 'react-router';
+import { Badge, Button } from '../../../shared';
 import type { PanelEntry } from './api';
-import { Icon } from './icons';
 import { scheduledLabel } from './schedule';
 import { SCREEN, TEXTS } from './texts';
 
 /**
- * PL: Dane kafla.
- * EN: The tile data.
+ * PL: Dane wiersza.
+ * EN: The row data.
  */
 export type EntryTileProps = {
   /** PL: Wpis do pokazania. EN: The entry to show. */
@@ -44,8 +46,8 @@ function shortDate(iso: string): string {
 }
 
 /**
- * PL: Zamienia stan wpisu na znacznik na kaflu.
- * EN: Turns the entry state into the tag on the tile.
+ * PL: Zamienia stan wpisu na znacznik w wierszu.
+ * EN: Turns the entry state into the tag in the row.
  *
  * @param status - PL: stan wpisu z serwera. EN: the entry state from the server.
  * @returns PL: tekst znacznika. EN: the tag text.
@@ -58,8 +60,8 @@ function statusLabel(status: PanelEntry['status']): string {
 }
 
 /**
- * PL: Rysuje rząd przycisków kafla. Każdy stan ma swoje czynności, a „Usuń” jest zawsze.
- * EN: Draws the row of tile buttons. Each state has its own actions, and "Usuń" is always there.
+ * PL: Rysuje rząd czynności wiersza. Każdy stan ma swoje czynności, a „Usuń” jest zawsze.
+ * EN: Draws the row of row actions. Each state has its own actions, and "Usuń" is always there.
  *
  * @param props - PL: wpis i funkcje przycisków. EN: the entry and the button functions.
  * @returns PL: drzewo elementów rzędu. EN: the tree of row elements.
@@ -72,52 +74,54 @@ function TileActions({ entry, isLocked, onPublish, onTogglePin, onDelete }: Entr
     <div className="na-actions">
       {entry.status === 'draft' ? (
         <>
-          <Link className="na-btn na-btn-outline" to={`/news/editor/${entry.id}`} aria-label={TEXTS.actionName(TEXTS.edit, entry.title)}>
-            <Icon name="pencil" />{TEXTS.edit}
+          <Link className="na-link" to={`/news/editor/${entry.id}`} aria-label={TEXTS.actionName(TEXTS.edit, entry.title)}>
+            {TEXTS.edit}
           </Link>
-          <button type="button" className="na-btn" disabled={isLocked} aria-label={TEXTS.actionName(SCREEN.publish, entry.title)} onClick={onPublish}>
-            <Icon name="send" />{SCREEN.publish}
-          </button>
+          <Button variant="plain" disabled={isLocked} aria-label={TEXTS.actionName(SCREEN.publish, entry.title)} onClick={onPublish}>
+            {SCREEN.publish}
+          </Button>
         </>
       ) : null}
       {entry.status === 'in_review' ? (
-        <Link className="na-btn na-btn-outline" to={`/news/editor/${entry.id}`} aria-label={TEXTS.actionName(TEXTS.openReview, entry.title)}>
-          <Icon name="pencil" />{TEXTS.openReview}
+        <Link className="na-link" to={`/news/editor/${entry.id}`} aria-label={TEXTS.actionName(TEXTS.openReview, entry.title)}>
+          {TEXTS.openReview}
         </Link>
       ) : null}
       {entry.status === 'published' ? (
-        <button type="button" className="na-btn na-btn-outline" disabled={isLocked} aria-label={TEXTS.actionName(pinAction, entry.title)} onClick={onTogglePin}>
-          <Icon name="pin" />{pinAction}
-        </button>
+        <Button variant="plain" disabled={isLocked} aria-label={TEXTS.actionName(pinAction, entry.title)} onClick={onTogglePin}>
+          {pinAction}
+        </Button>
       ) : null}
-      <button type="button" className="na-btn na-btn-outline" disabled={isLocked} aria-label={TEXTS.actionName(TEXTS.delete, entry.title)} onClick={onDelete}>
-        <Icon name="trash-2" />{TEXTS.delete}
-      </button>
+      <Button variant="destructive" disabled={isLocked} aria-label={TEXTS.actionName(TEXTS.delete, entry.title)} onClick={onDelete}>
+        {TEXTS.delete}
+      </Button>
     </div>
   );
 }
 
 /**
- * PL: Rysuje kafel wpisu.
- * EN: Draws the entry tile.
+ * PL: Rysuje wiersz wpisu.
+ * EN: Draws the entry row.
  *
  * @param props - PL: wpis i funkcje przycisków. EN: the entry and the button functions.
- * @returns PL: drzewo elementów kafla. EN: the tree of tile elements.
+ * @returns PL: drzewo elementów wiersza. EN: the tree of row elements.
  */
 export function EntryTile(props: EntryTileProps) {
   const { entry } = props;
   const scheduled = scheduledLabel(entry);
-  // PL: Znaczniki, źródło z datą (szkic nie ma daty), tytuł i rząd przycisków.
-  // EN: The tags, the source with the date (a draft has no date), the title and the row of buttons.
+  // PL: Tytuł, podpis z typem i źródłem (szkic nie ma daty), znaczniki stanu, potem rząd czynności.
+  // EN: The title, the subtitle with the type and the source (a draft has no date), the state tags, then the row of actions.
   return (
-    <li className="na-tile">
-      <div className="na-tile-head">
-        <span className="na-tag">{SCREEN.types[entry.type] ?? entry.type}</span>
-        <span className="na-tag na-tag-status">{statusLabel(entry.status)}</span>
-        {scheduled && <span className="na-tag">{scheduled}</span>}
-        <span className="na-small">{entry.publishedAt ? `${entry.source} · ${shortDate(entry.publishedAt)}` : entry.source}</span>
-      </div>
+    <li className="na-row">
       <h2 className="na-title">{entry.title}</h2>
+      <p className="na-small">
+        {SCREEN.types[entry.type] ?? entry.type} · {entry.publishedAt ? `${entry.source} · ${shortDate(entry.publishedAt)}` : entry.source}
+      </p>
+      <div className="na-badges">
+        <Badge>{statusLabel(entry.status)}</Badge>
+        {entry.status === 'published' && entry.pinnedAt !== null ? <Badge tone="accent">{TEXTS.pinned}</Badge> : null}
+        {scheduled ? <Badge>{scheduled}</Badge> : null}
+      </div>
       <TileActions {...props} />
     </li>
   );

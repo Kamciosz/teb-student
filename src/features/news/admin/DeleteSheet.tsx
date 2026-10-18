@@ -1,14 +1,16 @@
 /**
- * PL: Arkusz potwierdzenia usunięcia wpisu, wzorowany na arkuszu z ekranu 6.3c (przyciemnienie, arkusz od krawędzi do krawędzi, przycisk główny i „Anuluj”). Usunięcie jest nieodwracalne, więc nie dzieje się od jednego dotknięcia. Escape i dotknięcie przyciemnienia zamykają arkusz.
- * EN: The confirmation sheet for deleting an entry, modelled on the sheet from screen 6.3c (a dimmed screen, an edge-to-edge sheet, the main button and "Anuluj"). Deleting cannot be undone, so it does not happen on one tap. Escape and tapping the dimmed area close the sheet.
+ * PL: Arkusz potwierdzenia usunięcia wpisu w stylu arkusza iOS: przyciemniony ekran, arkusz od dołu z tytułem, podpisem, przyciskiem „Usuń” i „Anuluj”. Usunięcie jest nieodwracalne, więc nie dzieje się od jednego dotknięcia. Escape i dotknięcie przyciemnienia zamykają arkusz.
+ * EN: The confirmation sheet for deleting an entry in the iOS sheet style: a dimmed screen, a sheet from the bottom with the title, the hint, the "Usuń" button and "Anuluj". Deleting cannot be undone, so it does not happen on one tap. Escape and tapping the dimmed area close the sheet.
  *
  * @author Szymon
  * @since 2026-10-12
+ * @uses src/shared/index.ts::Button
  * @uses src/features/news/admin/texts.ts::TEXTS
  * @used_by src/features/news/admin/NewsAdminScreen.tsx::DeleteSheet
  */
 
 import { useEffect, useRef } from 'react';
+import { Button } from '../../../shared';
 import type { PanelEntry } from './api';
 import { SCREEN, TEXTS } from './texts';
 
@@ -60,15 +62,20 @@ export function DeleteSheet({ entry, isDeleting, onConfirm, onCancel }: DeleteSh
     return () => document.removeEventListener('keydown', onKey);
   }, [onCancel]);
 
-  // PL: Przyciemnienie z arkuszem: tytuł, podpis z tytułem wpisu, przycisk główny i „Anuluj”.
-  // EN: The dimmed area with the sheet: the title, the hint with the entry title, the main button and "Anuluj".
+  // PL: Przyciemnienie leży pod arkuszem jako osobne tło, więc arkusz zostaje wyraźny. Tytuł, podpis, przycisk główny i „Anuluj”.
+  // EN: The dimmed area lies under the sheet as a separate backdrop, so the sheet stays clear. The title, the hint, the main button and "Anuluj".
   return (
-    <div className="na-backdrop" onClick={onCancel}>
-      <div className="na-sheet" role="dialog" aria-modal="true" aria-labelledby="na-sheet-title" onClick={(event) => event.stopPropagation()}>
+    <div className="na-sheet-layer">
+      <div className="na-backdrop" onClick={onCancel} />
+      <div className="na-sheet" role="dialog" aria-modal="true" aria-labelledby="na-sheet-title">
         <h2 id="na-sheet-title">{TEXTS.sheet.title}</h2>
         <p>{hintFor(entry)}</p>
-        <button type="button" className="na-btn" disabled={isDeleting} onClick={onConfirm}>{TEXTS.sheet.confirm}</button>
-        <button ref={cancelRef} type="button" className="na-btn na-btn-outline" disabled={isDeleting} onClick={onCancel}>{SCREEN.cancel}</button>
+        <Button variant="destructive" disabled={isDeleting} onClick={onConfirm}>
+          {TEXTS.sheet.confirm}
+        </Button>
+        <Button ref={cancelRef} variant="plain" disabled={isDeleting} onClick={onCancel}>
+          {SCREEN.cancel}
+        </Button>
       </div>
     </div>
   );

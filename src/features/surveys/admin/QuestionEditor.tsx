@@ -5,9 +5,15 @@
  * @author Jakub
  * @since 2026-10-12
  * @uses src/features/surveys/admin/draft.ts::addOption
+ * @uses src/shared/ui/TextField.tsx::TextField
+ * @uses src/shared/ui/Button.tsx::Button
  * @used_by src/features/surveys/admin/NewSurveyScreen.tsx::NewSurveyScreen
  */
 
+// PL: Pole tekstu z podpisem i przycisk tekstowy.
+// EN: The text field with a label and the text button.
+import { TextField } from '../../../shared/ui/TextField';
+import { Button } from '../../../shared/ui/Button';
 import { addOption, MAX_OPTION_LENGTH, MAX_OPTIONS, MAX_PROMPT_LENGTH, MIN_OPTIONS, removeOption, type DraftQuestion, type QuestionErrors } from './draft';
 import { OPTION_LETTERS } from './format';
 import { PlusIcon, TriangleAlertIcon, XIcon } from './icons';
@@ -57,8 +63,8 @@ export function FieldError({ id, text }: { id: string; text: string | null | und
 }
 
 /**
- * PL: Rysuje wiersz jednej odpowiedzi: litera, pole tekstu i przycisk „x” (nieaktywny przy dwóch odpowiedziach).
- * EN: Draws the row of one option: the letter, the text field and the "x" button (inactive with two options).
+ * PL: Rysuje wiersz jednej odpowiedzi: litera, pole tekstu z podpisem „Odpowiedź X” (podpis ukryty wizualnie, litera stoi obok) i przycisk „x” (nieaktywny przy dwóch odpowiedziach).
+ * EN: Draws the row of one option: the letter, the text field with the label "Odpowiedź X" (the label is visually hidden, the letter stands next to it) and the "x" button (inactive with two options).
  *
  * @param props - PL: litera, tekst, możliwość usunięcia i funkcje. EN: the letter, the text, whether it can be removed and the functions.
  * @returns PL: wiersz. EN: the row.
@@ -69,7 +75,7 @@ function OptionRow(props: { letter: string; value: string; canRemove: boolean; o
       {/* PL: Litera odpowiedzi. EN: The option letter. */}
       <span className="sa-letter">{props.letter}</span>
       {/* PL: Treść odpowiedzi, wpisywana przez osobę z Samorządu. EN: The option text, typed by the Student Council member. */}
-      <input className="sa-option__input" value={props.value} maxLength={MAX_OPTION_LENGTH} aria-label={`Odpowiedź ${props.letter}`} onChange={(event) => props.onChange(event.target.value)} />
+      <TextField className="sa-option__field" label={`Odpowiedź ${props.letter}`} value={props.value} maxLength={MAX_OPTION_LENGTH} onChange={(event) => props.onChange(event.target.value)} />
       {/* PL: Usuń odpowiedź. Przy dwóch odpowiedziach jest nieaktywny. EN: Remove the option. Inactive with two options. */}
       <button type="button" className="sa-icon-button" disabled={!props.canRemove} aria-label={`Usuń odpowiedź ${props.letter}`} onClick={props.onRemove}>
         <XIcon />
@@ -86,7 +92,6 @@ function OptionRow(props: { letter: string; value: string; canRemove: boolean; o
  * @returns PL: sekcja pytania. EN: the question section.
  */
 export function QuestionEditor({ question, number, errors, canRemove, onChange, onRemove }: QuestionEditorProps) {
-  const promptId = `sa-prompt-${question.key}`;
   const canRemoveOption = question.options.length > MIN_OPTIONS;
   // PL: Skala 1–5 ma stałe odpowiedzi „1”…„5”, a krótka odpowiedź nie ma odpowiedzi wcale, więc lista odpowiedzi i jej przyciski się nie pokazują.
   // EN: The 1–5 scale has the fixed options "1"…"5", and a short answer has no options at all, so the option list and its buttons are not shown.
@@ -94,15 +99,15 @@ export function QuestionEditor({ question, number, errors, canRemove, onChange, 
 
   return (
     <section className="sa-question">
-      <div className="sa-question__head">
-        <label className="sa-label sa-label--tight" htmlFor={promptId}>{`Pytanie ${number}`}</label>
-        {/* PL: Usunięcie pytania jest tylko przy kilku pytaniach, bo ankieta ma co najmniej jedno. EN: Removing a question exists only with several questions, because a survey has at least one. */}
-        {canRemove ? (
+      {/* PL: Usunięcie pytania jest tylko przy kilku pytaniach, bo ankieta ma co najmniej jedno. EN: Removing a question exists only with several questions, because a survey has at least one. */}
+      {canRemove ? (
+        <div className="sa-question__head">
           <button type="button" className="sa-icon-button" aria-label={`Usuń pytanie ${number}`} onClick={onRemove}>
             <XIcon />
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
+      <TextField label={`Pytanie ${number}`} value={question.prompt} maxLength={MAX_PROMPT_LENGTH} error={errors?.prompt ?? undefined} onChange={(event) => onChange((current) => ({ ...current, prompt: event.target.value }))} />
       {/* PL: Rodzaj pytania: przyciski segmentowe jak czas trwania. Każde pytanie ma własną grupę, więc przyciski jednego pytania nie łączą się z innym. EN: The question type: segment buttons like the duration. Each question has its own group, so one question's buttons do not join another's. */}
       <fieldset className="sa-type">
         <legend className="sa-label">{TEXTS.questionType.legend}</legend>
@@ -116,8 +121,6 @@ export function QuestionEditor({ question, number, errors, canRemove, onChange, 
           ))}
         </div>
       </fieldset>
-      <input id={promptId} className="sa-input" value={question.prompt} maxLength={MAX_PROMPT_LENGTH} aria-invalid={errors?.prompt != null} aria-describedby={`${promptId}-error`} onChange={(event) => onChange((current) => ({ ...current, prompt: event.target.value }))} />
-      <FieldError id={`${promptId}-error`} text={errors?.prompt} />
       {hidesOptions ? null : (
         <>
           <ul className="sa-options">
@@ -132,12 +135,12 @@ export function QuestionEditor({ question, number, errors, canRemove, onChange, 
               />
             ))}
           </ul>
-          <FieldError id={`${promptId}-options-error`} text={errors?.options} />
+          <FieldError id={`sa-prompt-${question.key}-options-error`} text={errors?.options} />
           {/* PL: Dodaj odpowiedź. Przy pięciu odpowiedziach jest nieaktywny. EN: Add an option. Inactive with five options. */}
-          <button type="button" className="sa-button sa-button--outline" disabled={question.options.length >= MAX_OPTIONS} onClick={() => onChange(addOption)}>
+          <Button variant="plain" disabled={question.options.length >= MAX_OPTIONS} onClick={() => onChange(addOption)}>
             <PlusIcon />
             Dodaj odpowiedź
-          </button>
+          </Button>
         </>
       )}
     </section>

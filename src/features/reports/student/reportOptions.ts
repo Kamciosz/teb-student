@@ -4,9 +4,11 @@
  *
  * @author Szymon
  * @since 2026-10-09
- * @used_by src/features/reports/student/ReportForm.tsx::CATEGORY_OPTIONS
- * @used_by src/features/reports/student/ReportForm.tsx::PLACE_OPTIONS
+ * @used_by src/features/reports/student/ReportSteps.tsx::CATEGORY_OPTIONS
+ * @used_by src/features/reports/student/ReportSteps.tsx::PLACE_OPTIONS
  * @used_by src/features/reports/student/MyReports.tsx::categoryLabel
+ * @used_by src/features/reports/student/ReportDetails.tsx::categoryLabel
+ * @used_by src/features/reports/student/ReportDetails.tsx::STAGE_ORDER
  * @used_by src/features/reports/student/reportView.ts::STAGE_ORDER
  */
 
@@ -23,9 +25,9 @@ export type CategoryIcon = 'wrench' | 'shield-alert' | 'lightbulb' | 'circle-hel
 export type CategoryOption = {
   /** PL: Kod wysyłany na serwer. EN: The code sent to the server. */
   code: string;
-  /** PL: Napis na karcie. EN: The label on the card. */
+  /** PL: Napis w wierszu. EN: The label on the row. */
   label: string;
-  /** PL: Ikona karty. EN: The card icon. */
+  /** PL: Ikona wiersza. EN: The row icon. */
   icon: CategoryIcon;
 };
 
@@ -55,8 +57,8 @@ export const STAGE_ORDER: readonly { code: string; label: string }[] = [
 ];
 
 /**
- * PL: Podaje nazwę kategorii do znacznika na kafelku.
- * EN: Gives the category name for the tag on a tile.
+ * PL: Podaje nazwę kategorii do znacznika w wierszu.
+ * EN: Gives the category name for the tag in a row.
  *
  * @param code - PL: kod kategorii z serwera. EN: the category code from the server.
  * @returns PL: polska nazwa albo sam kod, gdy serwer wyśle nieznany. EN: the Polish name, or the code itself when the server sends an unknown one.

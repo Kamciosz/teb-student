@@ -4,9 +4,8 @@
  *
  * @author Szymon
  * @since 2026-10-12
- * @used_by src/features/news/admin/PanelTop.tsx::SCREEN
+ * @used_by src/features/news/admin/NewsAdminScreen.tsx::SCREEN
  * @used_by src/features/news/admin/NewsAdminScreen.tsx::TEXTS
- * @used_by src/features/news/admin/PanelTop.tsx::TEXTS
  * @used_by src/features/news/admin/schedule.ts::TEXTS
  * @used_by src/features/news/admin/EntryTile.tsx::TEXTS
  * @used_by src/features/news/admin/DeleteSheet.tsx::TEXTS
@@ -30,11 +29,13 @@ export const SCREEN = {
  * EN: The texts outside EKRANY.md.
  */
 export const TEXTS = {
-  back: 'Wróć',
+  back: 'Panel',
   newEntry: 'Nowy wpis',
   listLabel: 'Wpisy',
   draft: 'Szkic',
   published: 'Opublikowany',
+  // PL: Znacznik przypiętego wpisu obok stanu „Opublikowany”. EN: The tag of a pinned entry next to the "Opublikowany" state.
+  pinned: 'Przypięty',
   review: 'Do korekty',
   openReview: 'Otwórz korektę',
   /** PL: Znacznik wpisu opublikowanego z chwilą startu w przyszłości; argument to „dzień.miesiąc, godzina:minuta”. EN: The tag of a published entry with a start moment in the future; the argument is "day.month, hour:minute". */
