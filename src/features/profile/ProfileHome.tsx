@@ -1,6 +1,6 @@
 /**
- * PL: Ekran „Profil” w wyglądzie ustawień telefonu: nagłówek „Profil”, litera i imię z klasą, potem grupowane listy. Grupa „Konto” pokazuje zasłonięty adres e-mail i wiersz „Ustawienia”, potem wiersz panelu (tylko dla osoby z rolą), „Moje zgłoszenia”, „Polityka prywatności”, „Wyloguj” osobno i „Usuń konto i dane” na dole, w osobnej grupie, na czerwono. Na dole jest dolny pasek nawigacji.
- * EN: The "Profil" screen in the look of the phone's settings: the "Profil" header, the letter and the name with the class, then grouped lists. The "Konto" group shows the masked e-mail address and the row "Ustawienia", then the panel row (only for a person with a role), "Moje zgłoszenia", "Polityka prywatności", "Wyloguj" on its own and "Usuń konto i dane" at the bottom, in a separate group, in red. The bottom navigation bar is at the bottom.
+ * PL: Ekran „Profil” w wyglądzie ustawień telefonu: nagłówek „Profil”, kółko z literą, imię i klasa, potem grupy list. Grupa „Konto” pokazuje tylko zasłonięty adres e-mail. Druga grupa ma „Ustawienia”, wiersz panelu (tylko dla osoby z rolą), „Moje zgłoszenia” i „Polityka prywatności”. „Wyloguj” jest w osobnej grupie, a „Usuń konto i dane” na dole, w osobnej grupie, na czerwono. Na dole jest dolny pasek nawigacji.
+ * EN: The "Profil" screen in the look of the phone's settings: the "Profil" header, the circle with the letter, the name and the class, then groups of lists. The "Konto" group shows only the masked e-mail address. The second group has "Ustawienia", the panel row (only for a person with a role), "Moje zgłoszenia" and "Polityka prywatności". "Wyloguj" is in its own group, and "Usuń konto i dane" at the bottom, in a separate group, in red. The bottom navigation bar is at the bottom.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-18
@@ -46,8 +46,8 @@ export function ProfileHome() {
   // EN: The session gives the e-mail address, the profile gives the name and class (from the server or the saved copy).
   const session = useAuthSession();
   const profile = useProfile().data;
-  // PL: Wiersz panelu: null, gdy uczeń nie ma roli (wtedy grupy z panelem nie ma).
-  // EN: The panel row: null when the student has no role (then there is no panel group).
+  // PL: Wiersz panelu: null, gdy uczeń nie ma roli (wtedy wiersza panelu nie ma).
+  // EN: The panel row: null when the student has no role (then there is no panel row).
   const panel = usePanelEntry();
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const email = session.status === 'signed-in' ? session.student.email : '';
@@ -63,48 +63,45 @@ export function ProfileHome() {
   return (
     <>
       <ScreenHeader title="Profil" />
-      {/* PL: Kółko z literą, imię i klasa pod nim. EN: The circle with the letter, the name and the class under it. */}
-      <div className="pf-who">
-        <div className="pf-avatar" aria-hidden="true">{avatarLetter(name, email)}</div>
-        <div className="pf-who-text">
-          {name ? <h2>{name}</h2> : null}
-          {className ? <small>{className}</small> : null}
+      <div className="pf-stack">
+        {/* PL: Kółko z literą, imię i klasa obok. EN: The circle with the letter, the name and the class beside it. */}
+        <div className="pf-who">
+          <div className="pf-avatar" aria-hidden="true">{avatarLetter(name, email)}</div>
+          <div className="pf-who-text">
+            {name ? <h2>{name}</h2> : null}
+            {className ? <small>{className}</small> : null}
+          </div>
         </div>
-      </div>
-      {/* PL: Konto z zasłoniętym adresem i ustawienia (imię, klasa, szkoła, motyw, tekst). EN: The account with the masked address, and the settings (name, class, school, theme, text). */}
-      <ListGroup header="Konto">
-        <ListRow title="E-mail" value={email ? maskEmail(email) : ''} />
-        <ListRow title="Ustawienia" icon={<Icon name="sliders-horizontal" />} to="/profile/ustawienia" />
-      </ListGroup>
-      {/* PL: Panel Samorządu tylko dla osoby z rolą. EN: The Samorząd panel only for a person with a role. */}
-      {panel ? (
-        <ListGroup>
-          <ListRow title={panel.label} value={panel.badge} icon={<Icon name="layout-dashboard" />} to="/admin" />
+        {/* PL: Konto tylko z zasłoniętym adresem. EN: The account with only the masked address. */}
+        <ListGroup header="Konto">
+          <ListRow title="E-mail" value={email ? maskEmail(email) : ''} />
         </ListGroup>
-      ) : null}
-      {/* PL: Zgłoszenia ucznia i polityka prywatności. EN: The student's reports and the privacy policy. */}
-      <ListGroup>
-        <ListRow title="Moje zgłoszenia" icon={<Icon name="list-checks" />} to="/reports/student/moje" />
-        <ListRow title="Polityka prywatności" icon={<Icon name="file-text" />} to="/profile/prywatnosc" />
-      </ListGroup>
-      {/* PL: Wylogowanie jako osobny wiersz-akcja. EN: Signing out as a separate action row. */}
-      <ListGroup>
-        <ListRow title="Wyloguj" icon={<Icon name="log-out" />} onClick={handleSignOut} />
-      </ListGroup>
-      {/* PL: Błąd wylogowania (na przykład brak internetu). EN: The sign-out error (for example no internet). */}
-      {signOutError ? <p className="pf-error" role="alert">{signOutError}</p> : null}
-      {/* PL: Usunięcie konta na dole, w osobnej grupie, na czerwono. EN: Deleting the account at the bottom, in a separate group, in red. */}
-      <ListGroup>
-        <ListRow
-          title="Usuń konto i dane"
-          subtitle="Usuniemy zgłoszenia i odpowiedzi."
-          icon={<Icon name="trash-2" />}
-          to="/profile/usun"
-          destructive
-        />
-      </ListGroup>
-      {/* PL: Podpis wersji na dole ekranu. EN: The version caption at the bottom of the screen. */}
-      <p className="pf-version">TEB Student · wersja przykładowa</p>
+        {/* PL: Ustawienia, panel Samorządu (tylko dla osoby z rolą), zgłoszenia i polityka prywatności. EN: Settings, the Samorząd panel (only for a person with a role), reports and the privacy policy. */}
+        <ListGroup>
+          <ListRow title="Ustawienia" icon={<Icon name="sliders-horizontal" />} to="/profile/ustawienia" />
+          {panel ? <ListRow title={panel.label} icon={<Icon name="layout-dashboard" />} to="/admin" /> : null}
+          <ListRow title="Moje zgłoszenia" icon={<Icon name="list-checks" />} to="/reports/student/moje" />
+          <ListRow title="Polityka prywatności" icon={<Icon name="file-text" />} to="/profile/prywatnosc" />
+        </ListGroup>
+        {/* PL: Wylogowanie jako osobna grupa z jednym wierszem-akcją. EN: Signing out as a separate group with one action row. */}
+        <ListGroup>
+          <ListRow title="Wyloguj" icon={<Icon name="log-out" />} onClick={handleSignOut} />
+        </ListGroup>
+        {/* PL: Błąd wylogowania (na przykład brak internetu). EN: The sign-out error (for example no internet). */}
+        {signOutError ? <p className="pf-error" role="alert">{signOutError}</p> : null}
+        {/* PL: Usunięcie konta na dole, w osobnej grupie, na czerwono. EN: Deleting the account at the bottom, in a separate group, in red. */}
+        <ListGroup>
+          <ListRow
+            title="Usuń konto i dane"
+            subtitle="Usuniemy zgłoszenia i odpowiedzi."
+            icon={<Icon name="trash-2" />}
+            to="/profile/usun"
+            destructive
+          />
+        </ListGroup>
+        {/* PL: Podpis wersji na dole ekranu. EN: The version caption at the bottom of the screen. */}
+        <p className="pf-version">TEB Student · wersja przykładowa</p>
+      </div>
       <Dock />
     </>
   );
