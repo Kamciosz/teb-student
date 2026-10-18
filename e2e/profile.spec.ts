@@ -100,7 +100,7 @@ async function saveSettings(page: Page, values: { name: string; className: strin
   await page.goto('/profile/ustawienia');
   await page.getByLabel('Imię').fill(values.name);
   await page.getByLabel('Klasa').fill(values.className);
-  await page.getByRole('radio', { name: values.school }).check();
+  await page.getByRole('button', { name: values.school }).click();
   // PL: Zapisz i poczekaj na potwierdzenie.
   // EN: Save and wait for the confirmation.
   await page.getByRole('button', { name: 'Zapisz' }).click();
@@ -115,7 +115,7 @@ async function saveSettings(page: Page, values: { name: string; className: strin
  * @param name - PL: nazwa motywu. EN: the theme name.
  */
 async function chooseTheme(page: Page, name: 'Automatyczny' | 'Jasny' | 'Ciemny'): Promise<void> {
-  await page.getByRole('group', { name: 'Motyw' }).getByRole('radio', { name }).check();
+  await page.getByRole('group', { name: 'Motyw' }).getByRole('button', { name }).click();
 }
 
 /**
@@ -149,7 +149,8 @@ test('zmiana imienia, klasy i szkoły zmienia profil i akcent / changing name, c
   // EN: The profile shows the name and class with the masked address, and "Moje zgłoszenia" leads to the reports.
   await page.goto('/profile');
   await expect(page.getByRole('heading', { name: 'Ola' })).toBeVisible();
-  await expect(page.getByText('3TA · o***@teb.edu.pl')).toBeVisible();
+  await expect(page.getByText('3TA', { exact: true })).toBeVisible();
+  await expect(page.getByText('o***@teb.edu.pl', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Moje zgłoszenia' })).toHaveAttribute('href', '/reports/student/moje');
 
   // PL: Wróć do liceum: akcent znów niebieski.
@@ -158,8 +159,8 @@ test('zmiana imienia, klasy i szkoły zmienia profil i akcent / changing name, c
   expect(await accentHue(page)).toBe('blue');
 });
 
-// PL: Wiersz „Panel Samorządu” widzi tylko osoba z rolą: Samorząd dostaje go z znacznikiem „Samorząd” i prowadzi do /admin.
-// EN: The "Panel Samorządu" row is seen only by a person with a role: the Council gets it with the badge "Samorząd" and it leads to /admin.
+// PL: Wiersz „Panel Samorządu” widzi tylko osoba z rolą: Samorząd dostaje go i prowadzi do /admin.
+// EN: The "Panel Samorządu" row is seen only by a person with a role: the Council gets it and it leads to /admin.
 test('wiersz panelu z rolą prowadzi do /admin / the panel row with a role leads to /admin', async ({ page }) => {
   await stubServer(page, true, 'council');
   await page.goto('/profile');
@@ -169,8 +170,8 @@ test('wiersz panelu z rolą prowadzi do /admin / the panel row with a role leads
   await expect(row).toContainText('Samorząd');
 });
 
-// PL: Redakcja widzi wiersz „Panel redakcji” ze znacznikiem „Redakcja”, a administrator „Panel Samorządu” ze znacznikiem „Administrator”.
-// EN: The editorial team sees the row "Panel redakcji" with the badge "Redakcja", and the administrator "Panel Samorządu" with the badge "Administrator".
+// PL: Redakcja widzi wiersz „Panel redakcji”, a administrator wiersz „Panel Samorządu”. Znacznika roli przy wierszu już nie ma, więc test sprawdza, że go nie ma.
+// EN: The editorial team sees the row "Panel redakcji", and the administrator the row "Panel Samorządu". There is no role badge on the row any more, so the test checks that it is missing.
 for (const [level, label, badge] of [['editor', 'Panel redakcji', 'Redakcja'], ['admin', 'Panel Samorządu', 'Administrator']] as const) {
   test(`rola ${level} widzi wiersz „${label}” / the role ${level} sees the row "${label}"`, async ({ page }) => {
     await stubServer(page, true, level);
@@ -178,7 +179,8 @@ for (const [level, label, badge] of [['editor', 'Panel redakcji', 'Redakcja'], [
 
     const row = page.getByRole('link', { name: new RegExp(label) });
     await expect(row).toHaveAttribute('href', '/admin');
-    await expect(row).toContainText(badge);
+    await expect(row).toContainText(label);
+    await expect(row).not.toContainText(badge);
   });
 }
 
@@ -242,11 +244,11 @@ test('większy tekst zostaje po ponownym uruchomieniu / the larger text stays af
   // PL: Na starcie tekst jest normalny, a przełącznik wyłączony.
   // EN: At the start the text is normal and the switch is off.
   await page.goto('/profile/ustawienia');
-  await expect(page.getByRole('checkbox', { name: 'Większy tekst' })).not.toBeChecked();
+  await expect(page.getByRole('switch', { name: 'Większy tekst' })).not.toBeChecked();
 
   // PL: Włącz przełącznik i zapisz: tekst się powiększa, a serwer dostaje rozmiar „duzy”.
   // EN: Turn the switch on and save: the text gets larger, and the server gets the size "duzy".
-  await page.getByRole('checkbox', { name: 'Większy tekst' }).check();
+  await page.getByRole('switch', { name: 'Większy tekst' }).check();
   await page.getByRole('button', { name: 'Zapisz' }).click();
   await expect(page.getByRole('status')).toHaveText('Zapisano.');
   await expect(page.locator('html')).toHaveAttribute('data-tekst', 'duzy');
@@ -452,7 +454,7 @@ test('przy szerokości 320 px nic się nie przewija w poziomie / nothing scrolls
   // EN: Check every screen: the page is not wider than the window.
   for (const path of ['/profile', '/profile/ustawienia', '/profile/usun', '/profile/prywatnosc']) {
     await page.goto(path);
-    await expect(page.locator('main[data-subtrack="7"] b').first()).toBeVisible();
+    await expect(page.locator('main[data-subtrack="7"] h1').first()).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, path).toBeLessThanOrEqual(0);
   }
@@ -460,6 +462,9 @@ test('przy szerokości 320 px nic się nie przewija w poziomie / nothing scrolls
   // PL: Przycisk zapisu mieści się w oknie.
   // EN: The save button fits in the window.
   await page.goto('/profile/ustawienia');
+  // PL: Zapisz pojawia się dopiero po zmianie, więc najpierw zmieniamy imię.
+  // EN: Zapisz shows up only after a change, so first we change the name.
+  await page.getByLabel('Imię').fill('Ola Nowa');
   const box = await page.getByRole('button', { name: 'Zapisz' }).boundingBox();
   expect(box && box.x >= 0 && box.x + box.width <= 320).toBe(true);
 });
@@ -491,7 +496,7 @@ test('bez internetu: zachowany profil, błąd zapisu i działająca polityka / o
 
   // PL: Polityka prywatności jest w aplikacji, więc otwiera się także bez internetu.
   // EN: The privacy policy is in the app, so it opens also without internet.
-  await page.getByRole('link', { name: 'Wróć do profilu' }).click();
+  await page.getByRole('link', { name: 'Profil', exact: true }).click();
   await page.getByRole('link', { name: 'Polityka prywatności' }).click();
   await expect(page.getByRole('heading', { name: 'Co zbieramy' })).toBeVisible();
 });

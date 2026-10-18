@@ -1,9 +1,14 @@
 /**
- * PL: Ekran „Ustawienia”: zmiana imienia, klasy, szkoły, motywu i większego tekstu. Szkoła wybiera akcent (liceum niebieski, technikum czerwony), a motyw (automatyczny, jasny albo ciemny) zmienia kolory całej aplikacji, a większy tekst powiększa litery w całej aplikacji. Zapis imienia, klasy i szkoły idzie na serwer, a motyw działa od razu i zostaje tylko w tym telefonie. Tekstów tego ekranu nie ma w docs/projekt/EKRANY.md, ale właściciel je zatwierdził.
- * EN: The "Ustawienia" screen: changing the name, class, school, theme and larger text. The school picks the accent (lyceum blue, technical school red), the theme (automatic, light or dark) changes the colors of the whole app, and the larger text enlarges the letters of the whole app. The name, class and school are saved to the server; the theme works at once and stays only on this phone. The texts of this screen are not in docs/projekt/EKRANY.md, but the owner approved them.
+ * PL: Ekran „Ustawienia”: zmiana imienia, klasy, szkoły, motywu i większego tekstu. Szkoła wybiera akcent (liceum niebieski, technikum czerwony), a motyw (automatyczny, jasny albo ciemny) zmienia kolory całej aplikacji, a większy tekst powiększa litery w całej aplikacji. Zapis imienia, klasy i szkoły idzie na serwer, a motyw działa od razu i zostaje tylko w tym telefonie. Zapisz pojawia się na dole formularza tylko wtedy, gdy coś się zmieniło. Tekstów tego ekranu nie ma w docs/projekt/EKRANY.md, ale właściciel je zatwierdził.
+ * EN: The "Ustawienia" screen: changing the name, class, school, theme and larger text. The school picks the accent (lyceum blue, technical school red), the theme (automatic, light or dark) changes the colors of the whole app, and the larger text enlarges the letters of the whole app. The name, class and school are saved to the server; the theme works at once and stays only on this phone. The Zapisz (save) button appears at the bottom of the form only when something has changed. The texts of this screen are not in docs/projekt/EKRANY.md, but the owner approved them.
  *
  * @author Jakub
  * @since 2026-10-11
+ * @uses src/shared/index.ts::Button
+ * @uses src/shared/index.ts::Chip
+ * @uses src/shared/index.ts::ListGroup
+ * @uses src/shared/index.ts::ListRow
+ * @uses src/shared/index.ts::TextField
  * @uses src/features/profile/queries.ts::useProfile
  * @uses src/features/profile/queries.ts::useSaveProfile
  * @uses src/features/profile/look.ts::THEMES
@@ -14,50 +19,24 @@
  * @used_by src/features/profile/ProfileScreen.tsx::SettingsScreen
  */
 
-// PL: useState trzyma wpisywane wartości do czasu zapisu.
-// EN: useState keeps the typed values until the save.
-import { useState, type FormEvent } from 'react';
-// PL: Link do listy urządzeń.
-// EN: The link to the device list.
-import { Link } from 'react-router';
-// PL: Dane, wygląd i pasek.
-// EN: The data, the look and the bar.
+// PL: useState trzyma wpisywane wartości do czasu zapisu; useRef blokuje podwójne kliknięcie pobrania.
+// EN: useState keeps the typed values until the save; useRef blocks a double click on the download.
+import { useRef, useState, type FormEvent } from 'react';
+// PL: Dane, wygląd i ikony.
+// EN: The data, the look and the icons.
 import { EXPORT_FILE_NAME, fetchMyData, type Profile } from './api';
 import { Icon } from './icons';
 import { SCHOOLS, THEMES, applyTheme, currentLook, type Theme } from './look';
 import { useProfile, useSaveProfile } from './queries';
 import type { TextSize } from './textSize';
-import { ScreenTop } from './ScreenTop';
+// PL: Wspólne klocki wyglądu: nagłówek, grupy, wiersze, pola, wybory i przyciski.
+// EN: The shared look blocks: the header, the groups, the rows, the fields, the choices and the buttons.
+import { Button, Chip, ListGroup, ListRow, ScreenHeader, TextField } from '../../shared';
 import { PasskeySection } from './PasskeySection';
 
 /** PL: Najwięcej znaków w imieniu i klasie, takie same jak na serwerze (worker/profile/validation.ts). EN: The most characters in the name and class, the same as on the server (worker/profile/validation.ts). */
 const MAX_NAME_LENGTH = 40;
 const MAX_CLASS_LENGTH = 10;
-
-/**
- * PL: Grupa przycisków radiowych wyglądających jak „chipy”: jedna wartość do wyboru.
- * EN: A group of radio buttons that look like "chips": one value to choose.
- *
- * @param props - PL: nazwa grupy, opis, możliwości, wybrana wartość i funkcja zmiany. EN: the group name, the legend, the options, the chosen value and the change function.
- * @returns PL: pole grupy. EN: the group field.
- */
-function ChipGroup<T extends string>({ legend, options, value, onChange }: { legend: string; options: readonly { code: T; label: string }[]; value: T; onChange: (code: T) => void }) {
-  return (
-    <fieldset className="pf-group">
-      {/* PL: Opis grupy czytany przez czytniki ekranu. EN: The group description read by screen readers. */}
-      <legend>{legend}</legend>
-      <div className="pf-chips">
-        {options.map((option) => (
-          <label key={option.code} className="pf-chip">
-            {/* PL: Ukryty przycisk radiowy; wybór zmienia wartość w formularzu. EN: The hidden radio button; choosing changes the value in the form. */}
-            <input type="radio" name={legend} value={option.code} checked={value === option.code} onChange={() => onChange(option.code)} />
-            <span>{option.label}</span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
 
 /**
  * PL: Zamienia stan przełącznika na rozmiar tekstu.
@@ -71,8 +50,8 @@ function toTextSize(larger: boolean): TextSize {
 }
 
 /**
- * PL: Formularz z wpisanym profilem. Zapisuje całość jednym przyciskiem.
- * EN: The form with the typed profile. It saves everything with one button.
+ * PL: Formularz z wpisanym profilem. Zapisuje całość jednym przyciskiem, który widać tylko przy zmianach.
+ * EN: The form with the typed profile. It saves everything with one button, which is visible only when something changed.
  *
  * @param props - PL: profil, od którego zaczyna formularz. EN: the profile the form starts from.
  * @returns PL: formularz. EN: the form.
@@ -85,6 +64,13 @@ function SettingsForm({ initial }: { initial: Profile }) {
   // EN: The theme is only on this phone, so the start is what is on the page now.
   const [theme, setTheme] = useState<Theme>(() => currentLook().theme);
   const save = useSaveProfile();
+  // PL: Zapisz jest widoczny, gdy szkic różni się od zapisanego profilu. Motyw pominięty, bo zapisuje się tylko w telefonie.
+  // EN: Save is visible when the draft differs from the saved profile. The theme is left out, because it is saved only on the phone.
+  const dirty =
+    draft.name !== initial.name ||
+    draft.className !== initial.className ||
+    draft.school !== initial.school ||
+    draft.textSize !== initial.textSize;
 
   /** PL: Zmienia motyw od razu na stronie i w telefonie, bez zapisu na serwer. EN: Changes the theme at once on the page and on the phone, without a save to the server. */
   function handleTheme(next: Theme): void {
@@ -99,34 +85,70 @@ function SettingsForm({ initial }: { initial: Profile }) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      {/* PL: Pola imienia i klasy. EN: The name and class fields. */}
-      <label className="pf-field">
-        <span>Imię</span>
-        <input value={draft.name} maxLength={MAX_NAME_LENGTH} autoComplete="given-name" onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
-      </label>
-      <label className="pf-field">
-        <span>Klasa</span>
-        <input value={draft.className} maxLength={MAX_CLASS_LENGTH} onChange={(event) => setDraft({ ...draft, className: event.target.value })} />
-      </label>
-      {/* PL: Przełącznik większego tekstu, wybór szkoły i motywu. EN: The larger text switch, the school and theme choice. */}
-      <fieldset className="pf-group">
-        <legend>Wielkość tekstu</legend>
-        <div className="pf-chips">
-          <label className="pf-chip">
-            {/* PL: Zaznaczony oznacza większy tekst w całej aplikacji. EN: Checked means larger text in the whole app. */}
-            <input type="checkbox" checked={draft.textSize === 'duzy'} onChange={(event) => setDraft({ ...draft, textSize: toTextSize(event.target.checked) })} />
-            <span>Większy tekst</span>
-          </label>
+    <form className="pf-stack" onSubmit={handleSubmit}>
+      {/* PL: Imię i klasa w jednej grupie. EN: The name and the class in one group. */}
+      <ListGroup>
+        {/* PL: Pola mają własne odstępy, bo pole stoi na kaflu grupy. EN: The fields have their own spacing, because the field stands on the group tile. */}
+        <div className="pf-fields">
+          <TextField
+            label="Imię"
+            value={draft.name}
+            maxLength={MAX_NAME_LENGTH}
+            autoComplete="given-name"
+            onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
+          />
+          <TextField
+            label="Klasa"
+            value={draft.className}
+            maxLength={MAX_CLASS_LENGTH}
+            onChange={(event) => setDraft((current) => ({ ...current, className: event.target.value }))}
+          />
         </div>
-      </fieldset>
-      <ChipGroup legend="Szkoła" options={SCHOOLS.map((school) => ({ code: school.code, label: school.name }))} value={draft.school} onChange={(school) => setDraft({ ...draft, school })} />
-      <ChipGroup legend="Motyw" options={THEMES.map((item) => ({ code: item.code, label: item.name }))} value={theme} onChange={handleTheme} />
-      {/* PL: Wynik zapisu: potwierdzenie albo błąd. EN: The save result: a confirmation or an error. */}
-      {save.isSuccess ? <p className="pf-hint" role="status">Zapisano.</p> : null}
-      {save.isError ? <p className="pf-error" role="alert">Nie udało się zapisać.</p> : null}
-      {/* PL: Przycisk zapisu; w trakcie zapisu jest wyłączony, żeby nie wysłać dwa razy. EN: The save button; disabled while saving, so it is not sent twice. */}
-      <button type="submit" className="pf-btn pf-btn-accent" disabled={save.isPending}>Zapisz</button>
+      </ListGroup>
+      {/* PL: Przełącznik większego tekstu w stylu iOS. Zaznaczony oznacza większy tekst w całej aplikacji. EN: The larger text switch in the iOS style. Checked means larger text in the whole app. */}
+      <ListGroup header="Wielkość tekstu">
+        <label className="ui-list-row pf-switch-row">
+          <span>Większy tekst</span>
+          <input
+            type="checkbox"
+            role="switch"
+            className="pf-switch"
+            checked={draft.textSize === 'duzy'}
+            onChange={(event) => setDraft((current) => ({ ...current, textSize: toTextSize(event.target.checked) }))}
+          />
+        </label>
+      </ListGroup>
+      {/* PL: Wybór szkoły jako segmenty; wybrany ma jaśniejsze tło. EN: The school choice as segments; the chosen one has a lighter background. */}
+      <ListGroup header="Szkoła">
+        <div className="pf-segment" role="group" aria-label="Szkoła">
+          {SCHOOLS.map((school) => (
+            <Chip
+              key={school.code}
+              selected={draft.school === school.code}
+              onClick={() => setDraft((current) => ({ ...current, school: school.code }))}
+            >
+              {school.name}
+            </Chip>
+          ))}
+        </div>
+      </ListGroup>
+      {/* PL: Wybór motywu jako segmenty. Zmiana działa od razu i zostaje w tym telefonie. EN: The theme choice as segments. The change works at once and stays on this phone. */}
+      <ListGroup header="Motyw">
+        <div className="pf-segment" role="group" aria-label="Motyw">
+          {THEMES.map((item) => (
+            <Chip key={item.code} selected={theme === item.code} onClick={() => handleTheme(item.code)}>
+              {item.name}
+            </Chip>
+          ))}
+        </div>
+      </ListGroup>
+      {/* PL: Wynik zapisu: potwierdzenie albo błąd. Stoi poza warunkiem „zmieniono”, żeby po zapisie został widoczny. EN: The save result: a confirmation or an error. It stays outside the "changed" condition, so it remains visible after the save. */}
+      <div className="pf-actions">
+        {save.isSuccess ? <p className="pf-hint" role="status">Zapisano.</p> : null}
+        {save.isError ? <p className="pf-error" role="alert">Nie udało się zapisać.</p> : null}
+        {/* PL: Jeden przycisk zapisu na dole formularza; w trakcie zapisu jest wyłączony, żeby nie wysłać dwa razy. EN: One save button at the bottom of the form; disabled while saving, so it is not sent twice. */}
+        {dirty ? <Button type="submit" variant="filled" disabled={save.isPending}>Zapisz</Button> : null}
+      </div>
     </form>
   );
 }
@@ -152,33 +174,40 @@ function saveFile(blob: Blob, fileName: string): void {
 }
 
 /**
- * PL: Przycisk „Pobierz moje dane”: pobiera plik JSON z kontem i ustawieniami. Przy błędzie pokazuje komunikat, a plik się nie zapisuje.
- * EN: The "Pobierz moje dane" button: downloads the JSON file with the account and settings. On an error it shows a message and no file is saved.
+ * PL: Wiersz „Pobierz moje dane”: pobiera plik JSON z kontem i ustawieniami. Przy błędzie pokazuje komunikat, a plik się nie zapisuje.
+ * EN: The "Pobierz moje dane" row: downloads the JSON file with the account and settings. On an error it shows a message and no file is saved.
  *
- * @returns PL: sekcja z przyciskiem i wynikiem. EN: the section with the button and the result.
+ * @returns PL: grupa z wierszem i wynikiem. EN: the group with the row and the result.
  */
 function ExportData() {
-  // PL: Stan pobierania: bezczynny, w trakcie albo błąd.
-  // EN: The download state: idle, in progress or an error.
-  const [state, setState] = useState<'idle' | 'busy' | 'error'>('idle');
+  // PL: Czy ostatnie pobranie się nie udało.
+  // EN: Whether the last download failed.
+  const [failed, setFailed] = useState(false);
+  // PL: Blokada przed podwójnym kliknięciem: stan z useState zmienia się dopiero po odrysowaniu, a ref już nie.
+  // EN: A guard against a double click: the useState value changes only after the redraw, a ref does not wait.
+  const running = useRef(false);
 
   /** PL: Pobiera plik i zapisuje go na telefonie. EN: Downloads the file and saves it on the phone. */
   async function handleClick(): Promise<void> {
-    setState('busy');
+    if (running.current) return;
+    running.current = true;
+    setFailed(false);
     try {
       saveFile(await fetchMyData(), EXPORT_FILE_NAME);
-      setState('idle');
     } catch {
-      setState('error');
+      setFailed(true);
+    } finally {
+      running.current = false;
     }
   }
 
   return (
-    <section className="pf-group">
-      <p className="pf-hint">Pobierzesz plik JSON z numerem i adresem konta oraz z profilem i ustawieniami.</p>
-      <button type="button" className="pf-btn pf-btn-soft" disabled={state === 'busy'} onClick={handleClick}>Pobierz moje dane</button>
-      {state === 'error' ? <p className="pf-error" role="alert">Nie udało się pobrać danych.</p> : null}
-    </section>
+    <>
+      <ListGroup footer="Pobierzesz plik JSON z numerem i adresem konta oraz z profilem i ustawieniami.">
+        <ListRow title="Pobierz moje dane" onClick={handleClick} />
+      </ListGroup>
+      {failed ? <p className="pf-error" role="alert">Nie udało się pobrać danych.</p> : null}
+    </>
   );
 }
 
@@ -194,30 +223,26 @@ export function SettingsScreen() {
   const query = useProfile();
   return (
     <>
-      <ScreenTop title="Ustawienia" backTo="/profile" backLabel="Wróć do profilu" />
-      {/* PL: Dane mają pierwszeństwo przed stanem zapytania (bez internetu zostaje zapisany profil). EN: The data takes priority over the query state (without internet the saved profile stays). */}
-      {query.data ? <SettingsForm initial={query.data} /> : null}
-      {/* PL: Pobranie własnych danych jest zawsze pod formularzem. EN: Downloading one's own data is always under the form. */}
-      <ExportData />
-      {/* PL: Wiersz prowadzi do listy urządzeń (ekran podtoru 1a). Tekst „Moje urządzenia” nie ma w docs/projekt/EKRANY.md, ale właściciel go zatwierdził. EN: The row leads to the device list (the screen of subtrack 1a). The text "Moje urządzenia" is not in docs/projekt/EKRANY.md, but the owner approved it. */}
-      <ul className="pf-tile">
-        <li>
-          <Link className="pf-row" to="/auth/email/urzadzenia">
-            <Icon name="smartphone" />
-            <span className="pf-row-text">Moje urządzenia</span>
-            <Icon name="chevron-right" />
-          </Link>
-        </li>
-      </ul>
-      {/* PL: Klucze Face ID i odcisk palca są w ustawieniach, obok urządzeń. EN: The Face ID and fingerprint keys are in the settings, next to the devices. */}
-      <PasskeySection />
-      {!query.data && query.isError ? (
-        <div className="pf-empty" role="alert">
-          <p>Nie udało się wczytać profilu.</p>
-          <button type="button" className="pf-btn pf-btn-soft" onClick={() => query.refetch()}>Spróbuj ponownie</button>
-        </div>
-      ) : null}
-      {!query.data && !query.isError ? <p className="pf-empty" role="status">Wczytuję profil…</p> : null}
+      <ScreenHeader title="Ustawienia" backTo="/profile" backLabel="Profil" />
+      <div className="pf-stack">
+        {/* PL: Dane mają pierwszeństwo przed stanem zapytania (bez internetu zostaje zapisany profil). EN: The data takes priority over the query state (without internet the saved profile stays). */}
+        {query.data ? <SettingsForm initial={query.data} /> : null}
+        {/* PL: Pobranie własnych danych jest zawsze pod formularzem. EN: Downloading one's own data is always under the form. */}
+        <ExportData />
+        {/* PL: Wiersz prowadzi do listy urządzeń (ekran podtoru 1a). Tekst „Moje urządzenia” nie ma w docs/projekt/EKRANY.md, ale właściciel go zatwierdził. EN: The row leads to the device list (the screen of subtrack 1a). The text "Moje urządzenia" is not in docs/projekt/EKRANY.md, but the owner approved it. */}
+        <ListGroup>
+          <ListRow title="Moje urządzenia" icon={<Icon name="smartphone" />} to="/auth/email/urzadzenia" />
+        </ListGroup>
+        {/* PL: Klucze Face ID i odcisk palca są w ustawieniach, obok urządzeń. EN: The Face ID and fingerprint keys are in the settings, next to the devices. */}
+        <PasskeySection />
+        {!query.data && query.isError ? (
+          <div className="pf-empty" role="alert">
+            <p>Nie udało się wczytać profilu.</p>
+            <Button variant="plain" onClick={() => query.refetch()}>Spróbuj ponownie</Button>
+          </div>
+        ) : null}
+        {!query.data && !query.isError ? <p className="pf-empty" role="status">Wczytuję profil…</p> : null}
+      </div>
     </>
   );
 }

@@ -5,6 +5,7 @@
  * @author Szymon Sosnowski
  * @since 2026-10-13
  * @uses src/features/bell/bellState.ts::currentBellState
+ * @uses src/features/bell/nextLessonLabel.ts::nextLessonLabel
  * @used_by src/features/bell/BellScreen.tsx::BellScreen
  */
 
@@ -14,6 +15,9 @@ import { useEffect, useState } from 'react';
 // PL: Logika licznika z planu szkoły.
 // EN: The countdown logic from the school plan.
 import { currentBellState } from './bellState';
+// PL: Napis o następnej lekcji (wspólny z pulpitem).
+// EN: The text about the next lesson (shared with the dashboard).
+import { nextLessonLabel } from './nextLessonLabel';
 // PL: Style licznika (tylko tokeny z tokens.css).
 // EN: The countdown styles (only tokens from tokens.css).
 import './bell.css';
@@ -37,19 +41,6 @@ function useNow(): Date {
     return () => clearInterval(timer);
   }, []);
   return now;
-}
-
-/**
- * PL: Godzina z planu do pokazania na ekranie. Bez zera z przodu, jak w makiecie („9:50”, „10:45”).
- * EN: A plan time to show on the screen. Without a leading zero, as in the mockup ("9:50", "10:45").
- *
- * @param start - PL: godzina w formacie HH:MM. EN: time in HH:MM format.
- * @returns PL: godzina bez zera z przodu. EN: the time without a leading zero.
- */
-function displayTime(start: string): string {
-  // PL: Usuwamy tylko zero na samym początku, „10:45” zostaje bez zmian.
-  // EN: Only the zero at the very start is removed, "10:45" stays as it is.
-  return start.replace(/^0/, '');
 }
 
 /**
@@ -78,7 +69,7 @@ export function BellCountdown() {
       <p className="bell-countdown__label">{label}</p>
       {state.kind === 'lesson' && state.next ? (
         <p className="bell-countdown__next">
-          {`Następna: lekcja ${state.next.lessonNo} o ${displayTime(state.next.start)}`}
+          {nextLessonLabel(state.next)}
         </p>
       ) : null}
     </section>

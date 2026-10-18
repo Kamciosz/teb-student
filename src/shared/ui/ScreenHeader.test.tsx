@@ -47,4 +47,14 @@ describe('nagłówek ekranu / the screen header', () => {
     expect(html).toContain('Profil');
     expect(html).toContain('<h1 class="ui-screen-header-bar-title">Ustawienia</h1>');
   });
+
+  it('tytuł z fokusem przyjmuje fokus z kodu / a title with focus accepts focus from code', () => {
+    const html = renderToString(
+      <MemoryRouter>
+        <ScreenHeader title="Wpis" backTo="/news/feed" focusTitle />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain('tabindex="-1"');
+  });
 });
