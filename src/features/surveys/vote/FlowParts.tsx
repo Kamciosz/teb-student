@@ -1,15 +1,20 @@
 /**
- * PL: Części wspólne ekranów ankiety w trakcie wypełniania: górny pasek z przyciskiem „Wstecz”, tytułem i krokiem „1/3”, pasek postępu oraz komunikat zamiast pytań.
- * EN: The parts shared by the survey screens during filling in: the top bar with the "Wstecz" button, the title and the "1/3" step, the progress bar and the message in place of the questions.
+ * PL: Części wspólne ekranów ankiety w trakcie wypełniania: pasek nagłówka z „Wstecz”, tytułem i krokiem „2 z 5”, pasek postępu oraz komunikat zamiast pytań.
+ * EN: The parts shared by the survey screens during filling in: the header bar with "Wstecz", the title and the step "2 z 5", the progress bar and the message in place of the questions.
  *
  * @author Jakub
  * @since 2026-10-09
+ * @uses src/shared/index.ts::Button
+ * @uses src/shared/index.ts::ProgressBar
  * @used_by src/features/surveys/vote/SurveyFlowScreen.tsx::SurveyFlowScreen
  */
 
 // PL: Link bez przeładowania strony.
 // EN: A link without reloading the page.
 import { Link } from 'react-router';
+// PL: Przycisk i pasek postępu ze wspólnych klocków.
+// EN: The button and the progress bar from the shared pieces.
+import { Button, ProgressBar } from '../../../shared';
 import { ArrowLeftIcon } from './icons';
 
 /** PL: Dane górnego paska. EN: The data of the top bar. */
@@ -18,13 +23,13 @@ export type FlowTopProps = {
   /** PL: Numer kroku od 1. EN: The step number from 1. */
   step: number;
   total: number;
-  /** PL: Co robi „Wstecz” na pierwszym kroku: null oznacza powrót do poprzedniego pytania przez onBack. EN: What "Wstecz" does on the first step: null means going back to the previous question through onBack. */
+  /** PL: Co robi „Wstecz” na pierwszym kroku: null oznacza powrót do listy, a funkcja powrót do poprzedniego pytania. EN: What "Wstecz" does on the first step: null means going back to the list, a function means going back to the previous question. */
   onBack: (() => void) | null;
 };
 
 /**
- * PL: Rysuje górny pasek: „Wstecz”, tytuł ankiety, „krok/razem” i pasek postępu. Na pierwszym kroku „Wstecz” prowadzi do listy, na kolejnych do poprzedniego pytania.
- * EN: Draws the top bar: "Wstecz", the survey title, "step/total" and the progress bar. On the first step "Wstecz" leads to the list, on later steps to the previous question.
+ * PL: Rysuje pasek nagłówka: „Wstecz”, tytuł ankiety, „krok z razem” i pasek postępu. Na pierwszym kroku „Wstecz” prowadzi do listy, na kolejnych do poprzedniego pytania.
+ * EN: Draws the header bar: "Wstecz", the survey title, "step z total" and the progress bar. On the first step "Wstecz" leads to the list, on later steps to the previous question.
  *
  * @param props - PL: tytuł, krok, liczba kroków i funkcja powrotu. EN: the title, the step, the number of steps and the back function.
  * @returns PL: drzewo elementów paska. EN: the tree of bar elements.
@@ -43,15 +48,9 @@ export function FlowTop({ title, step, total, onBack }: FlowTopProps) {
           </button>
         )}
         <p className="vote-top__title">{title}</p>
-        <p className="vote-top__step">
-          {step}/{total}
-        </p>
+        <p className="vote-top__step">{`${step} z ${total}`}</p>
       </div>
-      <div className="vote-bars" role="progressbar" aria-label="Postęp ankiety" aria-valuemin={1} aria-valuemax={total} aria-valuenow={step}>
-        {Array.from({ length: total }, (_, index) => (
-          <span key={index} className={index < step ? 'vote-bars__bar vote-bars__bar--on' : 'vote-bars__bar'} />
-        ))}
-      </div>
+      <ProgressBar value={step} max={total} label="Postęp ankiety" className="vote-top__bar" />
     </header>
   );
 }
@@ -72,11 +71,11 @@ export function FlowNotice({ title, text, onRetry }: { title: string; text: stri
       </div>
       <div className="vote-footer">
         {onRetry === undefined ? null : (
-          <button type="button" className="vote-button vote-button--outline" onClick={onRetry}>
+          <Button variant="plain" onClick={onRetry}>
             Spróbuj ponownie
-          </button>
+          </Button>
         )}
-        <Link className="vote-button vote-button--primary" to="/surveys/vote">
+        <Link className="ui-button ui-button--filled" to="/surveys/vote">
           Wróć do listy ankiet
         </Link>
       </div>

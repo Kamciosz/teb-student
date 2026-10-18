@@ -15,7 +15,7 @@
 // PL: Haki referencji, efektu i identyfikatorów Reacta.
 // EN: React's ref, effect and id hooks.
 import { useEffect, useId, useRef } from 'react';
-import { LockIcon } from './icons';
+import { CheckIcon, LockIcon } from './icons';
 import { ScaleOptions } from './ScaleOptions';
 import { cleanShortText, countShortTextCharacters, SHORT_TEXT_MAX_LENGTH } from './shortText';
 import { TEXTS } from './texts';
@@ -79,7 +79,7 @@ export function QuestionStep({ question, number, selectedIds, onChange, text, on
   return (
     <>
       <p className="vote-label">Pytanie {number}</p>
-      <h1 ref={headingRef} tabIndex={-1}>
+      <h1 ref={headingRef} tabIndex={-1} className="vote-question">
         {question.prompt}
       </h1>
       {isMultiple ? <p className="vote-small">Możesz zaznaczyć kilka odpowiedzi.</p> : null}
@@ -104,15 +104,23 @@ export function QuestionStep({ question, number, selectedIds, onChange, text, on
       ) : (
         <fieldset className="vote-options">
           <legend className="vote-sr-only">Odpowiedzi</legend>
-          {question.options.map((option, index) => (
-            <label key={option.id} className="vote-option">
-              <input type={isMultiple ? 'checkbox' : 'radio'} name={question.id} value={option.id} checked={selectedIds.includes(option.id)} onChange={() => toggle(option.id)} />
-              <span className="vote-option__body">
-                <span className="vote-option__letter">{LETTERS[index] ?? '-'}</span>
-                <span className="vote-option__text">{option.label}</span>
-              </span>
-            </label>
-          ))}
+          {question.options.map((option, index) => {
+            const isChosen = selectedIds.includes(option.id);
+            return (
+              <label key={option.id} className="vote-option">
+                <input type={isMultiple ? 'checkbox' : 'radio'} name={question.id} value={option.id} checked={isChosen} onChange={() => toggle(option.id)} />
+                <span className="vote-option__body">
+                  <span className="vote-option__letter">{LETTERS[index] ?? '-'}</span>
+                  <span className="vote-option__text">{option.label}</span>
+                  {isChosen ? (
+                    <span className="vote-option__mark">
+                      <CheckIcon size={20} />
+                    </span>
+                  ) : null}
+                </span>
+              </label>
+            );
+          })}
         </fieldset>
       )}
       <p className="vote-note">

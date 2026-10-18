@@ -103,9 +103,9 @@ test('lista pokazuje aktywne ankiety z dniami do końca, wypełnioną i zakończ
   await page.goto('/surveys/vote');
 
   await expect(page.getByRole('heading', { name: 'Ankiety', level: 1 })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
   await expect(page.getByText('3 pytania · 1 minuta')).toBeVisible();
-  await expect(page.getByText('dni', { exact: true })).toBeVisible();
+  await expect(page.getByText('za 3 dni', { exact: true })).toBeVisible();
   await expect(page.getByText('Wypełniona', { exact: true })).toBeVisible();
   await expect(page.getByText('Ankieta zamknięta · 30.09')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Menu główne' })).toBeVisible();
@@ -134,7 +134,7 @@ test('po terminie szczegóły ankiety pokazują „Ankieta zamknięta” / after
 test('jedno pytanie na ekranie, „Dalej” po wyborze, głos idzie raz / one question per screen, "Dalej" after a choice, the vote goes once', async ({ page }) => {
   const server = await mockSurveyServer(page);
   await page.goto('/surveys/vote');
-  await page.getByRole('link', { name: 'Wypełnij' }).click();
+  await page.getByRole('link', { name: 'Zajęcia dodatkowe w II semestrze' }).click();
 
   // PL: Pytanie 1: „Dalej” jest wyłączone, dopóki nie wybierzemy odpowiedzi.
   // EN: Question 1: "Dalej" is disabled until an option is chosen.
@@ -256,7 +256,7 @@ test('bez internetu lista pokazuje błąd i da się spróbować ponownie / witho
   await page.unroute('**/api/surveys/vote/**');
   await mockSurveyServer(page);
   await page.getByRole('button', { name: 'Spróbuj ponownie' }).click();
-  await expect(page.getByRole('heading', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
 });
 
 // PL: Zapis w telefonie: po powrocie na listę przy zerwanym połączeniu widać ostatnio pobraną listę, a nie błąd.
@@ -264,17 +264,17 @@ test('bez internetu lista pokazuje błąd i da się spróbować ponownie / witho
 test('po zerwaniu połączenia lista wraca z zapisu w telefonie / after the connection drops the list comes back from the saved data', async ({ page }) => {
   await mockSurveyServer(page);
   await page.goto('/surveys/vote');
-  await expect(page.getByRole('heading', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
   // PL: Lista naprawdę trafia do localStorage telefonu (klucz z src/shared/query/queryClient.ts).
   // EN: The list really lands in the phone's localStorage (the key from src/shared/query/queryClient.ts).
   await expect.poll(() => page.evaluate(() => localStorage.getItem('teb-student-query-cache') ?? '')).toContain('Zajęcia dodatkowe w II semestrze');
-  await page.getByRole('link', { name: 'Wypełnij' }).click();
+  await page.getByRole('link', { name: 'Zajęcia dodatkowe w II semestrze' }).click();
   await expect(page.getByText('Pytanie 1')).toBeVisible();
 
   await page.unroute('**/api/surveys/vote/**');
   await page.route('**/api/surveys/vote/**', (route) => route.abort('internetdisconnected'));
   await page.goBack();
-  await expect(page.getByRole('heading', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Zajęcia dodatkowe w II semestrze' })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 

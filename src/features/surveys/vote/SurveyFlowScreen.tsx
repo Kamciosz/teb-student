@@ -4,6 +4,7 @@
  *
  * @author Jakub
  * @since 2026-10-09
+ * @uses src/shared/index.ts::Button
  * @uses src/features/surveys/vote/shortText.ts::isShortTextReady
  * @uses src/features/surveys/vote/surveyQueries.ts::useSurvey
  * @uses src/features/surveys/vote/useVoteSubmit.ts::useVoteSubmit
@@ -16,6 +17,9 @@ import { useState } from 'react';
 // PL: Parametr adresu.
 // EN: The address parameter.
 import { useParams } from 'react-router';
+// PL: Przycisk główny ze wspólnych klocków.
+// EN: The main button from the shared pieces.
+import { Button } from '../../../shared';
 import { FlowNotice, FlowTop } from './FlowParts';
 import { QuestionStep } from './QuestionStep';
 import { isShortTextReady } from './shortText';
@@ -69,9 +73,9 @@ function SurveyQuestions({ survey }: { survey: SurveyDetail }) {
       />
       <div className="vote-footer">
         {problem === 'failed' ? <p className="vote-error" role="alert">Nie udało się wysłać odpowiedzi. Sprawdź połączenie z internetem i spróbuj jeszcze raz.</p> : null}
-        <button type="button" className="vote-button vote-button--primary" disabled={!isReady || sending} onClick={isLast ? submit : () => setStep(step + 1)}>
+        <Button disabled={!isReady || sending} onClick={isLast ? submit : () => setStep(step + 1)}>
           {sending ? 'Wysyłam…' : isLast ? 'Wyślij odpowiedzi' : 'Dalej'}
-        </button>
+        </Button>
       </div>
     </main>
   );
