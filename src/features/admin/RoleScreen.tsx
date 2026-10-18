@@ -8,16 +8,22 @@
  * @uses src/features/admin/queries.ts::useRoleHolders
  * @uses src/features/admin/api.ts::RoleCard
  * @uses src/features/admin/icons.tsx::Icon
- * @uses src/features/admin/ScreenTop.tsx::ScreenTop
+ * @uses src/shared/index.ts::ScreenHeader
+ * @uses src/shared/index.ts::TextField
+ * @uses src/shared/index.ts::Button
+ * @uses src/shared/index.ts::ListGroup
+ * @uses src/shared/index.ts::ListRow
  * @used_by src/features/admin/AdminScreen.tsx::AdminScreen
  */
 
+// PL: Wspólne elementy ekranu: nagłówek, pole, przycisk, grupa i wiersz listy.
+// EN: The shared screen elements: the header, the field, the button, the group and the list row.
 import { type FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
+import { Button, ListGroup, ListRow, ScreenHeader, TextField } from '../../shared';
 import type { RoleCard } from './api';
 import { Icon } from './icons';
 import { useRoleHolders, useRoleSearch } from './queries';
-import { ScreenTop } from './ScreenTop';
 
 /** PL: Domena szkolnych adresów. EN: The domain of the school addresses. */
 const SCHOOL_DOMAIN = '@teb.edu.pl';
@@ -88,17 +94,17 @@ export function RoleScreen() {
   const form = useRoleSearchForm();
   return (
     <main className="ad-screen" data-subtrack="8">
-      <ScreenTop title="Role" backTo="/admin" backLabel="Wróć do panelu" />
+      <ScreenHeader title="Role" backTo="/admin" backLabel="Wróć do panelu" />
       <p className="ad-lead ad-lead-tight">Wpisz szkolny adres ucznia, żeby nadać albo odebrać rolę.</p>
       <form className="ad-form" onSubmit={form.onSubmit} noValidate>
         <SearchField email={form.email} message={form.message} onChange={form.onChange} />
         <HoldersList />
         {/* PL: Przycisk stoi na dole ekranu. EN: The button stands at the bottom of the screen. */}
         <div className="ad-bottom">
-          <button type="submit" className="ad-btn ad-btn-accent" disabled={form.pending}>
+          <Button type="submit" disabled={form.pending}>
             <Icon name="search" />
             Znajdź ucznia
-          </button>
+          </Button>
         </div>
       </form>
     </main>
@@ -106,52 +112,49 @@ export function RoleScreen() {
 }
 
 /**
- * PL: Pole szkolnego adresu z etykietą i komunikatem błędu pod nim. Pole ma `aria-invalid` i `aria-describedby`, gdy komunikat jest widoczny.
- * EN: The school address field with a label and the error message under it. The field has `aria-invalid` and `aria-describedby` when the message is shown.
+ * PL: Pole szkolnego adresu w grupie, z podpisem i komunikatem błędu pod polem. Komunikat ustawia aria-invalid i opis pola (robi to wspólne pole).
+ * EN: The school address field in a group, with a label and the error message under the field. The message sets aria-invalid and the field description (the shared field does this).
  *
  * @param props - PL: adres, komunikat (albo null) i obsługa zmiany. EN: the address, the message (or null) and the change handler.
- * @returns PL: etykieta, pole i komunikat. EN: the label, the field and the message.
+ * @returns PL: grupa z polem. EN: the group with the field.
  */
 function SearchField({ email, message, onChange }: { email: string; message: string | null; onChange: (value: string) => void }) {
   return (
-    <>
-      <label className="ad-label ad-label-below" htmlFor="role-email">
-        Szkolny e-mail
-      </label>
-      <input
-        id="role-email"
-        className="ad-input"
+    <ListGroup>
+      <TextField
+        label="Szkolny e-mail"
+        error={message ?? undefined}
         type="email"
         inputMode="email"
         autoComplete="off"
         placeholder="imie.nazwisko@teb.edu.pl"
         value={email}
-        aria-invalid={message !== null}
-        aria-describedby={message !== null ? 'role-email-error' : undefined}
         onChange={(event) => onChange(event.target.value)}
       />
-      {message !== null ? (
-        <p id="role-email-error" className="ad-field-error" role="alert">
-          <Icon name="triangle-alert" />
-          {message}
-        </p>
-      ) : null}
-    </>
+    </ListGroup>
   );
 }
 
 /**
- * PL: Rysuje listę osób z rolą pod polem (6.3a): kafel z wierszami, pusty stan albo błąd pobrania.
- * EN: Draws the list of people with a role under the field (6.3a): a tile with rows, the empty state or the fetch error.
+ * PL: Rysuje listę osób z rolą pod polem (6.3a): grupa z wierszami, pusty stan albo błąd pobrania.
+ * EN: Draws the list of people with a role under the field (6.3a): a group with rows, the empty state or the fetch error.
  *
- * @returns PL: etykieta z listą albo komunikat. EN: the label with the list or a message.
+ * @returns PL: grupa z listą albo komunikat. EN: the group with the list or a message.
  */
 function HoldersList() {
   const holders = useRoleHolders();
   const people = holders.data ?? [];
   return (
-    <section>
-      <span className="ad-label ad-label-below">Osoby z rolą</span>
+    <>
+      {people.length > 0 ? (
+        <ListGroup header="Osoby z rolą">
+          {people.map((card) => (
+            <HolderRow key={card.studentId} card={card} />
+          ))}
+        </ListGroup>
+      ) : (
+        <span className="ad-label ad-label-below">Osoby z rolą</span>
+      )}
       {holders.isError ? (
         <p className="ad-error" role="alert">
           <Icon name="triangle-alert" />
@@ -159,39 +162,40 @@ function HoldersList() {
         </p>
       ) : null}
       {holders.data && people.length === 0 ? <p className="ad-hint">Nikt jeszcze nie ma roli Samorządu ani redakcji.</p> : null}
-      {people.length > 0 ? (
-        <ul className="ad-tile">
-          {people.map((card) => (
-            <HolderRow key={card.studentId} card={card} />
-          ))}
-        </ul>
-      ) : null}
-    </section>
+    </>
   );
 }
 
 /**
- * PL: Rysuje jeden wiersz osoby z rolą: inicjał, imię, zamaskowany adres i znaczniki ról. Dotknięcie otwiera kartę (6.3b).
- * EN: Draws one row of a person with a role: the initial, the first name, the masked address and the role badges. Tapping it opens the card (6.3b).
+ * PL: Rysuje jeden wiersz osoby z rolą: inicjał, imię, znaczniki ról i zamaskowany adres. Dotknięcie otwiera kartę (6.3b).
+ * EN: Draws one row of a person with a role: the initial, the first name, the role badges and the masked address. Tapping it opens the card (6.3b).
  *
  * @param props - PL: karta osoby z listy. EN: the person's card from the list.
  * @returns PL: wiersz listy. EN: the list row.
  */
 function HolderRow({ card }: { card: RoleCard }) {
   return (
-    <li>
-      <Link className="ad-row" to={`/admin/role/${card.studentId}`}>
-        <span className="ad-avatar">{card.firstName.charAt(0).toUpperCase()}</span>
-        <span className="ad-row-text">
-          <span className="ad-row-title">
-            {card.firstName}
-            {card.council ? <span className="ad-badge">Samorząd</span> : null}
-            {card.editor ? <span className="ad-badge">Redakcja gazetki</span> : null}
-          </span>
-          <small>{card.maskedEmail}</small>
-        </span>
-        <Icon name="chevron-right" />
-      </Link>
-    </li>
+    <ListRow
+      to={`/admin/role/${card.studentId}`}
+      icon={<span className="ad-avatar">{card.firstName.charAt(0).toUpperCase()}</span>}
+      title={
+        <>
+          {card.firstName}
+          {card.council ? (
+            <>
+              {' '}
+              <span className="ad-badge">Samorząd</span>
+            </>
+          ) : null}
+          {card.editor ? (
+            <>
+              {' '}
+              <span className="ad-badge">Redakcja gazetki</span>
+            </>
+          ) : null}
+        </>
+      }
+      subtitle={card.maskedEmail}
+    />
   );
 }

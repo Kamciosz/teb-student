@@ -7,18 +7,23 @@
  * @uses src/features/admin/queries.ts::usePilotDownload
  * @uses src/features/admin/useOnline.ts::useOnline
  * @uses src/features/admin/icons.tsx::Icon
- * @uses src/features/admin/ScreenTop.tsx::ScreenTop
+ * @uses src/shared/index.ts::ScreenHeader
+ * @uses src/shared/index.ts::ListGroup
+ * @uses src/shared/index.ts::ListRow
+ * @uses src/shared/index.ts::Button
  * @used_by src/features/admin/AdminScreen.tsx::AdminScreen
  */
 
+// PL: Wspólne elementy ekranu: nagłówek, grupa wierszy, wiersz i przycisk.
+// EN: The shared screen elements: the header, the group of rows, the row and the button.
+import { Button, ListGroup, ListRow, ScreenHeader } from '../../shared';
 import { Icon } from './icons';
 import { usePilotDownload } from './queries';
-import { ScreenTop } from './ScreenTop';
 import { useOnline } from './useOnline';
 
 /**
- * PL: Rysuje ekran pobrania danych z pilotażu: opis pliku, lista trzech liczb i przycisk „Pobierz plik”.
- * EN: Draws the pilot data download screen: the file description, the list of three numbers and the "Pobierz plik" button.
+ * PL: Rysuje ekran pobrania danych z pilotażu: opis pliku, grupa trzech liczb i przycisk „Pobierz plik”.
+ * EN: Draws the pilot data download screen: the file description, the group of three numbers and the "Pobierz plik" button.
  *
  * @returns PL: drzewo elementów ekranu. EN: the tree of screen elements.
  */
@@ -27,8 +32,9 @@ export function PilotScreen() {
   const download = usePilotDownload();
   return (
     <main className="ad-screen" data-subtrack="8">
-      <ScreenTop title="Dane z pilotażu" backTo="/admin" backLabel="Wróć do panelu" />
+      <ScreenHeader title="Dane z pilotażu" backTo="/admin" backLabel="Wróć do panelu" />
       <PilotContents />
+      {/* PL: Dół ekranu: błąd lub napis o internecie nad przyciskiem. EN: The bottom of the screen: the error or the internet text above the button. */}
       <div className="ad-bottom">
         {download.isError ? (
           <p className="ad-error" role="alert">
@@ -37,45 +43,31 @@ export function PilotScreen() {
           </p>
         ) : null}
         {online ? null : <p className="ad-hint">Pobranie wymaga internetu.</p>}
-        <button type="button" className="ad-btn ad-btn-accent" disabled={!online || download.isPending} onClick={() => download.mutate()}>
+        <Button disabled={!online || download.isPending} onClick={() => download.mutate()}>
           <Icon name="download" />
           Pobierz plik
-        </button>
+        </Button>
       </div>
     </main>
   );
 }
 
 /**
- * PL: Opis pliku: nagłówek, zdanie o zawartości, lista trzech liczb i uwaga o ankietach.
- * EN: The file description: the heading, the sentence about the contents, the list of three numbers and the note about the surveys.
+ * PL: Opis pliku: nagłówek, zdanie o zawartości, grupa trzech liczb i przypis o ankietach.
+ * EN: The file description: the heading, the sentence about the contents, the group of three numbers and the footnote about the surveys.
  *
  * @returns PL: elementy opisu pliku. EN: the file description elements.
  */
 function PilotContents() {
   return (
     <>
-      <h1 className="ad-h1">Liczby z pilotażu</h1>
+      <h2 className="ad-h1">Liczby z pilotażu</h2>
       <p className="ad-lead">Plik z trzema liczbami do wniosków. Nie ma w nim imion, nazwisk ani adresów.</p>
-      <span className="ad-label ad-label-below">W pliku</span>
-      <ul className="ad-tile">
-        <li className="ad-row">
-          <Icon name="log-in" />
-          <span>Ile osób się zalogowało</span>
-        </li>
-        <li className="ad-row">
-          <Icon name="clipboard-list" />
-          <span>Ile zgłoszeń wpłynęło</span>
-        </li>
-        <li className="ad-row">
-          <Icon name="chart-column" />
-          <span>Ile odpowiedzi dały ankiety</span>
-        </li>
-      </ul>
-      <p className="ad-note">
-        <Icon name="lock" />
-        Odpowiedzi z ankiet są tylko policzone. Nie widać, kto co wybrał.
-      </p>
+      <ListGroup header="W pliku" footer="Odpowiedzi z ankiet są tylko policzone. Nie widać, kto co wybrał.">
+        <ListRow icon={<Icon name="log-in" />} title="Ile osób się zalogowało" />
+        <ListRow icon={<Icon name="clipboard-list" />} title="Ile zgłoszeń wpłynęło" />
+        <ListRow icon={<Icon name="chart-column" />} title="Ile odpowiedzi dały ankiety" />
+      </ListGroup>
     </>
   );
 }

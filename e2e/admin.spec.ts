@@ -160,7 +160,7 @@ test('Samorząd widzi ekran główny panelu / the Council sees the panel main sc
   await expect(page.getByRole('link', { name: /Ankiety Twórz ankiety i czytaj wyniki\./ })).toHaveAttribute('href', '/surveys/admin');
   await expect(page.getByRole('link', { name: /Kody zaproszeń Wydaj kod osobie bez szkolnej skrzynki\./ })).toHaveAttribute('href', '/admin/kody');
   await expect(page.getByRole('link', { name: /Dziennik zmian Kto wydał kod, nadał rolę albo pobrał plik\./ })).toHaveAttribute('href', '/admin/dziennik');
-  await expect(page.locator('.ad-tile li')).toHaveCount(5);
+  await expect(page.locator('.ui-list-group').first().locator('.ui-list-row')).toHaveCount(5);
 });
 
 // PL: Redakcja widzi tylko Wpisy z notatką, a adres kodów kończy się ekranem 6.1d.
@@ -171,7 +171,7 @@ test('redakcja widzi tylko Wpisy / the editorial team sees only Entries', async 
 
   await expect(page.getByText('Panel redakcji', { exact: true })).toBeVisible();
   await expect(page.getByText('Twoja rola: redakcja gazetki')).toBeVisible();
-  await expect(page.locator('.ad-tile li')).toHaveCount(1);
+  await expect(page.locator('.ui-list-group').first().locator('.ui-list-row')).toHaveCount(1);
   await expect(page.getByText('Redakcja publikuje tylko wpisy. Resztę panelu widzi Samorząd.')).toBeVisible();
 
   // PL: Ręcznie wpisany adres kodów: redakcja dostaje 6.1d.
@@ -198,7 +198,7 @@ test('administrator widzi role i pilotaż na ekranie głównym / the administrat
   await page.goto('/admin');
 
   await expect(page.getByText('Twoja rola: administrator')).toBeVisible();
-  await expect(page.locator('.ad-tile').first().locator('li')).toHaveCount(6);
+  await expect(page.locator('.ui-list-group').first().locator('.ui-list-row')).toHaveCount(6);
   await expect(page.getByRole('link', { name: /Role Administrator Nadaj albo odbierz rolę Samorządu i redakcji\./ })).toHaveAttribute('href', '/admin/role');
   await expect(page.getByText('Pilotaż', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: /Dane z pilotażu Pobierz liczby bez imion, nazwisk i adresów\./ })).toHaveAttribute('href', '/admin/pilotaz');

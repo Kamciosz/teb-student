@@ -5,13 +5,17 @@
  * @author Szymon
  * @since 2026-10-12
  * @uses src/features/admin/icons.tsx::Icon
- * @uses src/features/admin/ScreenTop.tsx::ScreenTop
+ * @uses src/shared/index.ts::ScreenHeader
  * @used_by src/features/admin/PanelGate.tsx::NoAccessScreen
  */
 
+// PL: Link powrotu na pulpit i wspólny nagłówek ekranu.
+// EN: The link back to the dashboard and the shared screen header.
 import { Link } from 'react-router';
+import { ScreenHeader } from '../../shared';
+// PL: Ikona kłódki w kole.
+// EN: The lock icon in the circle.
 import { Icon } from './icons';
-import { ScreenTop } from './ScreenTop';
 
 /**
  * PL: Rysuje ekran braku dostępu. Nie pobiera danych i nie zmienia nic poza ekranem.
@@ -22,20 +26,19 @@ import { ScreenTop } from './ScreenTop';
 export function NoAccessScreen() {
   return (
     <main className="ad-screen" data-subtrack="8">
-      <ScreenTop title="Panel Samorządu" backTo="/" backLabel="Wróć" />
+      <ScreenHeader title="Panel Samorządu" backTo="/" backLabel="Wróć" />
       {/* PL: Środek ekranu: koło z kłódką, nagłówek i wyjaśnienie, wyśrodkowane. EN: The middle of the screen: the circle with a lock, the heading and the explanation, centered. */}
       <div className="ad-center">
         <div className="ad-circle" aria-hidden="true">
           <Icon name="lock" />
         </div>
-        <h1>Tylko dla Samorządu</h1>
+        <h2>Tylko dla Samorządu</h2>
         <p className="ad-lead">Ten panel jest dla Samorządu i redakcji gazetki. Jeśli to pomyłka, zgłoś ją Samorządowi.</p>
       </div>
-      {/* PL: Na dole przycisk powrotu na pulpit. EN: At the bottom the button back to the dashboard. */}
+      {/* PL: Na dole przycisk powrotu na pulpit, w wyglądzie wypełnionego przycisku. EN: At the bottom the button back to the dashboard, in the look of the filled button. */}
       <div className="ad-bottom">
-        <Link className="ad-btn ad-btn-accent" to="/">
+        <Link className="ui-button ui-button--filled" to="/">
           Wróć na pulpit
-          <Icon name="arrow-right" />
         </Link>
       </div>
     </main>

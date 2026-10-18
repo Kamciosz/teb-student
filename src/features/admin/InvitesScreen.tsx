@@ -10,15 +10,19 @@
  * @uses src/features/admin/panelView.ts::formatInviteEnd
  * @uses src/features/admin/CopyCodeButton.tsx::CopyCodeButton
  * @uses src/features/admin/InviteList.tsx::InviteList
+ * @uses src/shared/index.ts::ScreenHeader
+ * @uses src/shared/index.ts::Button
  * @used_by src/features/admin/AdminScreen.tsx::InvitesScreen
  */
 
+// PL: Wspólny nagłówek ekranu i przycisk.
+// EN: The shared screen header and the button.
+import { Button, ScreenHeader } from '../../shared';
 import { CopyCodeButton } from './CopyCodeButton';
 import { Icon } from './icons';
 import { InviteList } from './InviteList';
 import { formatInviteEnd } from './panelView';
 import { useInvites, useIssueInvite } from './queries';
-import { ScreenTop } from './ScreenTop';
 import { useOnline } from './useOnline';
 
 /**
@@ -36,7 +40,7 @@ export function InvitesScreen() {
 
   return (
     <main className="ad-screen" data-subtrack="8">
-      <ScreenTop title="Kody zaproszeń" backTo="/admin" backLabel="Wróć do panelu" />
+      <ScreenHeader title="Kody zaproszeń" backTo="/admin" backLabel="Wróć do panelu" />
       {/* PL: Do kogo jest kod i jak długo działa. EN: Who the code is for and how long it works. */}
       <p className="ad-lead">Dla osób bez szkolnej skrzynki. Kod działa jeden raz i jest ważny 14 dni.</p>
       <NewCodeTile invite={issue.data} />
@@ -51,10 +55,10 @@ export function InvitesScreen() {
             Nie udało się wydać kodu. Spróbuj ponownie za chwilę.
           </p>
         ) : null}
-        <button type="button" className="ad-btn ad-btn-accent" disabled={!isOnline || issue.isPending} onClick={() => issue.mutate()}>
+        <Button disabled={!isOnline || issue.isPending} onClick={() => issue.mutate()}>
           <Icon name="plus" />
           Wydaj kod
-        </button>
+        </Button>
       </div>
     </main>
   );

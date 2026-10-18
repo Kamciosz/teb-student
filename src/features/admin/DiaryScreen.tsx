@@ -9,15 +9,21 @@
  * @uses src/features/admin/api.ts::DiaryPage
  * @uses src/features/admin/queries.ts::useDiary
  * @uses src/features/admin/icons.tsx::Icon
- * @uses src/features/admin/ScreenTop.tsx::ScreenTop
+ * @uses src/shared/index.ts::ScreenHeader
+ * @uses src/shared/index.ts::ListGroup
+ * @uses src/shared/index.ts::ListRow
+ * @uses src/shared/index.ts::EmptyState
+ * @uses src/shared/index.ts::Button
  * @used_by src/features/admin/AdminScreen.tsx::AdminScreen
  */
 
+// PL: Wspólne elementy ekranu: nagłówek, grupa, wiersz, pusty stan i przycisk.
+// EN: The shared screen elements: the header, the group, the row, the empty state and the button.
 import { useState } from 'react';
+import { Button, EmptyState, ListGroup, ListRow, ScreenHeader } from '../../shared';
 import type { DiaryAction, DiaryEntry, DiaryPage } from './api';
 import { Icon } from './icons';
 import { useDiary } from './queries';
-import { ScreenTop } from './ScreenTop';
 
 /** PL: Nazwy działań po polsku. EN: The action names in Polish. */
 const ACTION_NAMES: Record<DiaryAction, string> = {
@@ -45,8 +51,7 @@ export function DiaryScreen() {
   const diary = useDiary(page);
   return (
     <main className="ad-screen" data-subtrack="8">
-      <ScreenTop title="Dziennik zmian" backTo="/admin" backLabel="Wróć do panelu" />
-      <h1 className="ad-h1">Dziennik zmian</h1>
+      <ScreenHeader title="Dziennik zmian" backTo="/admin" backLabel="Wróć do panelu" />
       <p className="ad-lead">Kto wydał kod, nadał rolę albo pobrał plik. Najnowsze na górze.</p>
       <DiaryContents data={diary.data} isError={diary.isError} />
       <DiaryPager page={page} hasNext={diary.data?.hasNext ?? false} onChange={setPage} />
@@ -73,14 +78,11 @@ function DiaryContents({ data, isError }: { data: DiaryPage | undefined; isError
   if (data === undefined) return null;
   if (data.entries.length === 0) return <EmptyDiary />;
   return (
-    <>
-      <span className="ad-label ad-label-below">Wpisy</span>
-      <ul className="ad-tile">
-        {data.entries.map((entry) => (
-          <DiaryRow key={entry.id} entry={entry} />
-        ))}
-      </ul>
-    </>
+    <ListGroup header="Wpisy">
+      {data.entries.map((entry) => (
+        <DiaryRow key={entry.id} entry={entry} />
+      ))}
+    </ListGroup>
   );
 }
 
@@ -92,33 +94,20 @@ function DiaryContents({ data, isError }: { data: DiaryPage | undefined; isError
  * @returns PL: wiersz listy. EN: the list row.
  */
 function DiaryRow({ entry }: { entry: DiaryEntry }) {
-  return (
-    <li>
-      <div className="ad-row">
-        <div className="ad-row-text">
-          <span>{ACTION_NAMES[entry.action]}</span>
-          <small>
-            {entry.actorName ?? 'Nieznana osoba'} · {formatDiaryDate(entry.at)}
-          </small>
-        </div>
-      </div>
-    </li>
-  );
+  return <ListRow title={ACTION_NAMES[entry.action]} subtitle={`${entry.actorName ?? 'Nieznana osoba'} · ${formatDiaryDate(entry.at)}`} />;
 }
 
 /**
- * PL: Pusty stan dziennika: ikona, tytuł i podpowiedź, co trafi do dziennika.
- * EN: The empty diary state: the icon, the title and the hint about what goes into the diary.
+ * PL: Pusty stan dziennika: tytuł i podpowiedź, co trafi do dziennika.
+ * EN: The empty diary state: the title and the hint about what goes into the diary.
  *
- * @returns PL: kafel pustego stanu. EN: the empty state tile.
+ * @returns PL: pusty stan. EN: the empty state.
  */
 function EmptyDiary() {
   return (
-    <div className="ad-empty-tile">
-      <Icon name="history" />
-      <h2>Nie ma jeszcze wpisów</h2>
+    <EmptyState title="Nie ma jeszcze wpisów">
       <small>Wpis pojawi się, gdy ktoś wyda kod, nada albo odbierze rolę albo pobierze plik z pilotażu.</small>
-    </div>
+    </EmptyState>
   );
 }
 
@@ -131,13 +120,13 @@ function EmptyDiary() {
  */
 function DiaryPager({ page, hasNext, onChange }: { page: number; hasNext: boolean; onChange: (page: number) => void }) {
   return (
-    <div className="ad-bottom">
-      <button type="button" className="ad-btn ad-btn-outline" disabled={page === 1} onClick={() => onChange(page - 1)}>
+    <div className="ad-bottom ad-pager">
+      <Button variant="plain" disabled={page === 1} onClick={() => onChange(page - 1)}>
         Nowsze
-      </button>
-      <button type="button" className="ad-btn ad-btn-outline" disabled={!hasNext} onClick={() => onChange(page + 1)}>
+      </Button>
+      <Button variant="plain" disabled={!hasNext} onClick={() => onChange(page + 1)}>
         Starsze
-      </button>
+      </Button>
     </div>
   );
 }
