@@ -13,10 +13,12 @@
 // PL: Stan wpisanego tekstu i wybranego filtra.
 // EN: The typed text and the chosen filter state.
 import { useState } from 'react';
-// PL: Kafel wpisu, rząd chipów, pasek ekranu, pole szukania.
-// EN: The entry tile, the chip row, the screen bar, the search field.
+// PL: Pasek ekranu, Dock, nagłówek zakładki.
+// EN: The screen header, the Dock.
+import { Dock, ScreenHeader } from '../../../shared';
+// PL: Kafel wpisu, rząd chipów, pole szukania.
+// EN: The entry tile, the chip row, the search field.
 import { EntryCard } from './EntryCard';
-import { ScreenTop } from './ScreenTop';
 import { SearchField } from './SearchField';
 import { TypeFilterRow } from './TypeFilter';
 // PL: Filtrowanie i dane.
@@ -61,32 +63,37 @@ export function FeedListScreen() {
 
   return (
     <main className="news-feed" data-subtrack="3a">
-      <ScreenTop title="Aktualności" backTo="/" backLabel="Wróć do pulpitu" />
-      <SearchField value={text} onChange={setText} />
-      <TypeFilterRow value={filter} onChange={setFilter} />
-      {query.isError && query.data !== undefined ? <p className="news-note">Nie udało się odświeżyć wpisów. Pokazujemy zapisane.</p> : null}
-      {query.isPending && query.fetchStatus !== 'paused' ? (
-        <p role="status" className="news-note">
-          Ładuję wpisy…
-        </p>
-      ) : null}
-      {query.isPending && query.fetchStatus === 'paused' ? <p className="news-note">Brak internetu i brak zapisanych wpisów.</p> : null}
-      {query.isError && query.data === undefined ? (
-        <div className="news-note">
-          <p>Nie udało się pobrać wpisów.</p>
-          <button type="button" className="news-button" onClick={() => void query.refetch()}>
-            Spróbuj ponownie
-          </button>
+      <ScreenHeader title="Aktualności" />
+      <div className="news-feed__body">
+        <SearchField value={text} onChange={setText} />
+        <TypeFilterRow value={filter} onChange={setFilter} />
+        {query.isError && query.data !== undefined ? <p className="news-note">Nie udało się odświeżyć wpisów. Pokazujemy zapisane.</p> : null}
+        {query.isPending && query.fetchStatus !== 'paused' ? (
+          <p role="status" className="news-note">
+            Ładuję wpisy…
+          </p>
+        ) : null}
+        {query.isPending && query.fetchStatus === 'paused' ? <p className="news-note">Brak internetu i brak zapisanych wpisów.</p> : null}
+        {query.isError && query.data === undefined ? (
+          <div className="news-note">
+            <p>Nie udało się pobrać wpisów.</p>
+            <button type="button" className="news-button" onClick={() => void query.refetch()}>
+              Spróbuj ponownie
+            </button>
+          </div>
+        ) : null}
+        {query.data !== undefined && visible.length === 0 ? (
+          <p className="news-note">{emptyMessage(term, filter)}</p>
+        ) : null}
+        <div className="news-list">
+          {visible.map((entry, index) => (
+            // PL: Pierwszy wpis przypięty lub ważny dostaje większy kafel.
+            // EN: The first entry, pinned or important, gets the larger tile.
+            <EntryCard key={entry.id} entry={entry} featured={index === 0 && (entry.pinned || entry.type === 'important')} />
+          ))}
         </div>
-      ) : null}
-      {query.data !== undefined && visible.length === 0 ? (
-        <p className="news-note">{emptyMessage(term, filter)}</p>
-      ) : null}
-      <div className="news-list">
-        {visible.map((entry) => (
-          <EntryCard key={entry.id} entry={entry} />
-        ))}
       </div>
+      <Dock />
     </main>
   );
 }

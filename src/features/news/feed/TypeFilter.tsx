@@ -8,6 +8,9 @@
  * @used_by src/features/news/feed/FeedListScreen.tsx::TypeFilterRow
  */
 
+// PL: Chip kontrolki segmentowej z aplikacji systemowej.
+// EN: The segmented-control chip of the system app.
+import { Chip } from '../../../shared';
 // PL: Typy i ich nazwy.
 // EN: The types and their names.
 import { NEWS_TYPES, NEWS_TYPE_LABELS } from './types';
@@ -42,17 +45,11 @@ export function TypeFilterRow({ value, onChange }: TypeFilterRowProps) {
   ];
 
   return (
-    <div className="news-chips" role="group" aria-label="Filtr typu wpisu">
+    <div className="news-filter" role="group" aria-label="Filtr typu wpisu">
       {choices.map((choice) => (
-        <button
-          key={choice.id}
-          type="button"
-          className="news-chip"
-          aria-pressed={value === choice.id}
-          onClick={() => onChange(choice.id)}
-        >
+        <Chip key={choice.id} selected={value === choice.id} onClick={() => onChange(choice.id)}>
           {choice.label}
-        </button>
+        </Chip>
       ))}
     </div>
   );

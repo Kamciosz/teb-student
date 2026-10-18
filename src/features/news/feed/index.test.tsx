@@ -68,6 +68,20 @@ describe('drzwi podtoru 3a / the door of subtrack 3a', () => {
     expect(draw(entry)).not.toContain('Przypięte');
   });
 
+  // PL: Wyróżniony wpis dostaje klasę większego kafla, zwykły nie.
+  // EN: A featured entry gets the larger tile class, a plain one does not.
+  it('dodaje klasę wyróżnienia tylko wyróżnionemu wpisowi / adds the featured class only to a featured entry', () => {
+    const draw = (featured?: boolean) =>
+      renderToStaticMarkup(
+        <MemoryRouter>
+          <EntryCard entry={entry} featured={featured} />
+        </MemoryRouter>,
+      );
+
+    expect(draw(true)).toContain('news-card--featured');
+    expect(draw()).not.toContain('news-card--featured');
+  });
+
   // PL: Treść rysuje się z dokumentu wpisu, bez pobierania z serwera.
   // EN: The content draws from the entry document, without fetching from the server.
   it('rysuje treść wpisu z dokumentu / draws the entry content from the document', () => {

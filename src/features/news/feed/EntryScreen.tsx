@@ -18,7 +18,9 @@ import { useParams } from 'react-router';
 import { RichContent } from './content/RichContent';
 import { safeHttpsUrl } from './content/sanitize';
 import { EntrySignature } from './EntrySignature';
-import { ScreenTop } from './ScreenTop';
+// PL: Pasek ekranu z powrotem do listy.
+// EN: The screen bar with the way back to the list.
+import { ScreenHeader } from '../../../shared';
 // PL: Dane, błąd API i zapis daty.
 // EN: Data, the API error and the date format.
 import { NewsApiError } from './api';
@@ -61,34 +63,36 @@ export function EntryScreen() {
 
   return (
     <main className="news-feed" data-subtrack="3a">
-      <ScreenTop title={entry ? entry.title : 'Aktualność'} backTo="/news/feed" backLabel="Wróć do listy aktualności" />
-      {query.isPending ? (
-        <p role="status" className="news-note">
-          Ładuję wpis…
-        </p>
-      ) : null}
-      {notFound ? <p className="news-note">Nie znaleziono wpisu.</p> : null}
-      {query.isError && !notFound ? (
-        <div className="news-note">
-          <p>Nie udało się pobrać wpisu.</p>
-          <button type="button" className="news-button" onClick={() => void query.refetch()}>
-            Spróbuj ponownie
-          </button>
-        </div>
-      ) : null}
-      {entry ? (
-        <article className="news-entry">
-          <p className="news-card__meta">
-            <span className="news-tag">{NEWS_TYPE_LABELS[entry.type]}</span>
-            <small>
-              {entry.source} · {formatDay(entry.publishedAt)}
-            </small>
+      <ScreenHeader title={entry ? entry.title : 'Aktualność'} backTo="/news/feed" backLabel="Aktualności" />
+      <div className="news-feed__body">
+        {query.isPending ? (
+          <p role="status" className="news-note">
+            Ładuję wpis…
           </p>
-          <RichContent body={entry.body} />
-          <EntryLink entry={entry} />
-          <EntrySignature authorName={entry.authorName} byEditorialTeam={entry.byEditorialTeam} />
-        </article>
-      ) : null}
+        ) : null}
+        {notFound ? <p className="news-note">Nie znaleziono wpisu.</p> : null}
+        {query.isError && !notFound ? (
+          <div className="news-note">
+            <p>Nie udało się pobrać wpisu.</p>
+            <button type="button" className="news-button" onClick={() => void query.refetch()}>
+              Spróbuj ponownie
+            </button>
+          </div>
+        ) : null}
+        {entry ? (
+          <article className="news-entry">
+            <p className="news-entry__meta">
+              <span className="news-tag">{NEWS_TYPE_LABELS[entry.type]}</span>
+              <small>
+                {entry.source} · {formatDay(entry.publishedAt)}
+              </small>
+            </p>
+            <RichContent body={entry.body} />
+            <EntryLink entry={entry} />
+            <EntrySignature authorName={entry.authorName} byEditorialTeam={entry.byEditorialTeam} />
+          </article>
+        ) : null}
+      </div>
     </main>
   );
 }

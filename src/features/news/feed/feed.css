@@ -1,6 +1,6 @@
 /**
- * PL: Style ekranów aktualności (podtor 3a): pasek z powrotem, chipy filtra, kafle wpisów, treść wpisu i miniatura filmu. Kolory tylko przez var(--...) z tokens.css. Bez color-mix(), zagnieżdżania CSS, :has() i 100dvh, bo iOS 15.0–15.3 ich nie zna.
- * EN: Styles of the news screens (subtrack 3a): the bar with the back arrow, the filter chips, the entry tiles, the entry content and the video thumbnail. Colors only through var(--...) from tokens.css. No color-mix(), CSS nesting, :has() or 100dvh, because iOS 15.0–15.3 does not know them.
+ * PL: Style ekranów aktualności (podtor 3a): filtr typu w jednej linii, lista wpisów w grupie, treść wpisu i miniatura filmu. Paski ekranu rysuje wspólny ScreenHeader. Kolory tylko przez var(--...) z tokens.css. Bez color-mix(), zagnieżdżania CSS, :has() i 100dvh, bo iOS 15.0–15.3 ich nie zna.
+ * EN: Styles of the news screens (subtrack 3a): the type filter in one line, the entry list as a group, the entry content and the video thumbnail. The screen bars are drawn by the shared ScreenHeader. Colors only through var(--...) from tokens.css. No color-mix(), CSS nesting, :has() or 100dvh, because iOS 15.0–15.3 does not know them.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -8,40 +8,30 @@
  * @used_by src/features/news/feed/NewsFeedScreen.tsx::import
  */
 
-/* PL: Kolumna ekranu: do 430 px, na środku, z marginesem 16 px i dolnym marginesem bezpiecznym iPhone'a.
-   EN: The screen column: up to 430 px, centered, with a 16 px margin and the iPhone safe bottom margin. */
+/* PL: Kolumna ekranu: do 430 px, na środku. Pasek ekranu ma własne marginesy boczne, a treść stoi w .news-feed__body.
+   EN: The screen column: up to 430 px, centered. The screen bar has its own side margins, and the content sits in .news-feed__body. */
 .news-feed {
   max-width: 430px;
   margin: 0 auto;
-  padding: 16px 16px calc(24px + var(--safe-bottom));
+  padding: 0 0 calc(24px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
-  gap: 16px;
   overflow-wrap: anywhere;
 }
 
-/* PL: Pasek: strzałka powrotu obok tytułu.
-   EN: The bar: the back arrow next to the title. */
-.news-top {
+/* PL: Treść ekranu pod paskiem: marginesy 16 px i odstępy między blokami.
+   EN: The screen content under the bar: 16 px margins and spacing between the blocks. */
+.news-feed__body {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 16px 0;
 }
 
-/* PL: Strzałka ma pole dotyku 44 × 44 px.
-   EN: The arrow has a 44 × 44 px touch area. */
-.news-top__back {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--r);
-  background: var(--tile);
-  color: var(--ink);
-  text-decoration: none;
-  font-size: var(--t-lg);
+/* PL: Link wstecz na pasku wpisu nie zawija się: krótka etykieta w jednej linii, a tytuł ucina się wielokropkiem.
+   EN: The back link on the entry bar does not wrap: a short label on one line, and the title is cut with an ellipsis. */
+.news-feed .ui-screen-header-back {
+  white-space: nowrap;
 }
 
 /* PL: Pole szukania nad listą: pole i przycisk „Wyczyść” w jednym rzędzie, z polem dotyku 44 px.
@@ -83,39 +73,30 @@
   cursor: pointer;
 }
 
-/* PL: Chipy zawijają się do następnego wiersza, więc przy 320 px nic nie wychodzi poza ekran.
-   EN: Chips wrap to the next row, so at 320 px nothing goes off the screen. */
-.news-chips {
+/* PL: Filtr typu: jedna linia chipów przewijana w bok, więc przy 320 px nic się nie zawija i nie wychodzi poza ekran.
+   EN: The type filter: one line of chips that scrolls sideways, so at 320 px nothing wraps or goes off the screen. */
+.news-filter {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-}
-
-.news-chip {
-  min-height: 44px;
+  margin: 0 -16px;
   padding: 0 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--tile);
-  font-size: var(--t-sm);
-  font-weight: 600;
-  cursor: pointer;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* PL: Wybrany chip ma kolor akcentu szkoły.
-   EN: The chosen chip has the school accent color. */
-.news-chip[aria-pressed='true'] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+.news-filter::-webkit-scrollbar {
+  display: none;
 }
 
-/* PL: Lista kafli i komunikaty pod chipami.
-   EN: The tile list and the messages under the chips. */
+/* PL: Lista wpisów: jedna grupa na tle kafla, z zaokrąglonymi rogami. Wiersze oddziela linia wcięta 16 px.
+   EN: The entry list: one group on the tile background, with rounded corners. The rows are separated by a line indented 16 px. */
 .news-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  overflow: hidden;
+  border-radius: var(--r);
+  background: var(--tile);
 }
 
 .news-note {
@@ -127,29 +108,68 @@
   margin-top: 12px;
 }
 
-/* PL: Kafel wpisu: cały jest odnośnikiem. Wpis ważny ma jaśniejsze tło.
-   EN: The entry tile: all of it is a link. An important entry has a lighter background. */
+/* PL: Wiersz wpisu: cały jest odnośnikiem. Zwykły wiersz ma tytuł w jednej linii opisu, a wyróżniony (przypięty lub ważny, pierwszy na liście) ma większy tytuł i dwie linie opisu.
+   EN: The entry row: all of it is a link. A regular row has the title and one line of description, and a featured one (pinned or important, first in the list) has a larger title and two lines of description. */
 .news-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px;
-  border-radius: var(--r);
+  gap: 6px;
+  min-height: 44px;
+  padding: 11px 16px;
   background: var(--tile);
   color: var(--ink);
   text-decoration: none;
 }
 
-.news-card--important {
+/* PL: Linia oddzielająca wiersze, wcięta 16 px od lewej jak w grupowanej liście iOS.
+   EN: The line between the rows, indented 16 px from the left as in an iOS grouped list. */
+.news-card + .news-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+}
+
+.news-card:active {
   background: var(--tile-2);
 }
 
 .news-card h2 {
+  margin: 0;
+  font-size: var(--t-md);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.news-card--featured {
+  gap: 8px;
+  padding: 16px;
+}
+
+.news-card--featured h2 {
   font-size: var(--t-lg);
   line-height: 1.2;
 }
 
-.news-card__meta {
+/* PL: Opis w wierszu: jedna linia, a wyróżniony wpis dwie.
+   EN: The description in a row: one line, and two lines for a featured entry. */
+.news-card__excerpt {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news-card--featured .news-card__excerpt {
+  -webkit-line-clamp: 2;
+}
+
+.news-card__meta,
+.news-entry__meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -160,6 +180,13 @@
 .news-entry small {
   color: var(--ink-2);
   font-size: var(--t-sm);
+}
+
+/* PL: Źródło i czas w wierszu są mniejsze, jak w zwartej liście.
+   EN: The source and the time in a row are smaller, as in a compact list. */
+.news-card__meta small,
+.news-entry__meta small {
+  font-size: var(--t-xs);
 }
 
 /* PL: Znacznik typu wpisu.
@@ -224,12 +251,14 @@
   font-size: var(--t-sm);
 }
 
-/* PL: Treść wpisu: akapity, nagłówki, listy, cytat i linki.
-   EN: The entry content: paragraphs, headings, lists, the quote and links. */
+/* PL: Treść wpisu: akapity, nagłówki, listy, cytat i linki. Tekst 17 px z interlinią 1,5.
+   EN: The entry content: paragraphs, headings, lists, the quote and links. Text at 17 px with a 1.5 line height. */
 .news-content {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  font-size: var(--t-md);
+  line-height: 1.5;
 }
 
 .news-content h2 {
