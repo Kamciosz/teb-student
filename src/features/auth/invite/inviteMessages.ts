@@ -47,7 +47,6 @@ export const MESSAGES = {
   signInSubmit: 'Zaloguj się',
   switchToSignIn: 'Mam już konto',
   switchToSignUp: 'Mam kod zaproszenia',
-  backLabel: 'Wróć do logowania szkolnym adresem e-mail',
   busySignUp: 'Zakładanie konta…',
   busySignIn: 'Logowanie…',
   inviteInvalid: 'Kod zaproszenia jest nieprawidłowy, został już użyty albo wygasł.',

@@ -5,7 +5,7 @@
  * @author Kacper
  * @since 2026-10-11
  * @used_by src/features/dashboard/api.ts::fetchDashboard
- * @used_by src/features/dashboard/ImportantTile.tsx::ImportantTile
+ * @used_by src/features/dashboard/DashboardHero.tsx::DashboardHero
  */
 
 /**
