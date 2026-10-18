@@ -1,6 +1,6 @@
 /**
- * PL: Style kreatora „Nowy wpis” (podtor 3b) w stylu iOS: pasek z postępem, chipy typu, grupowane pola z ListGroup i TextField, pasek narzędzi, pole edytora, podgląd i przycisk „Opublikuj” przyklejony do dołu. Kolory tylko przez var(--...) z tokens.css. Bez color-mix(), zagnieżdżania CSS, :has() i 100dvh, bo iOS 15.0–15.3 ich nie zna. Pasek narzędzi ma jeden rząd: przyciski formatowania i adresów przewijają się w bok palcem, a „Cofnij” i „Ponów” stoją stale po prawej. Dzięki temu przy 320 px nic nie wychodzi poza ekran, a pasek nie zajmuje pół ekranu.
- * EN: Styles of the "Nowy wpis" wizard (subtrack 3b) in the iOS style: the progress bar, the type chips, the grouped fields from ListGroup and TextField, the toolbar, the editor field, the preview and the "Opublikuj" button stuck to the bottom. Colors only through var(--...) from tokens.css. No color-mix(), CSS nesting, :has() or 100dvh, because iOS 15.0–15.3 does not know them. The toolbar is one row: the formatting and address buttons scroll sideways with a finger, and "Cofnij" (undo) and "Ponów" (redo) stay on the right. So at 320 px nothing goes off the screen, and the toolbar does not take half the screen.
+ * PL: Style kreatora „Nowy wpis” (podtor 3b) w stylu iOS: pasek z postępem, chipy typu, grupowane pola z ListGroup i TextField, pasek narzędzi, pole edytora, podgląd i przycisk „Opublikuj” przyklejony do dołu. Kolory tylko przez var(--...) z tokens.css. Bez color-mix(), zagnieżdżania CSS i :has(), bo iOS 15.0–15.3 ich nie zna; 100dvh tylko po zapasowym 100vh. Pasek narzędzi ma jeden rząd: przyciski formatowania i adresów przewijają się w bok palcem, a „Cofnij” i „Ponów” stoją stale po prawej. Dzięki temu przy 320 px nic nie wychodzi poza ekran, a pasek nie zajmuje pół ekranu.
+ * EN: Styles of the "Nowy wpis" wizard (subtrack 3b) in the iOS style: the progress bar, the type chips, the grouped fields from ListGroup and TextField, the toolbar, the editor field, the preview and the "Opublikuj" button stuck to the bottom. Colors only through var(--...) from tokens.css. No color-mix(), CSS nesting or :has(), because iOS 15.0–15.3 does not know them; 100dvh only after the 100vh fallback. The toolbar is one row: the formatting and address buttons scroll sideways with a finger, and "Cofnij" (undo) and "Ponów" (redo) stay on the right. So at 320 px nothing goes off the screen, and the toolbar does not take half the screen.
  *
  * @author Szymon
  * @since 2026-10-12
@@ -11,6 +11,8 @@
 /* PL: Kolumna ekranu: do 430 px, na środku, z marginesem 16 px. Nagłówek daje ScreenHeader albo pasek kroku, więc góra zostaje bez odstępu. Dolny margines zostawia miejsce na pasek domowy iPhone'a.
    EN: The screen column: up to 430 px, centered, with a 16 px margin. The header comes from ScreenHeader or the step bar, so the top has no gap. The bottom margin leaves room for the iPhone home bar. */
 .editor-screen {
+  /* PL: iOS 15.0–15.3 nie zna 100dvh i pomija tę linię, więc najpierw stoi 100vh. EN: iOS 15.0–15.3 does not know 100dvh and skips that line, so 100vh comes first. */
+  min-height: 100vh;
   min-height: 100dvh;
   max-width: 430px;
   margin: 0 auto;
@@ -255,6 +257,12 @@
   padding: 12px;
   border-bottom: 1px solid var(--line);
   background: var(--tile-2);
+}
+
+/* PL: Edytor stoi w grupowanej liście, więc pole w okienku adresu i podpisu dostaje kafel edytora, jak wcześniej. Pole ma być widoczne na szarym tle okienka.
+   EN: The editor stands in a grouped list, so a field in the address and caption panel keeps the editor tile, as before. The field must stay visible on the gray panel background. */
+.ui-list-group .editor-panel .ui-field input {
+  background: var(--tile);
 }
 
 .editor-row {
