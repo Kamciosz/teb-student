@@ -10,14 +10,14 @@
  */
 
 import { env } from 'cloudflare:workers';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import type { Env } from '../../shared';
 import { account, user } from '../../db/schema/auth';
 import { sessionCookie, uniqueIp } from '../email/testRuntime';
-import { issueInviteCode } from './inviteCodes';
+import { consumeInviteCode, issueInviteCode } from './inviteCodes';
 import { authInviteApp } from './routes';
 import { call, createTestInvite, TEST_ORIGIN, TEST_SECRET, type TestInvite } from './testRuntime';
 
@@ -111,6 +111,26 @@ describe('zakładanie konta kodem / creating an account with a code', () => {
       ['para.a', 'para.b'].map((login) => call(test.app, '/sign-up', { body: { code, login, password: PASSWORD } })),
     );
     expect(results.map((response) => response.status).sort()).toEqual([200, 400]);
+    const rows = await drizzle(env.DB)
+      .select()
+      .from(user)
+      .where(inArray(user.email, ['para.a@login.invalid', 'para.b@login.invalid']));
+    expect(rows).toHaveLength(1);
+  });
+
+  // PL: Dwie rejestracje naraz tym samym, zajętym loginem: jedna wygrywa, a przegrana nie zużywa swojego kodu, więc kod dalej działa.
+  // EN: Two sign-ups at once with the same taken login: one wins, and the losing one does not use up its code, so the code still works.
+  it('przegrana rejestracja w wyścigu nie zużywa kodu / a losing sign-up in a race does not use up its code', async () => {
+    const test = createTestInvite();
+    const login = `wyscig.${crypto.randomUUID().slice(0, 8)}`;
+    const codes = [(await issueInviteCode(env.DB)).code, (await issueInviteCode(env.DB)).code];
+    const responses = await Promise.all(
+      codes.map((code) => call(test.app, '/sign-up', { body: { code, login, password: PASSWORD } })),
+    );
+    const outcomes = codes.map((code, index) => ({ code, status: responses[index]?.status }));
+    expect(outcomes.filter((outcome) => outcome.status === 200)).toHaveLength(1);
+    const loser = outcomes.find((outcome) => outcome.status !== 200);
+    expect(await consumeInviteCode(env.DB, loser?.code ?? '')).not.toBeNull();
   });
 
   // PL: Kod wpisany małymi literami i ze spacją działa tak samo jak oryginał.

@@ -1,11 +1,12 @@
 /**
- * PL: Test funkcji storeMedia na prawdziwym zasobniku R2 i bazie D1 z testowego Workera. Sprawdza zapis poprawnego pliku oraz to, że plik za duży zostaje skasowany z R2 i nie trafia do bazy.
- * EN: Test of the storeMedia function on a real R2 bucket and D1 database of the test Worker. Checks saving a valid file, and that a file that is too big is deleted from R2 and does not reach the database.
+ * PL: Test funkcji storeMedia na prawdziwym zasobniku R2 i bazie D1 z testowego Workera. Sprawdza zapis poprawnego pliku oraz to, że plik za duży odpada przed zapisem do R2 i nie trafia do bazy.
+ * EN: Test of the storeMedia function on a real R2 bucket and D1 database of the test Worker. Checks saving a valid file, and that a file that is too big is refused before the write to R2 and does not reach the database.
  *
  * @author Szymon
  * @since 2026-10-13
  * @uses worker/media/upload.ts::storeMedia
  * @uses worker/db/schema/media.ts::mediaFiles
+ * @uses worker/shared/countingBucket.ts::countingBucket
  * @used_by vitest.config.ts::include
  */
 
@@ -22,6 +23,9 @@ import { drizzle } from 'drizzle-orm/d1';
 // EN: The function under test, its input type and the files table.
 import { type StoreMediaInput, storeMedia } from './upload';
 import { mediaFiles } from '../db/schema/media';
+// PL: Zasobnik z licznikiem zapisów, żeby sprawdzić, że za duży plik nie trafia do R2.
+// EN: A bucket with a write counter, to check that an oversized file does not reach R2.
+import { countingBucket } from '../shared/countingBucket';
 
 /** PL: Trzy bajty testowej treści. EN: Three bytes of test content. */
 const BYTES = new Uint8Array([1, 2, 3]).buffer;
@@ -77,18 +81,20 @@ describe('storeMedia', () => {
     ]);
   });
 
-  // PL: Plik za duży zostaje skasowany z R2 i nie trafia do bazy.
-  // EN: A file that is too big is deleted from R2 and does not reach the database.
-  it('kasuje za duży plik z R2 i nie zapisuje wiersza / deletes an oversized file from R2 and saves no row', async () => {
-    // PL: Limit 2 bajty, a plik ma 3, więc jest za duży.
-    // EN: The limit is 2 bytes and the file has 3, so it is too big.
-    const result = await storeMedia(storeInput({ maxBytes: 2 }));
+  // PL: Plik za duży odpada przed zapisem do R2 i nie trafia do bazy.
+  // EN: A file that is too big is refused before the write to R2 and does not reach the database.
+  it('odmawia za duży plik przed zapisem do R2 i nie zapisuje wiersza / refuses an oversized file before the write to R2 and saves no row', async () => {
+    // PL: Limit 2 bajty, a plik ma 3, więc jest za duży. Licznik pokaże, czy R2 w ogóle dostał zapis.
+    // EN: The limit is 2 bytes and the file has 3, so it is too big. The counter shows whether R2 got a write at all.
+    const { bucket, writes } = countingBucket();
+    const result = await storeMedia(storeInput({ bucket, maxBytes: 2 }));
 
-    // PL: Odmowa z powodem, zasobnik pusty, baza pusta.
-    // EN: A refusal with the reason, an empty bucket, an empty database.
+    // PL: Odmowa z powodem, zero zapisów do R2, zasobnik pusty, baza pusta.
+    // EN: A refusal with the reason, zero writes to R2, an empty bucket, an empty database.
     const listed = await env.MEDIA.list();
     const rows = await drizzle(env.DB).select().from(mediaFiles);
     expect(result).toEqual({ ok: false, reason: 'too-large' });
+    expect(writes()).toBe(0);
     expect(listed.objects).toHaveLength(0);
     expect(rows).toHaveLength(0);
   });
