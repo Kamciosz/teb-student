@@ -1,6 +1,6 @@
 # Stan prac
 
-Stan na 18.10.2026. `main` po scaleniu #200. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
+Stan na 31.10.2026. `main` po scaleniu #209. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
 
 Wszystkie teksty aplikacji zatwierdził Szymon 14.10.2026 (#175, #179).
 
@@ -82,7 +82,9 @@ Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (
 
 ## Otwarte pull requesty
 
-Brak. Wszystkie pull requesty do #195 są scalone.
+Sześć pull requestów od Dependabota z podbiciem zależności (#203–#208). Nikt ich jeszcze nie sprawdził. Wszystkie pozostałe do #209 są scalone.
+
+Wejście do zgłoszeń (#209): pulpit ma pod sekcjami osobny kafel „Zgłoś problem”, a ekran „Moje zgłoszenia” ma u góry przycisk z plusem i tym samym napisem.
 
 Do poprawy w wyglądzie: nic znanego. Trzy rzeczy z listy po #195 poprawiły #197, #198 i #199, a #200 dodał widoczne pola. `.editor-screen` dostał wysokość zapasową `100vh` dla iOS 15.0–15.3, które nie znają `100dvh` (#202).
 
