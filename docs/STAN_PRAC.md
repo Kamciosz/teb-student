@@ -92,6 +92,8 @@ Do sprawdzenia po wdrożeniu: Face ID na prawdziwym telefonie.
 
 ## Przed pierwszym wdrożeniem
 
+Kroki pierwszego wdrożenia (konto Cloudflare, sekrety, schemat, pierwszy administrator, sprawdzenie po wdrożeniu) są w `docs/WDROZENIE.md`. Poniżej to, co wykracza poza tę instrukcję.
+
 Baza nie ma migracji. Lokalnie schemat zakłada `db:reset`. Na produkcji trzeba ręcznie dodać nowe tabele (m.in. `diary_entries`, `media_files`, `passkey`) i kolumny (m.in. `author_user_id`, `pinned_at`, `publish_at` w aktualnościach). Tabela `bell_shortened_days` nie jest już potrzebna. Może zostać na produkcji, bo nic jej nie czyta; usunięcie danych wymaga osobnej decyzji. Logowanie Face ID wymaga `BETTER_AUTH_URL` na produkcji, bo z niego wyliczany jest `rpID` klucza. Pełną listę daje `node scripts/dbDiff.ts`: porównuje `scripts/schemaSql.ts` z bazą i wypisuje brakujące `CREATE` i `ALTER` (#163).
 
 ## Jak uruchomić agenta podtoru

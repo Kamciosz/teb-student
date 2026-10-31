@@ -9,6 +9,7 @@
 !.env.example
 node_modules/
 dist/
+dist-sql/
 build/
 .idea/
 .vscode/settings.json

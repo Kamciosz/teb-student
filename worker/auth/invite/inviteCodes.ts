@@ -5,6 +5,7 @@
  * @author Szymon
  * @since 2026-10-11
  * @uses worker/auth/invite/settings.ts::INVITE_LIFETIME_DAYS
+ * @uses worker/auth/invite/generateInviteCode.ts::generateInviteCode
  * @uses worker/db/schema/auth.ts::verification
  * @used_by worker/auth/invite/createInviteAuth.ts::createInviteAuth
  * @used_by worker/auth/invite/index.ts::issueInviteCode
@@ -19,18 +20,11 @@ import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 // PL: Tabela, w której leżą kody.
 // EN: The table where the codes live.
 import { verification } from '../../db/schema/auth';
-import {
-  INVITE_ALPHABET,
-  INVITE_CODE_PATTERN,
-  INVITE_IDENTIFIER_PREFIX,
-  INVITE_LIFETIME_DAYS,
-} from './settings';
+import { generateInviteCode } from './generateInviteCode';
+import { INVITE_CODE_PATTERN, INVITE_IDENTIFIER_PREFIX, INVITE_LIFETIME_DAYS } from './settings';
 
 /** PL: Ile milisekund ma doba. EN: How many milliseconds a day has. */
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** PL: Znaki w pierwszej i drugiej grupie kodu „TEB-XXXX-XX”. EN: The characters in the first and the second group of the code "TEB-XXXX-XX". */
-const GROUP_LENGTHS = [4, 2] as const;
 
 /**
  * PL: Wiersz kodu zużytego z bazy. Wystarczy, żeby oddać kod w niezmienionej postaci.
@@ -42,20 +36,6 @@ export type ConsumedInviteCode = {
   /** PL: Do kiedy kod był ważny. EN: Until when the code was valid. */
   expiresAt: Date;
 };
-
-/**
- * PL: Wylosowuje jedną grupę znaków kodu. Losowość pochodzi z crypto, bo kod jest sekretem.
- * EN: Draws one group of code characters. The randomness comes from crypto, because the code is a secret.
- *
- * @param length - PL: ile znaków. EN: how many characters.
- * @returns PL: tekst z wylosowanymi znakami. EN: the text with the drawn characters.
- */
-function randomGroup(length: number): string {
-  // PL: Bajt & 31 to liczba 0–31, czyli indeks w 32-znakowym alfabecie bez przekrzywienia rozkładu.
-  // EN: A byte & 31 is a number 0–31, an index in the 32-character alphabet without skewing the distribution.
-  const bytes = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(bytes, (byte) => INVITE_ALPHABET.charAt(byte & 31)).join('');
-}
 
 /**
  * PL: Sprowadza kod wpisany przez ucznia do jednej postaci: bez spacji na brzegach, wielkimi literami. Zwraca null, gdy kod nie ma kształtu „TEB-XXXX-XX”, więc nie ma po co pytać bazy.
@@ -78,9 +58,9 @@ export function normalizeInviteCode(raw: string): string | null {
  * @returns PL: kod, data wygaśnięcia i zapytanie do wykonania. EN: the code, the expiry date and the query to run.
  */
 export function prepareInviteCode(orm: DrizzleD1Database, now = new Date()) {
-  // PL: Złóż kod z grup znaków, na przykład „TEB-7K4Q-92”.
-  // EN: Assemble the code from groups of characters, for example "TEB-7K4Q-92".
-  const code = `TEB-${GROUP_LENGTHS.map(randomGroup).join('-')}`;
+  // PL: Wylosuj kod, na przykład „TEB-7K4Q-92”.
+  // EN: Draw the code, for example "TEB-7K4Q-92".
+  const code = generateInviteCode();
   const expiresAt = new Date(now.getTime() + INVITE_LIFETIME_DAYS * DAY_MS);
 
   // PL: Zapytanie zapisuje wiersz. Wartość jest pusta, bo liczy się samo istnienie kodu i jego termin.
