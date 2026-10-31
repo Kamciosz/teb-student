@@ -424,6 +424,27 @@ describe('PATCH /:id zmiana etapu / stage change', () => {
     expect(await diaryRows()).toEqual([]);
   });
 
+  // PL: Gdy zapis do dziennika się nie uda, etap i historia też nie zmieniają się: 500 i zgłoszenie zostaje w starym etapie.
+  // EN: When the diary write fails, the stage and the history do not change either: 500 and the report stays in its old stage.
+  it('gdy zapis do dziennika się nie uda, etap zostaje / when the diary write fails, the stage stays', async () => {
+    // PL: Trigger blokuje każdy zapis do dziennika, żeby zasymulować awarię tego zapisu. Usuwamy go w finally, żeby nie został dla kolejnych testów.
+    // EN: The trigger blocks every diary write, to simulate a failure of that write. We drop it in finally, so it does not stay for the next tests.
+    await db.prepare("CREATE TRIGGER blokada_dziennika BEFORE INSERT ON diary_entries BEGIN SELECT RAISE(ABORT, 'blokada dziennika'); END").run();
+    try {
+      const response = await patchStage('seed-projektor', { stage: 'resolved', note: 'Projektor naprawiony.' });
+      const row = await db.prepare('SELECT stage FROM reports WHERE id = ?').bind('seed-projektor').first<{ stage: string }>();
+      const count = await db.prepare('SELECT COUNT(*) AS n FROM report_stage_changes WHERE report_id = ?').bind('seed-projektor').first<{ n: number }>();
+
+      expect(response.status).toBe(500);
+      expect(await response.text()).not.toContain('blokada');
+      expect(row?.stage).toBe('in_progress');
+      expect(count?.n).toBe(2);
+      expect(await diaryRows()).toEqual([]);
+    } finally {
+      await db.prepare('DROP TRIGGER IF EXISTS blokada_dziennika').run();
+    }
+  });
+
   // PL: Zły etap, brak etapu i zepsuty JSON to 400, a baza zostaje bez zmian.
   // EN: A bad stage, a missing stage and broken JSON are 400, and the database stays unchanged.
   it('zły etap daje 400 / a bad stage gives 400', async () => {

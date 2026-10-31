@@ -365,6 +365,24 @@ describe('DELETE /:id', () => {
     // EN: The 404 answer does not add a second entry, so one stays in the diary.
     expect(await diary()).toEqual([['news_deleted', ACTOR_ID, 'szkic']]);
   });
+
+  // PL: Gdy zapis do dziennika się nie uda, wpis też nie znika: 500 i opublikowany wpis dalej jest na miejscu.
+  // EN: When the diary write fails, the entry does not disappear either: 500 and the published entry is still there.
+  it('gdy zapis do dziennika się nie uda, wpis zostaje / when the diary write fails, the entry stays', async () => {
+    // PL: Trigger blokuje każdy zapis do dziennika, żeby zasymulować awarię tego zapisu. Usuwamy go w finally, żeby nie został dla kolejnych testów.
+    // EN: The trigger blocks every diary write, to simulate a failure of that write. We drop it in finally, so it does not stay for the next tests.
+    await env.DB.prepare("CREATE TRIGGER blokada_dziennika BEFORE INSERT ON diary_entries BEGIN SELECT RAISE(ABORT, 'blokada dziennika'); END").run();
+    try {
+      const response = await send('/opublikowany', 'DELETE');
+
+      expect(response.status).toBe(500);
+      expect(await response.text()).not.toContain('blokada');
+      expect(await rows()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
+      expect(await diary()).toEqual([]);
+    } finally {
+      await env.DB.prepare('DROP TRIGGER IF EXISTS blokada_dziennika').run();
+    }
+  });
 });
 
 // PL: Błąd bazy to 500 bez szczegółów.

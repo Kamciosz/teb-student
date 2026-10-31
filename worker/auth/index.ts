@@ -44,4 +44,6 @@ export { listPasskeysForExport } from './email';
 
 // PL: Router podtoru 1b (kody zaproszeń, login i hasło), funkcja tworząca kod zaproszenia dla panelu Samorządu (issueInviteCode(env.DB) → { code, expiresAt }) i lista kodów, które jeszcze działają (listInviteCodes(env.DB) → { code, expiresAt }[], od najkrócej ważnego). Panel Samorządu (podtor 8) pokazuje listę na ekranie „Kody zaproszeń”.
 // EN: The router of subtrack 1b (invitation codes, login and password), the function that creates an invitation code for the Student Council panel (issueInviteCode(env.DB) → { code, expiresAt }) and the list of codes that still work (listInviteCodes(env.DB) → { code, expiresAt }[], from the one valid for the shortest time). The Student Council panel (subtrack 8) shows the list on the "Invitation codes" screen.
-export { authInviteApp, issueInviteCode, listInviteCodes } from './invite';
+// PL: Przygotowanie kodu zaproszenia bez wykonania (prepareInviteCode(orm) → { code, expiresAt, query }), żeby panel wpisał zapis kodu i dziennik w jednym batchu.
+// EN: Preparing an invitation code without running it (prepareInviteCode(orm) → { code, expiresAt, query }), so the panel can put the code save and the diary in one batch.
+export { authInviteApp, issueInviteCode, listInviteCodes, prepareInviteCode } from './invite';
