@@ -66,7 +66,7 @@ npx wrangler secret put BETTER_AUTH_URL
 # wpisz adres aplikacji, na przykład: https://<adres-aplikacji>
 ```
 
-`BETTER_AUTH_URL` jest potrzebny także do logowania Face ID, bo z niego wyliczany jest identyfikator klucza (`rpID`). Musi być dokładnie adresem, pod którym działa aplikacja.
+`BETTER_AUTH_URL` jest wymagany. Bez niego logowanie odpowiada błędem 503. Z tego adresu wyliczany jest też identyfikator klucza Face ID (`rpID`). Musi być dokładnie adresem, pod którym działa aplikacja.
 
 Jeśli `wrangler secret put` zgłosi, że Worker nie istnieje, wykonaj najpierw krok 6 (wdrożenie kodu), a potem wróć do tego kroku. Do czasu ustawienia sekretów aplikacja odpowie błędem konfiguracji, bez danych.
 

@@ -5,7 +5,7 @@
  * @author Szymon
  * @since 2026-10-31
  * @uses worker/auth/invite/settings.ts::INVITE_ALPHABET
- * @used_by worker/auth/invite/inviteCodes.ts::issueInviteCode
+ * @used_by worker/auth/invite/inviteCodes.ts::prepareInviteCode
  * @used_by worker/auth/invite/firstAdminSql.ts::buildFirstAdminSql
  */
 

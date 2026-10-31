@@ -175,3 +175,18 @@ export const passkey = sqliteTable(
   },
   (table) => [index('passkey_userId_idx').on(table.userId), index('passkey_credentialID_idx').on(table.credentialID)],
 );
+
+/**
+ * PL: Licznik prób zapytań do logowania (limit zapytań). Liczniki są w bazie, a nie w pamięci Workera, więc każda instancja widzi te same próby. Wiersz powstaje przy pierwszej próbie z danego adresu IP i ścieżki, a jego okno czasu odnawia się samo.
+ * EN: The counter of request attempts to sign-in (the request limit). The counters are in the database, not in the Worker's memory, so every instance sees the same attempts. A row appears at the first attempt from a given IP address and path, and its time window renews itself.
+ */
+export const rateLimit = sqliteTable('rate_limit', {
+  /** PL: Numer wiersza nadany przez Better Auth. EN: The row id assigned by Better Auth. */
+  id: text('id').primaryKey(),
+  /** PL: Klucz w formie „adres IP + ścieżka”. Jeden wiersz na klucz. EN: The key in the form "IP address + path". One row per key. */
+  key: text('key').notNull().unique(),
+  /** PL: Liczba prób w bieżącym oknie czasu. EN: The number of attempts in the current time window. */
+  count: integer('count').notNull(),
+  /** PL: Czas ostatniej próby w milisekundach. EN: The time of the last attempt in milliseconds. */
+  lastRequest: integer('last_request', { mode: 'number' }).notNull(),
+});

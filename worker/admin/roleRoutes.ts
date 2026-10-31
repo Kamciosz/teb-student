@@ -7,11 +7,11 @@
  * @uses worker/auth/index.ts::findStudentByEmail
  * @uses worker/auth/index.ts::listStudentsByIds
  * @uses worker/admin/panelRoles.ts::getPanelRoles
- * @uses worker/admin/panelRoles.ts::grantPanelRole
- * @uses worker/admin/panelRoles.ts::revokePanelRole
+ * @uses worker/admin/panelRoles.ts::grantPanelRoleQuery
+ * @uses worker/admin/panelRoles.ts::revokePanelRoleQuery
  * @uses worker/admin/panelRoles.ts::listRoleHolders
  * @uses worker/admin/maskEmail.ts::maskEmail
- * @uses worker/admin/diary.ts::recordDiaryEntry
+ * @uses worker/admin/diary.ts::diaryEntryColumns
  * @used_by worker/admin/routes.ts::adminApp
  * @used_by worker/admin/roles.test.ts::rolesApp
  */
@@ -22,15 +22,22 @@ import { Hono } from 'hono';
 // PL: Wyszukiwanie uczniów i odczyt ich imion z drzwi modułu auth.
 // EN: Searching students and reading their names from the auth module door.
 import { findStudentByEmail, listStudentsByIds, type StudentSummary } from '../auth';
-// PL: Typy roli i akcji dziennika (rola administratora nie wchodzi w przełączniki).
-// EN: The role type and the diary action type (the administrator role is not one of the switches).
-import type { DiaryAction, PanelRole } from '../db/schema/admin';
-// PL: Odczyt, nadawanie i odbieranie ról, lista osób z rolą.
-// EN: Reading, granting and revoking roles, the list of people with a role.
-import { getPanelRoles, grantPanelRole, listRoleHolders, revokePanelRole } from './panelRoles';
-// PL: Zapis zmiany roli w dzienniku zmian.
-// EN: Recording a role change in the change diary.
-import { recordDiaryEntry } from './diary';
+// PL: Warunki „istnieje” i „nie istnieje” oraz klient bazy do batcha.
+// EN: The "exists" and "not exists" conditions and the database client for the batch.
+import { and, eq, exists, notExists } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/d1';
+// PL: Typy roli i akcji dziennika (rola administratora nie wchodzi w przełączniki) oraz tabela ról i dziennika.
+// EN: The role type and the diary action type (the administrator role is not one of the switches), and the roles and diary tables.
+import { diaryEntries, panelRoles, type DiaryAction, type PanelRole } from '../db/schema/admin';
+// PL: Tabela użytkowników, żeby sprawdzić, że uczeń istnieje.
+// EN: The users table, to check that the student exists.
+import { user } from '../db/schema/auth';
+// PL: Odczyt ról, zapytania nadania i odbioru roli, lista osób z rolą.
+// EN: Reading roles, the queries that grant and revoke a role, the list of people with a role.
+import { getPanelRoles, grantPanelRoleQuery, listRoleHolders, revokePanelRoleQuery } from './panelRoles';
+// PL: Kolumny wpisu do dziennika w batchu.
+// EN: The diary entry columns for the batch.
+import { diaryEntryColumns } from './diary';
 // PL: Maskowanie adresu przed pokazaniem go w panelu.
 // EN: Masking the address before showing it in the panel.
 import { maskEmail } from './maskEmail';
@@ -118,25 +125,30 @@ const DIARY_ACTIONS_OF_ROLE: Record<Exclude<PanelRole, 'admin'>, { granted: Diar
 type RoleChange = { actorId: string; userId: string; role: Exclude<PanelRole, 'admin'>; on: boolean };
 
 /**
- * PL: Ustawia jedną rolę ucznia zgodnie z przełącznikiem: włączona nadaje, wyłączona odbiera. Wpis w dzienniku powstaje tylko przy realnej zmianie, więc powtórny zapis tego samego nic nie dopisuje.
- * EN: Sets one student role according to its switch: on grants it, off revokes it. A diary entry is made only on a real change, so saving the same thing again adds nothing.
+ * PL: Ustawia jedną rolę ucznia zgodnie z przełącznikiem: włączona nadaje, wyłączona odbiera. Zmiana roli i wpis w dzienniku idą w jednym batchu, więc albo oba się zapiszą, albo żadne. Wpis powstaje tylko przy realnej zmianie, więc powtórny zapis tego samego nic nie dopisuje.
+ * EN: Sets one student role according to its switch: on grants it, off revokes it. The role change and the diary entry go in one batch, so either both are saved or neither. A diary entry is made only on a real change, so saving the same thing again adds nothing.
  *
  * @param db - PL: baza D1. EN: the D1 database.
  * @param change - PL: zmiana roli. EN: the role change.
  */
 async function setPanelRole(db: D1Database, change: RoleChange): Promise<void> {
-  // PL: Jeśli rola już jest tak, jak chce przełącznik, nie zapisujemy nic.
-  // EN: If the role is already as the switch wants, we save nothing.
-  const has = (await getPanelRoles(db, change.userId)).includes(change.role);
-  if (has === change.on) return;
+  const orm = drizzle(db);
+  // PL: Czy uczeń ma już tę rolę. Wpis w dzienniku wstawiamy przed zmianą, więc ten warunek czyta stan sprzed zapisu.
+  // EN: Whether the student already has this role. The diary entry is inserted before the change, so this condition reads the state from before the write.
+  const holds = orm.select().from(panelRoles).where(and(eq(panelRoles.userId, change.userId), eq(panelRoles.role, change.role)));
+  // PL: Włączony przełącznik daje wpis, gdy roli jeszcze nie ma; wyłączony, gdy ją ma. Bez realnej zmiany wpisu nie ma.
+  // EN: An on switch makes an entry when the role is not there yet; an off switch when it is. Without a real change there is no entry.
+  const action = DIARY_ACTIONS_OF_ROLE[change.role][change.on ? 'granted' : 'revoked'];
+  const diary = orm.insert(diaryEntries).select(
+    orm
+      .select(diaryEntryColumns({ actorId: change.actorId, action, targetId: change.userId }))
+      .from(user)
+      .where(and(eq(user.id, change.userId), change.on ? notExists(holds) : exists(holds))),
+  );
   // PL: Włączony przełącznik nadaje rolę, wyłączony ją odbiera.
   // EN: An on switch grants the role, an off switch revokes it.
-  if (change.on) await grantPanelRole(db, change.userId, change.role);
-  else await revokePanelRole(db, change.userId, change.role);
-  // PL: Zapisz w dzienniku, kto i którego ucznia zmienił. Wpis dotyczy numeru ucznia, bez adresu.
-  // EN: Record in the diary who changed which student. The entry concerns the student id, without the address.
-  const action = DIARY_ACTIONS_OF_ROLE[change.role][change.on ? 'granted' : 'revoked'];
-  await recordDiaryEntry(db, { actorId: change.actorId, action, targetId: change.userId });
+  const write = change.on ? grantPanelRoleQuery(orm, change.userId, change.role) : revokePanelRoleQuery(orm, change.userId, change.role);
+  await orm.batch([diary, write]);
 }
 
 /**

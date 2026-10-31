@@ -32,6 +32,8 @@ export type TestRuntime = {
   sent: CodeMessage[];
   /** PL: Aplikacja z routerem pod /api/auth/email, tak jak w Workerze. EN: The app with the router under /api/auth/email, as in the Worker. */
   app: Hono<{ Bindings: Env }>;
+  /** PL: Adres źródłowy (Origin) zgodny z adresem aplikacji. EN: The source address (Origin) matching the app address. */
+  origin: string;
 };
 
 /**
@@ -61,7 +63,10 @@ export function createTestRuntime(canSendCodes = true, appUrl?: string): TestRun
   // EN: The router mounted at the same address as in worker/mounts.ts.
   const app = new Hono<{ Bindings: Env }>();
   app.route('/api/auth/email', createAuthEmailApp({ getRuntime: () => runtime }));
-  return { runtime, sent, app };
+  // PL: Przeglądarka wysyła Origin równy adresowi aplikacji, więc testy też.
+  // EN: The browser sends an Origin equal to the app address, so the tests do too.
+  const origin = appUrl ? new URL(appUrl).origin : 'http://localhost';
+  return { runtime, sent, app, origin };
 }
 
 /** PL: Licznik adresów IP, żeby limit zapytań jednego testu nie wpływał na inny. EN: The IP address counter, so one test's request limit does not affect another. */
@@ -84,16 +89,16 @@ export function uniqueIp(): string {
  *
  * @param app - PL: aplikacja testowa. EN: the test app.
  * @param path - PL: adres po /api/auth/email, na przykład /get-session. EN: the path after /api/auth/email, for example /get-session.
- * @param options - PL: metoda, ciało JSON, ciasteczko i IP. EN: the method, the JSON body, the cookie and the IP.
+ * @param options - PL: metoda, ciało JSON, ciasteczko, IP i Origin (domyślnie localhost). EN: the method, the JSON body, the cookie, the IP and the Origin (localhost by default).
  * @returns PL: odpowiedź aplikacji. EN: the app response.
  */
 export function call(
   app: TestRuntime['app'],
   path: string,
-  options: { method?: string; body?: unknown; cookie?: string; ip?: string } = {},
+  options: { method?: string; body?: unknown; cookie?: string; ip?: string; origin?: string } = {},
 ): Promise<Response> {
   const headers: Record<string, string> = {
-    origin: 'http://localhost',
+    origin: options.origin ?? 'http://localhost',
     'cf-connecting-ip': options.ip ?? uniqueIp(),
   };
   if (options.body !== undefined) headers['content-type'] = 'application/json';
@@ -129,8 +134,9 @@ export function sessionCookie(response: Response): string {
  */
 export async function signIn(test: TestRuntime, email: string): Promise<string> {
   const ip = uniqueIp();
-  await call(test.app, '/email-otp/send-verification-otp', { body: { email }, ip });
+  const origin = test.origin;
+  await call(test.app, '/email-otp/send-verification-otp', { body: { email }, ip, origin });
   const code = test.sent[test.sent.length - 1]?.code ?? '';
-  const response = await call(test.app, '/sign-in/email-otp', { body: { email, otp: code }, ip });
+  const response = await call(test.app, '/sign-in/email-otp', { body: { email, otp: code }, ip, origin });
   return sessionCookie(response);
 }

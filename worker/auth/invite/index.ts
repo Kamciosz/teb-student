@@ -20,6 +20,10 @@ export { authInviteApp } from './routes';
 // EN: Creates an invitation code valid for 14 days (issueInviteCode(env.DB) → { code, expiresAt }). The Student Council panel (subtrack 8) shows it to the student.
 export { issueInviteCode } from './inviteCodes';
 
+// PL: Przygotowuje kod zaproszenia i zapytanie zapisu bez wykonania (prepareInviteCode(orm) → { code, expiresAt, query }). Panel Samorządu wkłada zapytanie do batcha razem z wpisem w dzienniku.
+// EN: Prepares an invitation code and the save query without running it (prepareInviteCode(orm) → { code, expiresAt, query }). The Student Council panel puts the query in a batch together with the diary entry.
+export { prepareInviteCode } from './inviteCodes';
+
 // PL: Lista kodów zaproszeń, które jeszcze działają, od najkrócej ważnego (listInviteCodes(env.DB) → { code, expiresAt }[]). Panel Samorządu (podtor 8) pokazuje ją na ekranie „Kody zaproszeń”.
 // EN: The list of invitation codes that still work, from the one valid for the shortest time (listInviteCodes(env.DB) → { code, expiresAt }[]). The Student Council panel (subtrack 8) shows it on the "Invitation codes" screen.
 export { listInviteCodes } from './inviteCodes';

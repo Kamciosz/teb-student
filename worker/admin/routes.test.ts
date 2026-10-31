@@ -13,6 +13,9 @@
 // PL: Funkcje testowe Vitest.
 // EN: Vitest test functions.
 import { beforeEach, describe, expect, it } from 'vitest';
+// PL: Środowisko testowe Workera (baza D1), żeby założyć trigger blokujący dziennik.
+// EN: The Worker test environment (the D1 database), to create the trigger that blocks the diary.
+import { env } from 'cloudflare:workers';
 // PL: Tabela zaproszeń (leży w verification), żeby sprawdzić, że kod jest w bazie.
 // EN: The invitations table (it lives in verification), to check that the code is in the database.
 import { eq } from 'drizzle-orm';
@@ -94,5 +97,23 @@ describe('POST /invites', () => {
     // EN: The code really lies in the database as an invitation row.
     const rows = await db.select().from(verification).where(eq(verification.identifier, `invite-code-${body.code}`));
     expect(rows).toHaveLength(1);
+  });
+
+  // PL: Gdy zapis do dziennika się nie uda, kod zaproszenia też nie powstaje: 500 i w bazie nie ma żadnego kodu.
+  // EN: When the diary write fails, the invite code is not created either: 500 and there is no code in the database.
+  it('gdy zapis do dziennika się nie uda, kod się nie zapisuje / when the diary write fails, the code is not saved', async () => {
+    // PL: Trigger blokuje każdy zapis do dziennika, żeby zasymulować awarię tego zapisu. Usuwamy go w finally, żeby nie został dla kolejnych testów.
+    // EN: The trigger blocks every diary write, to simulate a failure of that write. We drop it in finally, so it does not stay for the next tests.
+    await env.DB.prepare("CREATE TRIGGER blokada_dziennika BEFORE INSERT ON diary_entries BEGIN SELECT RAISE(ABORT, 'blokada dziennika'); END").run();
+    try {
+      const response = await callAdmin('/invites', 'POST', cookies.council);
+      const codes = (await db.select().from(verification)).filter((row) => row.identifier.startsWith('invite-code-'));
+
+      expect(response.status).toBe(500);
+      expect(await response.text()).not.toContain('blokada');
+      expect(codes).toEqual([]);
+    } finally {
+      await env.DB.prepare('DROP TRIGGER IF EXISTS blokada_dziennika').run();
+    }
   });
 });

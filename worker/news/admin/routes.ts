@@ -10,7 +10,6 @@
  * @uses worker/news/admin/queries.ts::unpinEntry
  * @uses worker/news/admin/queries.ts::deleteEntry
  * @uses worker/news/editor/index.ts::requireNewsAuthor
- * @uses worker/admin/index.ts::recordDiaryEntry
  * @used_by worker/news/admin/index.ts::newsAdminApp
  * @used_by worker/news/admin/routes.test.ts::createNewsAdminApp
  */
@@ -22,9 +21,6 @@ import type { StudentEnv } from '../../auth';
 // PL: Strażnik autora wpisów z drzwi podtoru 3b.
 // EN: The entry author guard from the door of subtrack 3b.
 import { requireNewsAuthor } from '../editor';
-// PL: Zapis w dzienniku zmian przez drzwi podtoru 8.
-// EN: Writing to the change diary through the door of subtrack 8.
-import { recordDiaryEntry } from '../../admin';
 import { deleteEntry, listPanelEntries, pinEntry, publishDraft, unpinEntry } from './queries';
 
 /**
@@ -61,16 +57,15 @@ export function createNewsAdminApp(guard: MiddlewareHandler<StudentEnv>) {
   // EN: The list of all entries with drafts, without the content.
   app.get('/', (context) => withDatabase(context, async () => context.json({ entries: await listPanelEntries(context.env.DB) })));
 
-  // PL: Publikacja szkicu: 200 po publikacji, 409 „already_published” gdy wpis już jest opublikowany, 409 „in_review” gdy czeka w korekcie, 404 gdy go nie ma. Po udanej publikacji jeden wpis w dzienniku (bez treści, tylko id wpisu).
-  // EN: Publishing a draft: 200 after publishing, 409 "already_published" when the entry is already published, 409 "in_review" when it waits in review, 404 when it does not exist. After a successful publish, one diary entry (no content, only the entry id).
+  // PL: Publikacja szkicu: 200 po publikacji, 409 „already_published” gdy wpis już jest opublikowany, 409 „in_review” gdy czeka w korekcie, 404 gdy go nie ma. Publikacja i jeden wpis w dzienniku (bez treści, tylko id wpisu) zapisują się w jednym batchu: albo oba, albo żadne.
+  // EN: Publishing a draft: 200 after publishing, 409 "already_published" when the entry is already published, 409 "in_review" when it waits in review, 404 when it does not exist. The publication and one diary entry (no content, only the entry id) are written in one batch: both or neither.
   app.post('/:id/publish', (context) =>
     withDatabase(context, async () => {
       const id = context.req.param('id');
-      const result = await publishDraft(context.env.DB, id);
+      const result = await publishDraft(context.env.DB, id, context.get('student').id);
       if (result === 'not_found') return context.json({ error: 'not_found' }, 404);
       if (result === 'in_review') return context.json({ error: 'in_review' }, 409);
       if (result === 'already_published') return context.json({ error: 'already_published' }, 409);
-      await recordDiaryEntry(context.env.DB, { actorId: context.get('student').id, action: 'news_published', targetId: id });
       return context.json({ id });
     }),
   );
@@ -95,13 +90,12 @@ export function createNewsAdminApp(guard: MiddlewareHandler<StudentEnv>) {
     }),
   );
 
-  // PL: Usunięcie wpisu: 200 albo 404, gdy go nie ma. Po udanym usunięciu jeden wpis w dzienniku (bez treści, tylko id wpisu).
-  // EN: Deleting an entry: 200 or 404 when it does not exist. After a successful delete, one diary entry (no content, only the entry id).
+  // PL: Usunięcie wpisu: 200 albo 404, gdy go nie ma. Usunięcie i jeden wpis w dzienniku (bez treści, tylko id wpisu) zapisują się w jednym batchu: albo oba, albo żadne.
+  // EN: Deleting an entry: 200 or 404 when it does not exist. The deletion and one diary entry (no content, only the entry id) are written in one batch: both or neither.
   app.delete('/:id', (context) =>
     withDatabase(context, async () => {
       const id = context.req.param('id');
-      if (!(await deleteEntry(context.env.DB, id))) return context.json({ error: 'not_found' }, 404);
-      await recordDiaryEntry(context.env.DB, { actorId: context.get('student').id, action: 'news_deleted', targetId: id });
+      if (!(await deleteEntry(context.env.DB, id, context.get('student').id))) return context.json({ error: 'not_found' }, 404);
       return context.json({ id });
     }),
   );
