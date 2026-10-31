@@ -1,6 +1,6 @@
 # Stan prac
 
-Stan na 31.10.2026. `main` po scaleniu #209. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
+Stan na 31.10.2026. `main` po scaleniu #219. Ten plik mówi, co jest zrobione, co jest następne i jak kontynuować w nowym wątku albo przez inną osobę. Aktualizuj go po każdej większej turze pracy.
 
 Wszystkie teksty aplikacji zatwierdził Szymon 14.10.2026 (#175, #179).
 
@@ -82,13 +82,32 @@ Testy na `main`: lint, Vitest, build, e2e, CodeQL i granice torów przechodzą (
 
 ## Otwarte pull requesty
 
-Sześć pull requestów od Dependabota z podbiciem zależności (#203–#208). Nikt ich jeszcze nie sprawdził. Wszystkie pozostałe do #209 są scalone.
+Cztery pull requesty od Dependabota z małym podbiciem zależności (#203, #205, #206, #207). Nikt ich nie sprawdził. Wszystkie pozostałe do #219 są scalone albo zamknięte. Zależności podbił razem #218.
 
 Wejście do zgłoszeń (#209): pulpit ma pod sekcjami osobny kafel „Zgłoś problem”, a ekran „Moje zgłoszenia” ma u góry przycisk z plusem i tym samym napisem.
 
 Do poprawy w wyglądzie: nic znanego. Trzy rzeczy z listy po #195 poprawiły #197, #198 i #199, a #200 dodał widoczne pola. `.editor-screen` dostał wysokość zapasową `100vh` dla iOS 15.0–15.3, które nie znają `100dvh` (#202).
 
 Do sprawdzenia po wdrożeniu: Face ID na prawdziwym telefonie.
+
+## Poprawki przed wdrożeniem (31.10.2026)
+
+- Wpis w dzienniku zapisuje się w jednej transakcji ze zmianą (#211, #217).
+- Za duży plik dostaje odpowiedź 413, zanim cokolwiek trafi do R2 (#212).
+- PWA przeładowuje się po nowej wersji, gdy aplikacja wraca z tła albo zmienia ekran (#213).
+- Kod zaproszenia wraca do bazy, gdy założenie konta odrzuci błąd logowania (#214).
+- Adres logowania pochodzi z `BETTER_AUTH_URL`, a limity prób są w tabeli `rate_limit` (#216).
+- `npm audit --omit=dev` nie zgłasza luk (#218). 3 niskie i 8 średnich zostało w narzędziach budowania (`workbox-build`, `vite-plugin-pwa`). Usunięcie wymaga dużego skoku wersji.
+- `npm run db:prod-sql` i `docs/WDROZENIE.md` prowadzą przez pierwsze wdrożenie (#219).
+
+Znane braki:
+
+- Logowanie kodem z e-maila nie działa bez dostawcy poczty (`worker/auth/email/codeSender.ts`). Login i hasło z kodem zaproszenia działają.
+- `/api/news/feed` działa bez logowania, a `/api/media/:id` wymaga logowania. Osoba niezalogowana nie zobaczy zdjęć we wpisach.
+- `PUT /roles/:studentId` zapisuje dwie role w dwóch transakcjach. Zmiana etapu zgłoszenia czyta stan przed zapisem.
+- Kod zaproszenia przepada, gdy założenie konta przerwie inny błąd niż błąd logowania, na przykład awaria D1.
+- Wygasłe kody w tabeli `verification` nie są sprzątane.
+- Bez konta Cloudflare nikt nie sprawdził prawdziwego wdrożenia, sekretów, wysyłki zdjęć do R2, startu z telefonu ani Face ID.
 
 ## Przed pierwszym wdrożeniem
 
