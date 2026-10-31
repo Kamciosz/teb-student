@@ -209,6 +209,24 @@ describe('POST /:id/publish', () => {
     expect(await diary()).toEqual([]);
   });
 
+  // PL: Gdy zapis do dziennika się nie uda, publikacja też nie zostaje: 500 i szkic nadal jest szkicem.
+  // EN: When the diary write fails, the publication does not stay either: 500 and the draft is still a draft.
+  it('gdy zapis do dziennika się nie uda, szkic zostaje szkicem / when the diary write fails, the draft stays a draft', async () => {
+    // PL: Trigger blokuje każdy zapis do dziennika, żeby zasymulować awarię tego zapisu. Usuwamy go w finally, żeby nie został dla kolejnych testów.
+    // EN: The trigger blocks every diary write, to simulate a failure of that write. We drop it in finally, so it does not stay for the next tests.
+    await env.DB.prepare("CREATE TRIGGER blokada_dziennika BEFORE INSERT ON diary_entries BEGIN SELECT RAISE(ABORT, 'blokada dziennika'); END").run();
+    try {
+      const response = await send('/szkic/publish', 'POST');
+
+      expect(response.status).toBe(500);
+      expect(await response.text()).not.toContain('blokada');
+      expect(await rows()).toEqual([['opublikowany', 'published'], ['szkic', 'draft'], ['szkic-2', 'draft']]);
+      expect(await diary()).toEqual([]);
+    } finally {
+      await env.DB.prepare('DROP TRIGGER IF EXISTS blokada_dziennika').run();
+    }
+  });
+
   // PL: Nieznany numer to 404 i nic się nie zmienia.
   // EN: An unknown id is 404 and nothing changes.
   it('nieznany numer daje 404 / an unknown id gives 404', async () => {
