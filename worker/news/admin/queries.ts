@@ -5,6 +5,8 @@
  * @author Szymon
  * @since 2026-10-12
  * @uses worker/db/schema/news.ts::newsEntries
+ * @uses worker/db/schema/admin.ts::diaryEntries
+ * @uses worker/db/schema/admin.ts::DiaryAction
  * @used_by worker/news/admin/routes.ts::createNewsAdminApp
  */
 
@@ -17,6 +19,9 @@ import { drizzle } from 'drizzle-orm/d1';
 // PL: Tabela wpisów i typy ze schematu podtoru 3a.
 // EN: The entries table and the types from the 3a schema.
 import { newsEntries, type NewsEntryStatus, type NewsEntryType } from '../../db/schema/news';
+// PL: Tabela dziennika i typ akcji. Wpis publikacji idzie w tym samym batchu co zmiana wpisu, więc zapis przez drzwi (funkcja z zapytaniem gotowym do batcha) nie wystarcza.
+// EN: The diary table and the action type. The publication entry goes into the same batch as the entry change, so the door (a function that runs its own query) is not enough.
+import { diaryEntries, type DiaryAction } from '../../db/schema/admin';
 
 /**
  * PL: Najwięcej wpisów na liście panelu. Panel nie ma stronicowania, więc lista ma sufit.
@@ -107,27 +112,43 @@ export async function listPanelEntries(db: D1Database): Promise<PanelEntry[]> {
 }
 
 /**
- * PL: Publikuje szkic jednym zapytaniem warunkowym. Wpis już opublikowany zostaje nietknięty, więc ponowne dotknięcie „Opublikuj” nie przesuwa go na liście ucznia.
- * EN: Publishes a draft with one conditional query. An already published entry is left untouched, so tapping "Opublikuj" again does not move it on the student's list.
+ * PL: Publikuje szkic w jednym batchu D1 (jedna transakcja): odczyt stanu, wpis w dzienniku i zmiana stanu. Wpis w dzienniku powstaje tylko przy publikacji szkicu, a oba zapisy są warunkowe na tym samym stanie. Gdy któryś krok się nie uda, cofa się cały batch, więc nie ma publikacji bez wpisu ani wpisu bez publikacji. Wpis już opublikowany zostaje nietknięty, więc ponowne dotknięcie „Opublikuj” nie przesuwa go na liście ucznia i nie dopisuje drugiego wpisu.
+ * EN: Publishes a draft in one D1 batch (one transaction): read the state, the diary entry and the state change. The diary entry is written only when a draft is published, and both writes are conditional on the same state. When one step fails, the whole batch is rolled back, so there is no publication without an entry and no entry without a publication. An already published entry is left untouched, so tapping "Opublikuj" again does not move it on the student's list and does not add a second entry.
  *
  * @param db - PL: baza D1. EN: the D1 database.
  * @param id - PL: numer wpisu z adresu. EN: the entry id from the address.
+ * @param actorId - PL: numer redaktora, który publikuje (wykonawca w dzienniku). EN: the id of the editor who publishes (the actor in the diary).
  * @returns PL: co się stało z wpisem. EN: what happened to the entry.
- * @throws PL: błąd bazy. EN: a database error.
+ * @throws PL: błąd bazy, wtedy cały batch jest cofnięty. EN: a database error, then the whole batch is rolled back.
  */
-export async function publishDraft(db: D1Database, id: string): Promise<PublishResult> {
+export async function publishDraft(db: D1Database, id: string, actorId: string): Promise<PublishResult> {
   const orm = drizzle(db);
-  // PL: Zmień tylko wiersz, który nadal jest szkicem. Numer idzie jako parametr zapytania.
-  // EN: Change only a row that is still a draft. The id goes as a query parameter.
-  const changed = await orm
-    .update(newsEntries)
-    .set({ status: 'published', publishedAt: new Date() })
-    .where(and(eq(newsEntries.id, id), eq(newsEntries.status, 'draft')))
-    .returning({ id: newsEntries.id });
+  const now = new Date();
+  // PL: Trzy kroki w jednej transakcji. Najpierw odczyt stanu, potem wpis w dzienniku tylko dla szkicu, na końcu zmiana tylko szkicu. Wszystkie warunki widzą ten sam stan.
+  // EN: Three steps in one transaction. First read the state, then the diary entry only for a draft, last the change only of a draft. All the conditions see the same state.
+  const [found, , changed] = await orm.batch([
+    orm.select({ status: newsEntries.status }).from(newsEntries).where(eq(newsEntries.id, id)).limit(1),
+    orm.insert(diaryEntries).select(
+      orm
+        .select({
+          id: sql<number | null>`null`.as('id'),
+          actorId: sql<string>`${actorId}`.as('actor_id'),
+          action: sql<DiaryAction>`'news_published'`.as('action'),
+          targetId: newsEntries.id,
+          at: sql<number>`${Date.now()}`.as('at'),
+        })
+        .from(newsEntries)
+        .where(and(eq(newsEntries.id, id), eq(newsEntries.status, 'draft'))),
+    ),
+    orm
+      .update(newsEntries)
+      .set({ status: 'published', publishedAt: now })
+      .where(and(eq(newsEntries.id, id), eq(newsEntries.status, 'draft')))
+      .returning({ id: newsEntries.id }),
+  ]);
   if (changed.length > 0) return 'published';
-  // PL: Nic się nie zmieniło: wpis jest w korekcie, już opublikowany albo nie istnieje. Panel nie publikuje wpisu w korekcie.
-  // EN: Nothing changed: the entry is in review, already published, or does not exist. The panel does not publish an entry in review.
-  const found = await orm.select({ status: newsEntries.status }).from(newsEntries).where(eq(newsEntries.id, id)).limit(1);
+  // PL: Nic się nie zmieniło: wpis jest w korekcie, już opublikowany albo nie istnieje. Panel nie publikuje wpisu w korekcie. Stan bierzemy z odczytu z tej samej transakcji.
+  // EN: Nothing changed: the entry is in review, already published, or does not exist. The panel does not publish an entry in review. The state comes from the read in the same transaction.
   if (found.length === 0) return 'not_found';
   return found[0].status === 'in_review' ? 'in_review' : 'already_published';
 }
