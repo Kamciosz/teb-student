@@ -1,11 +1,11 @@
 /**
- * PL: Zapis wysłanego pliku: wkłada go do zasobnika R2, sprawdza rozmiar po zapisie i dopiero wtedy dopisuje wiersz do bazy. Plik za duży zostaje skasowany, więc w zasobniku nic nie zostaje.
- * EN: Saves an uploaded file: puts it into the R2 bucket, checks the size after saving, and only then adds a row to the database. A file that is too big is deleted, so nothing stays in the bucket.
+ * PL: Zapis wysłanego pliku: najpierw sprawdza rozmiar treści, a dopiero potem wkłada plik do zasobnika R2 i dopisuje wiersz do bazy. Plik za duży odpada przed R2, więc w zasobniku nic nie powstaje.
+ * EN: Saves an uploaded file: first it checks the size of the body, and only then puts the file into the R2 bucket and adds a row to the database. A file that is too big is refused before R2, so nothing is created in the bucket.
  *
  * @author Szymon
  * @since 2026-10-13
  * @uses worker/db/schema/media.ts::mediaFiles
- * @uses worker/media/rules.ts::maxBytesOf
+ * @used_by worker/media/routes.ts::mediaApp
  * @used_by worker/media/routes.ts::mediaApp
  */
 
@@ -43,24 +43,22 @@ export type StoreMediaInput = {
 export type StoreMediaResult = { ok: true; id: string } | { ok: false; reason: 'too-large' };
 
 /**
- * PL: Zapisuje plik w R2 i w bazie. Najpierw zapis do R2, potem kontrola rozmiaru z obiektu (po zapisie, bo rozmiar bierzemy z tego, co R2 faktycznie przyjęło), a wiersz w bazie tylko dla pliku, który przeszedł kontrolę. Gdy zapis wiersza się nie uda, plik w R2 też jest kasowany.
- * EN: Saves the file to R2 and the database. First the write to R2, then the size check on the object (after the write, because the size is taken from what R2 actually stored), and the database row only for a file that passed the check. When writing the row fails, the file in R2 is deleted too.
+ * PL: Zapisuje plik w R2 i w bazie. Najpierw kontrola rozmiaru treści, która zawsze działa, bo bierze prawdziwą długość bajtów, a nie nagłówek. Dopiero potem zapis do R2 i wiersz w bazie. Gdy zapis wiersza się nie uda, plik w R2 też jest kasowany.
+ * EN: Saves the file to R2 and the database. First the size check on the body, which always works, because it takes the real byte length and not the header. Only then the write to R2 and the database row. When writing the row fails, the file in R2 is deleted too.
  *
  * @param input - PL: dane pliku i dostęp do R2 oraz D1. EN: the file data and access to R2 and D1.
  * @returns PL: numer pliku albo odmowa. EN: the file id or a refusal.
  */
 export async function storeMedia(input: StoreMediaInput): Promise<StoreMediaResult> {
+  // PL: Za duży plik odpada przed zapisem do R2, więc nic tam nie trafia.
+  // EN: A file that is too big is refused before the write to R2, so nothing reaches it.
+  if (input.body.byteLength > input.maxBytes) return { ok: false, reason: 'too-large' };
+
   // PL: Numer pliku jest też kluczem w R2.
   // EN: The file id is also the key in R2.
   const id = crypto.randomUUID();
   const object = await input.bucket.put(id, input.body, { httpMetadata: { contentType: input.mime } });
   if (!object) throw new Error('R2 nie zapisał pliku bez warunków');
-  // PL: Plik za duży kasujemy od razu, żeby nie zostawał w zasobniku.
-  // EN: A file that is too big is deleted at once, so it does not stay in the bucket.
-  if (object.size > input.maxBytes) {
-    await input.bucket.delete(id);
-    return { ok: false, reason: 'too-large' };
-  }
   try {
     await drizzle(input.db)
       .insert(mediaFiles)
@@ -68,7 +66,7 @@ export async function storeMedia(input: StoreMediaInput): Promise<StoreMediaResu
         id,
         kind: input.kind,
         mime: input.mime,
-        size: object.size,
+        size: input.body.byteLength,
         width: input.width,
         height: input.height,
         uploadedBy: input.uploadedBy,

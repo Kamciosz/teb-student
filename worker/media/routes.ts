@@ -8,6 +8,7 @@
  * @uses worker/auth/index.ts::requireStudent
  * @uses worker/db/schema/media.ts::mediaFiles
  * @uses worker/media/guardReportPhoto.ts::guardReportPhoto
+ * @uses worker/media/rules.ts::contentLengthFits
  * @uses worker/media/rules.ts::kindOfMime
  * @uses worker/media/rules.ts::maxBytesOf
  * @uses worker/media/rules.ts::parseDimensions
@@ -30,7 +31,7 @@ import { type PanelEnv, requirePanelRole } from '../admin';
 // PL: Tabela plików i reguły przyjmowania.
 // EN: The file table and the acceptance rules.
 import { mediaFiles } from '../db/schema/media';
-import { kindOfMime, maxBytesOf, parseDimensions } from './rules';
+import { contentLengthFits, kindOfMime, maxBytesOf, parseDimensions } from './rules';
 // PL: Zapis pliku do R2 i do bazy.
 // EN: Saving the file to R2 and the database.
 import { storeMedia } from './upload';
@@ -58,11 +59,15 @@ mediaApp.post('/upload', requirePanelRole('editor'), async (context) => {
   const dimensions = parseDimensions(context.req.query('width'), context.req.query('height'));
   if (!dimensions.ok) return context.json({ error: 'invalid_dimensions' }, 400);
 
+  // PL: Zanim przeczytamy treść, sprawdzamy długość z nagłówka. Za duży plik albo plik bez nagłówka odpada od razu, bez czytania go do pamięci.
+  // EN: Before reading the body, we check the length from the header. A file that is too big, or has no header, is refused at once, without reading it into memory.
+  if (!contentLengthFits(context.req.header('content-length'), maxBytesOf(kind))) return context.json({ error: 'too_large' }, 413);
+
   const body = await context.req.arrayBuffer();
   if (body.byteLength === 0) return context.json({ error: 'empty_file' }, 400);
 
-  // PL: Zapis i kontrola rozmiaru po zapisie. Zbyt duży plik zostaje skasowany w funkcji storeMedia.
-  // EN: Saving and the size check after saving. A file that is too big is deleted in the storeMedia function.
+  // PL: Zapis do R2 dopiero po kontroli rozmiaru treści. Nagłówek mógł skłamać, więc storeMedia sprawdza samą treść, zanim cokolwiek trafi do R2.
+  // EN: The write to R2 comes only after the check of the body size. The header could lie, so storeMedia checks the body itself before anything reaches R2.
   const result = await storeMedia({
     bucket: context.env.MEDIA,
     db: context.env.DB,
@@ -87,6 +92,10 @@ const REPORT_PHOTO_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 mediaApp.post('/report-photo', requireStudent, async (context) => {
   const mime = (context.req.header('content-type') ?? '').split(';')[0].trim().toLowerCase();
   if (!REPORT_PHOTO_MIMES.has(mime)) return context.json({ error: 'unsupported_type' }, 415);
+
+  // PL: Najpierw długość z nagłówka, potem czytanie treści (jak w /upload).
+  // EN: First the length from the header, then reading the body (as in /upload).
+  if (!contentLengthFits(context.req.header('content-length'), maxBytesOf('photo'))) return context.json({ error: 'too_large' }, 413);
 
   const body = await context.req.arrayBuffer();
   if (body.byteLength === 0) return context.json({ error: 'empty_file' }, 400);
