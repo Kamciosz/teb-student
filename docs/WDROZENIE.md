@@ -99,7 +99,17 @@ npx wrangler d1 execute teb-student --remote --file=dist-sql/first-admin-grant.s
 rm dist-sql/first-admin-invite.sql
 ```
 
-Jeśli rejestracja się nie uda, kod nadal działa (do 14 dni), o ile nie został zużyty. Po pomyślnej rejestracji `first-admin-invite.sql` zawiera już zużyty kod, więc go usuń.
+Wynik polecenia c) powinien pokazać jeden zmieniony wiersz. Wynik zero znaczy, że konto o tym loginie jeszcze nie istnieje, czyli rejestracja się nie odbyła i rola nie została nadana. Wtedy dokończ rejestrację i powtórz c).
+
+Rolę możesz sprawdzić w bazie:
+
+```bash
+npx wrangler d1 execute teb-student --remote --command="SELECT role FROM panel_roles JOIN user ON user.id = panel_roles.user_id WHERE user.email = '<login>@login.invalid'"
+```
+
+Oczekiwany wynik: jeden wiersz z `admin`. Pusty wynik znaczy, że konto o tym loginie nie istnieje albo login się nie zgadza.
+
+Jeśli kod nie działa (na przykład rejestracja się nie udała), wykonaj ponownie a) i b) i zarejestruj się nowym kodem. Plik z kodem usuń dopiero po udanej rejestracji, czyli po c).
 
 ## 8. Poczta (czeka na decyzję o dostawcy)
 
@@ -141,12 +151,13 @@ npx wrangler d1 time-travel restore teb-student --timestamp=<RFC3339, na przykł
 
 ## Sprawdzenie lokalne zbudowanego Workera (bez Cloudflare)
 
-Ta sekcja pokazuje, jak sprawdzić zbudowany kod na własnym komputerze, bez konta. Wrangler czyta `.dev.vars` z katalogu zbudowanego configu, więc plik trzeba skopiować tam.
+Ta sekcja pokazuje, jak sprawdzić zbudowany kod na własnym komputerze, bez konta. Wrangler czyta `.dev.vars` z katalogu zbudowanego configu, więc plik zapisujesz właśnie tam. Sekret jest losowany i zapisywany do pliku od razu, nie pokazuje się na ekranie.
 
 ```bash
 npm run build
-cp .dev.vars dist/teb_student/.dev.vars
+printf 'BETTER_AUTH_SECRET="%s"\nBETTER_AUTH_URL="http://localhost:6500"\n' "$(openssl rand -base64 32)" > dist/teb_student/.dev.vars
+chmod 600 dist/teb_student/.dev.vars
 npx wrangler dev -c dist/teb_student/wrangler.json --port 6500 --persist-to .wrangler/state
 ```
 
-`.dev.vars` zawiera `BETTER_AUTH_SECRET` i `BETTER_AUTH_URL=http://localhost:6500`. Oba pliki są w `.gitignore`.
+Plik `dist/teb_student/.dev.vars` zawiera `BETTER_AUTH_SECRET` i `BETTER_AUTH_URL=http://localhost:6500`. Katalog `dist/` jest w `.gitignore`. Nie trzymaj tego pliku w katalogu głównym repozytorium: kopia tam zmieniła wynik testów Vitest, bo testy w `worker/reports` padały z 401.
