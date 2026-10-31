@@ -6,6 +6,9 @@
  * @since 2026-10-11
  * @uses src/shared/index.ts::Button
  * @uses src/shared/index.ts::Dock
+ * @uses src/shared/index.ts::ListGroup
+ * @uses src/shared/index.ts::ListRow
+ * @uses src/shared/index.ts::PlusIcon
  * @uses src/features/dashboard/queries.ts::useDashboard
  * @uses src/features/dashboard/DashboardHeader.tsx::DashboardHeader
  * @uses src/features/dashboard/DashboardHero.tsx::DashboardHero
@@ -17,9 +20,9 @@
 // PL: Stan ekranu: kolejność i tryb edycji.
 // EN: The screen state: the order and the edit mode.
 import { useState } from 'react';
-// PL: Przycisk tekstowy i dolny pasek nawigacji.
-// EN: The text button and the bottom navigation bar.
-import { Button, Dock } from '../../shared';
+// PL: Przycisk tekstowy, dolny pasek nawigacji, grupa wierszy, wiersz i ikona plusa.
+// EN: The text button, the bottom navigation bar, the row group, the row and the plus icon.
+import { Button, Dock, ListGroup, ListRow, PlusIcon } from '../../shared';
 // PL: Nagłówek, góra z licznikiem i sekcje.
 // EN: The header, the top with the countdown and the sections.
 import { DashboardHeader } from './DashboardHeader';
@@ -102,6 +105,17 @@ export function DashboardScreen() {
         <DashboardHero important={data?.important ?? null} />
         <FetchNote query={query} />
         <Sections order={order} data={data} editing={editing} onMove={handleMove} />
+        {/* PL: Kafel „Zgłoś problem” pod sekcjami: jeden wiersz prowadzi do formularza zgłoszenia. EN: The "Zgłoś problem" tile under the sections: one row leads to the report form. */}
+        <div className="dash-section">
+          <ListGroup>
+            <ListRow
+              title="Zgłoś problem"
+              subtitle="Napisz, co nie działa w szkole."
+              icon={<PlusIcon />}
+              to="/reports/student"
+            />
+          </ListGroup>
+        </div>
       </main>
       {/* PL: Dolny pasek nawigacji, jak na ekranie 2.1. EN: The bottom navigation bar, as on screen 2.1. */}
       <Dock />

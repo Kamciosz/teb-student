@@ -342,3 +342,21 @@ test('bez internetu: błąd przy wysyłaniu, pasek i zachowana lista / offline: 
   await expect(page.getByRole('alert')).toContainText('Brak internetu');
   await expect(page.getByLabel('Opis')).toHaveValue('Opis bez internetu');
 });
+
+// PL: Na „Moje zgłoszenia” przycisk „Zgłoś problem” w nagłówku jest widoczny i ma plus (svg), który czytnik ekranu pomija.
+// EN: On "Moje zgłoszenia" the "Zgłoś problem" button in the header is visible and has the plus (svg), which the screen reader skips.
+test('na liście zgłoszeń „Zgłoś problem” ma plus w nagłówku / on the reports list "Zgłoś problem" has the plus in the header', async ({ page }) => {
+  // PL: Jedno zgłoszenie w odpowiedzi, żeby pusty stan nie dodał drugiego przycisku „Zgłoś problem”.
+  // EN: One report in the answer, so the empty state does not add a second "Zgłoś problem" button.
+  const now = Date.now();
+  await page.route('**/api/reports/student', (route) =>
+    route.fulfill({ json: { reports: [{ id: `e2e-${now}`, category: 'room_equipment', place: 'classroom', placeDetail: null, description: 'Opis testowy', stage: 'received', createdAt: now, updatedAt: now, history: [{ stage: 'received', note: null, changedAt: now }] }] } }),
+  );
+  await page.goto('/reports/student/moje');
+
+  // PL: Przycisk jest w nagłówku ekranu, a jego plus to svg z aria-hidden.
+  // EN: The button is in the screen header, and its plus is an svg with aria-hidden.
+  const button = page.locator('.ui-screen-header').getByRole('button', { name: 'Zgłoś problem' });
+  await expect(button).toBeVisible();
+  await expect(button.locator('svg')).toHaveAttribute('aria-hidden', 'true');
+});
