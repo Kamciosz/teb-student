@@ -1,6 +1,6 @@
 /**
- * PL: Reguły przyjmowania plików po stronie serwera: jakie typy są dozwolone, jaki rodzaj i limit wielkości ma każdy typ oraz jak czytamy wymiary z adresu zapytania. Telefon sprawdza to samo wcześniej, ale serwer sprawdza jeszcze raz, bo telefonowi nie ufamy.
- * EN: The rules for accepting files on the server side: which types are allowed, what kind and size limit each type has, and how we read the dimensions from the request address. The phone checks the same earlier, but the server checks again, because we do not trust the phone.
+ * PL: Reguły przyjmowania plików po stronie serwera: jakie typy są dozwolone, jaki rodzaj i limit wielkości ma każdy typ, czy zadeklarowana długość mieści się w limicie oraz jak czytamy wymiary z adresu zapytania. Telefon sprawdza to samo wcześniej, ale serwer sprawdza jeszcze raz, bo telefonowi nie ufamy.
+ * EN: The rules for accepting files on the server side: which types are allowed, what kind and size limit each type has, whether the declared length fits the limit, and how we read the dimensions from the request address. The phone checks the same earlier, but the server checks again, because we do not trust the phone.
  *
  * @author Szymon
  * @since 2026-10-13
@@ -60,6 +60,21 @@ export function maxBytesOf(kind: MediaKind): number {
   // PL: Film ma większy limit, zdjęcie mniejszy.
   // EN: A video has the larger limit, a photo the smaller one.
   return kind === 'video' ? MAX_VIDEO_BYTES : MAX_PHOTO_BYTES;
+}
+
+/**
+ * PL: Czy długość zadeklarowana w nagłówku Content-Length mieści się w limicie. Brak nagłówka albo wartość, która nie jest liczbą, odpada, bo wtedy nie wiemy, jak duży jest plik.
+ * EN: Whether the length declared in the Content-Length header fits the limit. A missing header, or a value that is not a number, fails, because then we do not know how big the file is.
+ *
+ * @param header - PL: wartość nagłówka Content-Length albo undefined. EN: the value of the Content-Length header, or undefined.
+ * @param maxBytes - PL: najwięcej bajtów dla tego pliku. EN: the most bytes for this file.
+ * @returns PL: true, gdy długość jest liczbą w limicie. EN: true when the length is a number within the limit.
+ */
+export function contentLengthFits(header: string | undefined, maxBytes: number): boolean {
+  // PL: Tylko same cyfry, bo inaczej nagłówek mógłby mieć zapis w rodzaju „1e9”.
+  // EN: Digits only, because otherwise the header could be written like "1e9".
+  if (header === undefined || !/^\d+$/.test(header)) return false;
+  return Number(header) <= maxBytes;
 }
 
 /**

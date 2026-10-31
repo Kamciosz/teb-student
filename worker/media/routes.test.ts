@@ -1,10 +1,11 @@
 /**
- * PL: Test routera podtoru 2 na prawdziwej bazie D1 i zasobniku R2 z testowego Workera. Sprawdza 401 bez sesji, 403 dla ucznia bez roli redaktora, 201 dla redaktora (wiersz z jego numerem), 415 dla złego typu, odczyt pliku i opisu dla ucznia oraz to, że zdjęcie zgłoszenia widzi tylko autor i administracja (inni dostają 404).
- * EN: Test of the subtrack 2 router on a real D1 database and R2 bucket of the test Worker. Checks 401 without a session, 403 for a student without the editor role, 201 for an editor (a row with their id), 415 for a bad type, reading the file and its description for a student, and that a report photo is seen only by its author and the administration (others get 404).
+ * PL: Test routera podtoru 2 na prawdziwej bazie D1 i zasobniku R2 z testowego Workera. Sprawdza 401 bez sesji, 403 dla ucznia bez roli redaktora, 201 dla redaktora (wiersz z jego numerem), 415 dla złego typu, 413 dla pliku za dużego (także bez nagłówka Content-Length i z nagłówkiem, który kłamie) z zerowym zapisem do R2, odczyt pliku i opisu dla ucznia oraz to, że zdjęcie zgłoszenia widzi tylko autor i administracja (inni dostają 404).
+ * EN: Test of the subtrack 2 router on a real D1 database and R2 bucket of the test Worker. Checks 401 without a session, 403 for a student without the editor role, 201 for an editor (a row with their id), 415 for a bad type, 413 for a file that is too big (also without the Content-Length header and with a header that lies) with zero writes to R2, reading the file and its description for a student, and that a report photo is seen only by its author and the administration (others get 404).
  *
  * @author Szymon
  * @since 2026-10-13
  * @uses worker/media/routes.ts::mediaApp
+ * @uses worker/shared/countingBucket.ts::countingBucket
  * @uses worker/auth/email/testRuntime.ts::signIn
  * @uses worker/db/schema/admin.ts::panelRoles
  * @uses worker/db/schema/media.ts::mediaFiles
@@ -31,6 +32,9 @@ import { panelRoles } from '../db/schema/admin';
 import { mediaFiles } from '../db/schema/media';
 import { reports } from '../db/schema/reports';
 import { MAX_PHOTO_BYTES } from './rules';
+// PL: Zasobnik z licznikiem zapisów, żeby sprawdzić, że za duży plik nie trafia do R2.
+// EN: A bucket with a write counter, to check that an oversized file does not reach R2.
+import { countingBucket } from '../shared/countingBucket';
 
 /** PL: Sekret podpisu sesji z testRuntime.ts. EN: The session signing secret from testRuntime.ts. */
 const TEST_SECRET = 'test-secret-test-secret-test-secret-00';
@@ -54,25 +58,27 @@ let councilCookie: string;
  * @param path - PL: adres względem routera. EN: the address relative to the router.
  * @param init - PL: metoda, nagłówki i treść. EN: the method, headers and body.
  * @param sessionCookie - PL: ciasteczko sesji albo false (bez sesji). EN: the session cookie, or false (no session).
+ * @param bucket - PL: zasobnik R2 dla zapytania (domyślnie prawdziwy zasobnik testowy). EN: the R2 bucket for the request (by default the real test bucket).
  * @returns PL: odpowiedź routera. EN: the router response.
  */
-function send(path: string, init: RequestInit = {}, sessionCookie: string | false = cookie): Response | Promise<Response> {
+function send(path: string, init: RequestInit = {}, sessionCookie: string | false = cookie, bucket: R2Bucket = env.MEDIA): Response | Promise<Response> {
   // PL: Nagłówki z ciasteczkiem albo bez niego.
   // EN: The headers with the cookie or without it.
   const headers = { ...(init.headers as Record<string, string> | undefined), ...(sessionCookie ? { cookie: sessionCookie } : {}) };
-  return mediaApp.request(path, { ...init, headers }, { ...env, BETTER_AUTH_SECRET: TEST_SECRET });
+  return mediaApp.request(path, { ...init, headers }, { ...env, MEDIA: bucket, BETTER_AUTH_SECRET: TEST_SECRET });
 }
 
 /**
- * PL: Wysyła plik testowy (trzy bajty) na /upload z podanym typem.
- * EN: Sends a test file (three bytes) to /upload with the given type.
+ * PL: Wysyła plik testowy (trzy bajty) na /upload z podanym typem. Podaje też długość treści, jak przeglądarka.
+ * EN: Sends a test file (three bytes) to /upload with the given type. Also gives the body length, as the browser does.
  *
  * @param mime - PL: typ zawartości. EN: the content type.
  * @param query - PL: część adresu z wymiarami. EN: the part of the address with the dimensions.
  * @returns PL: odpowiedź routera. EN: the router response.
  */
 function upload(mime: string, query = '?width=800&height=600'): Response | Promise<Response> {
-  return send(`/upload${query}`, { method: 'POST', headers: { 'content-type': mime }, body: new Uint8Array([1, 2, 3]) });
+  const body = new Uint8Array([1, 2, 3]);
+  return send(`/upload${query}`, { method: 'POST', headers: { 'content-type': mime, 'content-length': String(body.byteLength) }, body });
 }
 
 // PL: Przed każdym testem: czysta baza, zalogowany uczeń bez roli.
@@ -181,7 +187,7 @@ describe('POST /report-photo', () => {
    * @returns PL: odpowiedź routera. EN: the router response.
    */
   function report(mime: string, body: Uint8Array = new Uint8Array([1, 2, 3])): Response | Promise<Response> {
-    return send('/report-photo', { method: 'POST', headers: { 'content-type': mime }, body });
+    return send('/report-photo', { method: 'POST', headers: { 'content-type': mime, 'content-length': String(body.byteLength) }, body });
   }
 
   // PL: Uczeń bez roli wysyła JPEG: 200, a w bazie zdjęcie z jego numerem jako autorem.
@@ -289,5 +295,67 @@ describe('zdjęcie zgłoszenia / report photo', () => {
   it('zwykłe zdjęcie spoza zgłoszeń dostaje każdy uczeń / an ordinary photo outside the reports is given to every student', async () => {
     expect((await send(`/${PLAIN}`, {}, otherCookie)).status).toBe(200);
     expect((await send(`/${PLAIN}/meta`, {}, otherCookie)).status).toBe(200);
+  });
+});
+
+// PL: Grupa testów limitu sprawdzanego przed zapisem do R2: plik za duży nie może tam trafić, nawet gdy nagłówek kłamie.
+// EN: A group of tests for the limit checked before writing to R2: an oversized file must not get there, even when the header lies.
+describe('limit wielkości przed zapisem do R2 / size limit before writing to R2', () => {
+  // PL: Czyścimy R2 (poprzednie testy zostawiają pliki) i dajemy redaktorowi rolę, żeby test sprawdzał tylko limit.
+  // EN: We clean R2 (earlier tests leave files) and give the editor role, so the test checks only the limit.
+  beforeEach(async () => {
+    for (const object of (await env.MEDIA.list()).objects) await env.MEDIA.delete(object.key);
+    await drizzle(env.DB).insert(panelRoles).values({ userId: studentId, role: 'editor', grantedAt: Date.now() });
+  });
+
+  // PL: Nagłówek mówi, że plik jest za duży: 413 od razu, bez zapisu do R2 i bez wiersza w bazie.
+  // EN: The header says the file is too big: 413 at once, with no write to R2 and no row in the database.
+  it('/upload z Content-Length ponad limit daje 413 i nic nie trafia do R2 / /upload with a Content-Length above the limit gives 413 and nothing reaches R2', async () => {
+    const { bucket, writes } = countingBucket();
+    const response = await send('/upload?width=800&height=600', { method: 'POST', headers: { 'content-type': 'image/jpeg', 'content-length': String(MAX_PHOTO_BYTES + 1) }, body: new Uint8Array([1, 2, 3]) }, cookie, bucket);
+    const listed = await env.MEDIA.list();
+    const rows = await drizzle(env.DB).select().from(mediaFiles);
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ error: 'too_large' });
+    expect(writes()).toBe(0);
+    expect(listed.objects).toHaveLength(0);
+    expect(rows).toHaveLength(0);
+  });
+
+  // PL: Bez nagłówka Content-Length nie wiemy, jak duży jest plik, więc odrzucamy go z 413 i nic nie zapisujemy.
+  // EN: Without a Content-Length header we do not know how big the file is, so we reject it with 413 and save nothing.
+  it('/upload bez Content-Length daje 413 i nic nie trafia do R2 / /upload without a Content-Length gives 413 and nothing reaches R2', async () => {
+    const { bucket, writes } = countingBucket();
+    const response = await send('/upload?width=800&height=600', { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: new Uint8Array([1, 2, 3]) }, cookie, bucket);
+    const listed = await env.MEDIA.list();
+    const rows = await drizzle(env.DB).select().from(mediaFiles);
+    expect(response.status).toBe(413);
+    expect(writes()).toBe(0);
+    expect(listed.objects).toHaveLength(0);
+    expect(rows).toHaveLength(0);
+  });
+
+  // PL: Zdjęcie do zgłoszenia bez nagłówka Content-Length też dostaje 413 i nic nie trafia do R2.
+  // EN: A photo for a report without a Content-Length header also gets 413, and nothing reaches R2.
+  it('/report-photo bez Content-Length daje 413 i nic nie trafia do R2 / /report-photo without a Content-Length gives 413 and nothing reaches R2', async () => {
+    const { bucket, writes } = countingBucket();
+    const response = await send('/report-photo', { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: new Uint8Array([1, 2, 3]) }, cookie, bucket);
+    const listed = await env.MEDIA.list();
+    expect(response.status).toBe(413);
+    expect(writes()).toBe(0);
+    expect(listed.objects).toHaveLength(0);
+  });
+
+  // PL: Nagłówek kłamie: deklaruje 3 bajty, a treść ma za dużo. Kontrola po odczycie wychwytuje to przed zapisem, więc R2 zostaje puste.
+  // EN: The header lies: it declares 3 bytes, but the body is too big. The check after reading catches it before the write, so R2 stays empty.
+  it('kłamliwy Content-Length przy za dużej treści daje 413 i nic nie trafia do R2 / a lying Content-Length with a body that is too big gives 413 and nothing reaches R2', async () => {
+    const { bucket, writes } = countingBucket();
+    const response = await send('/upload?width=800&height=600', { method: 'POST', headers: { 'content-type': 'image/jpeg', 'content-length': '3' }, body: new Uint8Array(MAX_PHOTO_BYTES + 1) }, cookie, bucket);
+    const listed = await env.MEDIA.list();
+    const rows = await drizzle(env.DB).select().from(mediaFiles);
+    expect(response.status).toBe(413);
+    expect(writes()).toBe(0);
+    expect(listed.objects).toHaveLength(0);
+    expect(rows).toHaveLength(0);
   });
 });
