@@ -28,7 +28,7 @@ Wynik: żadna technologia nie zmienia się na inną. Zmiany po przeglądzie są 
 | Pliki | Cloudflare R2, wysyłka prosto z telefonu | — |
 | Wyświetlanie zdjęć | Cloudflare Images, format sam dobrany: AVIF albo WebP **[zmiana: dodane]** | — |
 | Maile z kodem | Cloudflare Email Service, Resend jako zapas | — |
-| Logowanie | Better Auth: kod na mail, login i hasło z kodu zaproszenia | 1.7.7 |
+| Logowanie | Better Auth: kod na mail, login i hasło z kodu zaproszenia | 1.7.12 |
 | Sesje | w D1 | — |
 | Hasła | wbudowane w Better Auth (scrypt) **[zmiana: zamiast PBKDF2]** | — |
 | Testy | Vitest, @cloudflare/vitest-plugin, Playwright **[zmiana: nowa nazwa pakietu]** | vitest-plugin 1.4.0 |
