@@ -35,7 +35,24 @@ Zakładasz bazę `teb-student` tym poleceniem. Krok 5 potrzebuje istniejącej ba
 npx wrangler d1 create teb-student
 ```
 
-Wrangler wypisze `database_id`. Plik `wrangler.jsonc` celowo go nie ma. Wpisz go tam dopiero po zgodzie właściciela, jako osobną zmianę w repozytorium.
+Wrangler wypisze `database_id`. Wpisz go do `wrangler.jsonc`, w bloku `d1_databases`, jako pole `database_id` przy bindingu `DB`. Zrób to przed krokiem 5, czyli przed poleceniami z `--remote`. Zmiana to zwykły commit w repozytorium.
+
+### Zasobnik R2 na zdjęcia
+
+Zdjęcia w aktualnościach są w zasobniku R2 pod bindingiem `MEDIA`. Bez zasobnika nie zadziałają.
+
+1. W panelu Cloudflare włącz R2. Wymaga to subskrypcji, którą zakładasz przez checkout. Kroki są tu: https://developers.cloudflare.com/r2/get-started/
+2. Utwórz zasobnik o nazwie z `wrangler.jsonc`:
+
+```bash
+npx wrangler r2 bucket create teb-media
+```
+
+3. Sprawdź, że zasobnik istnieje. Na liście powinien być `teb-media`:
+
+```bash
+npx wrangler r2 bucket list
+```
 
 ## 4. Sekrety Workera
 
@@ -74,9 +91,6 @@ npx wrangler deploy
 ```
 
 Po wdrożeniu Wrangler wypisze adres Workera. Ten adres wpisz jako `BETTER_AUTH_URL`, jeśli jeszcze go nie ustawiłeś w kroku 4 (albo zmień sekret poleceniem `npx wrangler secret put BETTER_AUTH_URL`).
-
-Jeśli `wrangler deploy` zgłosi konflikt z bazą, wpisz `database_id` z kroku 3 do `wrangler.jsonc` jako osobną zmianę, po zgodzie właściciela.
-
 ## 7. Pierwszy administrator
 
 Pierwsze konto dostaje rolę `admin` ręcznie, z bazy. W aplikacji nie da się nadać tej roli. Zanim zaczniesz, wybierz login (3–30 znaków: małe litery, cyfry, kropka, podkreślnik, myślnik).
@@ -130,6 +144,14 @@ curl -s -o /dev/null -w '%{http_code}\n' https://<adres-aplikacji>/api/admin/inv
 ```
 
 Potem zaloguj się w przeglądarce loginem administratora i sprawdź, że panel Samorządu się otwiera. Podczas tego wejścia można podejrzeć logi: `npx wrangler tail`.
+
+Poniższe kroki wykonuje człowiek na koncie produkcyjnym. Nie były jeszcze sprawdzone na prawdziwym koncie.
+
+**Zdjęcie w aktualnościach.** Zaloguj się kontem administratora. W edytorze aktualności dodaj jedno zdjęcie (idzie przez `POST /api/media/upload`), zapisz wpis i opublikuj go bez korekty, bo autor nie zatwierdza własnego wpisu (zwraca `own_entry`). Otwórz opublikowaną aktualność: zdjęcie ma się wczytać z adresu `/api/media/<id>`.
+
+**Start z telefonu.** Otwórz adres aplikacji w przeglądarce telefonu i dodaj ją do ekranu głównego. Uruchom ją z ikony. Ma się otworzyć bez paska przeglądarki (`display: 'standalone'` w `vite.config.ts`).
+
+**Klucz Face ID.** Na telefonie, w profilu, w sekcji „Face ID i odcisk palca”, wybierz „Dodaj Face ID lub odcisk palca”. Klucz jest przypisany do hosta z `BETTER_AUTH_URL`. Jeśli adres się zmieni, wcześniej dodane klucze przestaną działać.
 
 ## Wycofanie
 

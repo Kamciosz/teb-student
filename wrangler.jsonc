@@ -28,11 +28,11 @@
     "run_worker_first": ["/api/*"]
   },
   // PL: Baza D1. Kod serwera czyta ją jako env.DB (typ Env w worker/shared/index.ts).
-  // PL: Pola database_id celowo nie ma: konta Cloudflare jeszcze nie ma, a lokalnie (npm run dev, npm test, npm run db:reset) Wrangler zakłada bazę sam i trzyma ją w .wrangler/state. Schemat wrangler.json oznacza database_id jako „not required”.
-  // PL: Przy pierwszym wdrożeniu (wrangler deploy) Wrangler sam utworzy bazę teb-student i zapisze jej identyfikator tutaj (automatyczne zakładanie zasobów, dokumentacja „Wrangler configuration”). Przy wdrożeniu z pulpitu Cloudflare albo z GitHub identyfikator nie wraca do repozytorium, więc wtedy trzeba go wpisać ręcznie. Tabel nie zakłada wdrożenie: robi to schemat (docs/WDROZENIE.md).
+  // PL: Pola database_id jeszcze nie ma: bazę zakładasz w koncie Cloudflare. Po `wrangler d1 create teb-student` (docs/WDROZENIE.md, krok 3) wpisz tu identyfikator z wyniku polecenia, zanim wykonasz kroki z --remote. Lokalnie (npm run dev, npm test, npm run db:reset) Wrangler zakłada bazę sam i trzyma ją w .wrangler/state.
+  // PL: Tabel nie zakłada wdrożenie: robi to schemat (docs/WDROZENIE.md, krok 5).
   // EN: The D1 database. The server code reads it as env.DB (the Env type in worker/shared/index.ts).
-  // EN: The database_id field is left out on purpose: the Cloudflare account does not exist yet, and locally (npm run dev, npm test, npm run db:reset) Wrangler creates the database by itself and keeps it in .wrangler/state. The wrangler.json schema marks database_id as "not required".
-  // EN: On the first deploy (wrangler deploy) Wrangler creates the teb-student database by itself and writes its id here (automatic resource provisioning, "Wrangler configuration" docs). When deploying from the Cloudflare dashboard or from GitHub the id does not come back to the repository, so then it must be typed in by hand. A deploy does not create the tables: the schema does (docs/WDROZENIE.md).
+  // EN: The database_id field is not here yet: you create the database in the Cloudflare account. After `wrangler d1 create teb-student` (docs/WDROZENIE.md, step 3) type the id from the command output here, before the --remote steps. Locally (npm run dev, npm test, npm run db:reset) Wrangler creates the database by itself and keeps it in .wrangler/state.
+  // EN: A deploy does not create the tables: the schema does (docs/WDROZENIE.md, step 5).
   "d1_databases": [
     {
       // PL: Nazwa bindingu, pod którą baza jest w env.
@@ -45,8 +45,8 @@
   ],
   // PL: Zasobnik R2 na zdjęcia i filmy (podtor 2). Kod serwera czyta go jako env.MEDIA (typ Env w worker/shared/index.ts).
   // EN: The R2 bucket for photos and videos (subtrack 2). The server code reads it as env.MEDIA (the Env type in worker/shared/index.ts).
-  // PL: Lokalnie (npm run dev, npm test) Wrangler sam tworzy zasobnik w .wrangler/state. Konta Cloudflare jeszcze nie ma, więc nazwy zasobnika nie zakładamy w panelu.
-  // EN: Locally (npm run dev, npm test) Wrangler creates the bucket by itself in .wrangler/state. The Cloudflare account does not exist yet, so the bucket is not created in the dashboard.
+  // PL: Zasobnik tworzysz w koncie ręcznie (docs/WDROZENIE.md, krok 3, sekcja R2). Lokalnie (npm run dev, npm test) Wrangler sam tworzy zasobnik w .wrangler/state.
+  // EN: You create the bucket in the account by hand (docs/WDROZENIE.md, step 3, the R2 section). Locally (npm run dev, npm test) Wrangler creates the bucket by itself in .wrangler/state.
   "r2_buckets": [
     {
       // PL: Nazwa bindingu, pod którą zasobnik jest w env.
