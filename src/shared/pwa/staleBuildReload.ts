@@ -1,6 +1,6 @@
 /**
- * PL: Przeładowanie strony po wdrożeniu. Gdy otwarta aplikacja ma stare pliki i nie może pobrać fragmentu kodu, który już nie istnieje, przeładowuje stronę raz w sesji karty. Robi to dopiero po tym, jak nowy service worker przejął stronę i użytkownik wrócił do aplikacji albo przeszedł na inny ekran. Nie przeładowuje w trakcie pisania.
- * EN: Reload after a deploy. When the open app has old files and cannot fetch a piece of code that no longer exists, it reloads the page once per tab session. It does so only after the new service worker has taken over the page and the user came back to the app or moved to another screen. It never reloads while the user is typing.
+ * PL: Przeładowanie strony po wdrożeniu. Są dwa powody. Pierwszy: fragment kodu się nie pobrał, bo już nie istnieje, więc strona przeładowuje się od razu. Drugi: service worker zmienił się z jednego istniejącego na inny, czyli nowa wersja przejęła stronę, więc strona przeładowuje się przy powrocie z tła albo przy zmianie ekranu. Pierwsza instalacja service workera nie jest nową wersją. Przeładowania dzieli co najmniej 60 sekund, żeby nie zapętlić.
+ * EN: Reload after a deploy. There are two reasons. The first: a code fragment failed to load because it no longer exists, so the page reloads at once. The second: the service worker changed from one existing worker to another, so the new version took over the page, and the page reloads when the user returns from background or moves to another screen. The first service worker install is not a new version. Reloads are at least 60 seconds apart, so they cannot loop.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-31
@@ -8,9 +8,13 @@
  * @used_by src/shared/pwa/staleBuildReload.test.ts::installStaleBuildReload
  */
 
-// PL: Klucz w sessionStorage. Jest zapisany przed przeładowaniem, więc drugi błąd w tej samej sesji karty nie przeładowuje strony ponownie.
-// EN: The sessionStorage key. It is saved before the reload, so a second error in the same tab session does not reload the page again.
+// PL: Klucz w sessionStorage. Przechowuje czas ostatniego przeładowania, zapisany przed przeładowaniem.
+// EN: The sessionStorage key. It holds the time of the last reload, saved before the reload.
 export const STALE_RELOAD_KEY = 'teb-stale-build-reload';
+
+// PL: Najkrótszy odstęp między dwoma przeładowaniami w tej samej sesji karty, w milisekundach.
+// EN: The shortest gap between two reloads in the same tab session, in milliseconds.
+export const RELOAD_COOLDOWN_MS = 60_000;
 
 // PL: Minimalny kształt sessionStorage, żeby test mógł podać zwykłą mapę.
 // EN: The minimal shape of sessionStorage, so a test can pass a plain map.
@@ -23,8 +27,8 @@ export interface StaleBuildStorage {
   setItem(key: string, value: string): void;
 }
 
-// PL: Wszystko, czego moduł potrzebuje od przeglądarki. Dzięki temu test działa bez okna.
-// EN: Everything the module needs from the browser. This way the test works without a window.
+// PL: Wszystko, czego moduł potrzebuje od przeglądarki. Dzięki temu test działa bez okna i bez zegara.
+// EN: Everything the module needs from the browser. This way the test works without a window and without a clock.
 export interface StaleBuildEnv {
   // PL: Wywołuje handler, gdy fragment kodu się nie pobrał (zdarzenie vite:preloadError). Zwraca funkcję, która zdejmuje nasłuch.
   // EN: Calls the handler when a code fragment failed to load (the vite:preloadError event). Returns a function that removes the listener.
@@ -38,12 +42,12 @@ export interface StaleBuildEnv {
   // PL: Zwraca bieżący adres strony.
   // EN: Returns the current page address.
   getPathname: () => string;
-  // PL: Zwraca kontroler service workera albo null. Zmiana obiektu znaczy, że nowy SW przejął stronę.
-  // EN: Returns the service worker controller or null. A change of the object means the new SW has taken over the page.
+  // PL: Zwraca kontroler service workera albo null. Zmiana obiektu na inny obiekt znaczy nową wersję.
+  // EN: Returns the service worker controller or null. A change from one object to another means a new version.
   getController: () => unknown;
-  // PL: Prosi przeglądarkę o sprawdzenie, czy jest nowsza wersja service workera.
-  // EN: Asks the browser to check whether a newer service worker version exists.
-  checkForUpdate: () => void;
+  // PL: Zwraca bieżący czas w milisekundach.
+  // EN: Returns the current time in milliseconds.
+  now: () => number;
   // PL: Pamięć sesji karty.
   // EN: The session memory of the tab.
   storage: StaleBuildStorage;
@@ -53,22 +57,48 @@ export interface StaleBuildEnv {
 }
 
 /**
- * PL: Sprawdza, czy wolno przeładować stronę teraz: sesja karty jeszcze jej nie przeładowała i zapis w pamięci sesji działa. Gdy pamięci nie da się odczytać ani zapisać, nie przeładowuje, bo nie da się zabezpieczyć przed pętlą.
- * EN: Checks whether the page may be reloaded now: the tab session has not reloaded it yet and saving in session memory works. If the memory cannot be read or written, it does not reload, because it cannot protect against a loop.
+ * PL: Odczytuje czas ostatniego przeładowania z pamięci sesji. Brak wpisu albo wpis, którego nie da się odczytać jako liczbę, daje null.
+ * EN: Reads the time of the last reload from the session memory. A missing entry, or an entry that cannot be read as a number, gives null.
  *
  * @param storage PL: pamięć sesji karty. EN: the session memory of the tab.
- * @returns PL: true, gdy znacznik został zapisany i przeładowanie wolno wykonać. EN: true when the marker was saved and the reload may run.
+ * @returns PL: czas w milisekundach albo null. EN: the time in milliseconds, or null.
  */
-export function claimOneReload(storage: StaleBuildStorage): boolean {
-  // PL: Próbujemy odczytać i zapisać znacznik. Błąd dostępu do pamięci traktujemy jak brak zgody.
-  // EN: We try to read and write the marker. A memory access error counts as no permission.
+function readLastReloadAt(storage: StaleBuildStorage): number | null {
+  // PL: Odczytaj surowy wpis.
+  // EN: Read the raw entry.
+  const raw = storage.getItem(STALE_RELOAD_KEY);
+  // PL: Brak wpisu znaczy, że w tej sesji nie było przeładowania.
+  // EN: No entry means there was no reload in this session.
+  if (raw === null) return null;
+  // PL: Zamień tekst na liczbę.
+  // EN: Turn the text into a number.
+  const at = Number(raw);
+  // PL: Wpis, którego nie da się odczytać, traktujemy jak brak.
+  // EN: An entry that cannot be read is treated as missing.
+  return Number.isFinite(at) ? at : null;
+}
+
+/**
+ * PL: Sprawdza, czy wolno przeładować stronę teraz: od ostatniego przeładowania minęło co najmniej 60 sekund i zapis w pamięci sesji działa. Zapisuje czas tego przeładowania. Gdy pamięci nie da się odczytać ani zapisać, nie przeładowuje, bo nie da się zabezpieczyć przed pętlą.
+ * EN: Checks whether the page may be reloaded now: at least 60 seconds have passed since the last reload and saving in session memory works. It saves the time of this reload. If the memory cannot be read or written, it does not reload, because it cannot protect against a loop.
+ *
+ * @param storage PL: pamięć sesji karty. EN: the session memory of the tab.
+ * @param now PL: bieżący czas w milisekundach. EN: the current time in milliseconds.
+ * @returns PL: true, gdy czas został zapisany i przeładowanie wolno wykonać. EN: true when the time was saved and the reload may run.
+ */
+export function claimOneReload(storage: StaleBuildStorage, now: number): boolean {
+  // PL: Próbujemy odczytać i zapisać czas. Błąd dostępu do pamięci traktujemy jak brak zgody.
+  // EN: We try to read and write the time. A memory access error counts as no permission.
   try {
-    // PL: Znacznik już jest, więc ta sesja karty przeładowała już stronę.
-    // EN: The marker is already there, so this tab session has already reloaded the page.
-    if (storage.getItem(STALE_RELOAD_KEY) !== null) return false;
-    // PL: Zapisz znacznik przed przeładowaniem, żeby kolejny błąd nie wywołał pętli.
-    // EN: Save the marker before the reload, so a further error does not cause a loop.
-    storage.setItem(STALE_RELOAD_KEY, '1');
+    // PL: Czas poprzedniego przeładowania w tej sesji karty.
+    // EN: The time of the previous reload in this tab session.
+    const last = readLastReloadAt(storage);
+    // PL: Za wcześnie na kolejne przeładowanie: to chroni przed pętlą.
+    // EN: Too soon for another reload: this protects against a loop.
+    if (last !== null && now - last < RELOAD_COOLDOWN_MS) return false;
+    // PL: Zapisz czas przed przeładowaniem, żeby kolejny błąd w ciągu minuty nie przeładował strony.
+    // EN: Save the time before the reload, so a further error within a minute does not reload the page.
+    storage.setItem(STALE_RELOAD_KEY, String(now));
     return true;
   } catch {
     // PL: Pamięć nie działa, więc nie przeładowujemy.
@@ -85,52 +115,69 @@ export function claimOneReload(storage: StaleBuildStorage): boolean {
  * @returns PL: funkcja sprzątająca. EN: the cleanup function.
  */
 export function installStaleBuildReload(env: StaleBuildEnv): () => void {
-  // PL: Kontroler z chwili wczytania strony. Jego zmiana znaczy, że nowy service worker przejął stronę.
-  // EN: The controller at the moment the page loaded. Its change means the new service worker has taken over the page.
-  const controllerAtLoad = env.getController();
-  // PL: Czy jakiś fragment kodu się nie pobrał i strona czeka na przeładowanie.
-  // EN: Whether a code fragment failed to load and the page waits for a reload.
-  let isReloadPending = false;
+  // PL: Ostatnio widziany kontroler service workera. Porównujemy z nim, żeby wykryć zmianę.
+  // EN: The last seen service worker controller. We compare with it to detect a change.
+  let lastController = env.getController();
+  // PL: Czy kontroler zmienił się z istniejącego na inny i strona czeka na przeładowanie przy powrocie albo zmianie ekranu.
+  // EN: Whether the controller changed from an existing one to another, and the page waits for a reload on return or screen change.
+  let isNewVersion = false;
   // PL: Ostatni znany adres, żeby wykryć zmianę ekranu.
   // EN: The last known address, to detect a screen change.
   let lastPathname = env.getPathname();
 
-  // PL: Przeładuj tylko wtedy, gdy coś czeka, nowy SW już kontroluje stronę i sesja jeszcze nie przeładowała strony.
-  // EN: Reload only when something is waiting, the new SW already controls the page and the session has not reloaded the page yet.
-  const tryReload = (): void => {
-    // PL: Nic się nie pobrało, więc nie ma czego naprawiać.
-    // EN: Nothing failed to load, so there is nothing to fix.
-    if (!isReloadPending) return;
-    // PL: Nowy SW jeszcze nie przejął strony, więc przeładowanie dałoby stare pliki.
-    // EN: The new SW has not taken over the page yet, so a reload would bring back the old files.
-    if (env.getController() === controllerAtLoad) return;
-    // PL: Sesja już raz przeładowała stronę albo pamięć nie działa.
-    // EN: The session has already reloaded the page once, or the memory does not work.
-    if (!claimOneReload(env.storage)) return;
+  // PL: Przeładuj, jeśli minęła minuta od ostatniego przeładowania i pamięć działa.
+  // EN: Reload if a minute has passed since the last reload and the memory works.
+  const reloadIfAllowed = (): void => {
+    // PL: Zgody nie ma, więc zostajemy na stronie.
+    // EN: There is no permission, so we stay on the page.
+    if (!claimOneReload(env.storage, env.now())) return;
     // PL: Wszystkie warunki spełnione: przeładuj.
     // EN: All conditions are met: reload.
     env.reload();
   };
 
-  // PL: Błąd pobrania: zapamiętaj, że trzeba przeładować, i poproś przeglądarkę o nowszy service worker. Nie przeładowujemy od razu, bo użytkownik może właśnie pisać.
-  // EN: A loading error: remember that a reload is needed, and ask the browser for a newer service worker. We do not reload at once, because the user may be typing right now.
+  // PL: Sprawdź, czy kontroler się zmienił. Zmiana z null na service worker to pierwsza instalacja, więc nie liczy się jako nowa wersja.
+  // EN: Check whether the controller changed. A change from null to a service worker is the first install, so it does not count as a new version.
+  const noteController = (): void => {
+    // PL: Odczytaj bieżący kontroler.
+    // EN: Read the current controller.
+    const current = env.getController();
+    // PL: Bez zmiany nie ma nic do zapamiętania.
+    // EN: With no change there is nothing to remember.
+    if (current === lastController) return;
+    // PL: Zmiana z jednego istniejącego SW na inny to nowa wersja.
+    // EN: A change from one existing SW to another is a new version.
+    if (lastController !== null && current !== null) isNewVersion = true;
+    // PL: Zapamiętaj nowy kontroler.
+    // EN: Remember the new controller.
+    lastController = current;
+  };
+
+  // PL: Przy powrocie z tła albo zmianie ekranu przeładuj, jeśli czeka nowa wersja.
+  // EN: On return from background or on a screen change, reload if a new version is waiting.
+  const reloadForNewVersion = (): void => {
+    noteController();
+    if (isNewVersion) reloadIfAllowed();
+  };
+
+  // PL: Błąd pobrania fragmentu kodu: przeładuj od razu, raz. Ekran docelowy się nie otworzył, więc nie ma czego tracić.
+  // EN: A code fragment loading error: reload at once, once. The target screen did not open, so there is nothing to lose.
   const onPreloadError = (): void => {
-    isReloadPending = true;
-    env.checkForUpdate();
+    reloadIfAllowed();
   };
 
-  // PL: Powrót z tła to dobry moment na przeładowanie.
-  // EN: Returning from background is a good moment for a reload.
+  // PL: Powrót z tła to dobry moment na przeładowanie nowej wersji.
+  // EN: Returning from background is a good moment to reload a new version.
   const onBecomeVisible = (): void => {
-    tryReload();
+    reloadForNewVersion();
   };
 
-  // PL: Zmiana ekranu to dobry moment na przeładowanie. Ten sam adres nie liczy się jako zmiana.
-  // EN: A screen change is a good moment for a reload. The same address does not count as a change.
+  // PL: Zmiana ekranu to dobry moment na przeładowanie nowej wersji. Ten sam adres nie liczy się jako zmiana.
+  // EN: A screen change is a good moment to reload a new version. The same address does not count as a change.
   const onNavigate = (pathname: string): void => {
     if (pathname === lastPathname) return;
     lastPathname = pathname;
-    tryReload();
+    reloadForNewVersion();
   };
 
   // PL: Podłącz trzy nasłuchy.

@@ -1,6 +1,6 @@
 /**
- * PL: Test przeładowania po wdrożeniu. Symuluje kartę przeglądarki: błąd pobrania fragmentu kodu, przejęcie strony przez nowy service worker, powrót z tła, zmianę ekranu i sessionStorage. Sprawdza, że strona przeładowuje się raz, bez pętli i nie w trakcie pisania.
- * EN: Test of the reload after a deploy. Simulates a browser tab: a code loading error, the page taken over by the new service worker, return from background, a screen change and sessionStorage. Checks that the page reloads once, without a loop and not while typing.
+ * PL: Test przeładowania po wdrożeniu. Symuluje kartę przeglądarki: błąd pobrania fragmentu kodu, zmianę service workera (także pierwszą instalację), powrót z tła, zmianę ekranu, czas i sessionStorage. Sprawdza, że strona przeładowuje się we właściwych sytuacjach, najwyżej raz na minutę i bez pętli.
+ * EN: Test of the reload after a deploy. Simulates a browser tab: a code loading error, a service worker change (including the first install), return from background, a screen change, time and sessionStorage. Checks that the page reloads in the right situations, at most once a minute, and without a loop.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-31
@@ -22,12 +22,15 @@ interface Tab {
   // PL: Ile razy strona została przeładowana.
   // EN: How many times the page was reloaded.
   reloads: number;
-  // PL: Aktualny kontroler service workera (obiekt albo tekst w teście).
-  // EN: The current service worker controller (an object or a string in the test).
-  controller: unknown;
+  // PL: Aktualny kontroler service workera (obiekt albo tekst w teście, null przy braku SW).
+  // EN: The current service worker controller (an object or a string in the test, null when there is no SW).
+  controller: string | null;
   // PL: Aktualny adres strony.
   // EN: The current page address.
   pathname: string;
+  // PL: Aktualny czas karty w milisekundach. Test go przesuwa.
+  // EN: The current time of the tab in milliseconds. The test moves it forward.
+  now: number;
   // PL: Zawartość sessionStorage, która przetrwa przeładowanie.
   // EN: The sessionStorage content, which survives a reload.
   storageValues: Map<string, string>;
@@ -89,15 +92,15 @@ function loadPage(tab: Tab): Page {
   const visibleHandlers = new Set<() => void>();
   const navigateHandlers = new Set<(pathname: string) => void>();
 
-  // PL: Zależności modułu: zamiast przeglądarki dajemy zwykłe funkcje i pamięć z karty.
-  // EN: The module's dependencies: plain functions and the tab's memory instead of the browser.
+  // PL: Zależności modułu: zamiast przeglądarki dajemy zwykłe funkcje, zegar i pamięć z karty.
+  // EN: The module's dependencies: plain functions, a clock and the tab's memory instead of the browser.
   const env: StaleBuildEnv = {
     onPreloadError: (handler) => listen(preloadHandlers, handler),
     onBecomeVisible: (handler) => listen(visibleHandlers, handler),
     onNavigate: (handler) => listen(navigateHandlers, handler),
     getPathname: () => tab.pathname,
     getController: () => tab.controller,
-    checkForUpdate: () => undefined,
+    now: () => tab.now,
     storage: {
       // PL: Odczyt z pamięci karty; przy zablokowanej pamięci rzuca błąd.
       // EN: Read from the tab's memory; with blocked memory it throws an error.
@@ -137,18 +140,19 @@ function loadPage(tab: Tab): Page {
 }
 
 /**
- * PL: Tworzy kartę z pustą pamięcią sesji i jednym service workerem.
- * EN: Creates a tab with empty session memory and one service worker.
+ * PL: Tworzy kartę z pustą pamięcią sesji, zegarem na zero i jednym service workerem.
+ * EN: Creates a tab with empty session memory, a clock at zero and one service worker.
  *
  * @returns PL: karta testowa. EN: the test tab.
  */
 function createTab(): Tab {
-  // PL: Kartę trzymamy jako obiekt, żeby test mógł zmieniać jej stan (kontroler, adres, pamięć).
-  // EN: We keep the tab as an object, so the test can change its state (controller, address, memory).
+  // PL: Kartę trzymamy jako obiekt, żeby test mógł zmieniać jej stan (kontroler, adres, czas, pamięć).
+  // EN: We keep the tab as an object, so the test can change its state (controller, address, time, memory).
   const tab: Tab = {
     reloads: 0,
     controller: 'sw-stary',
     pathname: '/',
+    now: 0,
     storageValues: new Map(),
     isStorageBroken: false,
     loadPage: () => loadPage(tab),
@@ -157,56 +161,74 @@ function createTab(): Tab {
 }
 
 describe('przeładowanie po wdrożeniu', () => {
-  it('przeładowuje raz, gdy nowy SW przejął stronę i użytkownik wrócił z tła', () => {
-    // PL: Karta z jednym błędem pobrania, po którym nowy SW przejmuje stronę.
-    // EN: A tab with one loading error, after which the new SW takes over the page.
+  it('błąd pobrania fragmentu kodu przeładowuje stronę od razu, raz', () => {
+    // PL: Ekran się nie otworzył, bo fragment kodu zniknął po wdrożeniu. Strona przeładowuje się od razu.
+    // EN: The screen did not open, because the code fragment disappeared after the deploy. The page reloads at once.
     const tab = createTab();
     const page = tab.loadPage();
     page.firePreloadError();
+    expect(tab.reloads).toBe(1);
+  });
+
+  it('błąd pobrania przeładowuje też bez service workera', () => {
+    // PL: Brak kontrolera (null) nie blokuje przeładowania po błędzie pobrania.
+    // EN: No controller (null) does not block the reload after a loading error.
+    const tab = createTab();
+    tab.controller = null;
+    const page = tab.loadPage();
+    page.firePreloadError();
+    expect(tab.reloads).toBe(1);
+  });
+
+  it('zmiana SW z istniejącego na inny przeładowuje przy powrocie z tła', () => {
+    // PL: Nowa wersja przejęła stronę, a użytkownik wrócił do karty.
+    // EN: The new version took over the page, and the user came back to the tab.
+    const tab = createTab();
+    const page = tab.loadPage();
     tab.controller = 'sw-nowy';
     page.fireBecomeVisible();
     expect(tab.reloads).toBe(1);
   });
 
-  it('nie przeładowuje w trakcie pisania: sam błąd i przejęcie strony to za mało', () => {
-    // PL: Brak powrotu z tła i brak zmiany ekranu, czyli użytkownik nadal pisze.
-    // EN: No return from background and no screen change, so the user is still typing.
+  it('zmiana SW z istniejącego na inny przeładowuje przy zmianie ekranu', () => {
+    // PL: Nowa wersja przejęła stronę, a użytkownik przeszedł na inny ekran.
+    // EN: The new version took over the page, and the user moved to another screen.
     const tab = createTab();
     const page = tab.loadPage();
-    page.firePreloadError();
-    tab.controller = 'sw-nowy';
-    expect(tab.reloads).toBe(0);
-  });
-
-  it('czeka, aż nowy SW przejmie stronę, zanim przeładuje', () => {
-    // PL: Powrót z tła przed przejęciem strony nie przeładowuje.
-    // EN: Returning from background before the takeover does not reload.
-    const tab = createTab();
-    const page = tab.loadPage();
-    page.firePreloadError();
-    page.fireBecomeVisible();
-    expect(tab.reloads).toBe(0);
-    // PL: Po przejęciu kolejny powrót już przeładowuje.
-    // EN: After the takeover, the next return does reload.
-    tab.controller = 'sw-nowy';
-    page.fireBecomeVisible();
-    expect(tab.reloads).toBe(1);
-  });
-
-  it('zmiana ekranu po przejęciu strony też przeładowuje', () => {
-    // PL: Zmiana adresu na inny ekran uruchamia przeładowanie.
-    // EN: A change of address to another screen triggers the reload.
-    const tab = createTab();
-    const page = tab.loadPage();
-    page.firePreloadError();
     tab.controller = 'sw-nowy';
     page.fireNavigate('/aktualnosci');
     expect(tab.reloads).toBe(1);
   });
 
+  it('zmiana SW bez powrotu z tła i bez zmiany ekranu nie przeładowuje', () => {
+    // PL: Nowy SW przejął stronę, ale użytkownik nic nie robi z kartą, więc nie przeładowujemy.
+    // EN: The new SW took over the page, but the user does nothing with the tab, so we do not reload.
+    const tab = createTab();
+    tab.loadPage();
+    tab.controller = 'sw-nowy';
+    expect(tab.reloads).toBe(0);
+  });
+
+  it('pierwsza instalacja SW (null -> SW) nie przeładowuje, ale kolejna wersja już tak', () => {
+    // PL: Strona bez SW dostaje SW przy pierwszej instalacji (clientsClaim). To nie jest nowa wersja.
+    // EN: A page without an SW gets one on the first install (clientsClaim). That is not a new version.
+    const tab = createTab();
+    tab.controller = null;
+    const page = tab.loadPage();
+    tab.controller = 'sw-pierwszy';
+    page.fireBecomeVisible();
+    page.fireNavigate('/aktualnosci');
+    expect(tab.reloads).toBe(0);
+    // PL: Dopiero zmiana z tego SW na kolejny jest nową wersją.
+    // EN: Only a change from this SW to another one is a new version.
+    tab.controller = 'sw-drugi';
+    page.fireBecomeVisible();
+    expect(tab.reloads).toBe(1);
+  });
+
   it('wiele błędów i powrotów na jednej stronie daje jedno przeładowanie', () => {
-    // PL: Trzy błędy i kilka powrotów z tła na tej samej stronie.
-    // EN: Three errors and several returns from background on the same page.
+    // PL: Trzy błędy w tym samym czasie i kilka powrotów z tła.
+    // EN: Three errors at the same time and several returns from background.
     const tab = createTab();
     const page = tab.loadPage();
     page.firePreloadError();
@@ -218,30 +240,47 @@ describe('przeładowanie po wdrożeniu', () => {
     expect(tab.reloads).toBe(1);
   });
 
-  it('drugi błąd po przeładowaniu w tej samej sesji nie daje pętli', () => {
-    // PL: Pierwsze wczytanie przeładowuje stronę raz.
-    // EN: The first load reloads the page once.
+  it('dwa błędy w ciągu 60 s dają jedno przeładowanie', () => {
+    // PL: Pierwszy błąd przeładowuje stronę. Drugi po 30 sekundach na nowej stronie nie przeładowuje ponownie.
+    // EN: The first error reloads the page. The second one, 30 seconds later on the new page, does not reload it again.
     const tab = createTab();
-    const first = tab.loadPage();
-    first.firePreloadError();
-    tab.controller = 'sw-nowy';
-    first.fireBecomeVisible();
+    tab.loadPage().firePreloadError();
     expect(tab.reloads).toBe(1);
-    first.stop();
-
-    // PL: Po przeładowaniu znów pojawia się błąd i kolejna zmiana SW. Pamięć sesji pamięta pierwsze przeładowanie, więc nie przeładowujemy drugi raz.
-    // EN: After the reload, an error and another SW change appear again. The session memory remembers the first reload, so we do not reload a second time.
-    const second = tab.loadPage();
-    second.firePreloadError();
-    tab.controller = 'sw-trzeci';
-    second.fireBecomeVisible();
-    second.fireNavigate('/inny-ekran');
+    tab.now = 30_000;
+    tab.loadPage().firePreloadError();
     expect(tab.reloads).toBe(1);
   });
 
+  it('błąd po 61 s od przeładowania daje drugie przeładowanie', () => {
+    // PL: Pierwszy błąd przeładowuje stronę. Po 61 sekundach kolejny błąd znów przeładowuje.
+    // EN: The first error reloads the page. After 61 seconds, another error reloads it again.
+    const tab = createTab();
+    tab.loadPage().firePreloadError();
+    expect(tab.reloads).toBe(1);
+    tab.now = 61_000;
+    tab.loadPage().firePreloadError();
+    expect(tab.reloads).toBe(2);
+  });
+
+  it('zmiana SW w ciągu 60 s od przeładowania czeka, aż minie minuta', () => {
+    // PL: Po przeładowaniu zmiana SW i powrót z tła w 10. sekundzie nie przeładowują. Ten sam powrót po 61 sekundach już przeładowuje.
+    // EN: After a reload, a SW change and a return from background at second 10 do not reload. The same return after 61 seconds does.
+    const tab = createTab();
+    tab.loadPage().firePreloadError();
+    expect(tab.reloads).toBe(1);
+    tab.now = 10_000;
+    const page = tab.loadPage();
+    tab.controller = 'sw-nowy';
+    page.fireBecomeVisible();
+    expect(tab.reloads).toBe(1);
+    tab.now = 61_000;
+    page.fireBecomeVisible();
+    expect(tab.reloads).toBe(2);
+  });
+
   it('bez dostępu do sessionStorage nie przeładowuje, żeby nie zapętlić', () => {
-    // PL: Pamięć sesji nie działa, więc nie da się zapisać znacznika. Wolimy nie przeładować.
-    // EN: Session memory does not work, so the marker cannot be saved. We prefer not to reload.
+    // PL: Pamięć sesji nie działa, więc nie da się zapisać czasu. Wolimy nie przeładować, ani po błędzie, ani po zmianie SW.
+    // EN: Session memory does not work, so the time cannot be saved. We prefer not to reload, either after an error or after a SW change.
     const tab = createTab();
     tab.isStorageBroken = true;
     const page = tab.loadPage();
@@ -256,9 +295,9 @@ describe('przeładowanie po wdrożeniu', () => {
     // EN: The page is closed before the events, so there is no reload.
     const tab = createTab();
     const page = tab.loadPage();
+    page.stop();
     page.firePreloadError();
     tab.controller = 'sw-nowy';
-    page.stop();
     page.fireBecomeVisible();
     expect(tab.reloads).toBe(0);
   });

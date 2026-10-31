@@ -25,8 +25,8 @@ import { APP_ROUTES } from './app/routes';
 // PL: Dostawca zapytań z zapisem w telefonie i pasek braku internetu, wspólne dla wszystkich ekranów.
 // EN: The query provider with saving on the phone and the no-internet bar, shared by all screens.
 import { AppQueryProvider, OfflineBanner } from './shared';
-// PL: Przeładowanie po wdrożeniu: gdy stare pliki nie pasują do nowej wersji, strona przeładowuje się raz.
-// EN: Reload after a deploy: when old files do not match the new version, the page reloads once.
+// PL: Przeładowanie po wdrożeniu: błąd pobrania fragmentu kodu albo nowa wersja service workera przeładowują stronę, najwyżej raz na minutę.
+// EN: Reload after a deploy: a code fragment loading error or a new service worker version reloads the page, at most once a minute.
 import { createBrowserStaleBuildEnv, installStaleBuildReload } from './shared/pwa';
 
 // PL: Router jest jeden na całą aplikację. Tworzymy go raz, przy wczytaniu pliku, bo App jest rysowany tylko w przeglądarce.

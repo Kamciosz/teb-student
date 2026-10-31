@@ -64,14 +64,9 @@ export function createBrowserStaleBuildEnv(router: Pick<DataRouter, 'state' | 's
     // PL: Kontroler service workera; brak obsługi SW daje null.
     // EN: The service worker controller; no SW support gives null.
     getController: () => navigator.serviceWorker?.controller ?? null,
-    // PL: Sprawdzenie nowej wersji SW. Błędy ignorujemy, bo to tylko podpowiedź dla przeglądarki.
-    // EN: Checking for a new SW version. We ignore errors, because this is only a hint for the browser.
-    checkForUpdate: () => {
-      navigator.serviceWorker
-        ?.getRegistration()
-        .then((registration) => registration?.update())
-        .catch(() => undefined);
-    },
+    // PL: Bieżący czas w milisekundach, do odstępu między przeładowaniami.
+    // EN: The current time in milliseconds, for the gap between reloads.
+    now: () => Date.now(),
     // PL: Pamięć sesji. Dostęp jest w środku funkcji, żeby błąd został złapany przez moduł.
     // EN: The session memory. The access is inside the function, so the module catches the error.
     storage: {
