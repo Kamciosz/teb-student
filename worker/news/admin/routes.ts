@@ -10,7 +10,6 @@
  * @uses worker/news/admin/queries.ts::unpinEntry
  * @uses worker/news/admin/queries.ts::deleteEntry
  * @uses worker/news/editor/index.ts::requireNewsAuthor
- * @uses worker/admin/index.ts::recordDiaryEntry
  * @used_by worker/news/admin/index.ts::newsAdminApp
  * @used_by worker/news/admin/routes.test.ts::createNewsAdminApp
  */
@@ -22,9 +21,6 @@ import type { StudentEnv } from '../../auth';
 // PL: Strażnik autora wpisów z drzwi podtoru 3b.
 // EN: The entry author guard from the door of subtrack 3b.
 import { requireNewsAuthor } from '../editor';
-// PL: Zapis w dzienniku zmian przez drzwi podtoru 8.
-// EN: Writing to the change diary through the door of subtrack 8.
-import { recordDiaryEntry } from '../../admin';
 import { deleteEntry, listPanelEntries, pinEntry, publishDraft, unpinEntry } from './queries';
 
 /**
@@ -94,13 +90,12 @@ export function createNewsAdminApp(guard: MiddlewareHandler<StudentEnv>) {
     }),
   );
 
-  // PL: Usunięcie wpisu: 200 albo 404, gdy go nie ma. Po udanym usunięciu jeden wpis w dzienniku (bez treści, tylko id wpisu).
-  // EN: Deleting an entry: 200 or 404 when it does not exist. After a successful delete, one diary entry (no content, only the entry id).
+  // PL: Usunięcie wpisu: 200 albo 404, gdy go nie ma. Usunięcie i jeden wpis w dzienniku (bez treści, tylko id wpisu) zapisują się w jednym batchu: albo oba, albo żadne.
+  // EN: Deleting an entry: 200 or 404 when it does not exist. The deletion and one diary entry (no content, only the entry id) are written in one batch: both or neither.
   app.delete('/:id', (context) =>
     withDatabase(context, async () => {
       const id = context.req.param('id');
-      if (!(await deleteEntry(context.env.DB, id))) return context.json({ error: 'not_found' }, 404);
-      await recordDiaryEntry(context.env.DB, { actorId: context.get('student').id, action: 'news_deleted', targetId: id });
+      if (!(await deleteEntry(context.env.DB, id, context.get('student').id))) return context.json({ error: 'not_found' }, 404);
       return context.json({ id });
     }),
   );

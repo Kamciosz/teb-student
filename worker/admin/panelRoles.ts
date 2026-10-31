@@ -13,7 +13,7 @@
 // PL: Warunek „równa się” i klient bazy do zapytania o role.
 // EN: The "equals" condition and the database client for the roles query.
 import { and, eq, inArray } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/d1';
+import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 // PL: Tabela ról, lista ról i typ roli.
 // EN: The roles table, the list of roles and the role type.
 import { PANEL_ROLES, panelRoles, type PanelRole } from '../db/schema/admin';
@@ -79,34 +79,34 @@ export async function getPanelLevel(db: D1Database, userId: string): Promise<Pan
 }
 
 /**
- * PL: Nadaje uczniowi rolę w panelu. Gdy już ją ma, nic się nie zmienia (rola jest jedna na ucznia i rodzaj).
- * EN: Grants the student a panel role. When they already have it, nothing changes (a role is held once per student and kind).
+ * PL: Zapytanie nadające uczniowi rolę, bez wykonania. Używa go batch, żeby zapis roli i wpis w dzienniku poszły razem.
+ * EN: The query that grants the student a role, not run yet. A batch uses it, so the role write and the diary entry go together.
  *
- * @param db - PL: baza D1. EN: the D1 database.
+ * @param orm - PL: klient Drizzle na bazie D1. EN: the Drizzle client on the D1 database.
  * @param userId - PL: numer ucznia (konta). EN: the student (account) id.
  * @param role - PL: rola do nadania. EN: the role to grant.
  * @param now - PL: chwila nadania (do zapisu w bazie). EN: the moment of granting (for the database).
- * @throws PL: błąd bazy. EN: a database error.
+ * @returns PL: zapytanie do wykonania w batchu. EN: the query to run in a batch.
  */
-export async function grantPanelRole(db: D1Database, userId: string, role: PanelRole, now: Date = new Date()): Promise<void> {
+export function grantPanelRoleQuery(orm: DrizzleD1Database, userId: string, role: PanelRole, now: Date = new Date()) {
   // PL: Wstaw wiersz roli. Gdy wiersz już jest, zostaw go bez zmian.
   // EN: Insert the role row. When the row is already there, leave it unchanged.
-  await drizzle(db).insert(panelRoles).values({ userId, role, grantedAt: now.getTime() }).onConflictDoNothing();
+  return orm.insert(panelRoles).values({ userId, role, grantedAt: now.getTime() }).onConflictDoNothing();
 }
 
 /**
- * PL: Odbiera uczniowi rolę w panelu. Gdy jej nie ma, nic się nie dzieje.
- * EN: Revokes a panel role from the student. When they do not have it, nothing happens.
+ * PL: Zapytanie odbierające uczniowi rolę, bez wykonania. Używa go batch, żeby zmiana roli i wpis w dzienniku poszły razem.
+ * EN: The query that revokes a student's role, not run yet. A batch uses it, so the role change and the diary entry go together.
  *
- * @param db - PL: baza D1. EN: the D1 database.
+ * @param orm - PL: klient Drizzle na bazie D1. EN: the Drizzle client on the D1 database.
  * @param userId - PL: numer ucznia (konta). EN: the student (account) id.
  * @param role - PL: rola do odebrania. EN: the role to revoke.
- * @throws PL: błąd bazy. EN: a database error.
+ * @returns PL: zapytanie do wykonania w batchu. EN: the query to run in a batch.
  */
-export async function revokePanelRole(db: D1Database, userId: string, role: PanelRole): Promise<void> {
+export function revokePanelRoleQuery(orm: DrizzleD1Database, userId: string, role: PanelRole) {
   // PL: Usuń wiersz tej roli tylko tego ucznia.
   // EN: Delete the row of this role for this student only.
-  await drizzle(db).delete(panelRoles).where(and(eq(panelRoles.userId, userId), eq(panelRoles.role, role)));
+  return orm.delete(panelRoles).where(and(eq(panelRoles.userId, userId), eq(panelRoles.role, role)));
 }
 
 /**

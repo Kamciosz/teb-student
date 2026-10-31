@@ -7,6 +7,7 @@
  * @uses worker/db/schema/reports.ts::reports
  * @uses worker/db/schema/reports.ts::reportStageChanges
  * @uses worker/db/schema/reports.ts::reportJoins
+ * @uses worker/db/schema/admin.ts::diaryEntries
  * @uses worker/profile/index.ts::getStudentNames
  * @used_by worker/reports/admin/routes.ts::listReports
  * @used_by worker/reports/admin/routes.ts::getReport
@@ -15,13 +16,16 @@
 
 // PL: count liczy wiersze, desc sortuje malejąco, eq porównuje wartości w warunku WHERE.
 // EN: count counts rows, desc sorts in descending order, eq compares values in a WHERE condition.
-import { count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, ne, sql } from 'drizzle-orm';
 // PL: Drizzle dla bazy D1.
 // EN: Drizzle for the D1 database.
 import { drizzle } from 'drizzle-orm/d1';
 // PL: Tabele i typy modułu (schemat należy do podtoru 4a, tu tylko czytamy).
 // EN: The module tables and types (the schema belongs to subtrack 4a, here we only read it).
 import { reportJoins, reports, reportStageChanges, type ReportCategory, type ReportPlace, type ReportStage } from '../../db/schema/reports';
+// PL: Tabela dziennika i typ akcji. Wpis w dzienniku idzie w tym samym batchu co zmiana etapu.
+// EN: The diary table and the action type. The diary entry goes into the same batch as the stage change.
+import { diaryEntries, type DiaryAction } from '../../db/schema/admin';
 // PL: Imiona i klasy uczniów z modułu profilu, przez jego drzwi (index.ts).
 // EN: The names and classes of students from the profile module, through its door (index.ts).
 import { getStudentNames } from '../../profile';
@@ -174,8 +178,8 @@ export async function getReport(db: D1Database, id: string): Promise<CouncilDeta
 }
 
 /**
- * PL: Zmienia etap zgłoszenia. Etap, czas zmiany i nowy wiersz historii (z odpowiedzią dla autora, jeśli jest) idą w jednym `batch`, więc albo są wszystkie, albo żaden. Ten sam etap nie zmienia nic i nie dopisuje historii, więc też nie zapisuje odpowiedzi.
- * EN: Changes a report's stage. The stage, the change time and the new history row (with the answer for the author, if any) go in one `batch`, so either all exist or none. The same stage changes nothing and adds no history, so it does not save the answer either.
+ * PL: Zmienia etap zgłoszenia. Wpis w dzienniku, etap, czas zmiany i nowy wiersz historii (z odpowiedzią dla autora, jeśli jest) idą w jednym `batch`, więc albo są wszystkie, albo żaden. Wpis w dzienniku powstaje tylko wtedy, gdy etap rzeczywiście się zmienia, i zapisuje się przed zmianą, więc sprawdza etap sprzed zmiany. Ten sam etap nie zmienia nic i nie dopisuje historii, więc też nie zapisuje odpowiedzi.
+ * EN: Changes a report's stage. The diary entry, the stage, the change time and the new history row (with the answer for the author, if any) go in one `batch`, so either all exist or none. The diary entry is written only when the stage really changes, and it goes before the change, so it checks the stage from before the change. The same stage changes nothing and adds no history, so it does not save the answer either.
  *
  * @param db - PL: baza D1. EN: the D1 database.
  * @param change - PL: numer zgłoszenia, nowy etap, odpowiedź dla autora (albo `null`) i numer osoby z Samorządu. EN: the report id, the new stage, the answer for the author (or `null`) and the Student Council member's id.
@@ -189,12 +193,25 @@ export async function changeReportStage(db: D1Database, change: { id: string; st
   if (!current) return 'not_found';
   if (current.stage === change.stage) return 'unchanged';
 
-  // PL: Zapisz etap i wiersz historii razem.
-  // EN: Save the stage and the history row together.
+  // PL: Zapisz wpis w dzienniku, etap i wiersz historii razem. Wpis w dzienniku zapisuje się pierwszy i tylko wtedy, gdy zgłoszenie nadal ma inny etap, więc widzi stan sprzed zmiany.
+  // EN: Save the diary entry, the stage and the history row together. The diary entry is saved first and only when the report still has a different stage, so it sees the state from before the change.
+  const orm = drizzle(db);
   const now = Date.now();
-  await drizzle(db).batch([
-    drizzle(db).update(reports).set({ stage: change.stage, updatedAt: now }).where(eq(reports.id, change.id)),
-    drizzle(db).insert(reportStageChanges).values({ id: crypto.randomUUID(), reportId: change.id, stage: change.stage, note: change.note, changedBy: change.memberId, changedAt: now }),
+  await orm.batch([
+    orm.insert(diaryEntries).select(
+      orm
+        .select({
+          id: sql<number | null>`null`.as('id'),
+          actorId: sql<string>`${change.memberId}`.as('actor_id'),
+          action: sql<DiaryAction>`'report_stage_changed'`.as('action'),
+          targetId: reports.id,
+          at: sql<number>`${now}`.as('at'),
+        })
+        .from(reports)
+        .where(and(eq(reports.id, change.id), ne(reports.stage, change.stage))),
+    ),
+    orm.update(reports).set({ stage: change.stage, updatedAt: now }).where(eq(reports.id, change.id)),
+    orm.insert(reportStageChanges).values({ id: crypto.randomUUID(), reportId: change.id, stage: change.stage, note: change.note, changedBy: change.memberId, changedAt: now }),
   ]);
   return 'changed';
 }

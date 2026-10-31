@@ -204,17 +204,33 @@ export async function unpinEntry(db: D1Database, id: string): Promise<UnpinResul
 }
 
 /**
- * PL: Usuwa wpis, szkic albo opublikowany. Usunięcie jest nieodwracalne.
- * EN: Deletes an entry, a draft or a published one. The deletion cannot be undone.
+ * PL: Usuwa wpis, szkic albo opublikowany, i zapisuje to w dzienniku w jednym batchu D1. Wpis w dzienniku powstaje tylko wtedy, gdy wpis istnieje, a zapis idzie przed usunięciem, więc widzi wiersz przed skasowaniem. Gdy któryś krok się nie uda, cofa się cały batch: nie ma usunięcia bez wpisu ani wpisu bez usunięcia. Usunięcie jest nieodwracalne.
+ * EN: Deletes an entry, a draft or a published one, and records it in the diary in one D1 batch. The diary entry is written only when the entry exists, and the write goes before the deletion, so it sees the row before it is removed. When one step fails, the whole batch is rolled back: no deletion without an entry and no entry without a deletion. The deletion cannot be undone.
  *
  * @param db - PL: baza D1. EN: the D1 database.
  * @param id - PL: numer wpisu z adresu. EN: the entry id from the address.
+ * @param actorId - PL: numer redaktora, który usuwa (wykonawca w dzienniku). EN: the id of the editor who deletes (the actor in the diary).
  * @returns PL: prawda, gdy wpis istniał. EN: true when the entry existed.
- * @throws PL: błąd bazy. EN: a database error.
+ * @throws PL: błąd bazy, wtedy cały batch jest cofnięty. EN: a database error, then the whole batch is rolled back.
  */
-export async function deleteEntry(db: D1Database, id: string): Promise<boolean> {
-  // PL: Skasuj wiersz o tym numerze i sprawdź, czy coś zniknęło.
-  // EN: Delete the row with this id and check whether anything went away.
-  const removed = await drizzle(db).delete(newsEntries).where(eq(newsEntries.id, id)).returning({ id: newsEntries.id });
+export async function deleteEntry(db: D1Database, id: string, actorId: string): Promise<boolean> {
+  const orm = drizzle(db);
+  // PL: Najpierw wpis w dzienniku (tylko gdy wpis jest), potem usunięcie. Oba kroki widzą ten sam stan.
+  // EN: First the diary entry (only when the entry exists), then the deletion. Both steps see the same state.
+  const [, removed] = await orm.batch([
+    orm.insert(diaryEntries).select(
+      orm
+        .select({
+          id: sql<number | null>`null`.as('id'),
+          actorId: sql<string>`${actorId}`.as('actor_id'),
+          action: sql<DiaryAction>`'news_deleted'`.as('action'),
+          targetId: newsEntries.id,
+          at: sql<number>`${Date.now()}`.as('at'),
+        })
+        .from(newsEntries)
+        .where(eq(newsEntries.id, id)),
+    ),
+    orm.delete(newsEntries).where(eq(newsEntries.id, id)).returning({ id: newsEntries.id }),
+  ]);
   return removed.length > 0;
 }

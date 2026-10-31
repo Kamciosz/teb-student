@@ -14,6 +14,9 @@
 // PL: Funkcje testowe Vitest.
 // EN: Vitest test functions.
 import { beforeEach, describe, expect, it } from 'vitest';
+// PL: Środowisko testowe Workera (baza D1), żeby założyć trigger blokujący dziennik.
+// EN: The Worker test environment (the D1 database), to create the trigger that blocks the diary.
+import { env } from 'cloudflare:workers';
 // PL: Wspólne narzędzia testów panelu i adresy kont.
 // EN: The shared panel test tools and the account addresses.
 import { EMAILS, callAdmin, rolesOf, setUpPanel, studentId, type Who } from './testSession';
@@ -44,6 +47,57 @@ describe('PUT /roles/:studentId', () => {
   it('nie rusza roli administratora / does not touch the administrator role', async () => {
     await callAdmin(`/roles/${await studentId(EMAILS.admin)}`, 'PUT', cookies.admin, { council: false, editor: false });
     expect(await rolesOf(EMAILS.admin)).toEqual(['admin']);
+  });
+});
+
+// PL: Zmiana roli zostawia jeden wpis w dzienniku, a powtórny zapis tego samego już nic nie dopisuje.
+// EN: A role change leaves one diary entry, and saving the same thing again adds nothing.
+describe('PUT /roles/:studentId, wpis w dzienniku', () => {
+  it('nadanie roli dopisuje jeden wpis, a powtórka nie / granting a role adds one entry, and a repeat adds none', async () => {
+    const id = await studentId(EMAILS.plain);
+    await callAdmin(`/roles/${id}`, 'PUT', cookies.admin, { council: true, editor: false });
+    await callAdmin(`/roles/${id}`, 'PUT', cookies.admin, { council: true, editor: false });
+
+    const entries = await env.DB.prepare('SELECT action, target_id AS targetId FROM diary_entries').all<{ action: string; targetId: string }>();
+    expect(entries.results).toEqual([{ action: 'council_granted', targetId: id }]);
+  });
+});
+
+// PL: Gdy zapis do dziennika się nie uda, rola też się nie zmienia: 500 i stan roli jak przed zmianą.
+// EN: When the diary write fails, the role does not change either: 500 and the role stays as it was before.
+describe('PUT /roles/:studentId, zapis do dziennika', () => {
+  // PL: Trigger blokuje każdy zapis do dziennika. Usuwamy go w finally, żeby nie został dla kolejnych testów.
+  // EN: The trigger blocks every diary write. We drop it in finally, so it does not stay for the next tests.
+  const blockDiary = () => env.DB.prepare("CREATE TRIGGER blokada_dziennika BEFORE INSERT ON diary_entries BEGIN SELECT RAISE(ABORT, 'blokada dziennika'); END").run();
+  const unblockDiary = () => env.DB.prepare('DROP TRIGGER IF EXISTS blokada_dziennika').run();
+  const diaryCount = async () => (await env.DB.prepare('SELECT COUNT(*) AS n FROM diary_entries').first<{ n: number }>())?.n;
+
+  it('gdy zapis do dziennika się nie uda, nadanie roli się cofa / when the diary write fails, granting the role is rolled back', async () => {
+    await blockDiary();
+    try {
+      const response = await callAdmin(`/roles/${await studentId(EMAILS.plain)}`, 'PUT', cookies.admin, { council: true, editor: false });
+
+      expect(response.status).toBe(500);
+      expect(await response.text()).not.toContain('blokada');
+      expect(await rolesOf(EMAILS.plain)).toEqual([]);
+      expect(await diaryCount()).toBe(0);
+    } finally {
+      await unblockDiary();
+    }
+  });
+
+  it('gdy zapis do dziennika się nie uda, odebranie roli się cofa / when the diary write fails, revoking the role is rolled back', async () => {
+    await blockDiary();
+    try {
+      const response = await callAdmin(`/roles/${await studentId(EMAILS.editor)}`, 'PUT', cookies.admin, { council: false, editor: false });
+
+      expect(response.status).toBe(500);
+      expect(await response.text()).not.toContain('blokada');
+      expect(await rolesOf(EMAILS.editor)).toEqual(['editor']);
+      expect(await diaryCount()).toBe(0);
+    } finally {
+      await unblockDiary();
+    }
   });
 });
 

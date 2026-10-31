@@ -31,7 +31,7 @@ export type { PanelRole } from '../db/schema/admin';
 
 // PL: Zapis wpisu w dzienniku zmian. Wołają go trasy innych podtorów (wpisy 3c, zgłoszenia 4b), bez wewnętrznych plików modułu admin. Wpis nie ma treści: podajesz id wykonawcy, nazwę akcji i id celu albo null.
 // EN: Writes an entry in the change diary. The routes of other subtracks call it (entries 3c, reports 4b), without the internal files of the admin module. An entry has no content: you give the actor's id, the action name and the target id or null.
-export { recordDiaryEntry } from './diary';
+export { diaryEntryColumns, recordDiaryEntry } from './diary';
 
 // PL: Funkcja kasująca dane ucznia z modułu admin. Zbiera ją worker/shared/accountDeletion.ts.
 // EN: The function that deletes the student's data from the admin module. worker/shared/accountDeletion.ts collects it.

@@ -16,7 +16,7 @@
 
 // PL: Warunki i sortowanie zapytań (OR, malejąco).
 // EN: Query conditions and ordering (OR, descending).
-import { desc, eq, or } from 'drizzle-orm';
+import { desc, eq, or, sql, type AnyColumn } from 'drizzle-orm';
 // PL: Klient bazy D1 dla Drizzle.
 // EN: The D1 client for Drizzle.
 import { drizzle } from 'drizzle-orm/d1';
@@ -41,6 +41,25 @@ export type DiaryEntryInput = { actorId: string; action: DiaryAction; targetId: 
  * EN: A diary row from the database: the entry id, the account id, the action and the moment in milliseconds.
  */
 export type DiaryRow = { id: number; actorId: string; action: DiaryAction; at: number };
+
+/**
+ * PL: Kolumny wiersza dziennika do `insert … select`, gotowe do batcha. Wpis powstaje tylko wtedy, gdy zapytanie, z którego te kolumny są brane, coś zwróci, czyli gdy zmiana naprawdę zaszła. Kolejność kluczy zgadza się z kolumnami tabeli (id, actor_id, action, target_id, at).
+ * EN: The columns of a diary row for `insert … select`, ready for a batch. The entry is made only when the query these columns come from returns something, that is when the change really happened. The key order matches the table columns (id, actor_id, action, target_id, at).
+ *
+ * @param entry - PL: kto, co i czego dotyczy; numer ucznia, zgłoszenia lub wpisu albo kolumna z zapytania. EN: who, what and what it concerns; the id of the student, report or entry, or a column of the query.
+ * @returns PL: pola wyboru dla `orm.select(...)`. EN: the select fields for `orm.select(...)`.
+ */
+export function diaryEntryColumns(entry: { actorId: string; action: DiaryAction; targetId: AnyColumn | string | null }) {
+  return {
+    // PL: Numer wpisu nadaje baza (null w kolumnie autoincrement).
+    // EN: The database assigns the entry id (null in the autoincrement column).
+    id: sql<number | null>`null`.as('id'),
+    actorId: sql<string>`${entry.actorId}`.as('actor_id'),
+    action: sql<DiaryAction>`${entry.action}`.as('action'),
+    targetId: sql<string | null>`${entry.targetId}`.as('target_id'),
+    at: sql<number>`${Date.now()}`.as('at'),
+  };
+}
 
 /**
  * PL: Zapisuje jeden wpis w dzienniku z bieżącą chwilą.
