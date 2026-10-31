@@ -7,6 +7,7 @@
  * @uses src/shared/ui/UnderConstruction.tsx::UnderConstruction
  * @uses src/shared/ui/Dock.tsx::Dock
  * @uses src/shared/ui/Icon.tsx::Icon
+ * @uses src/shared/ui/PlusIcon.tsx::PlusIcon
  * @uses src/shared/navigation/items.ts::DOCK_ITEMS
  * @uses src/shared/query/AppQueryProvider.tsx::AppQueryProvider
  * @uses src/shared/query/clearQueryData.ts::clearQueryData
@@ -38,6 +39,9 @@ export { DOCK_ITEMS, PANEL_MENU_ITEMS, type NavigationItem, type DockItem } from
 // PL: Wspólne ikony aplikacji i ich nazwy.
 // EN: The shared app icons and their names.
 export { Icon, type IconName } from './ui/Icon';
+// PL: Ikona plusa 16×16 na przycisk i wiersz „Zgłoś problem”.
+// EN: The 16×16 plus icon for the "Zgłoś problem" button and row.
+export { PlusIcon } from './ui/PlusIcon';
 // PL: Dostawca zapytań z zapisem w telefonie. Stoi tylko w korzeniu aplikacji (App.tsx).
 // EN: The query provider with saving on the phone. It stands only at the app root (App.tsx).
 export { AppQueryProvider } from './query/AppQueryProvider';

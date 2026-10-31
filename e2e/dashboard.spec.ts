@@ -320,3 +320,22 @@ test('zmiana kolejności sekcji przetrwa przeładowanie / a section order change
   await expect(page.getByRole('button', { name: 'Edytuj' })).toBeVisible();
   expect((await sectionGroup(page, 'Informacje').boundingBox())!.y).toBeLessThan((await sectionGroup(page, 'Do zrobienia').boundingBox())!.y);
 });
+
+// PL: Kafel „Zgłoś problem” na pulpicie ma adres /reports/student i po kliknięciu otwiera formularz zgłoszenia.
+// EN: The "Zgłoś problem" tile on the dashboard has the /reports/student address, and a click opens the report form.
+test('kafel „Zgłoś problem” otwiera formularz zgłoszenia / the "Zgłoś problem" tile opens the report form', async ({ page }) => {
+  await mockDashboard(page, FULL);
+  // PL: Formularz nie potrzebuje odpowiedzi serwera na pierwszym kroku, ale pusta odpowiedź 200 chroni przed wyjątkiem bez sesji.
+  // EN: The form does not need a server answer on its first step, but an empty 200 answer guards against an error without a session.
+  await page.route(/\/api\/(news|surveys|reports)\//, (route) => route.fulfill({ json: {} }));
+  await page.goto('/');
+
+  // PL: Link ma adres formularza i nazwę z tytułem kafla.
+  // EN: The link has the form address and the name from the tile title.
+  const tile = page.getByRole('link', { name: /Zgłoś problem/ });
+  await expect(tile).toHaveAttribute('href', '/reports/student');
+  await tile.click();
+
+  await expect(page).toHaveURL(/\/reports\/student$/);
+  await expect(page.getByRole('heading', { name: 'Zgłoś problem', exact: true })).toBeVisible();
+});

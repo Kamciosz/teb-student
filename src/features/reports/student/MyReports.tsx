@@ -9,6 +9,7 @@
  * @uses src/shared/index.ts::EmptyState
  * @uses src/shared/index.ts::ListGroup
  * @uses src/shared/index.ts::ListRow
+ * @uses src/shared/index.ts::PlusIcon
  * @uses src/shared/index.ts::ScreenHeader
  * @uses src/features/reports/student/api.ts::MyReport
  * @uses src/features/reports/student/queries.ts::useMyReports
@@ -23,7 +24,7 @@
 import { useNavigate } from 'react-router';
 // PL: Elementy wspólnego interfejsu.
 // EN: The shared interface elements.
-import { Button, Dock, EmptyState, ListGroup, ListRow, ScreenHeader } from '../../../shared';
+import { Button, Dock, EmptyState, ListGroup, ListRow, PlusIcon, ScreenHeader } from '../../../shared';
 // PL: Typ zgłoszenia i dane listy.
 // EN: The report type and the list data.
 import type { MyReport } from './api';
@@ -120,7 +121,13 @@ export function MyReports() {
     <>
       <ScreenHeader
         title="Moje zgłoszenia"
-        action={<Button variant="plain" onClick={openNewReport}>Zgłoś problem</Button>}
+        action={
+          // PL: Plus jest ozdobny (aria-hidden), nazwę przycisku daje tekst „Zgłoś problem”. EN: The plus is decorative (aria-hidden), the button's name comes from the "Zgłoś problem" text.
+          <Button variant="plain" className="rs-new" onClick={openNewReport}>
+            <PlusIcon />
+            Zgłoś problem
+          </Button>
+        }
       />
       <ReportsBody query={query} onNewReport={openNewReport} />
       <Dock />
