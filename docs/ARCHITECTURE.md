@@ -21,6 +21,8 @@ Stan po etapie A (rejestracja podtorów): każdy z 15 podtorów ma swój katalog
 
 Podtor to jedna część modułu. Numery podtorów i właściciele: `docs/PODZIAL_PRACY.md`, część 3. Ekran w telefonie leży w `src/features/<moduł>/<część>/`, serwer w `worker/<moduł>/<część>/`. Moduł bez części ma jeden katalog `<moduł>/`.
 
+Wspólny kod w telefonie leży w `src/shared/`, bez podtoru. Przeładowanie strony po wdrożeniu jest w `src/shared/pwa/`, a importuje się je przez `src/shared/pwa/index.ts`.
+
 | Podtor | Moduł i część | Adres w telefonie | Adres serwera | Właściciel | Tabele bazy | Kasowanie danych ucznia |
 |---|---|---|---|---|---|---|
 | 0 | wspólne | brak | brak | Bohdan, Kacper | brak | lista w `worker/shared/accountDeletion.ts` |
