@@ -70,9 +70,13 @@ export function createAuth(options: CreateAuthOptions) {
     // EN: The database and the secret from outside.
     database: options.database,
     secret: options.secret,
-    // PL: Limit zapytań włączony zawsze (Better Auth domyślnie włącza go tylko w produkcji, ale w Workerze nie widzi tego trybu). Wtyczka kodu daje 3 wysyłki na minutę z jednego adresu IP. Liczniki są w pamięci jednej instancji Workera, więc to ochrona częściowa (pytanie w pull requeście).
-    // EN: The request limit is always on (Better Auth enables it by default only in production, but in a Worker it cannot see that mode). The code plugin allows 3 sends per minute from one IP address. The counters live in the memory of one Worker instance, so this is partial protection (a question in the pull request).
-    rateLimit: { enabled: true },
+    // PL: Adres aplikacji z BETTER_AUTH_URL. Better Auth ufa tylko jego pochodzeniu (Origin) i z niego składa ustawienia ciasteczek. Bez adresu (dev) zostaje dotychczasowe zachowanie.
+    // EN: The app address from BETTER_AUTH_URL. Better Auth trusts only its origin and builds the cookie settings from it. Without the address (dev) the previous behaviour stays.
+    baseURL: options.appUrl,
+    trustedOrigins: options.appUrl ? [new URL(options.appUrl).origin] : [],
+    // PL: Limit zapytań włączony zawsze (Better Auth domyślnie włącza go tylko w produkcji, ale w Workerze nie widzi tego trybu). Wtyczka kodu daje 3 wysyłki na minutę z jednego adresu IP. Liczniki są w tabeli rate_limit w bazie D1, a nie w pamięci Workera, więc działają we wszystkich instancjach. Tabela musi istnieć przed wdrożeniem.
+    // EN: The request limit is always on (Better Auth enables it by default only in production, but in a Worker it cannot see that mode). The code plugin allows 3 sends per minute from one IP address. The counters are in the rate_limit table in the D1 database, not in the Worker's memory, so they work across all instances. The table must exist before deploy.
+    rateLimit: { enabled: true, storage: 'database' },
     // PL: Adres IP telefonu podaje Cloudflare w nagłówku cf-connecting-ip. Nagłówka x-forwarded-for nie bierzemy, bo klient może go podrobić.
     // EN: Cloudflare gives the phone's IP address in the cf-connecting-ip header. We do not use x-forwarded-for, because the client can forge it.
     advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] } },

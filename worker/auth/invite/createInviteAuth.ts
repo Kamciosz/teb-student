@@ -41,6 +41,8 @@ export type CreateInviteAuthOptions = {
   db: D1Database;
   /** PL: Tajny klucz do podpisywania ciasteczek, ten sam co w podtorze 1a (BETTER_AUTH_SECRET). EN: The secret key for signing cookies, the same as in subtrack 1a (BETTER_AUTH_SECRET). */
   secret: string;
+  /** PL: Adres aplikacji z BETTER_AUTH_URL. Z niego liczy się zaufane źródło żądań. Bez niego (dev) zostaje dotychczasowe zachowanie. EN: The app address from BETTER_AUTH_URL. The trusted request origin is computed from it. Without it (dev) the previous behaviour stays. */
+  appUrl?: string;
 };
 
 /**
@@ -89,9 +91,13 @@ export function createInviteAuth(options: CreateInviteAuthOptions) {
     // EN: The same database and the same secret as in subtrack 1a: a session saved here is valid there too.
     database: drizzleAdapter(drizzle(options.db), { provider: 'sqlite', schema }),
     secret: options.secret,
-    // PL: Limit zapytań włączony zawsze, jak w podtorze 1a. Better Auth domyślnie daje 3 próby rejestracji lub logowania na 10 sekund z jednego adresu IP. Liczniki są w pamięci jednej instancji Workera, więc to ochrona częściowa.
-    // EN: The request limit is always on, as in subtrack 1a. Better Auth by default allows 3 sign-up or sign-in attempts per 10 seconds from one IP address. The counters live in the memory of one Worker instance, so this is partial protection.
-    rateLimit: { enabled: true },
+    // PL: Adres aplikacji z BETTER_AUTH_URL, tak jak w podtorze 1a. Better Auth ufa tylko jego pochodzeniu (Origin).
+    // EN: The app address from BETTER_AUTH_URL, as in subtrack 1a. Better Auth trusts only its origin.
+    baseURL: options.appUrl,
+    trustedOrigins: options.appUrl ? [new URL(options.appUrl).origin] : [],
+    // PL: Limit zapytań włączony zawsze, jak w podtorze 1a. Better Auth domyślnie daje 3 próby rejestracji lub logowania na 10 sekund z jednego adresu IP. Liczniki są w tabeli rate_limit w bazie D1, więc działają we wszystkich instancjach.
+    // EN: The request limit is always on, as in subtrack 1a. Better Auth by default allows 3 sign-up or sign-in attempts per 10 seconds from one IP address. The counters are in the rate_limit table in the D1 database, so they work across all instances.
+    rateLimit: { enabled: true, storage: 'database' },
     advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] } },
     // PL: Hasło: logowanie po zakładaniu konta włączone (uczeń od razu ma sesję), reguły długości z settings.ts.
     // EN: Password: sign-in right after creating the account is on (the student has a session at once), length rules from settings.ts.
