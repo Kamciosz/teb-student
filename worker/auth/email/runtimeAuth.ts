@@ -1,6 +1,6 @@
 /**
- * PL: Obiekt logowania działający w Workerze: baza to D1 (przez Drizzle), sekret i nadawca kodu pochodzą ze środowiska Workera. Obiekt powstaje raz na instancję Workera. Poza dev, bez sekretu, rzuca AuthNotConfiguredError, a router odpowiada 503.
- * EN: The sign-in object running in the Worker: the database is D1 (through Drizzle), the secret and the code sender come from the Worker environment. The object is created once per Worker instance. Outside dev, without the secret, it throws AuthNotConfiguredError, and the router answers 503.
+ * PL: Obiekt logowania działający w Workerze: baza to D1 (przez Drizzle), sekret, adres aplikacji i nadawca kodu pochodzą ze środowiska Workera. Obiekt powstaje raz na instancję Workera. Poza dev, bez sekretu albo bez BETTER_AUTH_URL, rzuca AuthNotConfiguredError, a router odpowiada 503.
+ * EN: The sign-in object running in the Worker: the database is D1 (through Drizzle), the secret, the app address and the code sender come from the Worker environment. The object is created once per Worker instance. Outside dev, without the secret or without BETTER_AUTH_URL, it throws AuthNotConfiguredError, and the router answers 503.
  *
  * @author Szymon
  * @since 2026-10-09
@@ -74,6 +74,21 @@ function pickSecret(env: Env, isDev: boolean): string {
 }
 
 /**
+ * PL: Wybiera adres aplikacji z BETTER_AUTH_URL. Poza dev jest obowiązkowy, bo bez niego Better Auth ufałby adresowi samego zapytania, a klucze dostępu nie miałyby domeny.
+ * EN: Picks the app address from BETTER_AUTH_URL. Outside dev it is mandatory, because without it Better Auth would trust the address of the request itself, and passkeys would have no domain.
+ *
+ * @param env - PL: środowisko Workera. EN: the Worker environment.
+ * @param isDev - PL: prawda w dev. EN: true in dev.
+ * @returns PL: adres aplikacji albo undefined w dev. EN: the app address, or undefined in dev.
+ * @throws PL: AuthNotConfiguredError, gdy poza dev brak BETTER_AUTH_URL. EN: AuthNotConfiguredError when BETTER_AUTH_URL is missing outside dev.
+ */
+export function pickAppUrl(env: Env, isDev: boolean): string | undefined {
+  if (env.BETTER_AUTH_URL) return env.BETTER_AUTH_URL;
+  if (!isDev) throw new AuthNotConfiguredError('Brak BETTER_AUTH_URL / Missing the BETTER_AUTH_URL setting');
+  return undefined;
+}
+
+/**
  * PL: Adapter bazy Better Auth na D1 (Drizzle, tabele z worker/db/schema/auth.ts). Używa go Worker i testy, więc testy sprawdzają te same zapytania co serwer.
  * EN: The Better Auth database adapter on D1 (Drizzle, the tables from worker/db/schema/auth.ts). The Worker and the tests use it, so the tests check the same queries as the server.
  *
@@ -90,7 +105,7 @@ export function createDatabaseAdapter(db: D1Database): CreateAuthOptions['databa
  *
  * @param env - PL: środowisko Workera z zapytania (context.env). EN: the Worker environment from the request (context.env).
  * @returns PL: obiekt logowania i informacja o wysyłce kodów. EN: the sign-in object and the code sending info.
- * @throws PL: AuthNotConfiguredError, gdy poza dev brak sekretu BETTER_AUTH_SECRET. EN: AuthNotConfiguredError when the BETTER_AUTH_SECRET secret is missing outside dev.
+ * @throws PL: AuthNotConfiguredError, gdy poza dev brak sekretu BETTER_AUTH_SECRET albo adresu BETTER_AUTH_URL. EN: AuthNotConfiguredError when the BETTER_AUTH_SECRET secret or the BETTER_AUTH_URL address is missing outside dev.
  */
 export function getRuntimeAuth(env: Env): RuntimeAuth {
   // PL: Ta sama baza, więc oddaj już zbudowany obiekt.
@@ -101,6 +116,10 @@ export function getRuntimeAuth(env: Env): RuntimeAuth {
   // EN: The secret and the dev mode. Outside dev the secret is mandatory.
   const isDev = isDevRuntime();
   const secret = pickSecret(env, isDev);
+
+  // PL: Adres aplikacji: poza dev obowiązkowy.
+  // EN: The app address: mandatory outside dev.
+  const appUrl = pickAppUrl(env, isDev);
 
   // PL: Nadawca kodu: w dev terminal, poza dev nic (null).
   // EN: The code sender: the terminal in dev, nothing (null) outside dev.
@@ -116,9 +135,9 @@ export function getRuntimeAuth(env: Env): RuntimeAuth {
       (async () => {
         throw new AuthNotConfiguredError('Brak nadawcy kodu / No code sender');
       }),
-    // PL: Adres aplikacji dla kluczy dostępu. W dev bez BETTER_AUTH_URL to localhost.
-    // EN: The app address for passkeys. In dev without BETTER_AUTH_URL it is localhost.
-    appUrl: env.BETTER_AUTH_URL ?? (isDev ? 'http://localhost' : undefined),
+    // PL: Adres aplikacji z BETTER_AUTH_URL: domena kluczy dostępu i zaufane źródło. W dev bez adresu wtyczka bierze domyślne localhost.
+    // EN: The app address from BETTER_AUTH_URL: the passkey domain and the trusted origin. In dev without the address the plugin uses its localhost default.
+    appUrl,
   });
 
   // PL: Zapamiętaj wynik dla następnych zapytań.
