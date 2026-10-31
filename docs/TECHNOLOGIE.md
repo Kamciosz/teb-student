@@ -13,12 +13,12 @@ Wynik: żadna technologia nie zmienia się na inną. Zmiany po przeglądzie są 
 
 | Część | Technologia | Wersja 9.10.2026 |
 |---|---|---|
-| Ekrany | React 19 z React Compiler **[zmiana: dodany Compiler]** | react 19.3.0, babel-plugin-react-compiler 1.0.0 |
+| Ekrany | React 19 z React Compiler **[zmiana: dodany Compiler]** | react 19.3.1, babel-plugin-react-compiler 1.0.0 |
 | Budowanie | Vite 8 z @vitejs/plugin-legacy **[zmiana: dodana wtyczka]** | vite 8.3.4, plugin-legacy 8.2.3 |
 | Język | TypeScript | 7.0.2 |
 | Wygląd i 8 palet | zwykły CSS ze zmiennymi kolorów | — |
 | Nawigacja | React Router, tylko po stronie telefonu **[zmiana]** | 8.4.0 |
-| Dane w aplikacji | TanStack Query z zapisem danych w telefonie | 5.104.1 |
+| Dane w aplikacji | TanStack Query z zapisem danych w telefonie | 5.104.5 |
 | PWA i nowe wersje | vite-plugin-pwa | 2.0.0 |
 | Zdjęcia przed wysłaniem | funkcje przeglądarki, bez biblioteki **[zmiana]** | — |
 | Filmy przed wysłaniem | Mediabunny, z zapasem bez przekodowania **[zmiana: dodany zapas]** | 1.61.3 |
