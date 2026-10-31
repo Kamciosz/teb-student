@@ -1,6 +1,6 @@
 /**
- * PL: Fabryka obiektu Better Auth dla kont z loginem i hasłem. Konto powstaje tylko za kodem zaproszenia: hak „before” na adresie rejestracji zużywa kod, zanim Better Auth założy konto. Obiekt ma ten sam sekret i tę samą bazę co logowanie kodem z maila (podtor 1a), więc sesja z ciasteczka działa w obu podtorach.
- * EN: The factory of the Better Auth object for login and password accounts. An account is created only with an invitation code: a "before" hook on the sign-up route uses the code before Better Auth creates the account. The object has the same secret and the same database as the e-mail code sign-in (subtrack 1a), so the cookie session works in both subtracks.
+ * PL: Fabryka obiektu Better Auth dla kont z loginem i hasłem. Konto powstaje tylko za kodem zaproszenia: hak „before” na adresie rejestracji zużywa kod, zanim Better Auth założy konto, a hak „after” oddaje kod, gdy rejestracja się nie uda. Obiekt ma ten sam sekret i tę samą bazę co logowanie kodem z maila (podtor 1a), więc sesja z ciasteczka działa w obu podtorach.
+ * EN: The factory of the Better Auth object for login and password accounts. An account is created only with an invitation code: a "before" hook on the sign-up route uses the code before Better Auth creates the account, and an "after" hook gives the code back when the sign-up fails. The object has the same secret and the same database as the e-mail code sign-in (subtrack 1a), so the cookie session works in both subtracks.
  *
  * @author Szymon
  * @since 2026-10-11
@@ -14,7 +14,7 @@
 // PL: betterAuth tworzy obiekt logowania, a createAuthMiddleware i APIError służą do haka.
 // EN: betterAuth creates the sign-in object, and createAuthMiddleware and APIError serve the hook.
 import { betterAuth } from 'better-auth';
-import { APIError, createAuthMiddleware } from 'better-auth/api';
+import { APIError, createAuthMiddleware, isAPIError } from 'better-auth/api';
 // PL: Adapter Better Auth dla Drizzle i Drizzle dla D1.
 // EN: The Better Auth adapter for Drizzle and Drizzle for D1.
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
@@ -23,7 +23,7 @@ import { drizzle } from 'drizzle-orm/d1';
 // PL: Tabele modułu auth.
 // EN: The auth module tables.
 import * as schema from '../../db/schema/auth';
-import { consumeInviteCode, normalizeInviteCode, restoreInviteCode } from './inviteCodes';
+import { consumeInviteCode, type ConsumedInviteCode, normalizeInviteCode, restoreInviteCode } from './inviteCodes';
 import { INVITE_BASE_PATH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from './settings';
 
 /**
@@ -44,15 +44,26 @@ export type CreateInviteAuthOptions = {
 };
 
 /**
+ * PL: Zużycie kodu zaproszenia, które hak „before” przekazuje hakowi „after”. Dzięki temu „after” może oddać kod, gdy rejestracja się nie uda.
+ * EN: The use of an invitation code, which the "before" hook passes to the "after" hook. This way "after" can give the code back when the sign-up fails.
+ */
+type InviteClaim = {
+  /** PL: Kod po normalizacji. EN: The code after normalization. */
+  code: string;
+  /** PL: Wiersz skasowany przy zużyciu kodu. EN: The row deleted when the code was used. */
+  row: ConsumedInviteCode;
+};
+
+/**
  * PL: Sprawdza kod zaproszenia z ciała rejestracji i zużywa go. Gdy login jest zajęty, oddaje kod, żeby uczeń go nie stracił. Zły, zużyty albo przeterminowany kod daje błąd INVITE_INVALID.
  * EN: Checks the invitation code from the sign-up body and uses it. When the login is taken, it gives the code back so the student does not lose it. A wrong, used or expired code gives the INVITE_INVALID error.
  *
  * @param db - PL: baza D1. EN: the D1 database.
  * @param body - PL: ciało zapytania rejestracji (adres techniczny i kod). EN: the sign-up request body (the technical address and the code).
- * @returns PL: obietnica, która kończy się, gdy kod został zużyty. EN: a promise that settles when the code has been used.
+ * @returns PL: zużycie kodu, które hak „after” może cofnąć. EN: the use of the code, which the "after" hook can undo.
  * @throws PL: APIError, gdy kod jest zły albo login zajęty. EN: an APIError when the code is wrong or the login is taken.
  */
-async function useInviteCode(db: D1Database, body: { email?: unknown; inviteCode?: unknown }): Promise<void> {
+async function useInviteCode(db: D1Database, body: { email?: unknown; inviteCode?: unknown }): Promise<InviteClaim> {
   // PL: Kod musi mieć poprawny kształt, inaczej nie pytamy bazy.
   // EN: The code must have a valid shape, otherwise we do not ask the database.
   const code = typeof body.inviteCode === 'string' ? normalizeInviteCode(body.inviteCode) : null;
@@ -71,6 +82,10 @@ async function useInviteCode(db: D1Database, body: { email?: unknown; inviteCode
     await restoreInviteCode(db, code, row);
     throw new APIError('UNPROCESSABLE_ENTITY', { code: 'LOGIN_TAKEN', message: 'Login already taken' });
   }
+
+  // PL: Login wolny, więc kod zostaje zużyty na razie. Zwracamy zużycie, żeby hak „after” mógł je cofnąć, gdy Better Auth konta nie założy (na przykład w wyścigu o ten sam login).
+  // EN: The login is free, so the code stays used for now. We return the use, so the "after" hook can undo it if Better Auth does not create the account (for example in a race for the same login).
+  return { code, row };
 }
 
 /**
@@ -96,12 +111,32 @@ export function createInviteAuth(options: CreateInviteAuthOptions) {
     // PL: Hasło: logowanie po zakładaniu konta włączone (uczeń od razu ma sesję), reguły długości z settings.ts.
     // EN: Password: sign-in right after creating the account is on (the student has a session at once), length rules from settings.ts.
     emailAndPassword: { enabled: true, autoSignIn: true, minPasswordLength: PASSWORD_MIN_LENGTH, maxPasswordLength: PASSWORD_MAX_LENGTH },
-    // PL: Hak przed rejestracją: bez ważnego kodu zaproszenia konto nie powstanie, nawet gdyby ktoś trafił na adres Better Auth z pominięciem routera.
-    // EN: The hook before sign-up: without a valid invitation code no account is created, even if someone reached the Better Auth address bypassing the router.
     hooks: {
+      // PL: Hak przed rejestracją: bez ważnego kodu zaproszenia konto nie powstanie, nawet gdyby ktoś trafił na adres Better Auth z pominięciem routera. Zużycie kodu zostaje w kontekście dla haka „after”.
+      // EN: The hook before sign-up: without a valid invitation code no account is created, even if someone reached the Better Auth address bypassing the router. The use of the code stays in the context for the "after" hook.
       before: createAuthMiddleware(async (context) => {
         if (context.path !== SIGN_UP_PATH) return;
-        await useInviteCode(options.db, (context.body ?? {}) as { email?: unknown; inviteCode?: unknown });
+        const inviteClaim = await useInviteCode(options.db, (context.body ?? {}) as { email?: unknown; inviteCode?: unknown });
+        return { context: { inviteClaim } };
+      }),
+      // PL: Hak po rejestracji: gdy Better Auth zwrócił błąd (na przykład zajęty login w wyścigu), oddaje kod do bazy. Nie zwraca nic, więc nie zmienia odpowiedzi, i nie rzuca, żeby błąd nie zamienił się w 500.
+      // EN: The hook after sign-up: when Better Auth returned an error (for example a taken login in a race), it gives the code back to the database. It returns nothing, so the response does not change, and it does not throw, so the error does not turn into a 500.
+      after: createAuthMiddleware(async (context) => {
+        if (context.path !== SIGN_UP_PATH) return;
+        // PL: Odczytaj zużycie kodu z kontekstu, które przekazał hak „before”. Bez niego nic nie cofamy.
+        // EN: Read the use of the code from the context passed by the "before" hook. Without it there is nothing to undo.
+        const { inviteClaim } = context as { inviteClaim?: InviteClaim };
+        if (!inviteClaim) return;
+        // PL: Cofnij tylko wtedy, gdy rejestracja zwróciła błąd. Udane konto zostawia kod zużyty.
+        // EN: Undo only when the sign-up returned an error. A successful account leaves the code used.
+        if (!isAPIError(context.context.returned)) return;
+        try {
+          await restoreInviteCode(options.db, inviteClaim.code, inviteClaim.row);
+        } catch (error) {
+          // PL: Błąd zapisu nie może zmienić odpowiedzi rejestracji, więc zapisujemy go w logu.
+          // EN: A write error must not change the sign-up response, so we write it to the log.
+          context.context.logger.error('Nie udało się oddać kodu zaproszenia', error);
+        }
       }),
     },
   });
