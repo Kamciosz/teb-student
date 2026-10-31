@@ -15,7 +15,7 @@
 // PL: Drizzle: warunki zapytań i zapytania na D1.
 // EN: Drizzle: query conditions and queries on D1.
 import { and, asc, eq, gt, like } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/d1';
+import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 // PL: Tabela, w której leżą kody.
 // EN: The table where the codes live.
 import { verification } from '../../db/schema/auth';
@@ -70,6 +70,28 @@ export function normalizeInviteCode(raw: string): string | null {
 }
 
 /**
+ * PL: Przygotowuje kod zaproszenia ważny 14 dni i zapytanie, które zapisze go w bazie, bez wykonania. Panel wkłada to zapytanie do batcha razem z wpisem w dzienniku.
+ * EN: Prepares an invitation code valid for 14 days and the query that saves it in the database, without running it. The panel puts this query in a batch together with the diary entry.
+ *
+ * @param orm - PL: klient Drizzle na bazie D1. EN: the Drizzle client on the D1 database.
+ * @param now - PL: chwila utworzenia (domyślnie teraz). EN: the creation moment (now by default).
+ * @returns PL: kod, data wygaśnięcia i zapytanie do wykonania. EN: the code, the expiry date and the query to run.
+ */
+export function prepareInviteCode(orm: DrizzleD1Database, now = new Date()) {
+  // PL: Złóż kod z grup znaków, na przykład „TEB-7K4Q-92”.
+  // EN: Assemble the code from groups of characters, for example "TEB-7K4Q-92".
+  const code = `TEB-${GROUP_LENGTHS.map(randomGroup).join('-')}`;
+  const expiresAt = new Date(now.getTime() + INVITE_LIFETIME_DAYS * DAY_MS);
+
+  // PL: Zapytanie zapisuje wiersz. Wartość jest pusta, bo liczy się samo istnienie kodu i jego termin.
+  // EN: The query saves the row. The value is empty, because only the code's existence and its deadline matter.
+  const query = orm
+    .insert(verification)
+    .values({ id: crypto.randomUUID(), identifier: `${INVITE_IDENTIFIER_PREFIX}${code}`, value: '', expiresAt });
+  return { code, expiresAt, query };
+}
+
+/**
  * PL: Tworzy kod zaproszenia ważny 14 dni i zapisuje go w bazie. Kod działa jeden raz. Wywołuje go panel Samorządu (podtor 8) i testy.
  * EN: Creates an invitation code valid for 14 days and saves it in the database. The code works once. The Student Council panel (subtrack 8) and tests call it.
  *
@@ -79,16 +101,8 @@ export function normalizeInviteCode(raw: string): string | null {
  * @throws PL: błąd bazy. EN: a database error.
  */
 export async function issueInviteCode(db: D1Database, now = new Date()): Promise<{ code: string; expiresAt: Date }> {
-  // PL: Złóż kod z grup znaków, na przykład „TEB-7K4Q-92”.
-  // EN: Assemble the code from groups of characters, for example "TEB-7K4Q-92".
-  const code = `TEB-${GROUP_LENGTHS.map(randomGroup).join('-')}`;
-  const expiresAt = new Date(now.getTime() + INVITE_LIFETIME_DAYS * DAY_MS);
-
-  // PL: Zapisz wiersz. Wartość jest pusta, bo liczy się samo istnienie kodu i jego termin.
-  // EN: Save the row. The value is empty, because only the code's existence and its deadline matter.
-  await drizzle(db)
-    .insert(verification)
-    .values({ id: crypto.randomUUID(), identifier: `${INVITE_IDENTIFIER_PREFIX}${code}`, value: '', expiresAt });
+  const { code, expiresAt, query } = prepareInviteCode(drizzle(db), now);
+  await query;
   return { code, expiresAt };
 }
 

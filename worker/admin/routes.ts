@@ -5,14 +5,14 @@
  * @author Szymon
  * @since 2026-10-12
  * @uses worker/auth/index.ts::requireStudent
- * @uses worker/auth/index.ts::issueInviteCode
+ * @uses worker/auth/index.ts::prepareInviteCode
  * @uses worker/auth/index.ts::listInviteCodes
  * @uses worker/admin/requirePanelRole.ts::requirePanelRole
  * @uses worker/admin/panelRoles.ts::getPanelLevel
  * @uses worker/admin/roleRoutes.ts::rolesApp
  * @uses worker/admin/pilotRoutes.ts::pilotApp
  * @uses worker/admin/diaryRoutes.ts::diaryApp
- * @uses worker/admin/diary.ts::recordDiaryEntry
+ * @uses worker/db/schema/admin.ts::diaryEntries
  * @used_by worker/admin/index.ts::adminApp
  * @used_by worker/admin/routes.test.ts::adminApp
  */
@@ -20,9 +20,15 @@
 // PL: Hono to router serwera. Dopasowuje adres zapytania do funkcji, która odpowie.
 // EN: Hono is the server router. It matches the request URL to the function that answers.
 import { Hono } from 'hono';
-// PL: Sprawdzanie sesji, typ środowiska ucznia, tworzenie i listowanie kodów zaproszeń z drzwi modułu auth.
-// EN: The session check, the student environment type, and creating and listing invitation codes from the auth module door.
-import { issueInviteCode, listInviteCodes, requireStudent, type StudentEnv } from '../auth';
+// PL: Sprawdzanie sesji, typ środowiska ucznia, przygotowanie i listowanie kodów zaproszeń z drzwi modułu auth.
+// EN: The session check, the student environment type, and preparing and listing invitation codes from the auth module door.
+import { listInviteCodes, prepareInviteCode, requireStudent, type StudentEnv } from '../auth';
+// PL: Klient bazy D1 do batcha: kod i wpis w dzienniku idą razem.
+// EN: The D1 database client for the batch: the code and the diary entry go together.
+import { drizzle } from 'drizzle-orm/d1';
+// PL: Tabela dziennika, do wpisu wydania kodu.
+// EN: The diary table, for the entry of issuing a code.
+import { diaryEntries } from '../db/schema/admin';
 // PL: Odczyt roli ucznia i sprawdzanie roli. Importowane przed routerami ról i pilotażu, bo te korzystają z drzwi reports i surveys, które z kolei sięgają po requirePanelRole (cykl importów).
 // EN: Reading the student's role and checking the role. Imported before the roles and pilot routers, because those use the reports and surveys doors, which in turn reach for requirePanelRole (an import cycle).
 import { getPanelLevel } from './panelRoles';
@@ -31,10 +37,9 @@ import { requirePanelRole, type PanelEnv } from './requirePanelRole';
 // EN: The roles router (administrator) and the pilot file router (administrator).
 import { rolesApp } from './roleRoutes';
 import { pilotApp } from './pilotRoutes';
-// PL: Dziennik zmian: router odczytu i zapis wpisu przy wydaniu kodu.
-// EN: The change diary: the read router and recording an entry when a code is issued.
+// PL: Dziennik zmian: router odczytu.
+// EN: The change diary: the read router.
 import { diaryApp } from './diaryRoutes';
-import { recordDiaryEntry } from './diary';
 
 /**
  * PL: Router roli ucznia: adres /me odpowiada każdemu zalogowanemu uczniowi. Uczeń bez roli dostaje null, a ekran pokazuje wtedy „Tylko dla Samorządu”.
@@ -61,13 +66,14 @@ const invitesApp = new Hono<PanelEnv>()
     const codes = await listInviteCodes(context.env.DB);
     return context.json({ codes: codes.map((invite) => ({ code: invite.code, expiresAt: invite.expiresAt.toISOString() })) });
   })
-  // PL: Wydaj kod w bazie i oddaj go razem z datą końca ważności.
-  // EN: Issue the code in the database and return it together with the expiry date.
+  // PL: Wydaj kod w bazie i oddaj go razem z datą końca ważności. Zapis kodu i wpis w dzienniku idą w jednym batchu, więc gdy dziennik się nie zapisze, kod też się nie zapisze.
+  // EN: Issue the code in the database and return it together with the expiry date. The code save and the diary entry go in one batch, so when the diary does not save, the code does not save either.
   .post('/', async (context) => {
-    const { code, expiresAt } = await issueInviteCode(context.env.DB);
+    const orm = drizzle(context.env.DB);
+    const { code, expiresAt, query } = prepareInviteCode(orm);
     // PL: Zapisz w dzienniku, kto wydał kod. Sam kod do dziennika nie trafia, bo to sekret.
     // EN: Record in the diary who issued the code. The code itself does not go into the diary, because it is a secret.
-    await recordDiaryEntry(context.env.DB, { actorId: context.get('student').id, action: 'invite_issued', targetId: null });
+    await orm.batch([query, orm.insert(diaryEntries).values({ actorId: context.get('student').id, action: 'invite_issued', targetId: null, at: Date.now() })]);
     return context.json({ code, expiresAt: expiresAt.toISOString() }, 201);
   });
 
