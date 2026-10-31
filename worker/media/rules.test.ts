@@ -1,9 +1,10 @@
 /**
- * PL: Testy reguł przyjmowania plików po stronie serwera: typy i rodzaje, limity bajtów oraz odczyt wymiarów z adresu. Czysta logika, bez bazy.
- * EN: Tests of the server-side file acceptance rules: types and kinds, byte limits and reading the dimensions from the address. Pure logic, no database.
+ * PL: Testy reguł przyjmowania plików po stronie serwera: typy i rodzaje, limity bajtów, sprawdzanie nagłówka Content-Length oraz odczyt wymiarów z adresu. Czysta logika, bez bazy.
+ * EN: Tests of the server-side file acceptance rules: types and kinds, byte limits, checking the Content-Length header and reading the dimensions from the address. Pure logic, no database.
  *
  * @author Szymon
  * @since 2026-10-13
+ * @uses worker/media/rules.ts::contentLengthFits
  * @uses worker/media/rules.ts::kindOfMime
  * @uses worker/media/rules.ts::maxBytesOf
  * @uses worker/media/rules.ts::parseDimensions
@@ -15,7 +16,7 @@
 import { describe, expect, it } from 'vitest';
 // PL: Reguły, które sprawdzamy.
 // EN: The rules under test.
-import { kindOfMime, maxBytesOf, MAX_PHOTO_BYTES, MAX_VIDEO_BYTES, parseDimensions } from './rules';
+import { contentLengthFits, kindOfMime, maxBytesOf, MAX_PHOTO_BYTES, MAX_VIDEO_BYTES, parseDimensions } from './rules';
 
 // PL: Grupa testów rodzaju pliku po typie.
 // EN: A group of tests for the file kind from the type.
@@ -42,6 +43,27 @@ describe('maxBytesOf', () => {
     expect(maxBytesOf('video')).toBe(MAX_VIDEO_BYTES);
     expect(maxBytesOf('photo')).toBe(MAX_PHOTO_BYTES);
     expect(MAX_VIDEO_BYTES).toBe(50 * 1024 * 1024);
+  });
+});
+
+// PL: Grupa testów nagłówka Content-Length przed czytaniem treści.
+// EN: A group of tests for the Content-Length header before the body is read.
+describe('contentLengthFits', () => {
+  // PL: Brak nagłówka i wartość, która nie jest zwykłą liczbą, odpadają.
+  // EN: A missing header and a value that is not a plain number are refused.
+  it('odrzuca brak nagłówka i zapis, który nie jest liczbą / rejects a missing header and a value that is not a number', () => {
+    expect(contentLengthFits(undefined, 100)).toBe(false);
+    expect(contentLengthFits('abc', 100)).toBe(false);
+    expect(contentLengthFits('1e9', 100)).toBe(false);
+    expect(contentLengthFits('-1', 100)).toBe(false);
+  });
+
+  // PL: Zero i długość równa limitowi mieszczą się, a jeden bajt ponad limit nie.
+  // EN: Zero and a length equal to the limit fit, and one byte over the limit does not.
+  it('przyjmuje długość do limitu włącznie / accepts a length up to and including the limit', () => {
+    expect(contentLengthFits('0', 100)).toBe(true);
+    expect(contentLengthFits('100', 100)).toBe(true);
+    expect(contentLengthFits('101', 100)).toBe(false);
   });
 });
 
