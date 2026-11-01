@@ -35,13 +35,9 @@ describe('GET /api/health', () => {
 });
 
 describe('adresy z ukośnikiem na końcu / addresses with a trailing slash', () => {
-  // PL: Ekrany ankiet pytają o /api/surveys/vote/ i /api/surveys/admin/. Testy e2e podstawiają tu atrapę, więc tylko ten test sprawdza prawdziwe adresy.
-  // EN: The survey screens ask for /api/surveys/vote/ and /api/surveys/admin/. The e2e tests mock these, so only this test checks the real addresses.
-  it.each(['/api/surveys/vote/', '/api/surveys/admin/'])('%s trafia do modułu ankiet / reaches the survey module', async (address) => {
-    const response = await app.request(address);
-
-    // PL: Bez sesji moduł odmawia, ale adres musi istnieć.
-    // EN: Without a session the module refuses, but the address must exist.
-    expect(response.status).not.toBe(404);
+  // PL: Ekrany ankiet pytają o /api/surveys/vote/ i /api/surveys/admin/. Testy e2e podstawiają tu atrapę, a bez sesji moduł odmawia, zanim sprawdzi adres. Dlatego test patrzy na adres, którego szuka aplikacja.
+  // EN: The survey screens ask for /api/surveys/vote/ and /api/surveys/admin/. The e2e tests mock these, and without a session the module refuses before it checks the address. So the test looks at the address the app searches for.
+  it.each(['/api/surveys/vote', '/api/surveys/admin'])('%s/ to ten sam adres co bez ukośnika / is the same address as without the slash', (address) => {
+    expect(app.getPath(new Request(`http://localhost${address}/`))).toBe(address);
   });
 });
