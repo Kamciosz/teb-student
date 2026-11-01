@@ -40,7 +40,7 @@ describe('dolny pasek / the bottom bar', () => {
     expect(html.match(/<a /g)).toHaveLength(5);
     expect(html).toContain('href="/"');
     expect(html).toContain('href="/news/feed"');
-    expect(html).toContain('href="/reports/student"');
+    expect(html).toContain('href="/reports/student/moje"');
     expect(html).toContain('href="/surveys/vote"');
     expect(html).toContain('href="/profile"');
   });
