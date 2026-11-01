@@ -1,6 +1,6 @@
 /**
- * PL: Ekran „Profil” w wyglądzie ustawień telefonu: nagłówek „Profil”, kółko z literą, imię i klasa, potem grupy list. Grupa „Konto” pokazuje tylko zasłonięty adres e-mail. Druga grupa ma „Ustawienia”, wiersz panelu (tylko dla osoby z rolą), „Moje zgłoszenia” i „Polityka prywatności”. „Wyloguj” jest w osobnej grupie, a „Usuń konto i dane” na dole, w osobnej grupie, na czerwono. Na dole jest dolny pasek nawigacji.
- * EN: The "Profil" screen in the look of the phone's settings: the "Profil" header, the circle with the letter, the name and the class, then groups of lists. The "Konto" group shows only the masked e-mail address. The second group has "Ustawienia", the panel row (only for a person with a role), "Moje zgłoszenia" and "Polityka prywatności". "Wyloguj" is in its own group, and "Usuń konto i dane" at the bottom, in a separate group, in red. The bottom navigation bar is at the bottom.
+ * PL: Ekran „Profil” w wyglądzie ustawień telefonu: nagłówek „Profil”, kółko z literą, imię i klasa, potem grupy list. Grupa „Konto” pokazuje login albo zasłonięty adres e-mail. Druga grupa ma „Ustawienia”, wiersz panelu (tylko dla osoby z rolą), „Moje zgłoszenia” i „Polityka prywatności”. „Wyloguj” jest w osobnej grupie, a „Usuń konto i dane” na dole, w osobnej grupie, na czerwono. Na dole jest dolny pasek nawigacji.
+ * EN: The "Profil" screen in the look of the phone's settings: the "Profil" header, the circle with the letter, the name and the class, then groups of lists. The "Konto" group shows the login or the masked e-mail address. The second group has "Ustawienia", the panel row (only for a person with a role), "Moje zgłoszenia" and "Polityka prywatności". "Wyloguj" is in its own group, and "Usuń konto i dane" at the bottom, in a separate group, in red. The bottom navigation bar is at the bottom.
  *
  * @author Szymon Sosnowski
  * @since 2026-10-18
@@ -13,7 +13,7 @@
  * @uses src/features/admin/index.ts::usePanelEntry
  * @uses src/features/profile/queries.ts::useProfile
  * @uses src/features/profile/profileView.ts::avatarLetter
- * @uses src/features/profile/profileView.ts::maskEmail
+ * @uses src/features/profile/profileView.ts::accountRow
  * @used_by src/features/profile/ProfileScreen.tsx::ProfileHome
  */
 
@@ -32,7 +32,7 @@ import { usePanelEntry } from '../admin';
 // PL: Ikony i funkcje widoku.
 // EN: The icons and the view functions.
 import { Icon } from './icons';
-import { avatarLetter, maskEmail } from './profileView';
+import { accountRow, avatarLetter } from './profileView';
 import { useProfile } from './queries';
 
 /**
@@ -72,9 +72,9 @@ export function ProfileHome() {
             {className ? <small>{className}</small> : null}
           </div>
         </div>
-        {/* PL: Konto tylko z zasłoniętym adresem. EN: The account with only the masked address. */}
+        {/* PL: Konto z loginem albo zasłoniętym adresem. EN: The account with the login or the masked address. */}
         <ListGroup header="Konto">
-          <ListRow title="E-mail" value={email ? maskEmail(email) : ''} />
+          <ListRow {...accountRow(email)} />
         </ListGroup>
         {/* PL: Ustawienia, panel Samorządu (tylko dla osoby z rolą), zgłoszenia i polityka prywatności. EN: Settings, the Samorząd panel (only for a person with a role), reports and the privacy policy. */}
         <ListGroup>
