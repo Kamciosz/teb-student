@@ -33,3 +33,15 @@ describe('GET /api/health', () => {
     expect(await response.json()).toEqual({ status: 'ok' });
   });
 });
+
+describe('adresy z ukośnikiem na końcu / addresses with a trailing slash', () => {
+  // PL: Ekrany ankiet pytają o /api/surveys/vote/ i /api/surveys/admin/. Testy e2e podstawiają tu atrapę, więc tylko ten test sprawdza prawdziwe adresy.
+  // EN: The survey screens ask for /api/surveys/vote/ and /api/surveys/admin/. The e2e tests mock these, so only this test checks the real addresses.
+  it.each(['/api/surveys/vote/', '/api/surveys/admin/'])('%s trafia do modułu ankiet / reaches the survey module', async (address) => {
+    const response = await app.request(address);
+
+    // PL: Bez sesji moduł odmawia, ale adres musi istnieć.
+    // EN: Without a session the module refuses, but the address must exist.
+    expect(response.status).not.toBe(404);
+  });
+});
