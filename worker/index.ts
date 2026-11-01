@@ -19,7 +19,9 @@ import { API_MOUNTS } from './mounts';
 
 // PL: Aplikacja Hono. Adresy podtorów wchodzą z listy w mounts.ts, więc tu zostaje tylko adres kontrolny.
 // EN: The Hono app. The subtrack routes come from the list in mounts.ts, so only the health-check route stays here.
-const app = new Hono();
+// PL: strict: false, bo ekrany ankiet pytają o adres z ukośnikiem na końcu, a Hono domyślnie traktuje go jak inny adres.
+// EN: strict: false, because the survey screens ask for the address with a trailing slash, and by default Hono treats it as a different address.
+const app = new Hono({ strict: false });
 
 // PL: Adres kontrolny. Odpowiada „ok”, gdy Worker działa. Nie czyta bazy i nic nie zmienia.
 // EN: Health-check route. Answers "ok" when the Worker runs. It reads no database and changes nothing.

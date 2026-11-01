@@ -1,0 +1,51 @@
+/*
+ * PL: Ekran nieznanego adresu. Wąska kolumna od 320 px w górę, tylko tokeny z shared/styles (bez gotowych kolorów).
+ * EN: The unknown address screen. A narrow column from 320 px up, only tokens from shared/styles (no fixed colors).
+ */
+
+.nf-screen {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 430px;
+  margin-inline: auto;
+  padding: 24px 16px calc(24px + var(--safe-bottom));
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+/* PL: Komunikat w środku ekranu; długie słowa się łamią, żeby nic nie wyszło poza ekran na 320 px.
+   EN: The message in the middle of the screen; long words break so nothing spills off the 320 px screen. */
+.nf-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.nf-title {
+  margin: 0;
+  font-size: var(--t-xl);
+}
+
+.nf-lead {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--t-md);
+}
+
+/* PL: Przycisk na dole ma pełną szerokość, jak główna akcja w innych ekranach.
+   EN: The button at the bottom is full width, like the main action on other screens. */
+.nf-bottom {
+  padding-top: 24px;
+}
+
+.nf-bottom .ui-button--filled {
+  width: 100%;
+}

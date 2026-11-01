@@ -33,3 +33,11 @@ describe('GET /api/health', () => {
     expect(await response.json()).toEqual({ status: 'ok' });
   });
 });
+
+describe('adresy z ukośnikiem na końcu / addresses with a trailing slash', () => {
+  // PL: Ekrany ankiet pytają o /api/surveys/vote/ i /api/surveys/admin/. Testy e2e podstawiają tu atrapę, a bez sesji moduł odmawia, zanim sprawdzi adres. Dlatego test patrzy na adres, którego szuka aplikacja.
+  // EN: The survey screens ask for /api/surveys/vote/ and /api/surveys/admin/. The e2e tests mock these, and without a session the module refuses before it checks the address. So the test looks at the address the app searches for.
+  it.each(['/api/surveys/vote', '/api/surveys/admin'])('%s/ to ten sam adres co bez ukośnika / is the same address as without the slash', (address) => {
+    expect(app.getPath(new Request(`http://localhost${address}/`))).toBe(address);
+  });
+});
