@@ -1,6 +1,6 @@
 /**
- * PL: Ekran potwierdzenia „Usuń konto i dane”. Usunięcie jest ostateczne, więc wymaga osobnego przycisku. Po usunięciu telefon czyści zapisane dane, a wspólny kod przenosi na ekran logowania. Tekst „Usuniemy zgłoszenia i odpowiedzi.” pochodzi z ekranu 2.4, a pozostałych tekstów nie ma w docs/projekt/EKRANY.md, ale właściciel je zatwierdził.
- * EN: The confirmation screen "Usuń konto i dane". The deletion is final, so it needs a separate button. After the deletion the phone clears the saved data, and the shared code takes the student to the sign-in screen. The text "Usuniemy zgłoszenia i odpowiedzi." comes from screen 2.4, and the other texts are not in docs/projekt/EKRANY.md, but the owner approved them.
+ * PL: Ekran potwierdzenia „Usuń konto i dane”. Usunięcie jest ostateczne, więc wymaga osobnego przycisku. Po usunięciu telefon czyści zapisane dane, a wspólny kod przenosi na ekran logowania. Tekst „Usuniemy dane konta. Zgłoszenia zostają bez autora.” pochodzi z ekranu 2.4, a pozostałych tekstów nie ma w docs/projekt/EKRANY.md, ale właściciel je zatwierdził.
+ * EN: The confirmation screen "Usuń konto i dane". The deletion is final, so it needs a separate button. After the deletion the phone clears the saved data, and the shared code takes the student to the sign-in screen. The text "Usuniemy dane konta. Zgłoszenia zostają bez autora." comes from screen 2.4, and the other texts are not in docs/projekt/EKRANY.md, but the owner approved them.
  *
  * @author Jakub
  * @since 2026-10-11
@@ -35,7 +35,7 @@ export function DeleteAccountScreen() {
       <ScreenHeader title="Usuń konto i dane" backTo="/profile" backLabel="Profil" />
       {/* PL: Pytanie i opis skutków. EN: The question and the description of the consequences. */}
       <h2>Usunąć konto?</h2>
-      <p className="pf-lead">Usuniemy zgłoszenia i odpowiedzi.</p>
+      <p className="pf-lead">Usuniemy dane konta. Zgłoszenia zostają bez autora.</p>
       {/* PL: Błąd usunięcia (na przykład brak internetu); konto zostaje. EN: The deletion error (for example no internet); the account stays. */}
       {remove.isError ? <p className="pf-error" role="alert">Nie udało się usunąć konta.</p> : null}
       {/* PL: Przycisk usunięcia; w trakcie jest wyłączony, żeby nie wysłać dwa razy. EN: The delete button; disabled while running, so it is not sent twice. */}

@@ -93,7 +93,7 @@ export function ProfileHome() {
         <ListGroup>
           <ListRow
             title="Usuń konto i dane"
-            subtitle="Usuniemy zgłoszenia i odpowiedzi."
+            subtitle="Usuniemy dane konta. Zgłoszenia zostają bez autora."
             icon={<Icon name="trash-2" />}
             to="/profile/usun"
             destructive
