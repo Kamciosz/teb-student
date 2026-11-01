@@ -171,7 +171,6 @@ Po scaleniu usuń kopię roboczą (`git worktree remove ../teb-<podtor>`) i gał
 - **Bohdan:** ADR 0003 (adresy podtorów), 0004 (przeglądarki), 0005 (krój pisma).
 - **Adam:** czy wyłączyć wymóg aktualnej gałęzi przed scaleniem. Przez niego każde scalenie czeka na CI dwa razy.
 - **Zespół:** parametry logowania: 3 próby kodu, 3 wysyłki na minutę, sesja 7 dni.
-- **Zespół:** sprzeczność: `EKRANY.md` 2.4 mówi „Usuniemy zgłoszenia i odpowiedzi.”, a plan mówi, że zgłoszenia zostają bez autora.
 - **Bohdan:** czas hashowania hasła (scrypt) w Workerze, podtor 1b.
 - **Zespół:** PWA: pasek „Jest nowa wersja”, krótka nazwa aplikacji, ikona technikum.
 - **Wszyscy:** loginy GitHub w `docs/OWNERS.md`. Bez nich nie ma pliku CODEOWNERS.
