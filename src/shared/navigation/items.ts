@@ -44,7 +44,7 @@ export const DOCK_ITEMS: readonly DockItem[] = [
   // PL: Aktualności, lista wpisów (podtor 3a). EN: News, the list of entries (subtrack 3a).
   { path: '/news/feed', label: 'Aktualności', icon: 'newspaper' },
   // PL: Zgłaszanie problemów (podtor 4a). EN: Reporting problems (subtrack 4a).
-  { path: '/reports/student', label: 'Zgłoszenia', icon: 'clipboard-list' },
+  { path: '/reports/student/moje', label: 'Zgłoszenia', icon: 'clipboard-list' },
   // PL: Lista ankiet (podtor 5a). EN: The survey list (subtrack 5a).
   { path: '/surveys/vote', label: 'Ankiety', icon: 'list-checks' },
   // PL: Profil ucznia (podtor 7). EN: The student profile (subtrack 7).
