@@ -13,6 +13,7 @@
  * @uses src/features/profile/index.ts::ProfileScreen
  * @uses src/features/admin/index.ts::AdminLayout
  * @uses src/features/dashboard/index.ts::DashboardScreen
+ * @uses src/app/NotFoundScreen.tsx::NotFoundScreen
  * @used_by src/App.tsx::router
  * @used_by src/app/routes.test.ts::APP_ROUTES
  */
@@ -31,6 +32,9 @@ import { BellScreen } from '../features/bell';
 import { ProfileScreen } from '../features/profile';
 import { AdminLayout, AdminScreen } from '../features/admin';
 import { DashboardScreen } from '../features/dashboard';
+// PL: Ekran nieznanego adresu, poza podtorami (bez id).
+// EN: The unknown address screen, outside the subtracks (no id).
+import { NotFoundScreen } from './NotFoundScreen';
 
 /**
  * PL: Adresy ekranów. Adres to „/<moduł>/<część>” (docs/adr/0003-adresy-podtorow.md), a „/*” na końcu oddaje podtorowi wszystkie adresy pod spodem. Pulpit (podtor 9) jest pod „/”. Pole id to numer podtoru. Ekrany 3c, 4b, 5b i 8 mają wspólną ramę panelu z menu.
@@ -71,4 +75,7 @@ export const APP_ROUTES: RouteObject[] = [
       { id: '8', path: '/admin/*', Component: AdminScreen },
     ],
   },
+  // PL: Ostatni adres: każdy adres, którego nie ma wyżej, pokazuje ekran nieznanego adresu. To nie jest podtor, więc nie ma id.
+  // EN: The last address: every address not listed above shows the unknown address screen. It is not a subtrack, so it has no id.
+  { path: '*', Component: NotFoundScreen },
 ];
