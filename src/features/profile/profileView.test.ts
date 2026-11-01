@@ -5,6 +5,7 @@
  * @author Jakub
  * @since 2026-10-11
  * @uses src/features/profile/profileView.ts::maskEmail
+ * @uses src/features/profile/profileView.ts::accountRow
  * @used_by vitest.config.ts::include
  */
 
@@ -13,7 +14,7 @@
 import { describe, expect, it } from 'vitest';
 // PL: Funkcje, które sprawdzamy.
 // EN: The functions under test.
-import { avatarLetter, maskEmail } from './profileView';
+import { accountRow, avatarLetter, maskEmail } from './profileView';
 
 // PL: Grupa testów zasłaniania adresu.
 // EN: A group of tests for masking the address.
@@ -28,6 +29,22 @@ describe('maskEmail', () => {
   // EN: A text without "@" or with "@" at the start stays unchanged.
   it.each(['brak-malpy', '@teb.edu.pl', ''])('zostawia „%s” / leaves "%s"', (text) => {
     expect(maskEmail(text)).toBe(text);
+  });
+});
+
+// PL: Grupa testów wiersza „Konto”.
+// EN: A group of tests for the "Konto" row.
+describe('accountRow', () => {
+  // PL: Konto z loginem nie pokazuje adresu technicznego.
+  // EN: A login account does not show the technical address.
+  it('pokazuje login / shows the login', () => {
+    expect(accountRow('uczen7@login.invalid')).toEqual({ title: 'Login', value: 'uczen7' });
+  });
+
+  // PL: Konto z adresem szkolnym pokazuje zasłonięty adres.
+  // EN: A school address account shows the masked address.
+  it('zasłania adres szkolny / masks the school address', () => {
+    expect(accountRow('ola.testowa@teb.edu.pl')).toEqual({ title: 'E-mail', value: 'o***@teb.edu.pl' });
   });
 });
 

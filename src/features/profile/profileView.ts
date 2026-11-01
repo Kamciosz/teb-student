@@ -1,10 +1,10 @@
 /**
- * PL: Proste funkcje do ekranu profilu: zasłonięty adres e-mail i litera w kółku. Bez Reacta, żeby dało się je sprawdzić zwykłym testem.
- * EN: Simple functions for the profile screen: the masked e-mail address and the letter in the circle. Without React, so a plain test can check them.
+ * PL: Proste funkcje do ekranu profilu: wiersz konta, zasłonięty adres e-mail i litera w kółku. Bez Reacta, żeby dało się je sprawdzić zwykłym testem.
+ * EN: Simple functions for the profile screen: the account row, the masked e-mail address and the letter in the circle. Without React, so a plain test can check them.
  *
  * @author Jakub
  * @since 2026-10-11
- * @used_by src/features/profile/ProfileHome.tsx::maskEmail
+ * @used_by src/features/profile/ProfileHome.tsx::accountRow
  * @used_by src/features/profile/ProfileHome.tsx::avatarLetter
  * @used_by src/features/profile/profileView.test.ts::maskEmail
  */
@@ -24,6 +24,19 @@ export function maskEmail(email: string): string {
   // PL: Pierwsza litera nazwy, gwiazdki i domena.
   // EN: The first letter of the name, the asterisks and the domain.
   return `${email.slice(0, 1)}***${email.slice(at)}`;
+}
+
+/**
+ * PL: Wiersz „Konto” w profilu. Konto z kodu zaproszenia ma tylko login, a adres „<login>@login.invalid” jest techniczny, więc uczeń widzi sam login.
+ * EN: The "Konto" row in the profile. An invitation code account has only a login and the "<login>@login.invalid" address is technical, so the student sees just the login.
+ *
+ * @param email - PL: adres z sesji. EN: the address from the session.
+ * @returns PL: nazwa wiersza i wartość do pokazania. EN: the row name and the value to show.
+ */
+export function accountRow(email: string): { title: string; value: string } {
+  const suffix = '@login.invalid';
+  if (email.endsWith(suffix)) return { title: 'Login', value: email.slice(0, -suffix.length) };
+  return { title: 'E-mail', value: maskEmail(email) };
 }
 
 /**
