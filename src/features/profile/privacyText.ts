@@ -18,7 +18,7 @@ export const PRIVACY_SECTIONS: readonly PrivacySection[] = [
   {
     heading: 'Co zbieramy',
     paragraphs: [
-      'Szkolny adres e-mail, którym się logujesz. Imię, klasę i szkołę, jeśli je wpiszesz w profilu. Zgłoszenia, które wysyłasz. Informację, że wypełniłeś ankietę.',
+      'Login albo szkolny adres e-mail, którym się logujesz. Imię, klasę i szkołę, jeśli je wpiszesz w profilu. Zgłoszenia, które wysyłasz. Informację, że wypełniłeś ankietę.',
     ],
   },
   {
