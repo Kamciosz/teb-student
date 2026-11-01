@@ -109,6 +109,9 @@ describe('APP_ROUTES', () => {
     // PL: Adresy z listy bez końcówki „/*”, bo wpis nawigacji wskazuje początek podtoru.
     // EN: The addresses from the list without the trailing "/*", because a navigation entry points to the start of a subtrack.
     const knownPaths = ALL_ROUTES.map((item) => item.path?.replace(/\/\*$/, '') || '/');
+    // PL: Lista zgłoszeń leży wewnątrz podtoru 4a, a zakładka prowadzi prosto do niej. Adres sprawdza e2e/profile.spec.ts.
+    // EN: The report list lives inside subtrack 4a, and the tab goes straight to it. e2e/profile.spec.ts checks the address.
+    knownPaths.push('/reports/student/moje');
 
     // PL: Każdy wpis obu list musi mieć swój adres.
     // EN: Every entry of both lists must have its address.
